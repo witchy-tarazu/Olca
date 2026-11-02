@@ -93,3 +93,8 @@ mockInput.SetKeyDown(GameKey.Attack, true);
 ### Play停止の完了判定
 
 停止後に必ずドメイン再読込や接続断が起こるとは限らない。ログの特定行やdown→upを必須条件にして待ち続けず、通常の検出statusとeditor_statusでready/stopped/compiling=false/domainReloadInProgress=falseを確認する。停止要求は再送せず、既存要求の結果を回収する。解像度はその後に実GameView/RenderTextureを読む。誤った待機監視を解除する場合は当該ローカル監視プロセスだけを対象とし、Editorを終了しない。
+
+
+## 再読込直後の未生成RenderTexture
+
+Screenが640×360でも、停止Editorの再読込直後にGameViewのRenderTextureが未生成の場合がある。textures空のままテストを開始せず、既存の低解像度GameView通常描画を一度行ってから、ScreenとGameView/PlayModeView双方の実RTが640×360であることを再読取する。要求送信だけや空配列のall判定で済ませず、前提未成立で停止した記録と、その後の実テスト結果を区別する。

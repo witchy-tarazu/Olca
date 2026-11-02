@@ -1,0 +1,6658 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "4d9cf5d20acb434e1f7354118a66fbad6c80b466c6897cb3c2d879cae8997cd4",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "c9490eb5814deeea2cde1a19ce2e3056b7959fc6f986423d823619d0338747a4",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "436bf85758535102ab060011c4b29596c40b2fd12981940eb30315f2095d44e2",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "saveRoot": "system-stage29-29001",
+  "version": "v1",
+  "actualInput": "InputSystem queued keyboard/Dpad/Start and EventSystem actual Raycast; no direct Core tick or position write",
+  "physicalInputNotRun": true,
+  "validationTerrain": {
+    "id": "validation-landing-32",
+    "width": 32,
+    "start": 8,
+    "speedPerSecond": 6,
+    "productValues": false,
+    "surface": {
+      "left": 12,
+      "right": 16,
+      "top": 1,
+      "model": "descending footpoint top only, closed endpoints+endx; product collision undecided"
+    }
+  },
+  "saveBaselineScope": "measured after stopped landing helper, before resumed full platform/lifetime checks; earlier entry save assertions passed in original Python run; original JSON inputs retained",
+  "beforeSaveHashes": {
+    "progress/progress.json": "b43600f1c6a12dce9eec2d666def79410b48af1200c25b598b27726b0d419921"
+  },
+  "afterSaveHashes": {
+    "progress/progress.json": "b43600f1c6a12dce9eec2d666def79410b48af1200c25b598b27726b0d419921"
+  },
+  "legacyBefore": {
+    "core": -524705130,
+    "runtime": 1807918464,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "legacyAfter": {
+    "core": -524705130,
+    "runtime": 1807918464,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "landing": {
+    "actualTimestampedLanding": true,
+    "heldLandingStable": true,
+    "visual": {
+      "topY": 108,
+      "width": 432,
+      "footY": 108,
+      "support": "validation-top",
+      "sprite": "Assets/Art/Sprites/Tiles/dungeon_floor.png",
+      "state": {
+        "frame": 19721,
+        "clock": 19721,
+        "position": 798000,
+        "height": 60000,
+        "velocity": 0,
+        "grounded": true,
+        "support": "validation-top",
+        "worldX": 13.3,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318761672,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 1,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    },
+    "state": {
+      "frame": 19721,
+      "clock": 19721,
+      "position": 798000,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "worldX": 13.3,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318761672,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "platformShort": {
+    "actualTimestampedKeyboard": true,
+    "heldFrames": 2,
+    "before": 20007,
+    "start": 20009,
+    "peak": 138000,
+    "trace": [
+      {
+        "Frame": 20009,
+        "Height": 72000,
+        "VerticalVelocity": 11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20009,
+        "Height": 72000,
+        "VerticalVelocity": 11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20010,
+        "Height": 83600,
+        "VerticalVelocity": 11200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20011,
+        "Height": 94800,
+        "VerticalVelocity": 10800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20013,
+        "Height": 116000,
+        "VerticalVelocity": 10000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20014,
+        "Height": 120000,
+        "VerticalVelocity": 3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20014,
+        "Height": 120000,
+        "VerticalVelocity": 3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20015,
+        "Height": 123600,
+        "VerticalVelocity": 3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20016,
+        "Height": 126800,
+        "VerticalVelocity": 2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20017,
+        "Height": 129600,
+        "VerticalVelocity": 2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20018,
+        "Height": 132000,
+        "VerticalVelocity": 2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20019,
+        "Height": 134000,
+        "VerticalVelocity": 1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20020,
+        "Height": 135600,
+        "VerticalVelocity": 1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20021,
+        "Height": 136800,
+        "VerticalVelocity": 800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20022,
+        "Height": 137600,
+        "VerticalVelocity": 400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20023,
+        "Height": 138000,
+        "VerticalVelocity": 0,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20023,
+        "Height": 138000,
+        "VerticalVelocity": 0,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20024,
+        "Height": 138000,
+        "VerticalVelocity": -400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20025,
+        "Height": 137600,
+        "VerticalVelocity": -800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20026,
+        "Height": 136800,
+        "VerticalVelocity": -1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20027,
+        "Height": 135600,
+        "VerticalVelocity": -1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20029,
+        "Height": 132000,
+        "VerticalVelocity": -2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20030,
+        "Height": 129600,
+        "VerticalVelocity": -2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20030,
+        "Height": 129600,
+        "VerticalVelocity": -2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20031,
+        "Height": 126800,
+        "VerticalVelocity": -3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20032,
+        "Height": 123600,
+        "VerticalVelocity": -3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20033,
+        "Height": 120000,
+        "VerticalVelocity": -4000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20034,
+        "Height": 116000,
+        "VerticalVelocity": -4400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20035,
+        "Height": 111600,
+        "VerticalVelocity": -4800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20036,
+        "Height": 106800,
+        "VerticalVelocity": -5200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20037,
+        "Height": 101600,
+        "VerticalVelocity": -5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20037,
+        "Height": 101600,
+        "VerticalVelocity": -5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20038,
+        "Height": 96000,
+        "VerticalVelocity": -6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20039,
+        "Height": 90000,
+        "VerticalVelocity": -6400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20040,
+        "Height": 83600,
+        "VerticalVelocity": -6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20041,
+        "Height": 76800,
+        "VerticalVelocity": -7200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20042,
+        "Height": 69600,
+        "VerticalVelocity": -7600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20043,
+        "Height": 62000,
+        "VerticalVelocity": -8000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20044,
+        "Height": 60000,
+        "VerticalVelocity": 0,
+        "IsGrounded": true
+      }
+    ],
+    "visual": {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "heroine_idle_03_0",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Idle/heroine_idle_03.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0
+      },
+      "size": {
+        "x": 112.319992,
+        "y": 245.16
+      },
+      "footY": 108,
+      "state": {
+        "frame": 20053,
+        "clock": 20053,
+        "position": 798000,
+        "height": 60000,
+        "velocity": 0,
+        "grounded": true,
+        "support": "validation-top",
+        "worldX": 13.3,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318761672,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 1,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "platformLong": {
+    "actualTimestampedKeyboard": true,
+    "heldFrames": 24,
+    "before": 20139,
+    "start": 20142,
+    "peak": 246000,
+    "trace": [
+      {
+        "Frame": 20142,
+        "Height": 72000,
+        "VerticalVelocity": 11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20142,
+        "Height": 72000,
+        "VerticalVelocity": 11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20143,
+        "Height": 83600,
+        "VerticalVelocity": 11200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20144,
+        "Height": 94800,
+        "VerticalVelocity": 10800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20145,
+        "Height": 105600,
+        "VerticalVelocity": 10400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20146,
+        "Height": 116000,
+        "VerticalVelocity": 10000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20147,
+        "Height": 126000,
+        "VerticalVelocity": 9600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20148,
+        "Height": 135600,
+        "VerticalVelocity": 9200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20149,
+        "Height": 144800,
+        "VerticalVelocity": 8800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20150,
+        "Height": 153600,
+        "VerticalVelocity": 8400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20151,
+        "Height": 162000,
+        "VerticalVelocity": 8000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20152,
+        "Height": 170000,
+        "VerticalVelocity": 7600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20153,
+        "Height": 177600,
+        "VerticalVelocity": 7200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20154,
+        "Height": 184800,
+        "VerticalVelocity": 6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20154,
+        "Height": 184800,
+        "VerticalVelocity": 6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20155,
+        "Height": 191600,
+        "VerticalVelocity": 6400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20156,
+        "Height": 198000,
+        "VerticalVelocity": 6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20157,
+        "Height": 204000,
+        "VerticalVelocity": 5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20158,
+        "Height": 209600,
+        "VerticalVelocity": 5200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20159,
+        "Height": 214800,
+        "VerticalVelocity": 4800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20160,
+        "Height": 219600,
+        "VerticalVelocity": 4400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20161,
+        "Height": 224000,
+        "VerticalVelocity": 4000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20162,
+        "Height": 228000,
+        "VerticalVelocity": 3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20162,
+        "Height": 228000,
+        "VerticalVelocity": 3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20163,
+        "Height": 231600,
+        "VerticalVelocity": 3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20164,
+        "Height": 234800,
+        "VerticalVelocity": 2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20165,
+        "Height": 237600,
+        "VerticalVelocity": 2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20165,
+        "Height": 237600,
+        "VerticalVelocity": 2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20166,
+        "Height": 240000,
+        "VerticalVelocity": 2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20167,
+        "Height": 242000,
+        "VerticalVelocity": 1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20168,
+        "Height": 243600,
+        "VerticalVelocity": 1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20169,
+        "Height": 244800,
+        "VerticalVelocity": 800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20170,
+        "Height": 245600,
+        "VerticalVelocity": 400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20171,
+        "Height": 246000,
+        "VerticalVelocity": 0,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20173,
+        "Height": 245600,
+        "VerticalVelocity": -800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20174,
+        "Height": 244800,
+        "VerticalVelocity": -1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20175,
+        "Height": 243600,
+        "VerticalVelocity": -1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20176,
+        "Height": 242000,
+        "VerticalVelocity": -2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20177,
+        "Height": 240000,
+        "VerticalVelocity": -2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20178,
+        "Height": 237600,
+        "VerticalVelocity": -2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20179,
+        "Height": 234800,
+        "VerticalVelocity": -3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20180,
+        "Height": 231600,
+        "VerticalVelocity": -3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20180,
+        "Height": 231600,
+        "VerticalVelocity": -3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20181,
+        "Height": 228000,
+        "VerticalVelocity": -4000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20182,
+        "Height": 224000,
+        "VerticalVelocity": -4400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20183,
+        "Height": 219600,
+        "VerticalVelocity": -4800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20184,
+        "Height": 214800,
+        "VerticalVelocity": -5200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20185,
+        "Height": 209600,
+        "VerticalVelocity": -5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20186,
+        "Height": 204000,
+        "VerticalVelocity": -6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20186,
+        "Height": 204000,
+        "VerticalVelocity": -6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20187,
+        "Height": 198000,
+        "VerticalVelocity": -6400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20188,
+        "Height": 191600,
+        "VerticalVelocity": -6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20189,
+        "Height": 184800,
+        "VerticalVelocity": -7200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20190,
+        "Height": 177600,
+        "VerticalVelocity": -7600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20191,
+        "Height": 170000,
+        "VerticalVelocity": -8000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20192,
+        "Height": 162000,
+        "VerticalVelocity": -8400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20193,
+        "Height": 153600,
+        "VerticalVelocity": -8800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20193,
+        "Height": 153600,
+        "VerticalVelocity": -8800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20194,
+        "Height": 144800,
+        "VerticalVelocity": -9200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20195,
+        "Height": 135600,
+        "VerticalVelocity": -9600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20196,
+        "Height": 126000,
+        "VerticalVelocity": -10000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20197,
+        "Height": 116000,
+        "VerticalVelocity": -10400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20197,
+        "Height": 116000,
+        "VerticalVelocity": -10400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20198,
+        "Height": 105600,
+        "VerticalVelocity": -10800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20199,
+        "Height": 94800,
+        "VerticalVelocity": -11200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20200,
+        "Height": 83600,
+        "VerticalVelocity": -11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20201,
+        "Height": 72000,
+        "VerticalVelocity": -12000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 20202,
+        "Height": 60000,
+        "VerticalVelocity": 0,
+        "IsGrounded": true
+      }
+    ],
+    "visual": {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "heroine_idle_09_0",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Idle/heroine_idle_09.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0
+      },
+      "size": {
+        "x": 112.319992,
+        "y": 244.08
+      },
+      "footY": 108,
+      "state": {
+        "frame": 20211,
+        "clock": 20211,
+        "position": 798000,
+        "height": 60000,
+        "velocity": 0,
+        "grounded": true,
+        "support": "validation-top",
+        "worldX": 13.3,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318761672,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 1,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "platformPeak": {
+    "samplerDisabled": true,
+    "samplerControllerAbsent": true,
+    "sprite": "jump_apex",
+    "path": "Assets/Art/Sprites/Characters/Heroine/Jump/jump_apex.png",
+    "pivot": {
+      "x": 0.49609375,
+      "y": 0.0546875
+    },
+    "size": {
+      "x": 276.47998,
+      "y": 276.47998
+    },
+    "footY": 442.08,
+    "state": {
+      "frame": 20303,
+      "clock": 20303,
+      "position": 798000,
+      "height": 245600,
+      "velocity": 400,
+      "grounded": false,
+      "support": null,
+      "worldX": 13.3,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318761672,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 0,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "platformPause": {
+    "paused": {
+      "frame": 20424,
+      "clock": 20424,
+      "position": 798000,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "worldX": 13.3,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318761672,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": true,
+        "scale": 0,
+        "focus": "ResumeButton",
+        "buttons": [
+          {
+            "name": "RetreatButton",
+            "interactable": false
+          },
+          {
+            "name": "TransformationAnimationSetting",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "LoadCheckpointButton",
+            "interactable": false
+          },
+          {
+            "name": "AudioSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "GamepadSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "DialogueTextSpeedButton",
+            "interactable": true
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "ResumeButton",
+            "interactable": true
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "VibrationSetting",
+            "interactable": true
+          },
+          {
+            "name": "KeyboardSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "OwnedCardsButton",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "resumed": {
+      "frame": 20444,
+      "clock": 20444,
+      "position": 798000,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "worldX": 13.3,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318761672,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "platformReentry": {
+    "supportAndIdentityPreserved": true,
+    "pose": {
+      "topY": 108,
+      "width": 432,
+      "footY": 108,
+      "support": "validation-top",
+      "sprite": "Assets/Art/Sprites/Tiles/dungeon_floor.png",
+      "state": {
+        "frame": 20633,
+        "clock": 20633,
+        "position": 798000,
+        "height": 60000,
+        "velocity": 0,
+        "grounded": true,
+        "support": "validation-top",
+        "worldX": 13.3,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318762140,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 0,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    },
+    "after": {
+      "frame": 20641,
+      "clock": 20641,
+      "position": 798000,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "worldX": 13.3,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "rightOff": {
+    "direction": 1,
+    "edgeSupportReleased": true,
+    "leaving": {
+      "frame": 20777,
+      "clock": 20777,
+      "position": 972000,
+      "height": 59600,
+      "velocity": -800,
+      "grounded": false,
+      "support": null,
+      "worldX": 16.2,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "landed": {
+      "frame": 20805,
+      "clock": 20805,
+      "position": 1080000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 18,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "secondLanding": {
+    "actualTimestampedLanding": true,
+    "heldLandingStable": true,
+    "visual": {
+      "topY": 108,
+      "width": 432,
+      "footY": 108,
+      "support": "validation-top",
+      "sprite": "Assets/Art/Sprites/Tiles/dungeon_floor.png",
+      "state": {
+        "frame": 21246,
+        "clock": 21246,
+        "position": 798000,
+        "height": 60000,
+        "velocity": 0,
+        "grounded": true,
+        "support": "validation-top",
+        "worldX": 13.3,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318762140,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 1,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    },
+    "state": {
+      "frame": 21246,
+      "clock": 21246,
+      "position": 798000,
+      "height": 60000,
+      "velocity": 0,
+      "grounded": true,
+      "support": "validation-top",
+      "worldX": 13.3,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "leftOff": {
+    "direction": -1,
+    "edgeSupportReleased": true,
+    "leaving": {
+      "frame": 21424,
+      "clock": 21424,
+      "position": 714000,
+      "height": 60000,
+      "velocity": -400,
+      "grounded": false,
+      "support": null,
+      "worldX": 11.9,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "landed": {
+      "frame": 21453,
+      "clock": 21453,
+      "position": 600000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 10,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "padJump": {
+    "actualPadSouth": true,
+    "open": true,
+    "height": 75600,
+    "state": {
+      "frame": 611,
+      "clock": 611,
+      "position": 480000,
+      "height": 118000,
+      "velocity": 2000,
+      "grounded": false,
+      "support": null,
+      "worldX": 8,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 10,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "padCancel": {
+    "actualPadEastCancel": true,
+    "focusRestored": true,
+    "state": {
+      "frame": 718,
+      "clock": 718,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 8,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "airSteer": {
+    "actualAirSteering": true,
+    "reversed": {
+      "frame": 1314,
+      "clock": 1314,
+      "position": 492000,
+      "height": 164000,
+      "velocity": 4000,
+      "grounded": false,
+      "support": null,
+      "worldX": 8.2,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "landed": {
+      "frame": 1355,
+      "clock": 1355,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 8,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "jumpShort": {
+    "actualTimestampedKeyboard": true,
+    "heldFrames": 2,
+    "before": 923,
+    "start": 925,
+    "peak": 67600,
+    "trace": [
+      {
+        "Frame": 925,
+        "Height": 12000,
+        "VerticalVelocity": 11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 926,
+        "Height": 23600,
+        "VerticalVelocity": 11200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 927,
+        "Height": 34800,
+        "VerticalVelocity": 10800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 928,
+        "Height": 45600,
+        "VerticalVelocity": 10400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 929,
+        "Height": 49600,
+        "VerticalVelocity": 3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 930,
+        "Height": 53200,
+        "VerticalVelocity": 3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 930,
+        "Height": 53200,
+        "VerticalVelocity": 3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 931,
+        "Height": 56400,
+        "VerticalVelocity": 2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 932,
+        "Height": 59200,
+        "VerticalVelocity": 2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 933,
+        "Height": 61600,
+        "VerticalVelocity": 2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 934,
+        "Height": 63600,
+        "VerticalVelocity": 1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 935,
+        "Height": 65200,
+        "VerticalVelocity": 1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 936,
+        "Height": 66400,
+        "VerticalVelocity": 800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 937,
+        "Height": 67200,
+        "VerticalVelocity": 400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 937,
+        "Height": 67200,
+        "VerticalVelocity": 400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 938,
+        "Height": 67600,
+        "VerticalVelocity": 0,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 939,
+        "Height": 67600,
+        "VerticalVelocity": -400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 940,
+        "Height": 67200,
+        "VerticalVelocity": -800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 941,
+        "Height": 66400,
+        "VerticalVelocity": -1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 942,
+        "Height": 65200,
+        "VerticalVelocity": -1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 943,
+        "Height": 63600,
+        "VerticalVelocity": -2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 944,
+        "Height": 61600,
+        "VerticalVelocity": -2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 945,
+        "Height": 59200,
+        "VerticalVelocity": -2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 946,
+        "Height": 56400,
+        "VerticalVelocity": -3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 947,
+        "Height": 53200,
+        "VerticalVelocity": -3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 948,
+        "Height": 49600,
+        "VerticalVelocity": -4000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 949,
+        "Height": 45600,
+        "VerticalVelocity": -4400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 950,
+        "Height": 41200,
+        "VerticalVelocity": -4800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 951,
+        "Height": 36400,
+        "VerticalVelocity": -5200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 952,
+        "Height": 31200,
+        "VerticalVelocity": -5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 953,
+        "Height": 25600,
+        "VerticalVelocity": -6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 954,
+        "Height": 19600,
+        "VerticalVelocity": -6400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 955,
+        "Height": 13200,
+        "VerticalVelocity": -6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 956,
+        "Height": 6400,
+        "VerticalVelocity": -7200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 957,
+        "Height": 0,
+        "VerticalVelocity": 0,
+        "IsGrounded": true
+      }
+    ],
+    "visual": {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "heroine_idle_02_0",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Idle/heroine_idle_02.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0
+      },
+      "size": {
+        "x": 112.319992,
+        "y": 244.08
+      },
+      "footY": 0,
+      "state": {
+        "frame": 967,
+        "clock": 967,
+        "position": 480000,
+        "height": 0,
+        "velocity": 0,
+        "grounded": true,
+        "support": "floor",
+        "worldX": 8,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318760714,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 1,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "jumpLong": {
+    "actualTimestampedKeyboard": true,
+    "heldFrames": 24,
+    "before": 1061,
+    "start": 1064,
+    "peak": 186000,
+    "trace": [
+      {
+        "Frame": 1064,
+        "Height": 12000,
+        "VerticalVelocity": 11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1065,
+        "Height": 23600,
+        "VerticalVelocity": 11200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1066,
+        "Height": 34800,
+        "VerticalVelocity": 10800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1067,
+        "Height": 45600,
+        "VerticalVelocity": 10400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1068,
+        "Height": 56000,
+        "VerticalVelocity": 10000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1069,
+        "Height": 66000,
+        "VerticalVelocity": 9600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1070,
+        "Height": 75600,
+        "VerticalVelocity": 9200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1071,
+        "Height": 84800,
+        "VerticalVelocity": 8800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1072,
+        "Height": 93600,
+        "VerticalVelocity": 8400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1073,
+        "Height": 102000,
+        "VerticalVelocity": 8000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1074,
+        "Height": 110000,
+        "VerticalVelocity": 7600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1075,
+        "Height": 117600,
+        "VerticalVelocity": 7200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1076,
+        "Height": 124800,
+        "VerticalVelocity": 6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1077,
+        "Height": 131600,
+        "VerticalVelocity": 6400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1078,
+        "Height": 138000,
+        "VerticalVelocity": 6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1079,
+        "Height": 144000,
+        "VerticalVelocity": 5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1080,
+        "Height": 149600,
+        "VerticalVelocity": 5200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1081,
+        "Height": 154800,
+        "VerticalVelocity": 4800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1082,
+        "Height": 159600,
+        "VerticalVelocity": 4400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1083,
+        "Height": 164000,
+        "VerticalVelocity": 4000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1084,
+        "Height": 168000,
+        "VerticalVelocity": 3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1085,
+        "Height": 171600,
+        "VerticalVelocity": 3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1086,
+        "Height": 174800,
+        "VerticalVelocity": 2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1087,
+        "Height": 177600,
+        "VerticalVelocity": 2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1088,
+        "Height": 180000,
+        "VerticalVelocity": 2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1089,
+        "Height": 182000,
+        "VerticalVelocity": 1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1090,
+        "Height": 183600,
+        "VerticalVelocity": 1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1091,
+        "Height": 184800,
+        "VerticalVelocity": 800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1092,
+        "Height": 185600,
+        "VerticalVelocity": 400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1093,
+        "Height": 186000,
+        "VerticalVelocity": 0,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1094,
+        "Height": 186000,
+        "VerticalVelocity": -400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1095,
+        "Height": 185600,
+        "VerticalVelocity": -800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1096,
+        "Height": 184800,
+        "VerticalVelocity": -1200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1097,
+        "Height": 183600,
+        "VerticalVelocity": -1600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1098,
+        "Height": 182000,
+        "VerticalVelocity": -2000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1099,
+        "Height": 180000,
+        "VerticalVelocity": -2400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1100,
+        "Height": 177600,
+        "VerticalVelocity": -2800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1101,
+        "Height": 174800,
+        "VerticalVelocity": -3200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1102,
+        "Height": 171600,
+        "VerticalVelocity": -3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1102,
+        "Height": 171600,
+        "VerticalVelocity": -3600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1103,
+        "Height": 168000,
+        "VerticalVelocity": -4000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1104,
+        "Height": 164000,
+        "VerticalVelocity": -4400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1105,
+        "Height": 159600,
+        "VerticalVelocity": -4800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1106,
+        "Height": 154800,
+        "VerticalVelocity": -5200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1107,
+        "Height": 149600,
+        "VerticalVelocity": -5600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1108,
+        "Height": 144000,
+        "VerticalVelocity": -6000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1109,
+        "Height": 138000,
+        "VerticalVelocity": -6400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1110,
+        "Height": 131600,
+        "VerticalVelocity": -6800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1111,
+        "Height": 124800,
+        "VerticalVelocity": -7200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1112,
+        "Height": 117600,
+        "VerticalVelocity": -7600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1113,
+        "Height": 110000,
+        "VerticalVelocity": -8000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1114,
+        "Height": 102000,
+        "VerticalVelocity": -8400,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1115,
+        "Height": 93600,
+        "VerticalVelocity": -8800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1117,
+        "Height": 75600,
+        "VerticalVelocity": -9600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1118,
+        "Height": 66000,
+        "VerticalVelocity": -10000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1120,
+        "Height": 45600,
+        "VerticalVelocity": -10800,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1121,
+        "Height": 34800,
+        "VerticalVelocity": -11200,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1122,
+        "Height": 23600,
+        "VerticalVelocity": -11600,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1123,
+        "Height": 12000,
+        "VerticalVelocity": -12000,
+        "IsGrounded": false
+      },
+      {
+        "Frame": 1124,
+        "Height": 0,
+        "VerticalVelocity": 0,
+        "IsGrounded": true
+      }
+    ],
+    "visual": {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "heroine_idle_09_0",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Idle/heroine_idle_09.png",
+      "pivot": {
+        "x": 0.5,
+        "y": 0
+      },
+      "size": {
+        "x": 112.319992,
+        "y": 244.08
+      },
+      "footY": 0,
+      "state": {
+        "frame": 1133,
+        "clock": 1133,
+        "position": 480000,
+        "height": 0,
+        "velocity": 0,
+        "grounded": true,
+        "support": "floor",
+        "worldX": 8,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318760714,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 1,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "heldLanding": {
+    "heldLandingStayedGrounded": true,
+    "state": {
+      "frame": 1532,
+      "clock": 1532,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 8,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "sameFrameTap": {
+    "actualQueuedPressAndRelease": true,
+    "peak": 22000,
+    "state": {
+      "frame": 1711,
+      "clock": 1711,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 8,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "importedMove": {
+    "samplerDisabled": true,
+    "samplerControllerAbsent": true,
+    "sprite": "move_03",
+    "path": "Assets/Art/Sprites/Characters/Heroine/Move/move_03.png",
+    "pivot": {
+      "x": 0.5,
+      "y": 0.0625
+    },
+    "size": {
+      "x": 276.47998,
+      "y": 276.47998
+    },
+    "footY": 0,
+    "state": {
+      "frame": 1837,
+      "clock": 1837,
+      "position": 552000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 9.2,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 0,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "jumpPoses": [
+    {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "jump_rise",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Jump/jump_rise.png",
+      "pivot": {
+        "x": 0.49609375,
+        "y": 0.0546875
+      },
+      "size": {
+        "x": 276.47998,
+        "y": 276.47998
+      },
+      "footY": 118.8,
+      "state": {
+        "frame": 1988,
+        "clock": 1988,
+        "position": 552000,
+        "height": 66000,
+        "velocity": 9600,
+        "grounded": false,
+        "support": null,
+        "worldX": 9.2,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318760714,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 0,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "jump_apex",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Jump/jump_apex.png",
+      "pivot": {
+        "x": 0.49609375,
+        "y": 0.0546875
+      },
+      "size": {
+        "x": 276.47998,
+        "y": 276.47998
+      },
+      "footY": 334.08,
+      "state": {
+        "frame": 2169,
+        "clock": 2169,
+        "position": 552000,
+        "height": 185600,
+        "velocity": 400,
+        "grounded": false,
+        "support": null,
+        "worldX": 9.2,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318760714,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 0,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "jump_fall",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Jump/jump_fall.png",
+      "pivot": {
+        "x": 0.49609375,
+        "y": 0.0546875
+      },
+      "size": {
+        "x": 276.47998,
+        "y": 276.47998
+      },
+      "footY": 324,
+      "state": {
+        "frame": 2357,
+        "clock": 2357,
+        "position": 552000,
+        "height": 180000,
+        "velocity": -2400,
+        "grounded": false,
+        "support": null,
+        "worldX": 9.2,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318760714,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 0,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "airPause": {
+    "paused": {
+      "frame": 2503,
+      "clock": 2503,
+      "position": 552000,
+      "height": 75600,
+      "velocity": 9200,
+      "grounded": false,
+      "support": null,
+      "worldX": 9.2,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": true,
+        "scale": 0,
+        "focus": "ResumeButton",
+        "buttons": [
+          {
+            "name": "RetreatButton",
+            "interactable": false
+          },
+          {
+            "name": "TransformationAnimationSetting",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "LoadCheckpointButton",
+            "interactable": false
+          },
+          {
+            "name": "AudioSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "GamepadSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "DialogueTextSpeedButton",
+            "interactable": true
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ResumeButton",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "VibrationSetting",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "KeyboardSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "OwnedCardsButton",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "after": {
+      "frame": 2536,
+      "clock": 2536,
+      "position": 552000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 9.2,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318760714,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "airViewReentry": {
+    "naturalDestroyAndViewReentry": true,
+    "frozen": {
+      "samplerDisabled": true,
+      "samplerControllerAbsent": true,
+      "sprite": "jump_rise",
+      "path": "Assets/Art/Sprites/Characters/Heroine/Jump/jump_rise.png",
+      "pivot": {
+        "x": 0.49609375,
+        "y": 0.0546875
+      },
+      "size": {
+        "x": 276.47998,
+        "y": 276.47998
+      },
+      "footY": 118.8,
+      "state": {
+        "frame": 2842,
+        "clock": 2842,
+        "position": 552000,
+        "height": 66000,
+        "velocity": 9600,
+        "grounded": false,
+        "support": null,
+        "worldX": 9.2,
+        "Facing": 1,
+        "map": "validation-landing-32",
+        "baseState": {
+          "runtimeLayoutTrial": false,
+          "root": {
+            "root": -318758936,
+            "session": 1268083126,
+            "presented": true,
+            "ended": false,
+            "resources": 11,
+            "dialogs": 0,
+            "events": 1,
+            "cameras": 1,
+            "listeners": 1,
+            "audio": 3
+          },
+          "view": -318761672,
+          "open": true,
+          "rootParent": true,
+          "layer": "outside-exploration-entry",
+          "session": 1268083126,
+          "core": -524705130,
+          "runtime": 1807918464,
+          "phase": "Dungeon",
+          "position": 0,
+          "hp": 100,
+          "revision": 1,
+          "pending": false,
+          "logicalFrame": 0,
+          "paused": false,
+          "scale": 0,
+          "focus": "CloseOutsideExploration",
+          "buttons": [
+            {
+              "name": "PauseButton",
+              "interactable": false
+            },
+            {
+              "name": "CloseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "ManualSaveButton",
+              "interactable": false
+            },
+            {
+              "name": "NewGameButton",
+              "interactable": false
+            },
+            {
+              "name": "CardCollectionButton",
+              "interactable": false
+            },
+            {
+              "name": "PauseOutsideExploration",
+              "interactable": true
+            },
+            {
+              "name": "OpenCustomizationEditor",
+              "interactable": false
+            },
+            {
+              "name": "OpenCustomizationUnlocks",
+              "interactable": false
+            }
+          ]
+        }
+      }
+    },
+    "after": {
+      "frame": 2880,
+      "clock": 2880,
+      "position": 552000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 9.2,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318761672,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "left": {
+    "actualInputSystemKeyboard": true,
+    "physicalKeyboardNotRun": true,
+    "start": 600000,
+    "frame": 21545,
+    "stopped": 0,
+    "trace": [
+      {
+        "frame": 21552,
+        "position": 570000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 65.9999542,
+        "tile": 400,
+        "cameraPixels": 1026,
+        "projection": 108
+      },
+      {
+        "frame": 21559,
+        "position": 528000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 390.399963,
+        "tile": 400,
+        "cameraPixels": 950.399963,
+        "projection": 108
+      },
+      {
+        "frame": 21566,
+        "position": 486000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 314.8,
+        "tile": 400,
+        "cameraPixels": 874.7999,
+        "projection": 108
+      },
+      {
+        "frame": 21573,
+        "position": 444000,
+        "screen": {
+          "x": 907.2,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21580,
+        "position": 402000,
+        "screen": {
+          "x": 831.6,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21586,
+        "position": 366000,
+        "screen": {
+          "x": 766.8,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21593,
+        "position": 324000,
+        "screen": {
+          "x": 691.2,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21599,
+        "position": 288000,
+        "screen": {
+          "x": 626.4,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21606,
+        "position": 246000,
+        "screen": {
+          "x": 550.8,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21612,
+        "position": 210000,
+        "screen": {
+          "x": 486,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21619,
+        "position": 168000,
+        "screen": {
+          "x": 410.4,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21626,
+        "position": 126000,
+        "screen": {
+          "x": 334.8,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21633,
+        "position": 84000,
+        "screen": {
+          "x": 259.2,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21639,
+        "position": 48000,
+        "screen": {
+          "x": 194.4,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21645,
+        "position": 12000,
+        "screen": {
+          "x": 129.6,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21652,
+        "position": 0,
+        "screen": {
+          "x": 108,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21658,
+        "position": 0,
+        "screen": {
+          "x": 108,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21665,
+        "position": 0,
+        "screen": {
+          "x": 108,
+          "y": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      }
+    ],
+    "state": {
+      "frame": 21693,
+      "clock": 21693,
+      "position": 0,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 0,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "middle": {
+    "actualInputSystemKeyboard": true,
+    "physicalKeyboardNotRun": true,
+    "start": 0,
+    "frame": 21929,
+    "stopped": 1044000,
+    "trace": [
+      {
+        "frame": 21936,
+        "position": 30000,
+        "screen": {
+          "x": 162,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21943,
+        "position": 72000,
+        "screen": {
+          "x": 237.6,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21949,
+        "position": 108000,
+        "screen": {
+          "x": 302.4,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21956,
+        "position": 150000,
+        "screen": {
+          "x": 378,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21962,
+        "position": 186000,
+        "screen": {
+          "x": 442.8,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21968,
+        "position": 222000,
+        "screen": {
+          "x": 507.6,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21976,
+        "position": 270000,
+        "screen": {
+          "x": 594,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21982,
+        "position": 306000,
+        "screen": {
+          "x": 658.8,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21989,
+        "position": 348000,
+        "screen": {
+          "x": 734.4,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 21995,
+        "position": 384000,
+        "screen": {
+          "x": 799.2,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 22002,
+        "position": 426000,
+        "screen": {
+          "x": 874.8,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 22009,
+        "position": 468000,
+        "screen": {
+          "x": 950.4,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 292,
+        "tile": 400,
+        "cameraPixels": 852,
+        "projection": 108
+      },
+      {
+        "frame": 22015,
+        "position": 504000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 347.199921,
+        "tile": 400,
+        "cameraPixels": 907.199951,
+        "projection": 108
+      },
+      {
+        "frame": 22022,
+        "position": 546000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 22.8000031,
+        "tile": 400,
+        "cameraPixels": 982.7999,
+        "projection": 108
+      },
+      {
+        "frame": 22028,
+        "position": 582000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 87.59993,
+        "tile": 400,
+        "cameraPixels": 1047.6,
+        "projection": 108
+      },
+      {
+        "frame": 22035,
+        "position": 624000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 163.199921,
+        "tile": 400,
+        "cameraPixels": 1123.2,
+        "projection": 108
+      },
+      {
+        "frame": 22042,
+        "position": 666000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 238.799988,
+        "tile": 400,
+        "cameraPixels": 1198.79993,
+        "projection": 108
+      },
+      {
+        "frame": 22049,
+        "position": 708000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 314.399963,
+        "tile": 400,
+        "cameraPixels": 1274.3999,
+        "projection": 108
+      },
+      {
+        "frame": 22055,
+        "position": 744000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 379.199921,
+        "tile": 400,
+        "cameraPixels": 1339.2,
+        "projection": 108
+      },
+      {
+        "frame": 22062,
+        "position": 786000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 54.7999878,
+        "tile": 400,
+        "cameraPixels": 1414.79993,
+        "projection": 108
+      },
+      {
+        "frame": 22068,
+        "position": 822000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 119.599915,
+        "tile": 400,
+        "cameraPixels": 1479.6,
+        "projection": 108
+      },
+      {
+        "frame": 22075,
+        "position": 864000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 195.19989,
+        "tile": 400,
+        "cameraPixels": 1555.2,
+        "projection": 108
+      },
+      {
+        "frame": 22082,
+        "position": 906000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 270.8,
+        "tile": 400,
+        "cameraPixels": 1630.79993,
+        "projection": 108
+      },
+      {
+        "frame": 22089,
+        "position": 948000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 346.399963,
+        "tile": 400,
+        "cameraPixels": 1706.3999,
+        "projection": 108
+      },
+      {
+        "frame": 22096,
+        "position": 990000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 21.999939,
+        "tile": 400,
+        "cameraPixels": 1782,
+        "projection": 108
+      },
+      {
+        "frame": 22103,
+        "position": 1032000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 97.60004,
+        "tile": 400,
+        "cameraPixels": 1857.6,
+        "projection": 108
+      }
+    ],
+    "state": {
+      "frame": 22131,
+      "clock": 22131,
+      "position": 1044000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 17.4,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "padMove": {
+    "actualInputSystemDpad": true,
+    "physicalPadNotRun": true,
+    "start": 1044000,
+    "moved": {
+      "frame": 22371,
+      "clock": 22371,
+      "position": 1206000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 20.1,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "after": {
+      "frame": 22381,
+      "clock": 22381,
+      "position": 1206000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 20.1,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "heldPause": {
+    "actualKeyboardAndPauseRaycast": true,
+    "physicalInputNotRun": true,
+    "paused": {
+      "frame": 22455,
+      "clock": 22455,
+      "position": 1308000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 21.8,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": true,
+        "scale": 0,
+        "focus": "GamepadSettingsButton",
+        "buttons": [
+          {
+            "name": "RetreatButton",
+            "interactable": false
+          },
+          {
+            "name": "TransformationAnimationSetting",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "LoadCheckpointButton",
+            "interactable": false
+          },
+          {
+            "name": "AudioSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "GamepadSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "DialogueTextSpeedButton",
+            "interactable": true
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "ResumeButton",
+            "interactable": true
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "VibrationSetting",
+            "interactable": true
+          },
+          {
+            "name": "KeyboardSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "OwnedCardsButton",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "after": {
+      "frame": 22522,
+      "clock": 22522,
+      "position": 1218000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 20.3,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "padPause": {
+    "actualInputSystemStart": true,
+    "physicalPadNotRun": true,
+    "paused": {
+      "frame": 22653,
+      "clock": 22653,
+      "position": 1218000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 20.3,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": true,
+        "scale": 0,
+        "focus": "ResumeButton",
+        "buttons": [
+          {
+            "name": "RetreatButton",
+            "interactable": false
+          },
+          {
+            "name": "TransformationAnimationSetting",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "LoadCheckpointButton",
+            "interactable": false
+          },
+          {
+            "name": "AudioSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "GamepadSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "DialogueTextSpeedButton",
+            "interactable": true
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "ResumeButton",
+            "interactable": true
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "VibrationSetting",
+            "interactable": true
+          },
+          {
+            "name": "KeyboardSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "OwnedCardsButton",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "removedPause": true,
+    "after": {
+      "frame": 22674,
+      "clock": 22674,
+      "position": 1218000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 20.3,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "right": {
+    "actualInputSystemKeyboard": true,
+    "physicalKeyboardNotRun": true,
+    "start": 1218000,
+    "frame": 22719,
+    "stopped": 1920000,
+    "trace": [
+      {
+        "frame": 22726,
+        "position": 1248000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 86.3999,
+        "tile": 400,
+        "cameraPixels": 2246.4,
+        "projection": 108
+      },
+      {
+        "frame": 22732,
+        "position": 1284000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 151.199951,
+        "tile": 400,
+        "cameraPixels": 2311.2,
+        "projection": 108
+      },
+      {
+        "frame": 22739,
+        "position": 1326000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 226.800049,
+        "tile": 400,
+        "cameraPixels": 2386.8,
+        "projection": 108
+      },
+      {
+        "frame": 22745,
+        "position": 1362000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 291.6001,
+        "tile": 400,
+        "cameraPixels": 2451.59985,
+        "projection": 108
+      },
+      {
+        "frame": 22751,
+        "position": 1398000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 356.3999,
+        "tile": 400,
+        "cameraPixels": 2516.4,
+        "projection": 108
+      },
+      {
+        "frame": 22757,
+        "position": 1434000,
+        "screen": {
+          "x": 960.000061,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 21.1999512,
+        "tile": 400,
+        "cameraPixels": 2581.2,
+        "projection": 108
+      },
+      {
+        "frame": 22764,
+        "position": 1476000,
+        "screen": {
+          "x": 1012.80011,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22770,
+        "position": 1512000,
+        "screen": {
+          "x": 1077.60022,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2603.99976,
+        "projection": 108
+      },
+      {
+        "frame": 22777,
+        "position": 1554000,
+        "screen": {
+          "x": 1153.20007,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22783,
+        "position": 1590000,
+        "screen": {
+          "x": 1218.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22789,
+        "position": 1626000,
+        "screen": {
+          "x": 1282.80017,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2603.99976,
+        "projection": 108
+      },
+      {
+        "frame": 22795,
+        "position": 1662000,
+        "screen": {
+          "x": 1347.60022,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2603.99976,
+        "projection": 108
+      },
+      {
+        "frame": 22801,
+        "position": 1698000,
+        "screen": {
+          "x": 1412.4,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22808,
+        "position": 1740000,
+        "screen": {
+          "x": 1488.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22814,
+        "position": 1776000,
+        "screen": {
+          "x": 1552.80017,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2603.99976,
+        "projection": 108
+      },
+      {
+        "frame": 22820,
+        "position": 1812000,
+        "screen": {
+          "x": 1617.60022,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2603.99976,
+        "projection": 108
+      },
+      {
+        "frame": 22828,
+        "position": 1860000,
+        "screen": {
+          "x": 1704.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22835,
+        "position": 1902000,
+        "screen": {
+          "x": 1779.60022,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2603.99976,
+        "projection": 108
+      },
+      {
+        "frame": 22842,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22848,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22854,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22862,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22868,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22875,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22882,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22888,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22895,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22902,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22909,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22916,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22922,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22933,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      },
+      {
+        "frame": 22940,
+        "position": 1920000,
+        "screen": {
+          "x": 1812.00012,
+          "y": 0
+        },
+        "scale": {
+          "x": -1,
+          "y": 1
+        },
+        "floorPhase": 43.9998779,
+        "tile": 400,
+        "cameraPixels": 2604,
+        "projection": 108
+      }
+    ],
+    "state": {
+      "frame": 22968,
+      "clock": 22968,
+      "position": 1920000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 32,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "hiddenEditorPause": {
+    "beforeFrame": 23264,
+    "pos": 1920000,
+    "hidden": {
+      "frame": 23264,
+      "clock": 23264,
+      "position": 1920000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 32,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": false,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": false,
+        "rootParent": true,
+        "layer": "return-hub",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "OutsideExplorationEntry",
+        "buttons": [
+          {
+            "name": "CancelDungeonSelection",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": true
+          },
+          {
+            "name": "OpenTokenExchange",
+            "interactable": true
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": true
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": true
+          },
+          {
+            "name": "DungeonChoice_0",
+            "interactable": true
+          },
+          {
+            "name": "OutsideExplorationEntry",
+            "interactable": true
+          },
+          {
+            "name": "SelectDepartureStyle",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "ConfirmDungeonSelection",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    },
+    "after": {
+      "frame": 23275,
+      "clock": 23275,
+      "position": 1920000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 32,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -318758936,
+          "session": 1268083126,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -318762140,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1268083126,
+        "core": -524705130,
+        "runtime": 1807918464,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "naturalDestroy": {
+    "naturalDestroy": true,
+    "oldView": -318762140,
+    "newView": -318762860,
+    "sessionRetained": true,
+    "state": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -318758936,
+        "session": 1268083126,
+        "presented": true,
+        "ended": false,
+        "resources": 11,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -318762860,
+      "open": true,
+      "rootParent": true,
+      "layer": "outside-exploration-entry",
+      "session": 1268083126,
+      "core": -524705130,
+      "runtime": 1807918464,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "CloseOutsideExploration",
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": false
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": false
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": false
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": false
+        },
+        {
+          "name": "PauseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "CloseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        }
+      ]
+    }
+  },
+  "afterDestroy": {
+    "frame": 23432,
+    "clock": 23432,
+    "position": 1920000,
+    "height": 0,
+    "velocity": 0,
+    "grounded": true,
+    "support": "floor",
+    "worldX": 32,
+    "Facing": 1,
+    "map": "validation-landing-32",
+    "baseState": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -318758936,
+        "session": 1268083126,
+        "presented": true,
+        "ended": false,
+        "resources": 11,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -318762860,
+      "open": true,
+      "rootParent": true,
+      "layer": "outside-exploration-entry",
+      "session": 1268083126,
+      "core": -524705130,
+      "runtime": 1807918464,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "CloseOutsideExploration",
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": false
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": false
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": false
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": false
+        },
+        {
+          "name": "PauseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "CloseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        }
+      ]
+    }
+  },
+  "resume": {
+    "runtimeLayoutTrial": false,
+    "root": {
+      "root": -318758936,
+      "session": 1268083126,
+      "presented": true,
+      "ended": false,
+      "resources": 12,
+      "dialogs": 0,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    },
+    "view": -318762860,
+    "open": true,
+    "rootParent": true,
+    "layer": "outside-exploration-entry",
+    "session": 1268083126,
+    "core": -524705130,
+    "runtime": 1807918464,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0,
+    "paused": false,
+    "scale": 1,
+    "focus": "CloseOutsideExploration",
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": false
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": false
+      },
+      {
+        "name": "PauseOutsideExploration",
+        "interactable": true
+      },
+      {
+        "name": "CloseOutsideExploration",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      }
+    ]
+  },
+  "back": {
+    "immediate": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -318758936,
+        "session": 1268083126,
+        "presented": false,
+        "ended": false,
+        "resources": 12,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -318762860,
+      "open": false,
+      "rootParent": true,
+      "layer": "return-hub",
+      "session": 1268083126,
+      "core": -524705130,
+      "runtime": 1807918464,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "OutsideExplorationEntry",
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": false
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": false
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": false
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": false
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        }
+      ]
+    },
+    "after": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -318758936,
+        "session": 1268083126,
+        "presented": false,
+        "ended": false,
+        "resources": 12,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -318762860,
+      "open": false,
+      "rootParent": true,
+      "layer": "return-hub",
+      "session": 1268083126,
+      "core": -524705130,
+      "runtime": 1807918464,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "OutsideExplorationEntry",
+      "buttons": [
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        }
+      ]
+    }
+  },
+  "reopened": {
+    "runtimeLayoutTrial": false,
+    "root": {
+      "root": -318758936,
+      "session": 1268083126,
+      "presented": true,
+      "ended": false,
+      "resources": 12,
+      "dialogs": 0,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    },
+    "view": -318762860,
+    "open": true,
+    "rootParent": true,
+    "layer": "outside-exploration-entry",
+    "session": 1268083126,
+    "core": -524705130,
+    "runtime": 1807918464,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0,
+    "paused": false,
+    "scale": 1,
+    "focus": "CloseOutsideExploration",
+    "buttons": [
+      {
+        "name": "PauseButton",
+        "interactable": false
+      },
+      {
+        "name": "CardCollectionButton",
+        "interactable": false
+      },
+      {
+        "name": "CloseOutsideExploration",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "interactable": false
+      },
+      {
+        "name": "NewGameButton",
+        "interactable": false
+      },
+      {
+        "name": "PauseOutsideExploration",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "interactable": false
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "interactable": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "implemented": "outside descending footpoint/top support and walkoff to unchanged safetyfloor, Root-owned support identity across View/host lifetimes; definition-driven thin Ground display",
+  "validationOnly": {
+    "id": "validation-landing-32",
+    "width": 32,
+    "start": 8,
+    "horizontalSpeed": 6,
+    "top": {
+      "left": 12,
+      "right": 16,
+      "height": 1
+    },
+    "jumpSpeed": 12,
+    "gravity": 24,
+    "releasedRiseCap": 4,
+    "fixedPointPerUnit": 60000,
+    "productMapOrBalance": false,
+    "heightReason": "A full existing jump from top1 fits below HUD, avoiding unrelated vertical camera scope"
+  },
+  "contactModel": "Point foot, closed xends, descending crossingx and endx must both be within surface. Crossed highest height thenOrdinalID. No intermediate landing if endx outside. Walkoff drops support immediately, V0 then gravity->-400 atframeend. Validation choices, not product solid/oneway decision.",
+  "undefinedProduct": [
+    "startmap/physical values registration",
+    "solid/one-way/side/underside/ceiling/bodywidth policies"
+  ],
+  "notImplemented": [
+    "doublejump/wall/dash/water/fall damage/no-floor death/combat",
+    "outside persistent save/dungeon roundtrip"
+  ],
+  "assets": "Existing Ground/Idle/Move/Jump/background/JikiTourai/importPPU/pivots unchanged. No new raster or generated character. Root Camera projection unchanged.",
+  "unverified": [
+    "player build",
+    "physical input/IME",
+    "auditory review",
+    "allHotReload",
+    "productstat/Itemskip/NPC/oldextremenames"
+  ],
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095",
+    "D05/factory/S08"
+  ]
+}

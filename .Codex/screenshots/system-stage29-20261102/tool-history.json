@@ -1,0 +1,15 @@
+{
+  "editorPid": 137059,
+  "sameVmModelAuthentication": true,
+  "restarted": false,
+  "noDuplicateUncertainOperations": true,
+  "sourceVersion": "v1",
+  "fullWrapperTimedOut": true,
+  "normalReloadAndWarmup": "Existing job/status/CPU/log tracked; outcomes recovered, no force/VM/auth changes.",
+  "priorStage28": "../system-stage28-20261102/README.md",
+  "preTestRenderGuard": "After domain reload Screen640 had no RT. No tests started. Normal Small render initialized both RT, then strict preflight passed.",
+  "nativeHelperFailure": "First LandPlatform reached support/top then immediate key-release x-equality failed. Readback x14.9/top1/v0/support valid. Helper now waits neutral input adoption and stops approach atx14; no product source or test expectation changed.",
+  "hostApproachHelperFailure": "A fixed 4000ms left approach followed by jump did not land; no host close had occurred. Readback floor14.2. Replaced wall-clock approach with actual input to measured floor9, then same landing and host preservation checks passed. Product source and expected support unchanged.",
+  "legacyHelperFilename": "Already running inherited helper serialized exact v1 hashes through a legacy v4 filename alias; not a fourth source revision. Final receipt/version and all15hash are v1.",
+  "saveBaseline": "Recovered native proof hashes were measured after stopped helper; file mtime from startup retained; initial held-entry and stale legacy-input in-process save equality assertions passed before original Python stop. See native-play saveBaselineScope."
+}

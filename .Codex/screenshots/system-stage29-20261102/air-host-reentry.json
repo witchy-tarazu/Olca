@@ -1,0 +1,173 @@
+{
+  "airHostPreserved": true,
+  "frozen": {
+    "frame": 29362,
+    "clock": 29362,
+    "position": 852000,
+    "height": 83600,
+    "velocity": 11200,
+    "grounded": false,
+    "support": null,
+    "worldX": 14.2,
+    "Facing": 1,
+    "map": "validation-landing-32",
+    "baseState": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -318758936,
+        "session": 1268083126,
+        "presented": true,
+        "ended": false,
+        "resources": 10,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -318767596,
+      "open": true,
+      "rootParent": true,
+      "layer": "outside-exploration-entry",
+      "session": 1268083126,
+      "core": 40633710,
+      "runtime": -355486396,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 0,
+      "focus": "CloseOutsideExploration",
+      "buttons": [
+        {
+          "name": "PauseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "CloseOutsideExploration",
+          "interactable": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": false
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": false
+        },
+        {
+          "name": "PauseButton",
+          "interactable": false
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": false
+        }
+      ]
+    }
+  },
+  "after": {
+    "frame": 29395,
+    "clock": 29395,
+    "position": 852000,
+    "height": 60000,
+    "velocity": 0,
+    "grounded": true,
+    "support": "validation-top",
+    "worldX": 14.2,
+    "Facing": 1,
+    "map": "validation-landing-32",
+    "baseState": {
+      "runtimeLayoutTrial": false,
+      "root": {
+        "root": -318758936,
+        "session": 1268083126,
+        "presented": false,
+        "ended": false,
+        "resources": 10,
+        "dialogs": 0,
+        "events": 1,
+        "cameras": 1,
+        "listeners": 1,
+        "audio": 3
+      },
+      "view": -318767596,
+      "open": false,
+      "rootParent": true,
+      "layer": "return-hub",
+      "session": 1268083126,
+      "core": 40633710,
+      "runtime": -355486396,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0,
+      "paused": false,
+      "scale": 1,
+      "focus": "OutsideExplorationEntry",
+      "buttons": [
+        {
+          "name": "OpenCustomizationUnlocks",
+          "interactable": false
+        },
+        {
+          "name": "ManualSaveButton",
+          "interactable": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "interactable": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "interactable": true
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "interactable": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "interactable": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "interactable": false
+        },
+        {
+          "name": "CardCollectionButton",
+          "interactable": true
+        },
+        {
+          "name": "PauseButton",
+          "interactable": true
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "interactable": true
+        },
+        {
+          "name": "NewGameButton",
+          "interactable": true
+        }
+      ]
+    }
+  }
+}

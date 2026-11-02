@@ -1,0 +1,419 @@
+{
+  "stage": 29,
+  "version": "v1",
+  "reviewer": "/root/independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T11:13:27.057339+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "4d9cf5d20acb434e1f7354118a66fbad6c80b466c6897cb3c2d879cae8997cd4",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "c9490eb5814deeea2cde1a19ce2e3056b7959fc6f986423d823619d0338747a4",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "436bf85758535102ab060011c4b29596c40b2fd12981940eb30315f2095d44e2",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "viewedImageCount": 36,
+  "unresolvedRequiredVisualFindings": 0,
+  "images": [
+    {
+      "file": "system-stage29-outside-initial-fhd.png",
+      "sha256": "5ddb0b92d794a5803210ac38485fb72258564d0611324dd6c747898e725111b2",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-initial-4k.png",
+      "sha256": "c5adeab08c954f7e0639f443429e957b264056703fafc1d66e94007516b9dffb",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-outside-initial-4by3.png",
+      "sha256": "4fa760b34b313b0f5e2b92814176eb465e4827850c783856ba642f05fa696d5e",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-move-fhd.png",
+      "sha256": "b3649ba3dd3c8a9276ff571d38156e1b010429b8d1ed62847547b342891c172f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-move-4k.png",
+      "sha256": "f74f7dbd57c356cf5990dba6e8b50f70060b52dd9213057891c8dc74a77e509c",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-outside-move-4by3.png",
+      "sha256": "10e8ab2ce815e5c4d5b0357fd01a544b77c52adb4da613e3563a9a5238b99acc",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-jump-rise-fhd.png",
+      "sha256": "3e7df37925eeeba111cd6351674a3ed0d73fbfa5d42d1c1f490cdc6b5ffb52ea",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-jump-rise-4k.png",
+      "sha256": "f4e5d7679bd45813b4027cdad9f911006c31de5fd3fd66da402c5ea8e76900d8",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-jump-rise-4by3.png",
+      "sha256": "e690147ac7de3258d1aaf333f8bc38f1bca937f3ca732db33505bd18760757f8",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-jump-apex-fhd.png",
+      "sha256": "35e5be6314e66ff611f6d5a7057cf328c4dd2b19214a821493e3165131d7a0aa",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-jump-apex-4k.png",
+      "sha256": "31f063b40d1d5045010b76d0681a2aaae332378ddeff80a5aa6f6c7ab807a01a",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-jump-apex-4by3.png",
+      "sha256": "e5f81b4c99c9209617c5bc62279c6a0992a495aede8bed009ba63af850c9f5d1",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-jump-fall-fhd.png",
+      "sha256": "546d4f293c3ceaa4e84f4c0afc7cb20d6ca8a8f9bfa2fe0b2f789a66009dcebd",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-jump-fall-4k.png",
+      "sha256": "e6d2ae82481d50eed5580204d4dc77b6365d791161b3be1c74d47a667a571664",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-jump-fall-4by3.png",
+      "sha256": "495eb78cbaec134b3b3e5594f0a16fb53017ba9eca06e70a09cac3960e696e7e",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-platform-standing-fhd.png",
+      "sha256": "64d19a29959b334098ca4b5355f56abc484d1445730f1491396776a53b7e1a19",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-platform-standing-4k.png",
+      "sha256": "ec48ada0b206ca0f4e65c667bba47e86442976450d2d93890fa4132a69131517",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-platform-standing-4by3.png",
+      "sha256": "03bd4a003366fbf19fe55e7fc00b3f7e569110b11550c01a22bc6725e8c4a7fb",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-platform-jump-apex-fhd.png",
+      "sha256": "9a5d9986f9cfe5cd45370d4a349dc33bf526fb1f147082bbcab3124c1c86a0be",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-platform-jump-apex-4k.png",
+      "sha256": "e6c50d5563097577ef4012012e62a92de0a8eee57cfed52283b16e210f52ea9b",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-platform-jump-apex-4by3.png",
+      "sha256": "a32db4b64b9b076d03c9b992b9f45ecb3cf6c7af01928d17ec0a88df3deedaab",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-left-edge-fhd.png",
+      "sha256": "24f19e41de5fd2f0dc07b78edc0bd4334212cc7319509e9f549a98318062fbad",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-left-edge-4k.png",
+      "sha256": "fc8dc98d814379c62b208cfd245474525e253c764fff2ae22b4a6cbc74f47474",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-outside-left-edge-4by3.png",
+      "sha256": "a57eee76b57e36f953a52d6c3c5b0d0ecdbdd461b81021fa57b35dcc51de2688",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-follow-fhd.png",
+      "sha256": "b8cadc424fa775355003b8c1c3f06394a8a7daa4f94fcc93183f2bc2449eadfa",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-follow-4k.png",
+      "sha256": "d5f8c373fa9ae3be4a1f589dc90cec71f724f1ee5b9eff5b60b33ff0faf00821",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-outside-follow-4by3.png",
+      "sha256": "4d991423bb3edbf715228ca8fc7d6b9cfeb876f2b7b7fb1ce7512667d7da9b1d",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-right-edge-fhd.png",
+      "sha256": "17bac1ec3177aa6bc3ae77b5359e9877acde4efcc0fc0e2182551382a1fc6d7e",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-right-edge-4k.png",
+      "sha256": "e373c799f6e9fda85c1417674efb3e36a55805bc2da8601c5990fe74c2d78f65",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-outside-right-edge-4by3.png",
+      "sha256": "f0dff20ea51fb1d438ec94f931cf618112e43ff239c538552a82c0c938ff54cf",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-pause-fhd.png",
+      "sha256": "4543dd2507562668eac8cc7366fcb6ef0613ca7030482de6dcaf6a1cc06f1ec6",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-outside-pause-4k.png",
+      "sha256": "10676a3ac748e17fc17be75e58890dfecff790bba37896b252a42ab621ed72d3",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-outside-pause-4by3.png",
+      "sha256": "6ff5f05609499ac71a32400846b1f1504bf4b6791fbae24b6b05dc0dabde8b00",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-returned-hub-fhd.png",
+      "sha256": "3bd981bfc88109e061dd981dd611321c162baf2c326ace1fb68b4c8889b6502f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage29-returned-hub-4k.png",
+      "sha256": "54d86f3cdd582f0fce911346e2db1b1340ebe242f567f2b4d7524476d964b457",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage29-returned-hub-4by3.png",
+      "sha256": "d09e2eccc459edcdd7d93d4ceeabbe9f090390b50be52cf2c0d10e0985526a27",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    }
+  ],
+  "nativeCrops": [
+    {
+      "file": "system-stage29-platform-standing-4k.png",
+      "box": [
+        1760,
+        970,
+        2060,
+        1550
+      ],
+      "method": "Unscaled in-memory PNG crop; original file unchanged",
+      "viewed": true
+    },
+    {
+      "file": "system-stage29-platform-jump-apex-4k.png",
+      "box": [
+        1760,
+        300,
+        2060,
+        680
+      ],
+      "method": "Unscaled in-memory PNG crop; original file unchanged",
+      "viewed": true
+    },
+    {
+      "file": "system-stage29-outside-pause-4k.png",
+      "box": [
+        1600,
+        1230,
+        2300,
+        1400
+      ],
+      "method": "Unscaled in-memory PNG crop; original file unchanged",
+      "viewed": true
+    },
+    {
+      "file": "system-stage29-outside-right-edge-4k.png",
+      "box": [
+        3470,
+        1190,
+        3750,
+        1740
+      ],
+      "method": "Unscaled in-memory PNG crop; original file unchanged",
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "All 36 final images were actually opened: FHD and 4:3 at native size; 4K full views were viewer-resized and supplemented with four unscaled local crops.",
+    "Platform-standing soles meet the visible top surface without apparent penetration, stretch or clipping. Existing gray/black Idle, Move and three Jump poses remain visually coherent in scale and costume.",
+    "Elevated validation top is intentionally plain and low contrast; its upper edge and separate ケンショウ アシバ label remain discernible at all three ratios. This does not establish final product terrain art quality.",
+    "Left/right boundary labels remain complete; outside header and Pause/Back controls are readable. Pause dims the outside view without old host chrome superimposing the header. Returned hub controls and water-mirror/Jiki appearance show no newly observed visual regression."
+  ],
+  "baselineReferences": [
+    "Stage28 v4 outside-initial FHD/4K/4:3 actually reopened for standing appearance comparison; not a matched-frame/pixel-identity claim."
+  ],
+  "receipt": {
+    "file": "system-stage29-native-play-result.json",
+    "sha256": "81e3a544c9fb04bddc4985c69357dc291bc77ed1c04961125afd58fc07078638",
+    "present": true,
+    "sourceHashesMatch": true,
+    "scope": "Receipt presence and source manifest correspondence checked; runtime assertions were performed by parent, not by this visual reviewer."
+  },
+  "limitations": [
+    "Still images do not independently verify input, motion continuity, jump timing, collisions, resource lifetime, persistence, audio or physical devices.",
+    "32-cell terrain and elevated footpoint-only validation top are temporary validation fixtures, not completed product map/solid-side collision rules.",
+    "No matched-before capture was used to claim whole-scene exact equality; world position and pose differ between states.",
+    "No Unity commands, tests, product/source edits, asset changes or image-original modifications were performed."
+  ]
+}
