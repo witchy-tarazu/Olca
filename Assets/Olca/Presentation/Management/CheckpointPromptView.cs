@@ -87,7 +87,7 @@ namespace Olca.Presentation.Exploration
             var core=presentation.Core;double unit=Olca.Core.Logic.Integration.OutsideMovementDefinition.UnitsPerWorldUnit;
             float worldX=(float)(core.Position/unit),width=(float)(core.Definition.Width/unit);
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;
-            float camera=width<=viewport?width*.5f:Mathf.Clamp(worldX,viewport*.5f-1,width-viewport*.5f+1);
+            float camera=presentation.Camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
             float Origin(float x)=>(x-camera+viewport*.5f)*pixelsPerWorldUnit;
             Sprite sprite=idleSprite;
             if(!core.IsGrounded)sprite=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apexSprite:core.VerticalVelocity>0?riseSprite:fallSprite;

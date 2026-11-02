@@ -21,6 +21,23 @@ namespace Olca.Core.Logic.Integration
 
 namespace Olca.Core.Logic.Integration
 {
+    /// <summary>外界マップの水平カメラ方針。投影倍率やゲーム座標は変更しない。</summary>
+    public sealed class OutsideCameraPolicy
+    {
+        public long? FixedCenter {get;}
+        private OutsideCameraPolicy(long? center){FixedCenter=center;}
+        public static OutsideCameraPolicy Follow {get;}=new OutsideCameraPolicy(null);
+        public static OutsideCameraPolicy FixedAt(long center)
+        {if(center<0)throw new System.ArgumentOutOfRangeException(nameof(center));return new OutsideCameraPolicy(center);}
+        public float ResolveHorizontalCenter(long position,long mapWidth,float viewport)
+        {
+            if(mapWidth<=0||position<0||position>mapWidth||float.IsNaN(viewport)||float.IsInfinity(viewport)||viewport<=0||FixedCenter>mapWidth)throw new System.ArgumentOutOfRangeException(nameof(viewport));
+            double unit=OutsideMovementDefinition.UnitsPerWorldUnit;
+            float width=(float)(mapWidth/unit),target=(float)((FixedCenter??position)/unit);
+            // 追従時の既存余白1単位と、マップが画面より狭い場合の中央配置を維持する。
+            return width<=viewport?width*.5f:System.Math.Max(viewport*.5f-1,System.Math.Min(target,width-viewport*.5f+1));
+        }
+    }
     /// <summary>Root所有の外界状態。現在は製品登録と分けた検証地形のみを扱う。</summary>
     public sealed class OutsideExplorationSession : System.IDisposable
     {
@@ -29,11 +46,21 @@ namespace Olca.Core.Logic.Integration
             private OutsideExplorationSession owner;
             internal PresentationLease(OutsideExplorationSession owner){this.owner=owner;}
             public OutsideExplorationCore Core=>owner?.Core;
+            public OutsideCameraPolicy Camera=>owner?.Camera;
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
         }
         private PresentationLease current;
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain);
+        public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
+        // マップ入場前に設定する。表示中の変更は画面の急な移動を防ぐため受理しない。
+        public bool TryConfigureCamera(OutsideCameraPolicy policy)
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            if(policy==null)throw new System.ArgumentNullException(nameof(policy));
+            if(policy.FixedCenter.HasValue&&policy.FixedCenter.Value>Core.Definition.Width)throw new System.ArgumentOutOfRangeException(nameof(policy));
+            if(IsPresented)return false;Camera=policy;return true;
+        }
         public bool IsEnded{get;private set;}
         public bool IsPresented=>current!=null;
         public PresentationLease AttachPresentation()

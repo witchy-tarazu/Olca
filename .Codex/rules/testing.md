@@ -98,3 +98,6 @@ mockInput.SetKeyDown(GameKey.Attack, true);
 ## 再読込直後の未生成RenderTexture
 
 Screenが640×360でも、停止Editorの再読込直後にGameViewのRenderTextureが未生成の場合がある。textures空のままテストを開始せず、既存の低解像度GameView通常描画を一度行ってから、ScreenとGameView/PlayModeView双方の実RTが640×360であることを再読取する。要求送信だけや空配列のall判定で済ませず、前提未成立で停止した記録と、その後の実テスト結果を区別する。
+
+- domainreload後の初回`run_script`は、参照assemblyのcold compile時間も`timeout_ms`へ算入される。Stage30ではcompile280356msの後に描画同期処理が続き、300000msのTask待機予算が尽きた。既存jobがTimeoutでもTaskは継続し得るため再送せず、実Screen/2RTをmain-thread読取で確認してから進める。
+- 同じ根拠のあるcold helperには600000msの有限予算を使用可とし、テスト期待値/保存guard/描画サイズの判定は緩めない。これはUnityテストの再試行や製品処理時間の変更ではない。

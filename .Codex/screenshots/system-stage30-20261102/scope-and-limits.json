@@ -1,0 +1,26 @@
+{
+  "implemented": "horizontal follow/fixed camera policy retained by Root Session, config before entry only; same existing viewport projection/material/character size; default follow preserved",
+  "validation": "fixed center12 configured by proof before existing entry. Not a product room/startmap/camera registration. Existing validation map32/start8/speed6/jump/top1 not new product values.",
+  "notImplemented": [
+    "vertical camera",
+    "same-View room-trigger camera switching",
+    "product room bounds/exit/registration",
+    "solid/side/underside/body collision rules",
+    "dash/wall/water/combat/outside persistent save/dungeon roundtrip"
+  ],
+  "validationLabelOcclusion": "In fixed-move views the existing validation platform label is partly behind the player legs. Recorded visual limitation, not product room text or required camera-policy correction.",
+  "limits": "Fixed view does not stop movement at its visible edges. Registration must select follow for wide rooms or supply appropriate room bounds; no gameplay confinement added.",
+  "unverified": [
+    "player build",
+    "Stage30 native gamepad flow (existing regression separate)",
+    "physical input/IME",
+    "auditory review",
+    "allHotReload",
+    "product stat/Itemskip/NPC/extreme old names"
+  ],
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095",
+    "D05/factory/S08"
+  ]
+}

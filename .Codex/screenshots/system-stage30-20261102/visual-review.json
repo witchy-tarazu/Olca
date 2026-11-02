@@ -1,0 +1,229 @@
+{
+  "stage": 30,
+  "version": "v1",
+  "reviewer": "/root/independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T12:16:40.607067+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "8bfebc4aacf03c6534ec30419ffee8dc2eebf5817dba1c6fc3be70c3875d868f",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "2a367ccac18ca1ef02fc6294c6fa0aeca30161fffa539ee94b3fdad27d84e7e9",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "0e66f7632917187b4dec472a66c9188fe834d569a47f6f0c94faaf938a3466d5",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "viewedImageCount": 18,
+  "unresolvedRequiredVisualFindings": 0,
+  "images": [
+    {
+      "file": "system-stage30-camera-follow-start-fhd.png",
+      "sha256": "647b92e60c233bde1ce26519c5240e00beaf8977dbd10a5dd5c64329ff1eddf1",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-start-4k.png",
+      "sha256": "e9cd0ae53c059118825a75a634934c9ce24028f45592f9df53c76a8adb180888",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-start-4by3.png",
+      "sha256": "9e9d786ba59a58f2372940b653d443ddb85711c90cfed703f98f69b5c41e136d",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-move-fhd.png",
+      "sha256": "e494b27bd07c5f73344078bca02f9bcfd2432ba7ecf79a3c7c66d4edcbd4d89a",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-move-4k.png",
+      "sha256": "49aab36d14c87c53fd3e3036ca66a27a6fea0924a7d95761f8acb329a23e4b5b",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-move-4by3.png",
+      "sha256": "185b79b3f7e4b3f8c898be9650495ab282827b822fb1604637b1b8c67a8a076d",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-start-fhd.png",
+      "sha256": "938d3b6e9ac907207e40d82dcb40cf4af4f80be4586b7350747bb4c4589e0059",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-start-4k.png",
+      "sha256": "36cbc32f9338c9d483c4257e3fed3d9ef3a7fbcbb6b3e4a53062278b4646d0a7",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-start-4by3.png",
+      "sha256": "8fef5721357f70c102bf70819d61cd719da00bb83e62f40ccc2857974fa90c56",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-move-fhd.png",
+      "sha256": "6e33d381d1a48e7ec9c92778b9a7d9301c8063b9f41979a5cc2ec747b4c36f35",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-move-4k.png",
+      "sha256": "5a788ca0964799b66c206011ea111ab2bc9fd1344cc985ba78b31ff00be98757",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-move-4by3.png",
+      "sha256": "2641f1227330d4d6d9eceb5b415de1b9add05fe70065026482347153e22f758f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-platform-fhd.png",
+      "sha256": "448109e199116cfb7892a0ea5b7cd9caa8588ae4f895267a88f70e623c5a4edf",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-platform-4k.png",
+      "sha256": "e03a161128d0f47f0fd1d3921c5dca71fa474486de384c0c7cbd8db5cdbfcdba",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-fixed-platform-4by3.png",
+      "sha256": "8128775622a30de02e4d6491c1896d672501be033158eba229c6c78da414e3a4",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-restored-fhd.png",
+      "sha256": "b56f302822c87b185fe2197b7cfcdc9d849e8d9ba1730443f575f94aebda40fe",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-restored-4k.png",
+      "sha256": "6bf71b5a2164fe4ebde33f7cb59a0683a39ea6f7eeeb3f578c5fce7b8228987f",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-restored-4by3.png",
+      "sha256": "519cccdce4caff7fa26f76526769e8e3e63a76727ae0dab2b8af40247435cca5",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "nativeCrops": [
+    {
+      "file": "system-stage30-camera-fixed-platform-4k.png",
+      "box": [
+        2230,
+        970,
+        2530,
+        1550
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage30-camera-follow-restored-4k.png",
+      "box": [
+        1780,
+        970,
+        2060,
+        1550
+      ],
+      "viewed": true
+    }
+  ],
+  "observations": [
+    "All 18 final images actually opened. FHD/4:3 native full views; 4K full views viewer-resized with two unscaled sole/platform local crops.",
+    "Follow-start composition compared against actually reopened Stage29 outside-initial FHD: grounded body scale, feet, original cave/floor art and Jiki/water-mirror header remain visually consistent. No whole-image exact-byte assertion.",
+    "Fixed mode places the actor off center as expected without apparent zoom, stretch, clipping or contact displacement; fixed platform and restored follow show soles meeting the visible platform upper edge.",
+    "Header, Pause and Back remain readable in all ratios. Fixed-move actor legs obscure part of the validation world platform label; recorded as a validation-label limitation, not a required camera-policy correction."
+  ],
+  "receipt": {
+    "file": "system-stage30-native-camera-result.json",
+    "sha256": "68469d3214d899ad69398a9ff1bdb858d53e07ed86099f82a2b3d3650f86385e",
+    "sourceHashesMatch": true,
+    "scope": "Presence and source correspondence checked; actual input/save/trace assertions are parent evidence, not visual inference."
+  },
+  "limitations": [
+    "Still captures do not establish smooth follow/fixed motion, input correctness, physics, persistence, resource lifetime or physical-device behavior.",
+    "Fixed center 12 and elevated terrain are explicit validation fixtures, not registered product rooms or final terrain design.",
+    "No Unity commands, tests, product edits or original image modifications. Crops were in-memory and unscaled.",
+    "No new matched-before scene capture; Stage29 reference used for visual continuity only."
+  ]
+}
