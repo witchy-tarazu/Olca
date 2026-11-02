@@ -1,0 +1,47 @@
+{
+  "taskStartHead": "6f2fb89b5437dbf447b9614fffbabfaa2581f0f7",
+  "baseHead": "970bdbb60e827c9bd42a8600927640c1de151f6b",
+  "finalCandidate": "v5",
+  "sameEditorPid": 137059,
+  "v2Preliminary": {
+    "newTests": 15,
+    "duration": 19.61,
+    "notFinal": true
+  },
+  "v3": "compile only; local waiting coordinator stopped before tests, Editor preserved",
+  "staticFindingsResolved": [
+    "Close must block stale Chrome Save/NewGame in same rendering frame; reused outsideClosedFrame",
+    "Initial entry coordinates overlapped existing FHD equipment; placed below Outside entry and always reserved Help right400"
+  ],
+  "currentVerification": "v5 tests and native only; fresh RunStarted/RunFinished logs, not cached status",
+  "operationalHistory": [
+    "v4 optional pad Pause probe wrongly assumed hub supported Start; existing GamepadPauseAvailable excludes return hub, helper removed device in finally; no product input changed",
+    "v4 HostReopen probe initially clicked before Canvas raycast readiness; resumed same host with TapReady, no duplicate lifecycle operation",
+    "v4 initial digest was not serialized before optional probe failure; individual legacy-byte assertions and resumed digest preserved; v5 serializes initial baseline immediately",
+    "v1 recompile/status wrapper timeout; actual compile/reload recovered in same Editor",
+    "v4 post-reload canonical status outer timeout; no tests started until fresh recovered state",
+    "first native recovery console temporarily unreachable; no UI operations executed",
+    "native probe incorrectly expected status ready with playMode playing; corrected probe to actual playing, no product edit or repeated Play"
+  ],
+  "preserved": "same VM/Editor137059/model/authentication; no forced termination or environment recreation",
+  "notImplemented": [
+    "exploration runtime equipped-deck selection/registration",
+    "hand selection/input S09",
+    "card use/refill/redraw/shared gauge spending",
+    "outside progression save/map/gameplay/dungeon roundtrip"
+  ],
+  "historical": [
+    "UGUI/Pipeline/CLI/UnityAI",
+    "unassignedSprite2095"
+  ],
+  "unverified": [
+    "player build",
+    "physical input/IME/touch",
+    "auditory",
+    "all HotReload",
+    "product stats/Item skip/NPC/extreme oldnames"
+  ],
+  "inputBoundary": "Product buttons use EventSystem raycasts, names notify existing InputField. Base GamepadPauseAvailable remains false by existing hub policy; physical-device path is not claimed. IO faults are isolated verification-only replacement.",
+  "saveBoundary": "Normal editor changes only exploration-decks file; existing progress/checkpoint/owned bytes unchanged. Host Suspend remains its existing separate boundary.",
+  "fullWrapperTimedOut": true
+}

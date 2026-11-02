@@ -459,3 +459,73 @@ namespace Olca.Unity
         private static bool Equal(byte[] a, byte[] b) => System.Linq.Enumerable.SequenceEqual(a, b);
     }
 }
+
+namespace Olca.Unity
+{
+    public sealed class ExplorationDeckFileStore : Olca.Core.Domain.IExplorationDeckStore
+    {
+        private readonly CheckpointFileIo io;
+        private bool writing;
+        public string DirectoryPath { get; }
+        public string ActivePath => System.IO.Path.Combine(DirectoryPath, "decks.json");
+        public string BackupPath => System.IO.Path.Combine(DirectoryPath, "decks.backup.json");
+        public bool IsNewProfile => !System.IO.File.Exists(ActivePath) && !System.IO.Directory.Exists(ActivePath) &&
+            !System.IO.File.Exists(BackupPath) && !System.IO.Directory.Exists(BackupPath);
+        public ExplorationDeckFileStore(string directory, CheckpointFileIo io = null)
+        {
+            DirectoryPath = System.IO.Path.GetFullPath(directory ?? throw new System.ArgumentNullException(nameof(directory)));
+            this.io = io ?? new CheckpointFileIo();
+        }
+        private static string Hash(byte[] bytes)=>Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(bytes);
+        private static byte[] Encode(Olca.Core.Domain.ExplorationDeckProfile profile)=>Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile);
+        private static Olca.Core.Domain.ExplorationDeckProfile Decode(byte[] bytes)=>Olca.Core.Logic.Dungeon.PortableCheckpointJson.DecodeExplorationDecks(bytes);
+        private static bool Failure(System.Exception e) => e is System.IO.IOException || e is System.UnauthorizedAccessException ||
+            e is System.Runtime.Serialization.SerializationException || e is System.Xml.XmlException || e is System.ArgumentException || e is System.Security.SecurityException || e is System.OverflowException;
+        public Olca.Core.Domain.ExplorationDeckProfile Read(out string error)
+        {
+            error = null;
+            try {
+                if (!System.IO.File.Exists(ActivePath)) {
+                    if (System.IO.Directory.Exists(ActivePath) || System.IO.File.Exists(BackupPath) || System.IO.Directory.Exists(BackupPath)) throw new System.IO.InvalidDataException();
+                    return new Olca.Core.Domain.ExplorationDeckProfile();
+                }
+                return Decode(System.IO.File.ReadAllBytes(ActivePath));
+            } catch (System.Exception e) when (Failure(e)) { error = "探索デッキを読み込めません。既存データは変更していません。"; return null; }
+        }
+        public bool TryWrite(long expectedRevision, Olca.Core.Domain.ExplorationDeckProfile next, out string error)
+        {
+            error = null;
+            if (writing) { error = "探索デッキを保存中です"; return false; }
+            writing = true; string temporary = null; byte[] bytes = null;
+            try {
+                Olca.Core.Domain.ExplorationDeckProfile.Validate(next);
+                bytes = Encode(next);
+                io.CreateDirectory(DirectoryPath);
+                io.RequireWritable(System.IO.Path.Combine(DirectoryPath, "decks.lock"));
+                using (var fileLock = new System.IO.FileStream(System.IO.Path.Combine(DirectoryPath, "decks.lock"),
+                    System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.ReadWrite, System.IO.FileShare.None)) {
+                var existing = Read(out error); if (existing == null) return false;
+                // OSが書換え後にエラーを返した同じ計画の再試行は、世代チェックより先に識別する。
+                if (System.IO.File.Exists(ActivePath) && Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) return true;
+                if (existing.Revision != expectedRevision || next.Revision != checked(expectedRevision + 1))
+                { error = "探索デッキが別の処理で更新されています。再読込してください。"; return false; }
+                io.CreateDirectory(DirectoryPath);
+                temporary = System.IO.Path.Combine(DirectoryPath, ".decks-" + System.Guid.NewGuid().ToString("N") + ".tmp");
+                io.WriteAndFlush(temporary, bytes); Decode(System.IO.File.ReadAllBytes(temporary));
+                if (System.IO.File.Exists(ActivePath)) io.Replace(temporary, ActivePath, BackupPath); else io.MoveNew(temporary, ActivePath);
+                if (!Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) throw new System.IO.IOException();
+                return true;
+                }
+            } catch (System.Exception e) when (Failure(e)) {
+                try { if (bytes != null && System.IO.File.Exists(ActivePath) && Equal(System.IO.File.ReadAllBytes(ActivePath), bytes)) return true; }
+                catch (System.Exception read) when (Failure(read)) { }
+                error = "保存できません。保存済みデッキを保ったまま同じ処理を再試行できます。"; return false;
+            } finally {
+                writing = false;
+                if (temporary != null) try { if (System.IO.File.Exists(temporary)) System.IO.File.Delete(temporary); }
+                    catch (System.Exception e) when (Failure(e)) { }
+            }
+        }
+        private static bool Equal(byte[] a, byte[] b) => System.Linq.Enumerable.SequenceEqual(a, b);
+    }
+}

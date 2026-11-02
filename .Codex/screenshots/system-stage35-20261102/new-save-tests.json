@@ -1,0 +1,50 @@
+{
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "duration": 15.53,
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/Deck.cs": "625fb07eaa6a9f271975c3a027508c434ee1262dc2869ec7b13f32968b7a649a",
+    "Assets/Olca/Core/Logic/Dungeon/PortableCheckpointJson.cs": "b2150dbbe4a8bbeca7489ae23dfcbe86207903c75260caf280c31665060a19df",
+    "Assets/Olca/Unity/UnityLogger.cs": "a165bdb7deac58c8c585a86f0dba6044eeb3367ed79504481e4bb08e057276a8",
+    "Assets/Olca/Unity/Management/SaveManager.cs": "5af3ffa9fc9425bfa0bc38f4a92b57154f228bafe5cbcab9104bf1e7a4c0262d",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "ae36c0c21ba54f4f2cd3526f9cee096133c73807cd12b07b660a5d9c1716a6ec",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "aa0ddae09f8d892a1d24a0985012eb9c56b2932da7dcbb5c1e3c118c7e64b9fd",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "63f4c87a823e7c31fb8fffd3f1348a78f7e6b3bde6654b0e7e93b47428baed05",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "fd2e0066146fa969126e6ef03bc4739caf96f620fe71eecd48a47423be4cc911"
+  },
+  "console": {
+    "entries": [],
+    "cursor": 541699,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 5
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T19:09:33.212982Z",
+      "ageMs": 145,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 5,
+      "seeded": true
+    }
+  },
+  "freshRun": {
+    "offset": 4896644987,
+    "bytes": 10141,
+    "started": true,
+    "finished": "[TestResultCollector] Run finished: 15 total, 15 passed, 0 failed"
+  },
+  "wrapperTimedOut": false
+}

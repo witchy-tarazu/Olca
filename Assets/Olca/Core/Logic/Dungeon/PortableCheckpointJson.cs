@@ -37,6 +37,10 @@ namespace Olca.Core.Logic.Dungeon
         {ClearReturnProfile.Validate(value);var payload=Serialize(value);return Serialize(new Envelope{Version=1,Payload=Encoding.UTF8.GetString(payload),Sha256=Hash(payload)});}
         public static ClearReturnProfile DecodeProgress(byte[] bytes)
         {var e=Deserialize<Envelope>(bytes);if(e==null||e.Version!=1||e.Payload==null||Hash(Encoding.UTF8.GetBytes(e.Payload))!=e.Sha256)throw new InvalidDataException("進行保存の形式またはhashが不正です");var profile=Deserialize<ClearReturnProfile>(Encoding.UTF8.GetBytes(e.Payload));ClearReturnProfile.Validate(profile);return profile;}
+        public static byte[] Encode(ExplorationDeckProfile value)
+        {ExplorationDeckProfile.Validate(value);var payload=Serialize(value);return Serialize(new Envelope{Version=1,Payload=Encoding.UTF8.GetString(payload),Sha256=Hash(payload)});}
+        public static ExplorationDeckProfile DecodeExplorationDecks(byte[] bytes)
+        {var e=Deserialize<Envelope>(bytes);if(e==null||e.Version!=1||e.Payload==null||Hash(Encoding.UTF8.GetBytes(e.Payload))!=e.Sha256)throw new InvalidDataException("探索デッキ保存の形式またはhashが不正です");var value=Deserialize<ExplorationDeckProfile>(Encoding.UTF8.GetBytes(e.Payload));ExplorationDeckProfile.Validate(value);return value;}
         public static CheckpointDto Decode(byte[] bytes)
         {
             var e=Deserialize<Envelope>(bytes);

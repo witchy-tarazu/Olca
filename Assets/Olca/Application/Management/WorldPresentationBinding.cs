@@ -91,3 +91,80 @@ namespace Olca.Application.Management
         public void Dispose(){if(disposed)return;disposed=true;runtime?.Detach(this);layer.UnregisterOwner(registrationOwner);View=null;allowed=null;returned=null;paused=null;icon=null;}
     }
 }
+
+namespace Olca.Application.Management
+{
+    /// <summary>拠点の探索デッキ一覧と編集。描画用所持投影は保存先へ渡さない。</summary>
+    public sealed class ExplorationDeckLibrary:IDisposable
+    {
+        private const string Key="exploration-decks";
+        private readonly HostPanelBindings panels;
+        private readonly ViewManager layer;
+        private readonly Func<Olca.Core.Domain.ClearReturnProfile> owned;
+        private readonly Func<Olca.Core.Domain.OwnedCardCount,Olca.Core.Domain.Card> resolve;
+        private readonly Func<bool> alive;
+        private readonly Action returned;
+        private Olca.Core.Domain.ExplorationDeckSession session;
+        private readonly Func<Olca.Core.Domain.IExplorationDeckStore> store;
+        private string generation;
+        private Olca.Presentation.Dungeon.ClearReturnView view;
+        private readonly System.Collections.Generic.List<Olca.Core.Domain.SavedDeckCard> draft=new System.Collections.Generic.List<Olca.Core.Domain.SavedDeckCard>();
+        private string editingId,name,persistedName;
+        private bool editing,dirty,disposed;
+        public bool IsOpen{get;private set;}
+        public ExplorationDeckLibrary(HostPanelBindings panels,ViewManager views,DialogManager dialogs,Olca.Presentation.Management.GameplayPanelFactory factory,
+            Func<Olca.Core.Domain.IExplorationDeckStore> store,Func<Olca.Core.Domain.ClearReturnProfile> owned,Func<Olca.Core.Domain.OwnedCardCount,Olca.Core.Domain.Card> resolve,
+            Func<Olca.Core.Domain.Card,Sprite> icon,Func<bool> alive,Action returned)
+        {
+            this.panels=panels;this.owned=owned;this.resolve=resolve;this.alive=alive;this.returned=returned;this.store=store;generation=owned().CheckpointGeneration;
+            session=new Olca.Core.Domain.ExplorationDeckSession(store());layer=views?.GetLayer("return-hub");
+            panels.Register(Key,"return-hub",()=>factory.Component<Olca.Presentation.Dungeon.ClearReturnView>("ExplorationDeckLibrary",created=>{
+                created.Initialize(factory.Font,null,null,null,null);created.ConfigureExplorationDeckLibrary();
+                created.ConfigureMenuNavigation(()=>Array.Empty<UnityEngine.UI.Button>(),resolve,icon);
+                if(layer!=null)created.ConfigureManagement(()=>panels.Show(Key),layer.CloseCurrent,dialogs);view=created;
+            }).gameObject,(panel,context)=>{if(!Live)throw new OperationCanceledException();view=panel.GetComponent<Olca.Presentation.Dungeon.ClearReturnView>();view.ShowManaged(context);},panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Dungeon.ClearReturnView>().HideManaged();});
+        }
+        private bool Live=>!disposed&&alive()&&owned()?.CheckpointGeneration==generation;
+        private bool Operate=>Live&&IsOpen&&view!=null&&view.gameObject.activeInHierarchy&&view.ManagementContext?.DialogBlocksInput!=true;
+        public void Open(){if(disposed||!alive())return;if(generation!=owned().CheckpointGeneration){session.Dispose();generation=owned().CheckpointGeneration;session=new Olca.Core.Domain.ExplorationDeckSession(store());}IsOpen=true;editing=false;RenderList();}
+        private Olca.Core.Domain.ClearReturnProfile Projection()
+        {var source=owned().Copy();source.SavedDecks=session.Snapshot?.Decks??Array.Empty<Olca.Core.Domain.SavedDepartureDeck>();source.EquippedDeckId=null;return source;}
+        private void Ensure(){view=panels.Show(Key).GetComponent<Olca.Presentation.Dungeon.ClearReturnView>();}
+        private void RenderList(string deleting=null)
+        {
+            if(!Live||!IsOpen)return;editing=false;Ensure();
+            view.RenderSavedDeckMenu(Projection(),session.Error,session.HasPendingSave,()=>Edit(null),id=>Edit(id),null,null,id=>{
+                if(!Operate||session.HasPendingSave)return;RenderList(id);
+            },Close,Retry,deleting,()=>{if(!Live||!IsOpen||session.HasPendingSave)return;session.Delete(deleting);RenderList();},()=>{if(!Operate)return;session.Reload();RenderList();});
+        }
+        private void Edit(string id)
+        {
+            if(!Operate||!session.Ready||session.HasPendingSave)return;
+            var saved=id==null?null:session.Snapshot.Decks.SingleOrDefault(d=>d.Id==id);if(id!=null&&saved==null)return;
+            editing=true;editingId=id;persistedName=saved?.Name;name=saved?.Name??"探索デッキ";draft.Clear();if(saved!=null)draft.AddRange(saved.Cards.Select(c=>c.Copy()));dirty=false;RenderEditor();
+        }
+        private void RenderEditor(bool discard=false)
+        {
+            if(!Live||!IsOpen)return;Ensure();var source=Projection();var options=source.Owned.Select(resolve).ToArray();
+            bool valid=Olca.Core.Domain.SavedDepartureDeck.TryValidateEquipped(source,new Olca.Core.Domain.SavedDepartureDeck{Cards=draft.ToArray()},out var invalid);
+            var cards=draft.Select(slot=>{var row=Olca.Core.Domain.OwnedDefinition.Resolve(source,slot);return row==null?null:resolve(row);}).ToArray();
+            valid&=cards.All(c=>c!=null);
+            view.RenderOwnedDeparture(source,options,cards,session.Error??(valid?null:invalid??"定義未解決のカードがあります"),valid,(index,delta)=>{
+                if(!Operate||session.HasPendingSave||index<0||index>=source.Owned.Length)return;
+                var row=source.Owned[index];string key=Olca.Core.Domain.OwnedDefinition.Key(row);int count=draft.Count(c=>c.DefinitionKey==key);
+                if(delta>0){if(options[index]==null||count>=row.Count||draft.Count>=20)return;draft.Add(new Olca.Core.Domain.SavedDeckCard{Id=row.Id,Level=row.Level,DefinitionKey=key});}
+                else{int at=draft.FindLastIndex(c=>c.DefinitionKey==key);if(at<0)return;draft.RemoveAt(at);}dirty=true;RenderEditor();
+            },null,force=>{if(!Live||!IsOpen||session.HasPendingSave)return;if(dirty&&!force){RenderEditor(true);return;}dirty=false;RenderList();},()=>RenderEditor(),discard,
+            ()=>{if(!Operate||session.HasPendingSave||!view.CanUseDeckName(name)&&name!=persistedName)return;
+                // 確定時の最新所持を使い、読取投影や過去の候補を永続化しない。
+                var latest=owned();if(latest.CheckpointGeneration!=generation)return;
+                if(draft.Any(slot=>{var row=Olca.Core.Domain.OwnedDefinition.Resolve(latest,slot);return row==null||resolve(row)==null;}))return;
+                bool saved=session.Save(editingId,name,draft,latest);if(saved){dirty=false;RenderList();}else RenderEditor();
+            },name,value=>{if(!Operate||session.HasPendingSave)return;name=value;dirty=true;},session.HasPendingSave,Retry,draft.Select(c=>c.DefinitionKey).ToArray(),persistedName);
+        }
+        public void Tick(){if(Live&&IsOpen&&view==null){if(editing)RenderEditor();else RenderList();}}
+        private void Retry(){if(!Live||!IsOpen||!session.HasPendingSave)return;bool saved=session.Retry();if(saved){dirty=false;RenderList();}else if(editing)RenderEditor();else RenderList();}
+        private void Close(){if(!Operate||session.HasPendingSave)return;IsOpen=false;view.Hide();returned();}
+        public void Dispose(){if(disposed)return;disposed=true;IsOpen=false;session.Dispose();if(view!=null)view.Hide();view=null;}
+    }
+}

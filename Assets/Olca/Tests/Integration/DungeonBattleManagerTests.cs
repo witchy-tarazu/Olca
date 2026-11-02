@@ -5958,3 +5958,79 @@ namespace Olca.Tests.Integration
   }
  }
 }
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public sealed class ExplorationDeckPersistenceTests
+    {
+        private string directory;
+        private ClearReturnProfile owned;
+        private SavedDeckCard[] cards;
+        private sealed class FaultIo:Olca.Unity.CheckpointFileIo
+        {
+            public bool Before,After;
+            public override void MoveNew(string source,string target){if(Before)throw new System.IO.IOException();base.MoveNew(source,target);if(After)throw new System.IO.IOException();}
+            public override void Replace(string source,string target,string backup){if(Before)throw new System.IO.IOException();base.Replace(source,target,backup);if(After)throw new System.IO.IOException();}
+        }
+        [SetUp] public void Setup()
+        {
+            directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-outside-decks-"+System.Guid.NewGuid().ToString("N"));
+            var permanent=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress")));
+            Assert.IsTrue(permanent.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));owned=permanent.Snapshot;
+            cards=owned.Owned.SelectMany(row=>Enumerable.Range(0,row.Count).Select(_=>new SavedDeckCard{Id=row.Id,Level=row.Level,DefinitionKey=OwnedDefinition.Key(row)})).ToArray();Assert.AreEqual(20,cards.Length);
+        }
+        [TearDown] public void Cleanup(){if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        private Olca.Unity.ExplorationDeckFileStore Store(FaultIo io=null)=>new Olca.Unity.ExplorationDeckFileStore(System.IO.Path.Combine(directory,"outside"),io);
+        [Test] public void 未作成探索保存は空の一覧を返し旧進行もファイルも変更しない()
+        {
+            var before=System.IO.File.ReadAllBytes(System.IO.Path.Combine(directory,"progress","progress.json"));
+            using(var session=new ExplorationDeckSession(Store())){Assert.IsTrue(session.Ready);Assert.IsEmpty(session.Snapshot.Decks);Assert.IsTrue(session.Reload());}
+            Assert.IsFalse(System.IO.Directory.Exists(Store().DirectoryPath));CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(System.IO.Path.Combine(directory,"progress","progress.json")));
+        }
+        [Test] public void 複数探索デッキを保存再読込しても所持とDungeon保存は不変()
+        {
+            var before=PortableCheckpointJson.Encode(owned);var disk=System.IO.File.ReadAllBytes(System.IO.Path.Combine(directory,"progress","progress.json"));
+            using(var session=new ExplorationDeckSession(Store())){Assert.IsTrue(session.Save(null,"探索一",cards,owned),session.Error);Assert.IsTrue(session.Save(null,"探索二",cards.Reverse().ToArray(),owned));Assert.IsTrue(session.Reload());Assert.AreEqual(2,session.Snapshot.Decks.Length);CollectionAssert.AreEqual(cards.Select(c=>c.Id),session.Snapshot.Decks[0].Cards.Select(c=>c.Id));}
+            CollectionAssert.AreEqual(before,PortableCheckpointJson.Encode(owned));CollectionAssert.AreEqual(disk,System.IO.File.ReadAllBytes(System.IO.Path.Combine(directory,"progress","progress.json")));
+        }
+        [TestCase(19)] [TestCase(21)] public void 保存は20枚以外を拒否し無書込(int count)
+        {using(var session=new ExplorationDeckSession(Store()))Assert.IsFalse(session.Save(null,"探索",Enumerable.Range(0,count).Select(i=>cards[i%20]).ToArray(),owned));Assert.IsFalse(System.IO.Directory.Exists(Store().DirectoryPath));}
+        [Test] public void 所持超過と未所持と不明定義は保存せず参照を自動置換しない()
+        {
+            using(var session=new ExplorationDeckSession(Store())){
+                Assert.IsFalse(session.Save(null,"探索",Enumerable.Repeat(cards[0],20).ToArray(),owned));
+                var unknown=cards.Select(c=>c.Copy()).ToArray();unknown[0].Id="unknown";Assert.IsFalse(session.Save(null,"探索",unknown,owned));unknown[0]=cards[0].Copy();unknown[0].DefinitionKey="unknown";Assert.IsFalse(session.Save(null,"探索",unknown,owned));
+            }Assert.IsFalse(System.IO.Directory.Exists(Store().DirectoryPath));
+        }
+        [TestCase("")] [TestCase("一二三四五六七八九十一二三四五六七")] [TestCase("改\n名")]
+        public void 不正な新規名は保存しない(string name){using(var session=new ExplorationDeckSession(Store()))Assert.IsFalse(session.Save(null,name,cards,owned));}
+        [Test] public void 保存失敗では旧状態を維持し同一計画だけを再試行する()
+        {
+            var io=new FaultIo();using(var session=new ExplorationDeckSession(Store(io))){Assert.IsTrue(session.Save(null,"旧",cards,owned));var bytes=System.IO.File.ReadAllBytes(Store().ActivePath);io.Before=true;
+                Assert.IsFalse(session.Save(null,"新",cards,owned));Assert.IsTrue(session.HasPendingSave);Assert.AreEqual(1,session.Snapshot.Decks.Length);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));
+                Assert.IsFalse(session.Reload());Assert.IsFalse(session.Save(null,"別",cards,owned));Assert.IsFalse(session.Delete(session.Snapshot.Decks[0].Id));Assert.IsFalse(session.Retry());io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual(2,session.Snapshot.Revision);Assert.AreEqual(2,session.Snapshot.Decks.Length);
+            }
+        }
+        [Test] public void 書換後エラーは成功済み計画と認識し重複追加しない()
+        {var io=new FaultIo{After=true};using(var session=new ExplorationDeckSession(Store(io))){Assert.IsTrue(session.Save(null,"探索",cards,owned));Assert.IsFalse(session.HasPendingSave);Assert.IsFalse(session.Retry());Assert.AreEqual(1,new ExplorationDeckSession(Store()).Snapshot.Decks.Length);}}
+        [Test] public void 同じ世代の競合セッションは他方の保存を上書きしない()
+        {using(var one=new ExplorationDeckSession(Store()))using(var two=new ExplorationDeckSession(Store())){Assert.IsTrue(one.Save(null,"先",cards,owned));var bytes=System.IO.File.ReadAllBytes(Store().ActivePath);Assert.IsFalse(two.Save(null,"後",cards,owned));Assert.IsFalse(two.Retry());CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));}}
+        [Test] public void 削除失敗と再試行は保存済み内容を一度だけ削除する()
+        {var io=new FaultIo();using(var session=new ExplorationDeckSession(Store(io))){Assert.IsTrue(session.Save(null,"探索",cards,owned));string id=session.Snapshot.Decks[0].Id;io.Before=true;Assert.IsFalse(session.Delete(id));Assert.AreEqual(1,session.Snapshot.Decks.Length);io.Before=false;Assert.IsTrue(session.Retry());Assert.IsEmpty(session.Snapshot.Decks);Assert.IsFalse(session.Delete(id));}}
+        [Test] public void 終了したセッションの古い確定再試行は書き込まない()
+        {var io=new FaultIo{Before=true};var session=new ExplorationDeckSession(Store(io));Assert.IsFalse(session.Save(null,"探索",cards,owned));session.Dispose();io.Before=false;Assert.IsFalse(session.Retry());Assert.IsFalse(session.Save(null,"別",cards,owned));Assert.IsFalse(System.IO.File.Exists(Store().ActivePath));}
+        [Test] public void 不正保存と未来版は上書きせず未知カードの構造は読取保持する()
+        {
+            var value=new ExplorationDeckProfile{Decks=new[]{new SavedDepartureDeck{Id=System.Guid.NewGuid().ToString("N"),Name="未解決",Cards=new[]{new SavedDeckCard{Id="unknown",Level=(ExceedLevel)0,DefinitionKey="missing"}}}}};
+            var bytes=PortableCheckpointJson.Encode(value);var read=PortableCheckpointJson.DecodeExplorationDecks(bytes);Assert.AreEqual("unknown",read.Decks[0].Cards[0].Id);
+            System.IO.Directory.CreateDirectory(Store().DirectoryPath);System.IO.File.WriteAllBytes(Store().ActivePath,new byte[]{1,2,3});using(var session=new ExplorationDeckSession(Store())){Assert.IsFalse(session.Ready);Assert.IsFalse(session.Save(null,"探索",cards,owned));}CollectionAssert.AreEqual(new byte[]{1,2,3},System.IO.File.ReadAllBytes(Store().ActivePath));
+            value.Version=2;Assert.Throws<System.ArgumentException>(()=>PortableCheckpointJson.Encode(value));
+        }
+        [Test] public void 保存世代は別領域で新規開始と旧進行を混同しない()
+        {
+            var context=new Olca.Unity.SaveManager().OpenContext(directory,directory,System.IO.Path.Combine(directory,"progress"));var old=context.ExplorationDecks(null);var next=context.ExplorationDecks(System.Guid.NewGuid().ToString("N"));
+            using(var session=new ExplorationDeckSession(old))Assert.IsTrue(session.Save(null,"旧",cards,owned));using(var session=new ExplorationDeckSession(next))Assert.IsEmpty(session.Snapshot.Decks);Assert.IsFalse(System.IO.Directory.Exists(next.DirectoryPath));Assert.Throws<System.ArgumentException>(()=>context.ExplorationDecks("../legacy"));
+        }
+    }
+}

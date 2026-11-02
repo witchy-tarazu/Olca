@@ -1114,3 +1114,66 @@ namespace Olca.Core.Domain
         }
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>探索デッキだけの独立保存。所持・ダンジョン進行・装備先は複製しない。</summary>
+    public sealed class ExplorationDeckProfile
+    {
+        public int Version=1;
+        public long Revision;
+        public string CommitId;
+        public SavedDepartureDeck[] Decks=Array.Empty<SavedDepartureDeck>();
+        public ExplorationDeckProfile Copy()=>new ExplorationDeckProfile{Version=Version,Revision=Revision,CommitId=CommitId,Decks=Decks?.Select(d=>d?.Copy()).ToArray()};
+        public static void Validate(ExplorationDeckProfile value)
+        {
+            if(value==null||value.Version!=1||value.Revision<0||(value.Revision>0&&!Guid.TryParseExact(value.CommitId,"N",out _))||value.Decks==null||
+                value.Decks.Any(d=>d==null||!Guid.TryParseExact(d.Id,"N",out _)||string.IsNullOrWhiteSpace(d.Name)||d.Cards==null||
+                    d.Cards.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||!Enum.IsDefined(typeof(ExceedLevel),c.Level)||c.Level==ExceedLevel.Lv3))||
+                value.Decks.Select(d=>d.Id).Distinct().Count()!=value.Decks.Length)throw new ArgumentException("探索デッキ保存の形式が不正です");
+        }
+    }
+    public interface IExplorationDeckStore
+    {
+        ExplorationDeckProfile Read(out string error);
+        bool TryWrite(long expectedRevision,ExplorationDeckProfile next,out string error);
+    }
+    /// <summary>保存失敗時は計画を固定して再試行。成功するまで読取済み状態を確定しない。</summary>
+    public sealed class ExplorationDeckSession:IDisposable
+    {
+        private readonly IExplorationDeckStore store;
+        private ExplorationDeckProfile current,pending;
+        private bool disposed,writing;
+        public bool Ready=>!disposed&&current!=null;
+        public bool HasPendingSave=>pending!=null;
+        public string Error{get;private set;}
+        public ExplorationDeckProfile Snapshot=>current?.Copy();
+        public ExplorationDeckSession(IExplorationDeckStore store){this.store=store??throw new ArgumentNullException(nameof(store));Reload();}
+        public bool Reload(){if(disposed||writing||pending!=null)return false;var read=store.Read(out var error);Error=error;if(read==null)return false;ExplorationDeckProfile.Validate(read);current=read.Copy();return true;}
+        private bool Fail(string error){Error=error;return false;}
+        public bool Save(string id,string name,IReadOnlyList<SavedDeckCard> cards,ClearReturnProfile owned)
+        {
+            if(!Ready||writing||pending!=null)return false;
+            var previous=id==null?null:current.Decks.SingleOrDefault(d=>d.Id==id);
+            if(id!=null&&previous==null)return Fail("保存デッキがありません");
+            if(previous==null||name!=previous.Name){name=name?.Trim();if(!SavedDeckNameRules.IsValid(name))return Fail("デッキ名は16文字以内の一行で入力してください");}
+            var deck=new SavedDepartureDeck{Id=id??Guid.NewGuid().ToString("N"),Name=name,Cards=cards?.Select(c=>c?.Copy()).ToArray()};
+            if(!SavedDepartureDeck.TryValidateEquipped(owned,deck,out var error))return Fail(error);
+            var next=current.Copy();next.Decks=previous==null?next.Decks.Concat(new[]{deck}).ToArray():next.Decks.Select(d=>d.Id==id?deck:d).ToArray();return Stage(next);
+        }
+        public bool Delete(string id)
+        {
+            if(!Ready||writing||pending!=null)return false;
+            if(!current.Decks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
+            var next=current.Copy();next.Decks=next.Decks.Where(d=>d.Id!=id).ToArray();return Stage(next);
+        }
+        private bool Stage(ExplorationDeckProfile next){next.Revision=checked(current.Revision+1);next.CommitId=Guid.NewGuid().ToString("N");ExplorationDeckProfile.Validate(next);pending=next;return Retry();}
+        public bool Retry()
+        {
+            if(!Ready||writing||pending==null)return false;writing=true;
+            try{if(!store.TryWrite(current.Revision,pending.Copy(),out var error)){Error=error;return false;}current=pending;pending=null;Error=null;return true;}
+            finally{writing=false;}
+        }
+        public void Dispose(){disposed=true;pending=null;current=null;}
+    }
+}

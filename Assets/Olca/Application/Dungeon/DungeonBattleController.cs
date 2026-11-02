@@ -314,6 +314,7 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
+            explorationDeckLibrary?.Dispose();explorationDeckLibrary=null;
             outsideExploration?.Dispose();outsideExploration=null;outsideExplorationOpening=false;gameplayChrome?.SetCovered(false);gameplayChrome=null;
             if(dialogueViews!=null&&dialogueView!=null)dialogueView.HideManaged();dialogueViews=null;
             currencyChoice?.TrySetCanceled();itemRewardChoice?.TrySetCanceled();CloseResourceReward(currencyOverlay);CloseResourceReward(itemRewardOverlay);
@@ -460,7 +461,17 @@ namespace Olca.Application.Dungeon
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
-        private bool CanSelectDungeon => !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private Olca.Application.Management.ExplorationDeckLibrary explorationDeckLibrary;
+        private void OpenExplorationDeckLibrary()
+        {
+            if(gameSystem==null||!CanSelectDungeon||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
+            if(explorationDeckLibrary==null)explorationDeckLibrary=new Olca.Application.Management.ExplorationDeckLibrary(hostPanels,gameSystem.Views,gameSystem.Dialogs,panelFactory,
+                ()=>gameSystemSession.Storage.ExplorationDecks(clearReturnSession.Snapshot.CheckpointGeneration),()=>clearReturnSession.Snapshot,
+                row=>ResolveOwnedDefinition(row,out var card)?card:null,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,
+                ()=>CustomizationUiLive&&clearReturnVisible&&!IsUserPaused&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned),()=>{outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("ExplorationDeckEntry");});
+            ResetOutsideRouteInput();explorationDeckLibrary.Open();
+        }
+        private bool CanSelectDungeon => explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
             (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
@@ -486,7 +497,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), initialHub, gameSystem!=null&&initialHub?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), initialHub, gameSystem!=null&&initialHub?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,gameSystem!=null?(System.Action)OpenExplorationDeckLibrary:null);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
@@ -1149,7 +1160,7 @@ namespace Olca.Application.Dungeon
             if(checkpointViews?.CurrentKey==ManagedCheckpointScreen&&result.FocusName!=null)checkpointReturnFocus=result.FocusName;
             if(result.Outcome==Olca.Presentation.Management.ProgressActionOutcome.NewGameStarted)ApplyNewGameResult();
         }
-        private bool IsProgressHub => !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool IsProgressHub => explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !DialogueOpen && !AudioSettingsOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
@@ -1217,7 +1228,7 @@ namespace Olca.Application.Dungeon
         private UnityEngine.UI.Button cardCollectionButton;
         private bool cardCollectionOpen, collectionWasPaused;
         // UIの表示と受付をそろえる。融合履歴の保存失敗から開く内部経路は別に保つ。
-        private bool CardCollectionUiAvailable => !OutsideRouteBusy && manager != null && clearReturnSession?.Ready == true &&
+        private bool CardCollectionUiAvailable => explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && manager != null && clearReturnSession?.Ready == true &&
             !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen &&
             !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView != null && keyboardSettingsView.gameObject.activeInHierarchy) &&
             !(gamepadSettingsView != null && gamepadSettingsView.gameObject.activeInHierarchy) &&
@@ -1362,7 +1373,7 @@ namespace Olca.Application.Dungeon
         }
         private Card[] ownedDepartureOptions;
         private string ownedDepartureError;
-        private bool CanEditOwnedDeparture => !exchangeOpen && !styleSelectionOpen && clearReturnVisible && !collectionOpen && !departureWriting && !progressStartupBlocked &&
+        private bool CanEditOwnedDeparture => explorationDeckLibrary?.IsOpen!=true && !exchangeOpen && !styleSelectionOpen && clearReturnVisible && !collectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession.Ready && !clearReturnSession.HasPendingSave && clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != clearReturnSession.Snapshot.Flow.RunId;
         private void OpenOwnedDeparture()
@@ -2043,6 +2054,7 @@ namespace Olca.Application.Dungeon
             RefreshProgressActions();
             if(AudioSettingsOpen)audioSettingsView.transform.SetAsLastSibling();
             if(DialogueOpen&&!IsUserPaused&&dialogueView!=null)dialogueView.transform.SetAsLastSibling();
+            explorationDeckLibrary?.Tick();
             resourceRewardMenu?.Tick();
             RefreshSystemMenu();
         }

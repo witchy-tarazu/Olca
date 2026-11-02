@@ -1,0 +1,495 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/Deck.cs": "625fb07eaa6a9f271975c3a027508c434ee1262dc2869ec7b13f32968b7a649a",
+    "Assets/Olca/Core/Logic/Dungeon/PortableCheckpointJson.cs": "b2150dbbe4a8bbeca7489ae23dfcbe86207903c75260caf280c31665060a19df",
+    "Assets/Olca/Unity/UnityLogger.cs": "a165bdb7deac58c8c585a86f0dba6044eeb3367ed79504481e4bb08e057276a8",
+    "Assets/Olca/Unity/Management/SaveManager.cs": "5af3ffa9fc9425bfa0bc38f4a92b57154f228bafe5cbcab9104bf1e7a4c0262d",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "ae36c0c21ba54f4f2cd3526f9cee096133c73807cd12b07b660a5d9c1716a6ec",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "aa0ddae09f8d892a1d24a0985012eb9c56b2932da7dcbb5c1e3c118c7e64b9fd",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "63f4c87a823e7c31fb8fffd3f1348a78f7e6b3bde6654b0e7e93b47428baed05",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "fd2e0066146fa969126e6ef03bc4739caf96f620fe71eecd48a47423be4cc911"
+  },
+  "before": {
+    "playing": false,
+    "currentClrNull": true,
+    "currentUnityNull": true,
+    "registered": [],
+    "sceneEvents": []
+  },
+  "rounds": [
+    [
+      {
+        "filter": "ExplorationDeckPersistenceTests",
+        "summary": {
+          "total": 15,
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.22,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "ExplorationResumeCountdownTests",
+        "summary": {
+          "total": 40,
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.08,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界入口",
+        "summary": {
+          "total": 3,
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.22,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界初期手札HUD",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.11,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界Runtime",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界入力epoch",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界Pause被覆",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.07,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Pause一時制限",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Chrome遮蔽",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "UIRuntimeManagementTests",
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "GeneratedSpriteAssetsTests",
+        "summary": {
+          "total": 8,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Custom詳細はDialog世代と親終了を守り閲覧で手札と選択を変更しない",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.11,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      }
+    ],
+    [
+      {
+        "filter": "ExplorationDeckPersistenceTests",
+        "summary": {
+          "total": 15,
+          "passed": 15,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.62,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "ExplorationResumeCountdownTests",
+        "summary": {
+          "total": 40,
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界入口",
+        "summary": {
+          "total": 3,
+          "passed": 3,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.26,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界初期手札HUD",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.09,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界Runtime",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界入力epoch",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "外界Pause被覆",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.06,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Pause一時制限",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.04,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Chrome遮蔽",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "UIRuntimeManagementTests",
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "GeneratedSpriteAssetsTests",
+        "summary": {
+          "total": 8,
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.03,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "Custom詳細はDialog世代と親終了を守り閲覧で手札と選択を変更しない",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.12,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      },
+      {
+        "filter": "手動スクロールは同じ焦点で巻き戻さず新しい選択だけを追従する",
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 0.02,
+        "registry": {
+          "playing": false,
+          "currentClrNull": true,
+          "currentUnityNull": true,
+          "registered": [],
+          "sceneEvents": []
+        }
+      }
+    ]
+  ],
+  "sameEditorNoDomainReloadBetweenRuns": true,
+  "staticListNeverClearedByHarness": true
+}
