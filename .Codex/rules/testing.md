@@ -101,3 +101,5 @@ Screenが640×360でも、停止Editorの再読込直後にGameViewのRenderText
 
 - domainreload後の初回`run_script`は、参照assemblyのcold compile時間も`timeout_ms`へ算入される。Stage30ではcompile280356msの後に描画同期処理が続き、300000msのTask待機予算が尽きた。既存jobがTimeoutでもTaskは継続し得るため再送せず、実Screen/2RTをmain-thread読取で確認してから進める。
 - 同じ根拠のあるcold helperには600000msの有限予算を使用可とし、テスト期待値/保存guard/描画サイズの判定は緩めない。これはUnityテストの再試行や製品処理時間の変更ではない。
+
+- 検証件数の更新は`summary.total/passed`等の対象行だけに限定し、`==36`のような部分文字列を一括置換しない。Stage31ではこれが`height==360`を380へ変えたため、実測640×360をテスト前に拒否した。実行中コピー/修正前helperを保存し、厳密な640×360判定へ戻してから再開した。期待解像度を実測へ合わせて緩めない。

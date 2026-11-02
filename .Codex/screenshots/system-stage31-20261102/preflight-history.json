@@ -1,0 +1,10 @@
+{
+  "oldInMemoryGuardHeight": 380,
+  "requiredAndObserved": [
+    640,
+    360
+  ],
+  "cause": "broad substring replacement of test count ==36 to ==38 also changed ==360; restored exact dimension guard before any tests",
+  "testsStarted": false,
+  "renderRequestsRepeated": false
+}

@@ -1,0 +1,298 @@
+{
+  "stage": 31,
+  "version": "v2",
+  "reviewer": "/root/independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T13:45:36.910111+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "5200cc7d387ddd5b447f33001c6841f8a0caa7b5fa729c99660cb03557a17f2a",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "b307676076f93974460ac5617cec18e12b9d78e3759d629b57c1fd130bd30c39",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "c99a0bf337d33a8afb70a1626ed7e4584030de2de5f04d6c0ac2c866bdcae337",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "viewedImageCount": 24,
+  "unresolvedRequiredVisualFindings": 0,
+  "images": [
+    {
+      "file": "system-stage31-gauge-initial-fhd.png",
+      "sha256": "878cd1ad847434a5d1338fa789e61a377e8126febebafe303763d2acf13c2f61",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-initial-4k.png",
+      "sha256": "a31ba6e71dc95d72f311b7348987e9bec543fe83af5880c9582746b6d5a418ec",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-initial-4by3.png",
+      "sha256": "6512143b6d403f986266255ac1551f795344a29f03def287535dafb9b363fd0a",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-moving-fhd.png",
+      "sha256": "f17e8ab5f1115ca09c5a176538273ae506ac522688463f9a5c9b159b974a6ec5",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-moving-4k.png",
+      "sha256": "c298c27c550ba3452cd0e7754a1847878f1a82b04e7594acf4336d552ac6a890",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-moving-4by3.png",
+      "sha256": "5c1d2295aae8d7c61d7edec7ed8a3289210ce215c641a34a92fbf9dabcb8f9cf",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-jump-apex-fhd.png",
+      "sha256": "43b8c33b15a8a1626284f3f70972cd1f110098912b71df5dba4c7a52134f9a78",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-jump-apex-4k.png",
+      "sha256": "14502b058562448570251d82ca56e8628fcc4d93af04bc44890c694f220a5d9b",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-jump-apex-4by3.png",
+      "sha256": "a2be23d5e8c471b9d14498809fba852a339838ca10634f7550d2b848b1e5977a",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-pause-fhd.png",
+      "sha256": "7325b3817afa32ccbd6ed005201a1447b4add4122d71a3b78b116c934f973067",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-pause-4k.png",
+      "sha256": "49cf7e60caa39b7bd1d9fb5524fa0a578e1144d18d9e4ba43e8c6e693a0af935",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-pause-4by3.png",
+      "sha256": "c0673e7f1dcacecac50bef3c596b1dbe68bc6f6218cf47ca1623c380bf11dd30",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-max-increase-fhd.png",
+      "sha256": "c8444d43a1bd7bac48d710c9974894ea410965c7bd0281fb35498e485b6e599b",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-max-increase-4k.png",
+      "sha256": "e6f632eb7a1efffdaaa01eb0c422b6e72b8fab184820e3611afc3e7a81aea332",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-max-increase-4by3.png",
+      "sha256": "59157f688bb53e6e969db360425ab8a54feb519a80dcd1a93558145656dcc6b3",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-max-clamp-fhd.png",
+      "sha256": "2f95bc88af84b0abec1700eabd141c598618b9f4e71ce813d37f1eacedbe8bf6",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-max-clamp-4k.png",
+      "sha256": "fd1539a5a4a47ee202f034f0f139436a921a572112d394fb775497feb9f37679",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-max-clamp-4by3.png",
+      "sha256": "215a9d83a0168ea11baa0cab7d187e8628fdbdbd93701b9a460d751f978eeae1",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-empty-fhd.png",
+      "sha256": "3dd4c8de1019b4063c0a6a455a0836183a8ab94e2b095710ab50074ae0797df8",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-empty-4k.png",
+      "sha256": "2b3d9d08f24ecaba09618a3d14d538ff8ad7004bbe5540afa20684b787ee94be",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-empty-4by3.png",
+      "sha256": "d33974d8d65e8a0896168515751fa045942fb8c6434b7182aa4d1668dab7db98",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-restored-full-fhd.png",
+      "sha256": "32410c9101acd3bbdef665f2a1b09a9c7e4a2ec5bd72bcd6c97aaa6fde20c276",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-restored-full-4k.png",
+      "sha256": "b8677d654e98952f86b4ffcb89ff46e774e06f8efc9032792dad46fbdfd2a7e9",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage31-gauge-restored-full-4by3.png",
+      "sha256": "31d564421576ff1b272e641c4dc62684877518ca8d4d9ee8b5dbc6b9335f2095",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "nativeCrops": [
+    {
+      "file": "system-stage31-gauge-max-increase-4k.png",
+      "box": [
+        60,
+        255,
+        900,
+        365
+      ],
+      "viewed": true,
+      "method": "Unscaled in-memory crop; original unchanged"
+    },
+    {
+      "file": "system-stage31-gauge-empty-4k.png",
+      "box": [
+        60,
+        255,
+        900,
+        365
+      ],
+      "viewed": true,
+      "method": "Unscaled in-memory crop; original unchanged"
+    },
+    {
+      "file": "system-stage31-gauge-restored-full-4k.png",
+      "box": [
+        60,
+        255,
+        900,
+        365
+      ],
+      "viewed": true,
+      "method": "Unscaled in-memory crop; original unchanged"
+    }
+  ],
+  "observations": [
+    "All 24 final images actually opened; FHD and 4:3 full views native, viewer-resized 4K full views supplemented by three unscaled gauge crops.",
+    "Gauge label and values are readable against the cave at all three ratios, with separation from the header and ample horizontal room for 100.0 / 100 and 20.0 / 140.",
+    "Thin pale-blue fill and darker track communicate partial/full/empty without dominating actor or terrain. The numeric value makes empty/full distinguishable without relying only on color.",
+    "Jumping actor does not interfere with the fixed gauge. Pause visibly dims the gauge behind the existing foreground menu; menu text and control hierarchy remain readable.",
+    "Original gray/black actor appearance, feet/platform relationships, cave art, water-mirror header and Jiki typography show no newly observed visual regression in these captures."
+  ],
+  "receipt": {
+    "file": "system-stage31-native-gauge-result.json",
+    "sha256": "db5822e74d35c7ad97891c1b6ca27ecf7dda5d6bc7309a2fd4a09f01b2175106",
+    "sourceHashesMatch": true,
+    "scope": "Presence/source correspondence checked. Parent performed runtime assertions; this independent review does not infer their success from stills."
+  },
+  "limitations": [
+    "First 12 and later 12 captures are separate verification segments after partial-value preparation; they are not a continuous gauge recovery curve.",
+    "Static images cannot establish elapsed-frame recovery, rounding correctness, pause/hidden freezing, spending, save invariance, lifecycle, input or physical devices.",
+    "Gauge maxima/recovery and validation terrain are explicit provisional fixtures, not completed attack/redraw/equipment registration or product balancing.",
+    "The existing validation platform label may sit behind the actor in moving shots; no required gauge-display correction identified.",
+    "No Unity commands, tests, product/source edits or original-image changes performed."
+  ]
+}

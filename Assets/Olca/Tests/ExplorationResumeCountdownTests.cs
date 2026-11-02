@@ -134,5 +134,36 @@ namespace Olca.Tests
             Assert.Throws<System.ArgumentOutOfRangeException>(()=>p.ResolveHorizontalCenter(0,32*u,float.NaN));Assert.Throws<System.ArgumentOutOfRangeException>(()=>p.ResolveHorizontalCenter(0,32*u,0));Assert.Throws<System.ArgumentOutOfRangeException>(()=>p.ResolveHorizontalCenter(-1,32*u,10));Assert.Throws<System.ArgumentOutOfRangeException>(()=>OutsideCameraPolicy.FixedAt(33*u).ResolveHorizontalCenter(0,32*u,10));
             var s=new OutsideExplorationSession();Assert.Throws<System.ArgumentNullException>(()=>s.TryConfigureCamera(null));Assert.Throws<System.ArgumentOutOfRangeException>(()=>s.TryConfigureCamera(OutsideCameraPolicy.FixedAt(33*u)));s.Dispose();Assert.Throws<System.ObjectDisposedException>(()=>s.TryConfigureCamera(p));
         }
+        [TestCase(1)] [TestCase(7)] [TestCase(120)]
+        public void 外界カードゲージは描画分割に依存せず移動ジャンプ中も六十Hzで回復する(int batch)
+        {
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationTerrain);Assert.IsTrue(core.CardGauge.TrySpend(100));
+            for(int i=0;i<120;i+=batch)for(int j=i;j<System.Math.Min(i+batch,120);j++)core.TickFrame(j<60?1:-1,j==0,j<24);
+            Assert.AreEqual(20*OutsideCardGauge.UnitsPerPoint,core.CardGauge.CurrentUnits);Assert.AreEqual(120,core.Frame);
+        }
+        [Test] public void 外界カードゲージ不足と不正消費は残量を変えず回復に待ち時間を設けない()
+        {
+            var g=new OutsideCardGauge(100,10,20);Assert.IsFalse(g.TrySpend(21));Assert.AreEqual(1200,g.CurrentUnits);Assert.Throws<System.ArgumentOutOfRangeException>(()=>g.TrySpend(-1));Assert.IsTrue(g.TrySpend(20));g.AdvanceFrame();Assert.AreEqual(10,g.CurrentUnits);Assert.IsTrue(g.TrySpend(0));Assert.AreEqual(10,g.CurrentUnits);
+        }
+        [Test] public void 外界カードゲージ最大量変更は残量を維持し超過だけ切り捨てる()
+        {
+            var g=new OutsideCardGauge(100,10,80);g.AdvanceFrame();long amount=g.CurrentUnits;g.Configure(140,20);Assert.AreEqual(amount,g.CurrentUnits);g.Configure(50,0);Assert.AreEqual(3000,g.CurrentUnits);Assert.IsTrue(g.TrySpend(10));for(int i=0;i<120;i++)g.AdvanceFrame();Assert.AreEqual(2400,g.CurrentUnits);g.RestoreFull();Assert.AreEqual(3000,g.CurrentUnits);
+        }
+        [Test] public void 外界カードゲージは無効設定を原子的に拒否し表現上限でも溢れない()
+        {
+            var g=new OutsideCardGauge(100,10,80);Assert.Throws<System.ArgumentOutOfRangeException>(()=>g.Configure(0,10));Assert.Throws<System.ArgumentOutOfRangeException>(()=>g.Configure(200,-1));Assert.AreEqual(100,g.Maximum);Assert.AreEqual(10,g.RecoveryPerSecond);Assert.AreEqual(4800,g.CurrentUnits);Assert.Throws<System.ArgumentOutOfRangeException>(()=>new OutsideCardGauge(100,1,101));
+            var large=new OutsideCardGauge(int.MaxValue,int.MaxValue,int.MaxValue);Assert.IsTrue(large.TrySpend(int.MaxValue));for(int i=0;i<61;i++)large.AdvanceFrame();Assert.AreEqual(large.MaximumUnits,large.CurrentUnits);
+        }
+        [Test] public void 外界カードゲージはView世代と切断で初期化せずSessionごとに独立する()
+        {
+            using(var a=new OutsideExplorationSession())using(var b=new OutsideExplorationSession()){a.Core.CardGauge.TrySpend(20);long amount=a.Core.CardGauge.CurrentUnits;var first=a.AttachPresentation();var second=a.AttachPresentation();first.Dispose();Assert.IsTrue(second.IsCurrent);second.Dispose();Assert.AreEqual(amount,a.Core.CardGauge.CurrentUnits);Assert.AreEqual(6000,b.Core.CardGauge.CurrentUnits);}
+        }
+        [TestCase(1,0,"0.9 / 1","1.0 / 1")] [TestCase(100,99,"99.9 / 100","100.0 / 100")]
+        public void 外界ゲージ表示は整数コスト直前と満量直前に消費可能量を過大表示しない(int maximum,int initial,string before,string full)
+        {
+            var gauge=new OutsideCardGauge(maximum,1,initial);for(int i=0;i<59;i++)gauge.AdvanceFrame();long units=gauge.CurrentUnits;
+            StringAssert.EndsWith(before,Olca.Presentation.Exploration.OutsideExplorationView.FormatCardGauge(gauge));Assert.AreEqual(units,gauge.CurrentUnits);Assert.IsFalse(gauge.TrySpend(maximum));
+            gauge.AdvanceFrame();StringAssert.EndsWith(full,Olca.Presentation.Exploration.OutsideExplorationView.FormatCardGauge(gauge));Assert.IsTrue(gauge.TrySpend(maximum));Assert.AreEqual(0,gauge.CurrentUnits);
+        }
     }
 }

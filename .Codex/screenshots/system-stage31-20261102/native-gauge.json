@@ -1,0 +1,641 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "5200cc7d387ddd5b447f33001c6841f8a0caa7b5fa729c99660cb03557a17f2a",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "b307676076f93974460ac5617cec18e12b9d78e3759d629b57c1fd130bd30c39",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "c99a0bf337d33a8afb70a1626ed7e4584030de2de5f04d6c0ac2c866bdcae337",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "version": "v2",
+  "beforeSaveHashes": {
+    "progress/progress.json": "26b4cc5ae292f009624765d1ee20080e57b9409dc88cba66cadeca960df91b22"
+  },
+  "afterSaveHashes": {
+    "progress/progress.json": "26b4cc5ae292f009624765d1ee20080e57b9409dc88cba66cadeca960df91b22"
+  },
+  "legacyBefore": {
+    "core": -589402004,
+    "runtime": -164564948,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "legacyAfter": {
+    "core": -589402004,
+    "runtime": -164564948,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "byteComparisonScope": "pre-host input/view/config interval only; existing host Suspend recorded separately",
+  "hostSuspendSaveBefore": {
+    "progress/progress.json": "26b4cc5ae292f009624765d1ee20080e57b9409dc88cba66cadeca960df91b22"
+  },
+  "hostSuspendSaveAfter": {
+    "progress/progress.json": "26b4cc5ae292f009624765d1ee20080e57b9409dc88cba66cadeca960df91b22"
+  },
+  "postHostSaveHashes": {
+    "progress/progress.json": "26b4cc5ae292f009624765d1ee20080e57b9409dc88cba66cadeca960df91b22"
+  },
+  "postHostSaveInvariant": true,
+  "postHostLegacyBefore": {
+    "core": 1421185996,
+    "runtime": 148040896,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "postHostLegacyAfter": {
+    "core": 1421185996,
+    "runtime": 148040896,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "fixture": "max100/recovery10 provisional allowed by spec; partial20 prepared via dataAPI spend80, not a card attack or new input. Max140/10 and refill are verification dataAPI calls, not equipment/recovery/map registration.",
+  "actualInput": "existing entry/pause/back/return actual EventSystem Raycast, InputSystem keyboard for movement/jump; no direct Core tick or position writes",
+  "physicalInputNotRun": true,
+  "nativePadNotRun": true,
+  "recoveryFixture": "Previous closed-view-destroy helper auto-reopened existing view; no gauge defect claimed. Reprepared partial20 via API after actual Back. Earlier12images/inputs retained, hidden-back and active naturalDestroy now measured separately.",
+  "recoveryPrepared": {
+    "frame": 21138,
+    "clock": 21138,
+    "position": 828000,
+    "height": 60000,
+    "velocity": 0,
+    "support": "validation-top",
+    "gauge": -345743718,
+    "core": -1071780912,
+    "units": 1200,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": false,
+    "paused": false,
+    "scale": 0
+  },
+  "initialRootGauge": {
+    "frame": 0,
+    "clock": 0,
+    "position": 480000,
+    "height": 0,
+    "velocity": 0,
+    "support": "floor",
+    "gauge": -345743718,
+    "core": -1071780912,
+    "units": 6000,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": false,
+    "paused": false,
+    "scale": 1
+  },
+  "prepared": {
+    "frame": 0,
+    "clock": 0,
+    "position": 480000,
+    "height": 0,
+    "velocity": 0,
+    "support": "floor",
+    "gauge": -345743718,
+    "core": -1071780912,
+    "units": 1200,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": false,
+    "paused": false,
+    "scale": 0
+  },
+  "initial": {
+    "state": {
+      "frame": 0,
+      "clock": 0,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": -345743718,
+      "core": -1071780912,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "text": "カードゲージ  20.0 / 100",
+    "shown": 20,
+    "actual": 20,
+    "width": 79.2,
+    "expected": 79.2,
+    "labelWidth": 400,
+    "font": "JikiTourai",
+    "fontUsed": 7,
+    "visibleCharacters": 18,
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "moving": {
+    "actualTimestampedKeyboard": true,
+    "requestedFrames": 60,
+    "delta": 60,
+    "beforeUnits": 1310,
+    "beforePosition": 480000,
+    "after": {
+      "state": {
+        "frame": 71,
+        "clock": 71,
+        "position": 828000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1910,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  31.8 / 100",
+      "shown": 31.8,
+      "actual": 31.833333333333332,
+      "width": 126.06,
+      "expected": 126.06,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "standing": {
+    "actualTimestampedKeyboard": true,
+    "requestedFrames": 60,
+    "delta": 60,
+    "beforeUnits": 2030,
+    "beforePosition": 828000,
+    "after": {
+      "state": {
+        "frame": 143,
+        "clock": 143,
+        "position": 828000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 2630,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  43.8 / 100",
+      "shown": 43.8,
+      "actual": 43.833333333333336,
+      "width": 173.58,
+      "expected": 173.58,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "jump": {
+    "samplerDisabled": true,
+    "samplerControllerAbsent": true,
+    "sprite": "jump_apex",
+    "path": "Assets/Art/Sprites/Characters/Heroine/Jump/jump_apex.png",
+    "pivot": {
+      "x": 0.49609375,
+      "y": 0.0546875
+    },
+    "size": {
+      "x": 276.47998,
+      "y": 276.47998
+    },
+    "footY": 334.08,
+    "state": {
+      "frame": 184,
+      "clock": 184,
+      "gaugeUnits": 3040,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10,
+      "position": 828000,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false,
+      "support": null,
+      "worldX": 13.8,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -322223904,
+          "session": -1813665712,
+          "presented": true,
+          "ended": false,
+          "resources": 10,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -322225682,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": -1813665712,
+        "core": -589402004,
+        "runtime": -164564948,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 0,
+        "focus": "CloseOutsideExploration",
+        "buttons": [
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "jumpBefore": {
+    "frame": 143,
+    "clock": 143,
+    "position": 828000,
+    "height": 0,
+    "velocity": 0,
+    "support": "floor",
+    "gauge": -345743718,
+    "core": -1071780912,
+    "units": 2630,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": true,
+    "paused": false,
+    "scale": 0
+  },
+  "jumpAfter": {
+    "frame": 184,
+    "clock": 184,
+    "position": 828000,
+    "height": 185600,
+    "velocity": 400,
+    "support": null,
+    "gauge": -345743718,
+    "core": -1071780912,
+    "units": 3040,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": true,
+    "paused": false,
+    "scale": 0
+  },
+  "pause": {
+    "actualPause": true,
+    "after": {
+      "state": {
+        "frame": 305,
+        "clock": 305,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 4250,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": true,
+        "scale": 0
+      },
+      "text": "カードゲージ  70.8 / 100",
+      "shown": 70.8,
+      "actual": 70.83333333333333,
+      "width": 280.5,
+      "expected": 280.5,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "hiddenView": {
+    "actualHiddenReturn700ms": true,
+    "activeNaturalDestroyRecovery": true,
+    "oldId": -322226628,
+    "replacementId": -322227248,
+    "after": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 1200,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 100",
+      "shown": 20,
+      "actual": 20,
+      "width": 79.2,
+      "expected": 79.2,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "maximumIncrease": {
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "height": 60000,
+      "velocity": 0,
+      "support": "validation-top",
+      "gauge": -345743718,
+      "core": -1071780912,
+      "units": 1200,
+      "maximum": 140,
+      "maximumUnits": 8400,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "text": "カードゲージ  20.0 / 140",
+    "shown": 20,
+    "actual": 20,
+    "width": 56.57143,
+    "expected": 56.57143,
+    "labelWidth": 400,
+    "font": "JikiTourai",
+    "fontUsed": 7,
+    "visibleCharacters": 18,
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "maximumClamp": {
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "height": 60000,
+      "velocity": 0,
+      "support": "validation-top",
+      "gauge": -345743718,
+      "core": -1071780912,
+      "units": 600,
+      "maximum": 10,
+      "maximumUnits": 600,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "text": "カードゲージ  10.0 / 10",
+    "shown": 10,
+    "actual": 10,
+    "width": 396,
+    "expected": 396,
+    "labelWidth": 400,
+    "font": "JikiTourai",
+    "fontUsed": 7,
+    "visibleCharacters": 17,
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "insufficientAndEmpty": {
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "height": 60000,
+      "velocity": 0,
+      "support": "validation-top",
+      "gauge": -345743718,
+      "core": -1071780912,
+      "units": 0,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "text": "カードゲージ  0.0 / 100",
+    "shown": 0,
+    "actual": 0,
+    "width": 0,
+    "expected": 0,
+    "labelWidth": 400,
+    "font": "JikiTourai",
+    "fontUsed": 7,
+    "visibleCharacters": 17,
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "hostEntryFixture": "Initial host Close/Open succeeded, immediate entry raycast was occluded; current observed hit was entry and gauge/core unchanged. Completed only entry after layout wait, no repeated host writes.",
+  "hostPreservation": {
+    "completedExistingHostAfterLayoutObservation": true,
+    "closeOpenNotRepeated": true,
+    "readiness": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 0,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": false,
+        "paused": false,
+        "scale": 0
+      },
+      "button": "OutsideExplorationEntry",
+      "interactable": true,
+      "hits": [
+        {
+          "name": "OutsideExplorationEntry",
+          "parentButton": "OutsideExplorationEntry"
+        },
+        {
+          "name": "ClearReturnPanel",
+          "parentButton": null
+        }
+      ]
+    },
+    "after": {
+      "state": {
+        "frame": 21138,
+        "clock": 21138,
+        "position": 828000,
+        "height": 60000,
+        "velocity": 0,
+        "support": "validation-top",
+        "gauge": -345743718,
+        "core": -1071780912,
+        "units": 0,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  0.0 / 100",
+      "shown": 0,
+      "actual": 0,
+      "width": 0,
+      "expected": 0,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 17,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "restored": {
+    "state": {
+      "frame": 21138,
+      "clock": 21138,
+      "position": 828000,
+      "height": 60000,
+      "velocity": 0,
+      "support": "validation-top",
+      "gauge": -345743718,
+      "core": -1071780912,
+      "units": 6000,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "text": "カードゲージ  100.0 / 100",
+    "shown": 100,
+    "actual": 100,
+    "width": 396,
+    "expected": 396,
+    "labelWidth": 400,
+    "font": "JikiTourai",
+    "fontUsed": 7,
+    "visibleCharacters": 19,
+    "screen": [
+      640,
+      360
+    ]
+  }
+}

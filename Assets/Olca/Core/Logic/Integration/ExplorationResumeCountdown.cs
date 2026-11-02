@@ -21,6 +21,28 @@ namespace Olca.Core.Logic.Integration
 
 namespace Olca.Core.Logic.Integration
 {
+    /// <summary>探索カード用の共有消費ゲージ。Dungeonのカスタム開放時計とは独立。</summary>
+    public sealed class OutsideCardGauge
+    {
+        // 1点を60分割し、整数の毎秒回復量を60Hzで誤差なく積算する。
+        public const long UnitsPerPoint=60;
+        public int Maximum {get;private set;}
+        public int RecoveryPerSecond {get;private set;}
+        public long MaximumUnits=>(long)Maximum*UnitsPerPoint;
+        public long CurrentUnits {get;private set;}
+        public OutsideCardGauge(int maximum,int recoveryPerSecond,int initialPoints)
+        {Validate(maximum,recoveryPerSecond);if(initialPoints<0||initialPoints>maximum)throw new System.ArgumentOutOfRangeException(nameof(initialPoints));Maximum=maximum;RecoveryPerSecond=recoveryPerSecond;CurrentUnits=(long)initialPoints*UnitsPerPoint;}
+        private static void Validate(int maximum,int recovery)
+        {if(maximum<=0||recovery<0)throw new System.ArgumentOutOfRangeException(nameof(maximum));}
+        public void Configure(int maximum,int recoveryPerSecond)
+        {Validate(maximum,recoveryPerSecond);Maximum=maximum;RecoveryPerSecond=recoveryPerSecond;CurrentUnits=System.Math.Min(CurrentUnits,MaximumUnits);}
+        public bool TrySpend(int cardCost)
+        {if(cardCost<0)throw new System.ArgumentOutOfRangeException(nameof(cardCost));long units=(long)cardCost*UnitsPerPoint;if(CurrentUnits<units)return false;CurrentUnits-=units;return true;}
+        public void AdvanceFrame(){CurrentUnits=System.Math.Min(MaximumUnits,CurrentUnits+RecoveryPerSecond);}
+        public void RestoreFull(){CurrentUnits=MaximumUnits;}
+        // 仕様で仮値が許可された最大量/回復速度。初期満量も検証マップだけの設定。
+        public static OutsideCardGauge ValidationDefault=>new OutsideCardGauge(100,10,100);
+    }
     /// <summary>外界マップの水平カメラ方針。投影倍率やゲーム座標は変更しない。</summary>
     public sealed class OutsideCameraPolicy
     {
@@ -109,6 +131,7 @@ namespace Olca.Core.Logic.Integration
     public sealed class OutsideExplorationCore
     {
         public OutsideMovementDefinition Definition {get;}
+        public OutsideCardGauge CardGauge {get;}=OutsideCardGauge.ValidationDefault;
         public long Position {get;private set;}
         public int Facing {get;private set;}=1;
         public long Frame {get;private set;}
@@ -147,7 +170,7 @@ namespace Olca.Core.Logic.Integration
         public void TickFrame(float horizontal,bool jumpDown=false,bool jumpHeld=false)
         {
             if(float.IsNaN(horizontal)||float.IsInfinity(horizontal))throw new System.ArgumentOutOfRangeException(nameof(horizontal));
-            Frame++;bool launch=jumpDown&&!jumpWasHeld&&IsGrounded;jumpWasHeld=jumpHeld;
+            Frame++;CardGauge.AdvanceFrame();bool launch=jumpDown&&!jumpWasHeld&&IsGrounded;jumpWasHeld=jumpHeld;
             long previous=Position,oldHeight=Height;
             int direction=horizontal>0?1:horizontal<0?-1:0;
             if(direction==0)remainder=0;

@@ -1,0 +1,14 @@
+{
+  "editorPid": 137059,
+  "sameVmEditorModelAuthentication": true,
+  "sourceVersion": "v2",
+  "firstCompileJob": "23692ff5ba454e66816ca6d0d9252458",
+  "finalCompileJob": "de74a1debc6c46dd9f98ad3621a681ee",
+  "v1StaticRequired1": "HUD F1 rounding could show1.0 when59/60 units, even though spend1 rejects. Test gate stopped before any Unity test.",
+  "v2Fix": "Only display truncates tenths; data/consume unchanged. Two boundary cases added.",
+  "preflightGuardTypo": "Test-count substring replacement changed height360 to380 in an already executing verification copy. Actual Screen/twoRT640x360 triggered guard BEFORE tests. Original helper/readback archived; restored exact360, no render resend or test-expected relaxation.",
+  "hiddenFixtureAssumption": "Original helper destroyed a closed cached View; existing HasLostView auto-reopened it, so it was no longer hidden. No gauge defect claimed. Actual Back hidden700ms and active naturalDestroy recovery tested separately after partial20 reprepare. Earlier12images retained; no continuous curve claimed across fixture reset.",
+  "hostEntryFixture": "Host Close/Open completed; immediate entry raycast was occluded (initial blocker not recorded, no cause claimed). Later current hit was entry and Core/gauge0 unchanged; completed entry only after yield, did not repeat host writes.",
+  "noDuplicateUncertainOperations": true,
+  "fullWrapperTimedOut": true
+}
