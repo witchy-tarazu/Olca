@@ -1,0 +1,33 @@
+{
+  "status": {
+    "status": "ready",
+    "compiling": false,
+    "domainReloadInProgress": false,
+    "playMode": "stopped",
+    "lastHeartbeat": "2026-11-02T21:32:14.805485Z",
+    "projectPath": "/workspace/olca-validation-20261024/project",
+    "unityVersion": "6000.3.26f1"
+  },
+  "actualRender": {
+    "screen": [
+      640,
+      360
+    ],
+    "textures": [
+      {
+        "name": "GameView.m_RenderTexture",
+        "width": 640,
+        "height": 360
+      },
+      {
+        "name": "PlayModeView.m_TargetTexture",
+        "width": 640,
+        "height": 360
+      }
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/",
+    "playing": false
+  },
+  "oneStopOnly": true,
+  "sameEditorPid": 137059
+}

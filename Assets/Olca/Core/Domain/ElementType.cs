@@ -22,7 +22,8 @@ namespace Olca.Core.Domain
     }
     /// <summary>属性・カード系統とは独立した攻撃性質。明示した定義だけで使用する。</summary>
     [System.Flags]
-    public enum AttackProperty { None = 0, Sword = 1, Break = 2, Wind = 4 }
+    // 旧bitは保存定義と互換。追加3種は分類のみで共通効果を持たない。
+    public enum AttackProperty { None = 0, Sword = 1, Break = 2, Wind = 4, Shooting = 8, Healing = 16, Support = 32 }
 
     /// <summary>外部指定のガード判定。発生元・期間・入力は所有しない。</summary>
     public sealed class BattleGuardState
@@ -108,7 +109,7 @@ namespace Olca.Core.Domain
     {
         internal static void Validate(AttackProperty value)
         {
-            if ((value & ~(AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind)) != 0)
+            if ((value & ~(AttackProperty.Sword | AttackProperty.Break | AttackProperty.Wind | AttackProperty.Shooting | AttackProperty.Healing | AttackProperty.Support)) != 0)
                 throw new System.ArgumentOutOfRangeException(nameof(value), "未定義の攻撃性質です");
         }
     }

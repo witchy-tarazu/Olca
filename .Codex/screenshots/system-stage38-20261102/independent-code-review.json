@@ -1,0 +1,25 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "7b1d60e6e3eb4ad98590e6af4cf4bfdce3aa2a65ab541fbbfb03a99ebac5d2f0",
+    "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs": "1f231273a730752f95afb8a9f13da4bb4f616325637e8e19804f97c39e3c0113",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "38c7b902900d26ebe8c680275daf1abbb3ea030c03eed51b2712b74c52a8f655",
+    "Assets/Olca/Tests/Battle/ElementalDamageTests.cs": "4d8ebe529f6d2fd10aa9eb0d746c894afbb599b7d14999c302d82e374a536631",
+    "Assets/Olca/Tests/Domain/CardMasterParseTests.cs": "32d634593f145ba19f37256f6b556910f1544249f91bc27bf6fe1c826498621a"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "hashReceiptMatchesCurrent": true,
+  "checked": [
+    "Old AttackProperty bits1/2/4 unchanged; new8/16/32 only expand explicit classification validation. No auto-tags, new effects or ElementType changes.",
+    "Existing Master/DTO/Clone/hash numeric paths accept defined masks; regression covers0..63, unknown64/65/128/-1 and old0..7/product18 hash baselines.",
+    "Existing TransformationWeakness single-designation contract remains explicit; new classifications are not implicitly made weakness or effect definitions.",
+    "Detail Bind creates only old3 icons via same generated-asset lease ownership. New classifications use text prefix; mixed list names stable, subsequent None/old-only binding clears extra names/hidden rows. No new image generation.",
+    "Old unknown8 tests now unknown64 retain same atomic damage/no-event rejection expectations."
+  ],
+  "limits": [
+    "Static scope only; compile/Unity tests/native rendering unverified.",
+    "Text fallback may increase detail height; actual wrapping/scroll/three-ratio visibility requires native checks.",
+    "No new product card definitions/effects or compatibility guarantee for future schemas implied.",
+    "Reviewer did not mutate source, invoke Unity or run tests."
+  ]
+}

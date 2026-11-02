@@ -827,11 +827,11 @@ namespace Olca.Tests.Battle
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness(ElementType.None));
             Assert.Throws<System.ArgumentOutOfRangeException>(() => new TransformationWeakness((ElementType)99));
             int changed = 0; player.OnHpChanged += (hp, max) => changed++;
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.TakeDamage(10, attackProperties: (AttackProperty)8));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => player.TakeDamage(10, attackProperties: (AttackProperty)64));
             Assert.AreEqual(0, changed); Assert.AreEqual(100, player.CurrentHp);
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => new BasicAttackAction(10, 100, attackProperties: (AttackProperty)8));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new BasicAttackAction(10, 100, attackProperties: (AttackProperty)64));
             var enemy = new Enemy("e", "検証", 100, ElementType.None, Vector2Int.Zero);
-            Assert.Throws<System.ArgumentOutOfRangeException>(() => enemy.TakeDamage(10, ElementType.None, (AttackProperty)8));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => enemy.TakeDamage(10, ElementType.None, (AttackProperty)64));
             Assert.AreEqual(100, enemy.CurrentHp);
         }
 
