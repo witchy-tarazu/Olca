@@ -35,6 +35,7 @@ namespace Olca.Presentation.Exploration
         private Olca.Unity.MenuPadScope menu;
         private Button back,pause;private bool covered;private int uncoveredFrame=-1;
         private Action returned;
+        private Sprite idleSprite,riseSprite,apexSprite,fallSprite;private AnimationClip moveClip,idleClip;private SpriteRenderer motionSample;
         private Image player,terrain;private Text leftEnd,rightEnd;private float pixelsPerWorldUnit;
         public bool CanPlay=>IsOpen&&!covered&&Time.frameCount!=uncoveredFrame&&!context.DialogBlocksInput&&Olca.Unity.MenuPadScope.IsTopmost(transform);
         public bool IsOpen=>context?.IsCurrent==true&&presentation?.IsCurrent==true&&gameObject.activeInHierarchy;
@@ -52,7 +53,10 @@ namespace Olca.Presentation.Exploration
             Image Picture(string name,Sprite sprite,Vector2 min,Vector2 max){if(sprite==null)throw new InvalidOperationException("外界入口の画像がありません: "+name);var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=sprite;image.raycastTarget=false;var r=image.rectTransform;r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;return image;}
             var background=Picture("OutsideOriginalBackground",Find("DungeonBackground"),Vector2.zero,Vector2.one);var cover=background.gameObject.AddComponent<AspectRatioFitter>();cover.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;cover.aspectRatio=background.sprite.rect.width/background.sprite.rect.height;
             terrain=Picture("OutsideEntryGround",Find("Ground"),Vector2.zero,new Vector2(1,.21f));terrain.type=Image.Type.Tiled;
-            var idle=source.GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredIdlePlayerSprite;player=Picture("OutsideEntryPlayer",idle,new Vector2(0,.21f),new Vector2(0,.21f));player.rectTransform.pivot=idle.pivot/idle.rect.size;pixelsPerWorldUnit=1080f/(2*resources.GetShared<GameObject>("OlcaSystem/GameplayCamera").GetComponent<Camera>().orthographicSize);player.rectTransform.sizeDelta=new Vector2(idle.bounds.size.x,idle.bounds.size.y)*pixelsPerWorldUnit;player.rectTransform.localScale=new Vector3(-1,1,1);
+            var field=source.GetComponent<Olca.Presentation.Field.GameFieldView>();var idle=idleSprite=field.AuthoredIdlePlayerSprite;
+            riseSprite=field.AuthoredJumpRiseSprite;apexSprite=field.AuthoredJumpApexSprite;fallSprite=field.AuthoredJumpFallSprite;moveClip=field.AuthoredMoveClip;idleClip=field.AuthoredIdleClip;
+            if(moveClip!=null){var sampler=new GameObject("OutsideImportedMotionSample",typeof(SpriteRenderer),typeof(Animator));sampler.transform.SetParent(transform,false);motionSample=sampler.GetComponent<SpriteRenderer>();motionSample.enabled=false;var animator=sampler.GetComponent<Animator>();animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;animator.enabled=false;}
+            player=Picture("OutsideEntryPlayer",idle,new Vector2(0,.21f),new Vector2(0,.21f));player.rectTransform.pivot=idle.pivot/idle.rect.size;pixelsPerWorldUnit=1080f/(2*resources.GetShared<GameObject>("OlcaSystem/GameplayCamera").GetComponent<Camera>().orthographicSize);player.rectTransform.sizeDelta=new Vector2(idle.bounds.size.x,idle.bounds.size.y)*pixelsPerWorldUnit;player.rectTransform.localScale=new Vector3(-1,1,1);
             var header=Picture("OutsideHeadingSurface",resources.GetShared<Sprite>("OlcaUI/window"),new Vector2(0,1),Vector2.one);header.type=Image.Type.Sliced;header.rectTransform.pivot=new Vector2(.5f,1);header.rectTransform.sizeDelta=new Vector2(0,120);
             var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);var title=factory.Label("OutsideExplorationTitle",transform,new Vector2(0,1),new Vector2(630,-62),new Vector2(1180,70));title.text="ガイカイ タンサク  /  ケンショウ チケイ";title.alignment=TextAnchor.MiddleLeft;title.fontSize=28;title.color=Olca.Presentation.Dungeon.UiLook.Ink;title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.offsetMin=new Vector2(40,-97);title.rectTransform.offsetMax=new Vector2(-580,-27);
             leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-45),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
@@ -65,7 +69,7 @@ namespace Olca.Presentation.Exploration
             Hide();covered=false;uncoveredFrame=-1;context=owner;presentation=lease;returned=onBack;gameObject.SetActive(true);transform.SetAsLastSibling();
             var captured=owner;var capturedLease=lease;back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&!covered&&Time.frameCount!=uncoveredFrame&&!captured.DialogBlocksInput)returned?.Invoke();});
             if(pause!=null){pause.gameObject.SetActive(onPause!=null);pause.onClick=new Button.ButtonClickedEvent();pause.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&CanPlay)onPause?.Invoke();});}
-            menu=new Olca.Unity.MenuPadScope(()=>CanPlay);menu.Bind(transform,back.name,()=>back.onClick.Invoke());UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(back.gameObject);Render();
+            menu=new Olca.Unity.MenuPadScope(()=>CanPlay){CancelOnly=true};menu.Bind(transform,back.name,()=>back.onClick.Invoke());UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(back.gameObject);Render();
         }
         public void SetCovered(bool value)
         {
@@ -81,7 +85,12 @@ namespace Olca.Presentation.Exploration
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;
             float camera=width<=viewport?width*.5f:Mathf.Clamp(worldX,viewport*.5f-1,width-viewport*.5f+1);
             float Origin(float x)=>(x-camera+viewport*.5f)*pixelsPerWorldUnit;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),0);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);
+            Sprite sprite=idleSprite;
+            if(!core.IsGrounded)sprite=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apexSprite:core.VerticalVelocity>0?riseSprite:fallSprite;
+            else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null&&motionSample!=null){long frame=core.IsMoving?core.MovementFrame:core.Frame;clip.SampleAnimation(motionSample.gameObject,(float)((frame/60d)%clip.length));sprite=motionSample.sprite;}}
+            if(sprite==null)sprite=idleSprite;
+            player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)
             {

@@ -43,6 +43,13 @@ namespace Olca.Presentation.Field
         [Header("プレイヤーモックスプライト")]
         [SerializeField] private Sprite idlePlayerSprite;
         public Sprite AuthoredIdlePlayerSprite=>idlePlayerSprite;
+        public Sprite AuthoredJumpRiseSprite=>jumpRisePlayerSprite;
+        public Sprite AuthoredJumpApexSprite=>jumpApexPlayerSprite;
+        public Sprite AuthoredJumpFallSprite=>jumpFallPlayerSprite;
+        public AnimationClip AuthoredIdleClip=>playerAnimator!=null&&playerAnimator.runtimeAnimatorController!=null
+            ?System.Array.Find(playerAnimator.runtimeAnimatorController.animationClips,clip=>clip.name=="Player_Idle"):null;
+        public AnimationClip AuthoredMoveClip=>playerAnimator!=null&&playerAnimator.runtimeAnimatorController!=null
+            ?System.Array.Find(playerAnimator.runtimeAnimatorController.animationClips,clip=>clip.name=="Player_Move"):null;
         [SerializeField] private Sprite dashPlayerSprite;
         [SerializeField] private Sprite jumpRisePlayerSprite;
         [SerializeField] private Sprite jumpApexPlayerSprite;

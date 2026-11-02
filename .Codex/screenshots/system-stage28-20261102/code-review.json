@@ -1,0 +1,119 @@
+{
+  "stage": 28,
+  "reviewType": "independent static code review",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "0ceb9b999520869ace63971e3e1fe4c61353a8a4befd25f7e920f5302d201208",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "dffc8242a2e0a36ee0df34fe299e525247ca9597aa523756c41009a25079b5b5",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "8a4eb1799734ab2d04902257036589fb15225d1e7947f5326b26996411ffe135",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "hashReceiptMatchesCurrent": true,
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "checked": [
+    "Outside Core owns Height/VerticalVelocity/grounded and jump edge-held history; validation-only constants12000/400/4000 and no airborne press buffering. Held landing cannot auto-rejump without release/new edge.",
+    "LogicalInput.MemberwiseClone carries JumpButton held; ClearEdges preserves held; existing queue merges Down and final held, preserving existing Dungeon Down path.",
+    "Runtime passes jump edge/held only after existing timestamp neutral gate and GameplayPause barrier; no extra clock/input provider.",
+    "Outside view selects imported jump sprites and samples existing Move clip by logical MovementFrame. Current Move clip binds root SpriteRenderer m_Sprite only, length0.64; borrowed assets not destroyed.",
+    "Core tests verify held/tap height, render-time partition invariance, airborne re-press/held landing and session presentation lease retention.",
+    "v2 CancelOnly defaults false. Outside view alone enables it; Tick still captures/owns menu UI and processes Cancel first, then discards all other commands before Decide/navigation/scroll. Existing menus unchanged. Pointer Button callbacks/focus remain intact; gameplay Jump held/edge sampling unchanged.",
+    "v3 sampler adds disabled Animator with AlwaysAnimate and no runtimeAnimatorController; still only explicit SampleAnimation at Core.MovementFrame/60 modulo existing clip length. Renderer remains disabled; owned sampler is child of owned View, imported clip/sprites remain borrowed and are never destroyed. No second logical clock or automatic animation update introduced.",
+    "v4 Outside idle samples existing authored idle clip using Core.Frame through same disabled sampler; GameFieldView only adds read-only AuthoredIdleClip property. No changes to existing Dungeon serialized mock sprite, PPU/pivot/import assets or Core/clock. Rendering selection remains separate from model movement."
+  ],
+  "validation": {
+    "status": "v4 static review only; final native body/feet/idle sampling and full suite pending. v3 receipts retained as prior source validation.",
+    "dynamicVerified": false
+  },
+  "limits": [
+    "Scoped review is not runtime/all-branch assurance.",
+    "Core direct-input tests do not replace actual queue same-frame press/release or native input verification.",
+    "Native needs sprite foot/pivot continuity, logical-frame sampling and pause/reentry airborne state checks.",
+    "Stage27 results do not validate Stage28 jump changes.",
+    "No source edits, Unity operations or tests executed by reviewer."
+  ],
+  "history": [
+    {
+      "version": "v1",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "0ceb9b999520869ace63971e3e1fe4c61353a8a4befd25f7e920f5302d201208",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "399aead4db6a5fca033a5a750d158fe792cf62d60e22b8682d35d7809861134b",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "64df82c3b16a415231881fc1ead13daa53ad9ae76ba26324a21aa119f21ce859",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "8a4eb1799734ab2d04902257036589fb15225d1e7947f5326b26996411ffe135",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+        "Assets/Olca/Unity/UnityInputProvider.cs": "6d9f773c4e5f6e50f2770adb27c92dce4bf569848cf554b3bf449c25f4cfc012",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "nativeFailure": "Actual South jump event also reached MenuPadScope Decide on Back and closed outside View at height12000/velocity11600.",
+      "receipts": [
+        "system-stage28-v1-native/observed.json",
+        "system-stage28-v1-native/native-play-failure.log"
+      ],
+      "reviewLimit": "Initial static review missed game/menu command collision."
+    },
+    {
+      "version": "v2",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "0ceb9b999520869ace63971e3e1fe4c61353a8a4befd25f7e920f5302d201208",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "399aead4db6a5fca033a5a750d158fe792cf62d60e22b8682d35d7809861134b",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "cf4dc645c3a95a83c5b6cf4e4e63ffc513bd87ab9885df29312c2d4f2875c834",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "8a4eb1799734ab2d04902257036589fb15225d1e7947f5326b26996411ffe135",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+        "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "native": "South/East/tap/held/air horizontal/held landing/same-frame tap passed per parent; move sprite sampler returned null.",
+      "receiptDirectory": "system-stage28-v2-native-move/",
+      "diagnosis": "SpriteRenderer-only SampleAnimation failed actual imported clip; disabled Animator/no controller sampled move_03 with same clip. Prior static source-only binding check insufficient."
+    },
+    {
+      "version": "v3",
+      "sourceHashes": {
+        "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+        "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+        "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+        "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+        "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+        "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "0ceb9b999520869ace63971e3e1fe4c61353a8a4befd25f7e920f5302d201208",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+        "Assets/Olca/Presentation/Field/GameFieldView.cs": "399aead4db6a5fca033a5a750d158fe792cf62d60e22b8682d35d7809861134b",
+        "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "d3fd9debdd188385ce3d05fbc781d6170faa4b5b62ecadaf46f558aaa24ebb01",
+        "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+        "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+        "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "8a4eb1799734ab2d04902257036589fb15225d1e7947f5326b26996411ffe135",
+        "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+        "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+        "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+      },
+      "native": "Final input/air pause/natural destroy/air host CloseOpen/Single/save invariance and 30 images completed per parent.",
+      "receiptDirectory": "system-stage28-v3-complete/",
+      "visualFinding": "Existing mockIdle red-white clothing inconsistent with shared move/jump grey-black family."
+    }
+  ]
+}

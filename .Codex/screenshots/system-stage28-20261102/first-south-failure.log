@@ -1,0 +1,11 @@
+Tracked helper system-stage28-native-remember-legacy f97dfa5d195642b39151ad5fb6104f56
+Tracked helper system-stage28-native-held-entry 7b6c1d1e4f1e47218300a0d59b00ecee
+Tracked helper system-stage28-native-old-back-before-moving 1297902cdbcb4c2889dae16e36985b86
+Tracked helper system-stage28-native-background-save-blocked 3c453ecfbf55461baa5ba24fe792fb7b
+Tracked helper system-stage28-native-old-legacy-inputs f69db48360e343a9885944ad52601d1b
+Tracked helper system-stage28-jump-pad-south 1722eb09377e4531a6fe1a0c097e07c8
+Traceback (most recent call last):
+  File "/workspace/olca-validation-20261024/system-stage28-native-play.py", line 7, in <module>
+    padJump=o('PadJump','jump-pad-south');assert padJump['open'] and padJump['height']>0,padJump
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'actualPadSouth': True, 'open': False, 'height': 12000, 'state': {'frame': 598, 'clock': 598, 'position': 480000, 'height': 12000, 'velocity': 11600, 'grounded': False, 'worldX': 8, 'Facing': 1, 'map': 'validation-flat-32', 'baseState': {'runtimeLayoutTrial': False, 'root': {'root': -315720146, 'session': 202067344, 'presented': False, 'ended': False, 'resources': 10, 'dialogs': 0, 'events': 1, 'cameras': 1, 'listeners': 1, 'audio': 3}, 'view': -315721924, 'open': False, 'rootParent': True, 'layer': 'return-hub', 'session': 202067344, 'core': -1964858138, 'runtime': -434671972, 'phase': 'Dungeon', 'position': 0, 'hp': 100, 'revision': 1, 'pending': False, 'logicalFrame': 0, 'paused': False, 'scale': 1, 'focus': 'OutsideExplorationEntry', 'buttons': [{'name': 'OutsideExplorationEntry', 'interactable': True}, {'name': 'ConfirmDungeonSelection', 'interactable': True}, {'name': 'NewGameButton', 'interactable': True}, {'name': 'OpenTokenExchange', 'interactable': True}, {'name': 'OpenCustomizationUnlocks', 'interactable': False}, {'name': 'SelectDepartureStyle', 'interactable': True}, {'name': 'OpenCustomizationEditor', 'interactable': False}, {'name': 'CancelDungeonSelection', 'interactable': True}, {'name': 'PauseButton', 'interactable': True}, {'name': 'CardCollectionButton', 'interactable': True}, {'name': 'DungeonChoice_0', 'interactable': True}, {'name': 'ManualSaveButton', 'interactable': True}]}}}

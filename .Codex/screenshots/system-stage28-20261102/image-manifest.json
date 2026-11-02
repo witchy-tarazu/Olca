@@ -1,0 +1,512 @@
+[
+  {
+    "file": "outside-initial-fhd.png",
+    "sha256": "f57e735855c9a6779b17f484ca34d0f969b817d06c9daa663be110bc70f4e77a",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 785,
+      "clock": 785,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-initial-4k.png",
+    "sha256": "b69d2ae0c48e32756383a70a60182439b62b4f0b944e23072d8009502d4a1d38",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 785,
+      "clock": 785,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-initial-4by3.png",
+    "sha256": "1b05c92def86977ee94b20a3ccb336114375f96f368295ea6f0923bd55115ef9",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 785,
+      "clock": 785,
+      "position": 480000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-move-fhd.png",
+    "sha256": "1c0da2783d0694f1c74833177b700df0c3086172e13578ed2e7d6bdba5a7f609",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 1725,
+      "clock": 1725,
+      "position": 552000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-move-4k.png",
+    "sha256": "237e65f181f1d30de68f0b28b2a45e1499cbde79d6df2412ff509d8a66696101",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 1725,
+      "clock": 1725,
+      "position": 552000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-move-4by3.png",
+    "sha256": "0cc71a620166ec045136c5e92f679e8396350b4550e0bbe0e3a1172cd6c5fe68",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 1725,
+      "clock": 1725,
+      "position": 552000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "jump-rise-fhd.png",
+    "sha256": "42167c7b070bd3d85dcb0691836b4a7b06a822405d8979151788c207e77a891a",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 1882,
+      "clock": 1882,
+      "position": 552000,
+      "Facing": 1,
+      "height": 66000,
+      "velocity": 9600,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-rise-4k.png",
+    "sha256": "c2b46ca5616838534675851988f6fe549dd463752524e83d4d00a21f7998be6d",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 1882,
+      "clock": 1882,
+      "position": 552000,
+      "Facing": 1,
+      "height": 66000,
+      "velocity": 9600,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-rise-4by3.png",
+    "sha256": "70d5b3a53881e8770db9780ced7d64c8ec6fdff3011369803a510c08bae42a22",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 1882,
+      "clock": 1882,
+      "position": 552000,
+      "Facing": 1,
+      "height": 66000,
+      "velocity": 9600,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-apex-fhd.png",
+    "sha256": "d455cce97b9a27b8b1ed8bc77aace9d31435cf1d45748c160adcd294ffd025ed",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 2061,
+      "clock": 2061,
+      "position": 552000,
+      "Facing": 1,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-apex-4k.png",
+    "sha256": "bc9921325d7cff99d50d48954aa4ca25a4d1619f41e913f70ffbbea5cc23d306",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 2061,
+      "clock": 2061,
+      "position": 552000,
+      "Facing": 1,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-apex-4by3.png",
+    "sha256": "9f79f6336959f9d4eb3cd8156188c43b347eb0db7ea22b94f355cab7ccf3cc26",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 2061,
+      "clock": 2061,
+      "position": 552000,
+      "Facing": 1,
+      "height": 185600,
+      "velocity": 400,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-fall-fhd.png",
+    "sha256": "b33338f56b2aca4358fd1d9eb3a5633c74ed45584ac4439b74bce8315f30223e",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 2247,
+      "clock": 2247,
+      "position": 552000,
+      "Facing": 1,
+      "height": 180000,
+      "velocity": -2400,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-fall-4k.png",
+    "sha256": "51bca04e879836a651514e19085fbba99cd189a0e9b86fe45484bebba2adc07b",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 2247,
+      "clock": 2247,
+      "position": 552000,
+      "Facing": 1,
+      "height": 180000,
+      "velocity": -2400,
+      "grounded": false
+    }
+  },
+  {
+    "file": "jump-fall-4by3.png",
+    "sha256": "ca959cb72eab3ad9dcf07b60a31f6f9f65bf516b0bb4b76cb3cf17298fe443e6",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 2247,
+      "clock": 2247,
+      "position": 552000,
+      "Facing": 1,
+      "height": 180000,
+      "velocity": -2400,
+      "grounded": false
+    }
+  },
+  {
+    "file": "outside-left-edge-fhd.png",
+    "sha256": "914fbfd34b638519ab8ace1afe64207bbab216911f48dc3e08a3bde7cb33500d",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 3071,
+      "clock": 3071,
+      "position": 0,
+      "Facing": -1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-left-edge-4k.png",
+    "sha256": "02eeb8e1de69cfef080320a57f8bc089bdb3781653b31fea260bab68741d29e5",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 3071,
+      "clock": 3071,
+      "position": 0,
+      "Facing": -1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-left-edge-4by3.png",
+    "sha256": "0c90e16537682afdc198a055ef951fe8e10684ade60ffc345ec44f515db44b04",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 3071,
+      "clock": 3071,
+      "position": 0,
+      "Facing": -1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-follow-fhd.png",
+    "sha256": "8df58c43e73ebac29f941f52b668a73f63c0e272889420f23cf7f1b4ee476c8f",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 3455,
+      "clock": 3455,
+      "position": 1020000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-follow-4k.png",
+    "sha256": "1e69e2dabfbba100049a76223f999a851ade6b3e299973cb8f8dbd80c2f625a0",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 3455,
+      "clock": 3455,
+      "position": 1020000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-follow-4by3.png",
+    "sha256": "ece4ae81a88bb8c10738c50c8fbdd67b3c358786a45d83a99751f7698cc8c286",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 3455,
+      "clock": 3455,
+      "position": 1020000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-right-edge-fhd.png",
+    "sha256": "fb56d2269e6240dee7373a9b93e30b560ab2622b3e13d2222d72b79106e6888c",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 4367,
+      "clock": 4367,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-right-edge-4k.png",
+    "sha256": "9781c4753b28442d9f4dee3f92b67723b721bcfab696950adbd7585db196645f",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 4367,
+      "clock": 4367,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-right-edge-4by3.png",
+    "sha256": "dd690744fdcb3e09765ba5ea0603dff72cab4b6d264b834fb0fe35b6252218a0",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 4367,
+      "clock": 4367,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-pause-fhd.png",
+    "sha256": "e5aecf0002140e7173275df5d9e835b849938b2bb66f45bca172a8d20e8dcd52",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 5147,
+      "clock": 5147,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-pause-4k.png",
+    "sha256": "e7225e1c767e877298931c691ca62f35e53d2e7bc0fb12916ce2e4d5f6ffbd27",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 5147,
+      "clock": 5147,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "outside-pause-4by3.png",
+    "sha256": "190cdfdd3fcef14608ca4226c969324579298bfdfb7004f62a167c958f73454e",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 5147,
+      "clock": 5147,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "returned-hub-fhd.png",
+    "sha256": "b25571a9d671d228b2bef5c2463571de7cd807486fc55bfece4cfbe41e4266b6",
+    "size": [
+      1920,
+      1080
+    ],
+    "state": {
+      "frame": 5409,
+      "clock": 5409,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "returned-hub-4k.png",
+    "sha256": "aec18be10a86bb4ef0ee966d3d9541c8762f0734f7ac194ff9dc52525b6a4024",
+    "size": [
+      3840,
+      2160
+    ],
+    "state": {
+      "frame": 5409,
+      "clock": 5409,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  },
+  {
+    "file": "returned-hub-4by3.png",
+    "sha256": "293e8d17d3781987970815dd36cf19273d0947f3378661b7a4a96b39b6c8b7ad",
+    "size": [
+      1440,
+      1080
+    ],
+    "state": {
+      "frame": 5409,
+      "clock": 5409,
+      "position": 1920000,
+      "Facing": 1,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true
+    }
+  }
+]

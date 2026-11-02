@@ -1,0 +1,355 @@
+{
+  "stage": 28,
+  "version": "final v4",
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T09:53:36.652596+00:00",
+  "viewedImageCount": 30,
+  "unviewedRequestedImages": [],
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage28-outside-initial-fhd.png",
+      "sha256": "f57e735855c9a6779b17f484ca34d0f969b817d06c9daa663be110bc70f4e77a",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-initial-4k.png",
+      "sha256": "b69d2ae0c48e32756383a70a60182439b62b4f0b944e23072d8009502d4a1d38",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-outside-initial-4by3.png",
+      "sha256": "1b05c92def86977ee94b20a3ccb336114375f96f368295ea6f0923bd55115ef9",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-move-fhd.png",
+      "sha256": "1c0da2783d0694f1c74833177b700df0c3086172e13578ed2e7d6bdba5a7f609",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-move-4k.png",
+      "sha256": "237e65f181f1d30de68f0b28b2a45e1499cbde79d6df2412ff509d8a66696101",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-outside-move-4by3.png",
+      "sha256": "0cc71a620166ec045136c5e92f679e8396350b4550e0bbe0e3a1172cd6c5fe68",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-jump-rise-fhd.png",
+      "sha256": "42167c7b070bd3d85dcb0691836b4a7b06a822405d8979151788c207e77a891a",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-jump-rise-4k.png",
+      "sha256": "c2b46ca5616838534675851988f6fe549dd463752524e83d4d00a21f7998be6d",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-jump-rise-4by3.png",
+      "sha256": "70d5b3a53881e8770db9780ced7d64c8ec6fdff3011369803a510c08bae42a22",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-jump-apex-fhd.png",
+      "sha256": "d455cce97b9a27b8b1ed8bc77aace9d31435cf1d45748c160adcd294ffd025ed",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-jump-apex-4k.png",
+      "sha256": "bc9921325d7cff99d50d48954aa4ca25a4d1619f41e913f70ffbbea5cc23d306",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-jump-apex-4by3.png",
+      "sha256": "9f79f6336959f9d4eb3cd8156188c43b347eb0db7ea22b94f355cab7ccf3cc26",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-jump-fall-fhd.png",
+      "sha256": "b33338f56b2aca4358fd1d9eb3a5633c74ed45584ac4439b74bce8315f30223e",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-jump-fall-4k.png",
+      "sha256": "51bca04e879836a651514e19085fbba99cd189a0e9b86fe45484bebba2adc07b",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-jump-fall-4by3.png",
+      "sha256": "ca959cb72eab3ad9dcf07b60a31f6f9f65bf516b0bb4b76cb3cf17298fe443e6",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-left-edge-fhd.png",
+      "sha256": "914fbfd34b638519ab8ace1afe64207bbab216911f48dc3e08a3bde7cb33500d",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-left-edge-4k.png",
+      "sha256": "02eeb8e1de69cfef080320a57f8bc089bdb3781653b31fea260bab68741d29e5",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-outside-left-edge-4by3.png",
+      "sha256": "0c90e16537682afdc198a055ef951fe8e10684ade60ffc345ec44f515db44b04",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-follow-fhd.png",
+      "sha256": "8df58c43e73ebac29f941f52b668a73f63c0e272889420f23cf7f1b4ee476c8f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-follow-4k.png",
+      "sha256": "1e69e2dabfbba100049a76223f999a851ade6b3e299973cb8f8dbd80c2f625a0",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-outside-follow-4by3.png",
+      "sha256": "ece4ae81a88bb8c10738c50c8fbdd67b3c358786a45d83a99751f7698cc8c286",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-right-edge-fhd.png",
+      "sha256": "fb56d2269e6240dee7373a9b93e30b560ab2622b3e13d2222d72b79106e6888c",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-right-edge-4k.png",
+      "sha256": "9781c4753b28442d9f4dee3f92b67723b721bcfab696950adbd7585db196645f",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-outside-right-edge-4by3.png",
+      "sha256": "dd690744fdcb3e09765ba5ea0603dff72cab4b6d264b834fb0fe35b6252218a0",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-pause-fhd.png",
+      "sha256": "e5aecf0002140e7173275df5d9e835b849938b2bb66f45bca172a8d20e8dcd52",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-outside-pause-4k.png",
+      "sha256": "e7225e1c767e877298931c691ca62f35e53d2e7bc0fb12916ce2e4d5f6ffbd27",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-outside-pause-4by3.png",
+      "sha256": "190cdfdd3fcef14608ca4226c969324579298bfdfb7004f62a167c958f73454e",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-returned-hub-fhd.png",
+      "sha256": "b25571a9d671d228b2bef5c2463571de7cd807486fc55bfece4cfbe41e4266b6",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage28-returned-hub-4k.png",
+      "sha256": "aec18be10a86bb4ef0ee966d3d9541c8762f0734f7ac194ff9dc52525b6a4024",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage28-returned-hub-4by3.png",
+      "sha256": "293e8d17d3781987970815dd36cf19273d0947f3378661b7a4a96b39b6c8b7ad",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    }
+  ],
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "f037b1daaebf7ac9bdf608a247d7b90d342b304049a871eb43f38fff49006dc4",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "40659b197f12f4e43cba52a5ce51aaac8f34abe936de2d60c2ec9bef1617c49f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "0ceb9b999520869ace63971e3e1fe4c61353a8a4befd25f7e920f5302d201208",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "dffc8242a2e0a36ee0df34fe299e525247ca9597aa523756c41009a25079b5b5",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "ed3f1bec0d74e0c34087446307a9c30b10ea7f6f513ef778a122da02a112b014",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "8a4eb1799734ab2d04902257036589fb15225d1e7947f5326b26996411ffe135",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "sourceHashProvenance": "Specified final v4 manifest copied verbatim. Outside classes reside in existing files as previously statically confirmed; no filename/provenance concern remains.",
+  "observations": [
+    "All30 current v4 whole images actually reopened after completion notification. Idle/move/jump now consistently show the existing gray-black outfit and bare feet; v3 red-white idle discontinuity is resolved.",
+    "Initial/stopped/follow/left-edge/right-edge idle feet meet floor consistently in all ratios; no visible floor penetration, cropped feet or nonuniform stretching. Apparent body height is coherent with move pose, allowing ordinary pose/hair variation; precise numerical scale/pivot equality is not inferred.",
+    "Three jump poses remain fully visible, visually distinct and clearly separated from floor, without head/limb clipping or header conflict. Their motion transitions/smoothness cannot be judged from these stills.",
+    "Header/Pause/Back and returned hub remain readable; no oldChrome duplication, boundary-label clipping or competing parent text observed.",
+    "Existing art reused, no new character artwork inspected or required. Sparse scene is explicitly validation terrain and not product map/gameplay completion."
+  ],
+  "materialLimitations": [],
+  "native4kSupplement": {
+    "method": "All4K whole images opened original detail but viewer reduces; three v4 lossless unscaled in-memory crops actually viewed. OriginalPNG unchanged.",
+    "crops": [
+      {
+        "file": "system-stage28-outside-initial-4k.png",
+        "box": [
+          1790,
+          1190,
+          2040,
+          1720
+        ],
+        "observation": "Gray-black idle outline and foot contact readable."
+      },
+      {
+        "file": "system-stage28-jump-apex-4k.png",
+        "box": [
+          1780,
+          540,
+          2020,
+          910
+        ],
+        "observation": "Matching costume/tucked airborne outline complete."
+      },
+      {
+        "file": "system-stage28-outside-right-edge-4k.png",
+        "box": [
+          3490,
+          1190,
+          3750,
+          1720
+        ],
+        "observation": "Stopped right-edge idle complete and grounded."
+      }
+    ]
+  },
+  "limits": [
+    "Static images do not prove motion smoothness, input,60Hz,jump trajectory/phase timing,collision,savebytes or lifecycle. Parent runtime receipts remain separate.",
+    "Validation flat32/start8/sideSpeed6/jump12/gravity24/release4 temporary settings are not product values,map approval,combat or outside-save completion.",
+    "No same-frame baseline pixel identity, exhaustive source asset audit, global aesthetic approval,physical-device/audio or uncaptured-condition claim.",
+    "Only this private reviewJSON updated; no Unity/input/test/product edits. Earlier class-location concern withdrawn after actual declaration check."
+  ],
+  "resolvedFindings": [
+    {
+      "id": "v3-idle-costume-discontinuity",
+      "resolution": "Final v4 all30 views reopened; idle now gray-black, matching move/jump material family. Prior v3 observations preserved in parent archive system-stage28-v3-complete."
+    }
+  ]
+}

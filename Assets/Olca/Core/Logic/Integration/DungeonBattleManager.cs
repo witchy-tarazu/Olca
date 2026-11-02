@@ -467,6 +467,7 @@ namespace Olca.Core.Logic.Integration
         public bool CancelTouchTap { get; set; }
         public float Vertical { get; set; }
         public bool JumpButtonDown { get; set; }
+        public bool JumpButton { get; set; }
         public bool DashButton { get; set; }
         public bool DashButtonDown { get; set; }
         public bool CardUseButtonDown { get; set; }

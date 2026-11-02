@@ -85,7 +85,8 @@ namespace Olca.Application.Management
                 // 時刻順/floor/未来保留は既存loopだけが判断する。未採用イベントでneutralを解除しない。
                 loop.PumpTimestamped(true,input.CaptureTimestamped(),(frame,ms,value)=>{
                     if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
-                    session.Core.TickFrame(armed&&!Olca.Unity.GameplayPause.InputBlocked?value.Horizontal:0);
+                    bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
+                    session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton);
                 },()=>session.IsPresented&&!session.IsEnded);
             }finally{pumping=false;}
         }
