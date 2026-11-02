@@ -1,0 +1,12 @@
+{
+  "reviewer": "equipment_save_review / independent_refactor_review",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "evidence": "code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "evidence": "visual-review.json"
+  },
+  "scope": "Independent STATIC outside entry View and Root-owned lifecycle session only, not playable outside map/combat/movement or persistent exploration."
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "file": "initial-hub-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "c50d64a00b6af1139edc722252bf884cf71906aed5599a600c82f8c42a518b73",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "initial-hub-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "439af59719272ee4f53416ff1bffbb0b2b6d50f3ad216ee06e7b340e877743e9",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "initial-hub-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "1bf02a9641a20170873d8d4c573e9b585cf83a01b0846ff4793c7008d561f4eb",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "outside-active-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "567def47eaa78991c797c58874e49c61b5c666bc7a760cc19c277a08dd1f807f",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "outside-active-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "c432d119b9c8546bc011151fd7cc5fda4ae386c2958451cf47baa7ac11025e70",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "outside-active-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "9369066deb0bf233df0e44757cecfe417e10a53ffc26701283099fbc7af0652a",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "returned-hub-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "46e82e18b5c1125f3c76a27a4a459e7f9f715715c47bf6e0b84f8cb5d1fb8bb8",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "returned-hub-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "89a7417ad61e5205824831b3dee08c54fd21b129dfd187bf82888d11e88ff543",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "returned-hub-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "a4d88263e81df57cd4299514b64c745dbbc48ef686d69cabe6ba5294a88ba64c",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "outside-reentry-fhd.png",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "sha256": "567def47eaa78991c797c58874e49c61b5c666bc7a760cc19c277a08dd1f807f",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "outside-reentry-4k.png",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "sha256": "c432d119b9c8546bc011151fd7cc5fda4ae386c2958451cf47baa7ac11025e70",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  },
+  {
+    "file": "outside-reentry-4by3.png",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "sha256": "9369066deb0bf233df0e44757cecfe417e10a53ffc26701283099fbc7af0652a",
+    "scope": "Final source v3 actual entry route, no runtime layout/focus trial; logical state held/Canvas/two RT checked"
+  }
+]

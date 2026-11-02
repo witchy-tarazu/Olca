@@ -1,0 +1,173 @@
+{
+  "initialCompile": {
+    "job": "3fb75e43a4bd4b6580cdc04199b6dfc6",
+    "error": "CS1729 inaccessible ScreenOpenResult constructor; switched to existing canceled ShowAsync API, no constructor exposure"
+  },
+  "initialCompileConsole": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"entries\": [\n    {\n      \"seq\": 466227,\n      \"timestampUtc\": \"2026-11-02T02:12:27.627973Z\",\n      \"level\": \"error\",\n      \"logType\": \"Error\",\n      \"message\": \"Assets/Olca/Application/Management/WorldPresentationBinding.cs(82,45): error CS1729: 'ScreenOpenResult' does not contain a constructor that takes 2 arguments\",\n      \"stackTrace\": \"\",\n      \"seeded\": false\n    }\n  ],\n  \"cursor\": 466227,\n  \"session\": \"1d6289ebbd3941d6976ca2529ae9203c\",\n  \"returned\": 1,\n  \"dropped\": false,\n  \"reset\": false,\n  \"counts\": {\n    \"error\": 1,\n    \"warn\": 43,\n    \"log\": 1956\n  },\n  \"groundTruth\": {\n    \"sampledUtc\": \"2026-11-02T02:17:48.394622Z\",\n    \"ageMs\": 113,\n    \"compilationFailed\": true,\n    \"compiling\": false,\n    \"consoleErrors\": 1,\n    \"consoleWarnings\": 0,\n    \"consoleLogs\": 0,\n    \"seeded\": true\n  }\n}"
+      }
+    ]
+  },
+  "actualHeaderRaycastFailure": {
+    "job": "53581328573144b8b39b7160780423bc",
+    "error": "Occluded OutsideExplorationEntry before any pointer dispatch",
+    "fix": "Only new entry moved x650 to x150; existing auxiliary positions unchanged"
+  },
+  "backFocusFailure": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"diagnostics\": [], \"compileMs\": 89, \"executeMs\": 242, \"assemblyName\": \"PipelineRunScript_Outside26Proof_2ce5c267d40e443e95587befbff8e9fa\", \"success\": true, \"command\": \"run_script\", \"result\": {\"immediate\": {\"root\": {\"root\": -310534216, \"session\": -1546400710, \"presented\": false, \"ended\": false, \"resources\": 10, \"dialogs\": 0, \"events\": 1, \"cameras\": 1, \"listeners\": 1, \"audio\": 3}, \"view\": -310536082, \"open\": false, \"rootParent\": true, \"layer\": \"return-hub\", \"session\": -1546400710, \"core\": 1529321420, \"runtime\": 1130203160, \"phase\": \"Dungeon\", \"position\": 0, \"hp\": 100, \"revision\": 1, \"pending\": false, \"logicalFrame\": 0, \"paused\": false, \"scale\": 1, \"focus\": \"DungeonChoice_0\", \"buttons\": [{\"name\": \"ManualSaveButton\", \"interactable\": true}, {\"name\": \"CancelDungeonSelection\", \"interactable\": true}, {\"name\": \"OutsideExplorationEntry\", \"interactable\": true}, {\"name\": \"CardCollectionButton\", \"interactable\": true}, {\"name\": \"OpenCustomizationUnlocks\", \"interactable\": false}, {\"name\": \"NewGameButton\", \"interactable\": true}, {\"name\": \"DungeonChoice_0\", \"interactable\": true}, {\"name\": \"PauseButton\", \"interactable\": true}, {\"name\": \"SelectDepartureStyle\", \"interactable\": true}, {\"name\": \"OpenCustomizationEditor\", \"interactable\": false}, {\"name\": \"OpenTokenExchange\", \"interactable\": true}, {\"name\": \"ConfirmDungeonSelection\", \"interactable\": true}]}, \"after\": {\"root\": {\"root\": -310534216, \"session\": -1546400710, \"presented\": false, \"ended\": false, \"resources\": 10, \"dialogs\": 0, \"events\": 1, \"cameras\": 1, \"listeners\": 1, \"audio\": 3}, \"view\": -310536082, \"open\": false, \"rootParent\": true, \"layer\": \"return-hub\", \"session\": -1546400710, \"core\": 1529321420, \"runtime\": 1130203160, \"phase\": \"Dungeon\", \"position\": 0, \"hp\": 100, \"revision\": 1, \"pending\": false, \"logicalFrame\": 0, \"paused\": false, \"scale\": 1, \"focus\": \"DungeonChoice_0\", \"buttons\": [{\"name\": \"ManualSaveButton\", \"interactable\": true}, {\"name\": \"CancelDungeonSelection\", \"interactable\": true}, {\"name\": \"OutsideExplorationEntry\", \"interactable\": true}, {\"name\": \"CardCollectionButton\", \"interactable\": true}, {\"name\": \"OpenCustomizationUnlocks\", \"interactable\": false}, {\"name\": \"NewGameButton\", \"interactable\": true}, {\"name\": \"DungeonChoice_0\", \"interactable\": true}, {\"name\": \"PauseButton\", \"interactable\": true}, {\"name\": \"SelectDepartureStyle\", \"interactable\": true}, {\"name\": \"OpenCustomizationEditor\", \"interactable\": false}, {\"name\": \"OpenTokenExchange\", \"interactable\": true}, {\"name\": \"ConfirmDungeonSelection\", \"interactable\": true}]}}, \"executionTimeMs\": 2731, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-02T02:51:44.020747Z\"}"
+      }
+    ],
+    "trackedCliJob": "bc5cd1d1f14d4d0a99e8ba7ea2fd4c09",
+    "targetPid": 137059
+  },
+  "fixes": [
+    "Explicit current-View focus to OutsideExplorationEntry after returning hub",
+    "Entry literal Kana same as outside heading"
+  ],
+  "prototypeVisualReview": {
+    "stage": 26,
+    "reviewType": "early prototype visual critique; NOT final-source validation",
+    "reviewer": "independent_refactor_review",
+    "reviewedAtUtc": "2026-11-02T02:56:44.312569+00:00",
+    "viewedImageCount": 12,
+    "unresolvedRequiredVisualFindings": 1,
+    "findings": [
+      {
+        "id": "prototype-entry-reading",
+        "severity": "required",
+        "observation": "New hub entry visibly retains kanji 界 within otherwise kana reading (ガイ界…), whereas outside title reads ガイカイ タンサク.",
+        "recommendation": "Use established explicit reading ガイカイ タンサク for entry as well; no new information/mechanic needed."
+      }
+    ],
+    "images": [
+      {
+        "file": "system-stage26-initial-hub-fhd.png",
+        "sha256": "4ffacd6268ddecff96dc1c39808d54d3e8aa062b064a31dd9fd7dcf422b1057f",
+        "viewed": true,
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-initial-hub-4k.png",
+        "sha256": "dc5d835acbc4f4394a0bd159a2897b1569ea0d29a2f615303afdba6f1f6439b8",
+        "viewed": true,
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      {
+        "file": "system-stage26-initial-hub-4by3.png",
+        "sha256": "b058aaf508303c0dc433a3a987dfec049d0246b2507120512bb9c8a6cdd2d70e",
+        "viewed": true,
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-outside-active-fhd.png",
+        "sha256": "4cf5fa67354c0581220c536616f729bb97f64d4a30e7974b905cec466b8f5567",
+        "viewed": true,
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-outside-active-4k.png",
+        "sha256": "97a79fa9db48f267cac149b46b5454a065ac3af6b6a12d99f8b361eaccf7b43c",
+        "viewed": true,
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      {
+        "file": "system-stage26-outside-active-4by3.png",
+        "sha256": "1f64ad5fa9f3840afe95335ed2a99a3abbb29e7f601f741487859eb52bf33e3c",
+        "viewed": true,
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-returned-hub-fhd.png",
+        "sha256": "aa78cb04ee52cf4947aad41c333418b498f740aaef17fb1b1faf56809a69707a",
+        "viewed": true,
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-returned-hub-4k.png",
+        "sha256": "8693ffba5de78ed9606a44b5d73aa6ca997625036dee9eb673f157522426d1d6",
+        "viewed": true,
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      {
+        "file": "system-stage26-returned-hub-4by3.png",
+        "sha256": "2f5c6b506fe8b8840a7e2bb6d9e25b62b7b92e5e85bbbed816c6c1eb6ae16fc8",
+        "viewed": true,
+        "dimensions": [
+          1440,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-outside-reentry-fhd.png",
+        "sha256": "4cf5fa67354c0581220c536616f729bb97f64d4a30e7974b905cec466b8f5567",
+        "viewed": true,
+        "dimensions": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "file": "system-stage26-outside-reentry-4k.png",
+        "sha256": "97a79fa9db48f267cac149b46b5454a065ac3af6b6a12d99f8b361eaccf7b43c",
+        "viewed": true,
+        "dimensions": [
+          3840,
+          2160
+        ]
+      },
+      {
+        "file": "system-stage26-outside-reentry-4by3.png",
+        "sha256": "1f64ad5fa9f3840afe95335ed2a99a3abbb29e7f601f741487859eb52bf33e3c",
+        "viewed": true,
+        "dimensions": [
+          1440,
+          1080
+        ]
+      }
+    ],
+    "observations": [
+      "All12 current prototype whole images actually viewed. Outside title and return affordance are clear, separated and fully inside the top water-mirror bar in all ratios.",
+      "Static outside composition is intentionally sparse: original cave background and grounded actor remain legible without invented prompts, map controls or mechanics. No visible stretch or clipped actor/feet observed; numerical scale equivalence not independently measured.",
+      "Trial hub entry at x150 is visually separated from equipment controls in these images. Existing primary departure action remains stronger/larger, and existing control labels remain readable.4:3 places entry lower beside the heading with sufficient separation.",
+      "Hub remains visually dense at top due to existing controls, but new entry does not justify additional panels or information in this bounded static task.",
+      "No additional required geometry/composition finding beyond the entry reading inconsistency visible in captured trial."
+    ],
+    "limits": [
+      "Runtime-only entry x150 trial and manually previewed returned focus are NOT evidence that final product coordinates or focus behavior are correct. Parent plans v3 corrections and complete native recapture.",
+      "Original x650 overlap/raycast failure and returned defaultDungeonChoice focus are parent-reported known functional findings; this visual review does not mark them resolved.",
+      "Whole4K viewer reduced3840x2160 to2048x1152. No additional native4K crops in this early prototype review; no exhaustive pixel or same-frame baseline claim.",
+      "No gameplay/map/movement/combat functionality exists within this task scope; none inferred from images. No Unity calls, code/product edits, input or tests performed. Final-source/native validation remains pending."
+    ]
+  },
+  "prototypeOnly": "Runtime header and manual focus previews are not final validation. All final native/screens repeated after source v3, fresh isolated26002, runtimeLayoutTrial false."
+}

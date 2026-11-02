@@ -402,6 +402,7 @@ namespace Olca.Presentation.Dungeon
         private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
+        public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
         private void FocusCurrentContent(string name)
         {
             if(this==null||content==null||ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true)return;
@@ -661,7 +662,7 @@ namespace Olca.Presentation.Dungeon
 
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
-            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true)
+            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null)
         {
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
@@ -672,6 +673,7 @@ namespace Olca.Presentation.Dungeon
             UseReferenceLayout();
             gameObject.SetActive(true);CommerceSurface();
             var heading=Text("DungeonSelectionTitle","シュツゲキサキをエラぶ",-245,390,1250,60,36);heading.color=Color.white;heading.alignment=TextAnchor.MiddleLeft;
+            if(outsideExploration!=null&&!blocked&&error==null)QuietDepartureAction(Button("OutsideExplorationEntry","ガイカイ タンサク",150,390,340,60,outsideExploration));
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             int shown=Math.Min(rows,Math.Max(0,names.Length-dungeonPage*rows));float bottom=shown>0?208-(shown-1)*95-69:120;bool preview=shown<=3;
             float actionY=Mathf.Max(-400,bottom-(preview?(pages>1?285:245):150)),auxiliaryY=actionY-93,pageY=actionY+115;
@@ -693,8 +695,8 @@ namespace Olca.Presentation.Dungeon
             // 行き先名は選択行だけに置き、必要な地形/敵情報を静かな説明へまとめる。
             if(preview){var detail=Text("DungeonPreviewInformation",valid?(info??"トウロクされたツイカジョウホウはありません。"):"ミカイホウのイきサキはジョウケンをカクニンしてください。",0,bottom-72,1450,100,24);detail.color=new Color(.78f,.9f,.95f,1);detail.alignment=TextAnchor.MiddleLeft;detail.supportRichText=false;AddOverflowTextDetails(detail,"イキサキのジョウホウ");}
             if(pages>1){
-            Button("PreviousDungeonPage", "前へ", -380, pageY, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately); }).interactable = !blocked && dungeonPage > 0;
-            Button("NextDungeonPage", "次へ", 380, pageY, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Button("PreviousDungeonPage", "前へ", -380, pageY, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", 380, pageY, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration); }).interactable = !blocked && dungeonPage + 1 < pages;
             Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, pageY, 250, 60, 24).color=Color.white;
             }
             Button("ConfirmDungeonSelection", startImmediately?"このイきサキで出撃":"イきサキを確定", -430, actionY, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];

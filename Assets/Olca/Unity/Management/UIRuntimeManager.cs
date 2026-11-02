@@ -23,6 +23,8 @@ namespace Olca.Unity
             var rect=(RectTransform)value.transform;rect.SetParent(canvas.Instance.transform,false);rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
             content=value;owner=requestedOwner;return value;
         }
+        /// <summary>ViewManager所有画面の親。host contentと別にRoot Canvasを借り、実体寿命はViewManagerが持つ。</summary>
+        public Transform ViewParent { get { if(disposed)throw new ObjectDisposedException(nameof(UIRuntimeManager));EnsureInfrastructure();return canvas.Instance.transform; } }
         private void EnsureInfrastructure()
         {
             if(canvas!=null&&events!=null)return;

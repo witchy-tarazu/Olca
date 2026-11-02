@@ -37,6 +37,7 @@ namespace Olca.Application.Management
         public CameraRuntimeManager Cameras { get; }
         public UIRuntimeManager UI { get; }
         public Session CurrentSession { get; private set; }
+        public OutsideExplorationSession OutsideExploration { get; } = new OutsideExplorationSession();
         private bool disposed;
         public GameSystem(SaveManager saves, ResourceManager resources, SoundManager sounds, ViewManager views, DialogManager dialogs, UIRuntimeManager ui = null, CameraRuntimeManager cameras = null)
         { Cameras = cameras; UI = ui; Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); Resources.RetainGeneratedSprites(); }
@@ -58,7 +59,7 @@ namespace Olca.Application.Management
         public void Dispose()
         {
             if (disposed) return; disposed = true;
-            Hosts.Dispose(); CurrentSession?.Dispose();
+            Hosts.Dispose(); CurrentSession?.Dispose(); OutsideExploration.Dispose();
             // 再生中の音が参照する素材より先に、音声所有物を解放する。
             Dialogs.Dispose(); Views.Dispose(); UI?.Dispose(); Cameras?.Dispose(); Sounds.Dispose(); Resources.Dispose();
         }

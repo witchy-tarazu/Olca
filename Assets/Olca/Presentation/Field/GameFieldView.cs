@@ -42,6 +42,7 @@ namespace Olca.Presentation.Field
 
         [Header("プレイヤーモックスプライト")]
         [SerializeField] private Sprite idlePlayerSprite;
+        public Sprite AuthoredIdlePlayerSprite=>idlePlayerSprite;
         [SerializeField] private Sprite dashPlayerSprite;
         [SerializeField] private Sprite jumpRisePlayerSprite;
         [SerializeField] private Sprite jumpApexPlayerSprite;

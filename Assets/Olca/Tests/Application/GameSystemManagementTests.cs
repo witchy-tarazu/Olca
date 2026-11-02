@@ -739,5 +739,32 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [Test] public async Task 外界入口は同レイヤーを切替え旧操作を拒否しView再生成でRootSessionを失わない()
+        {
+            var layer=views.GetLayer("return-hub");var hub=Panel("outside-fixture-hub");var entry=Button(hub,"outside-fixture-entry");ManagedScreenContext hubContext=null;int hubCalls=0,returned=0;
+            layer.Register(owner,"outside-fixture-hub",_=>Task.FromResult(hub),(go,ctx)=>{hubContext=ctx;entry.onClick=new Button.ButtonClickedEvent();entry.onClick.AddListener(()=>{if(ctx.IsCurrent)hubCalls++;});go.SetActive(true);EventSystem.current.SetSelectedGameObject(entry.gameObject);},go=>go.SetActive(false));
+            Assert.IsTrue((await layer.ShowAsync("outside-fixture-hub")).Succeeded);var oldHub=entry.onClick;var previous=hubContext;var model=system.OutsideExploration;int before=resources.OwnedInstanceCount;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>{ct.ThrowIfCancellationRequested();return Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));};
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{returned++;layer.ShowAsync("outside-fixture-hub").GetAwaiter().GetResult();})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.IsPresented);Assert.IsFalse(previous.IsCurrent);Assert.IsFalse(hub.activeSelf);oldHub.Invoke();Assert.AreEqual(0,hubCalls);
+                var back=binding.View.GetComponentInChildren<Button>();Assert.AreSame(back.gameObject,EventSystem.current.currentSelectedGameObject);var oldBack=back.onClick;oldBack.Invoke();oldBack.Invoke();Assert.AreEqual(1,returned);Assert.IsFalse(model.IsPresented);Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);oldBack.Invoke();Assert.AreEqual(1,returned);Assert.IsTrue(binding.IsOpen);Assert.AreSame(model,system.OutsideExploration);
+                var lost=binding.View;typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(lost,null);UnityEngine.Object.DestroyImmediate(lost.gameObject);Assert.IsTrue(binding.HasLostView);Assert.IsFalse(model.IsPresented);Assert.IsTrue((await binding.OpenAsync()).Succeeded);oldBack.Invoke();Assert.AreEqual(1,returned);Assert.IsTrue(binding.IsOpen);Assert.AreSame(model,system.OutsideExploration);
+            }
+            Assert.IsFalse(model.IsEnded);Assert.IsFalse(model.IsPresented);Assert.AreEqual(before,resources.OwnedInstanceCount);
+            using(var recreated=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){Assert.IsTrue((await recreated.OpenAsync()).Succeeded);Assert.IsTrue(model.IsPresented);Assert.AreSame(model,system.OutsideExploration);}
+            system.Dispose();Assert.IsTrue(model.IsEnded);Assert.IsFalse(model.IsPresented);
+        }
+        [Test] public async Task 外界入口の取消と欠損失敗は前画面のfocusとSessionを変更せず再試行できる()
+        {
+            var layer=views.GetLayer("return-hub");var hub=Panel("outside-failure-hub");var entry=Button(hub,"outside-failure-entry");ManagedScreenContext prior=null;
+            layer.Register(owner,"outside-failure-hub",_=>Task.FromResult(hub),(go,ctx)=>{prior=ctx;go.SetActive(true);EventSystem.current.SetSelectedGameObject(entry.gameObject);},go=>go.SetActive(false));Assert.IsTrue((await layer.ShowAsync("outside-failure-hub")).Succeeded);int before=resources.OwnedInstanceCount;
+            var source=new TaskCompletionSource<GameObject>();using(var cancel=new CancellationTokenSource())using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>source.Task,()=>true,null)){
+                var pending=binding.OpenAsync(cancel.Token);cancel.Cancel();source.SetResult(Panel("outside-cancelled"));Assert.IsTrue((await pending).Cancelled);
+            }
+            using(var missing=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>throw new InvalidOperationException("outside-fixture-missing"),()=>true,null)){var failed=await missing.OpenAsync();Assert.IsFalse(failed.Succeeded);StringAssert.Contains("outside-fixture-missing",failed.Error);}
+            using(var incomplete=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,_=>Task.FromResult(Panel("outside-no-view")),()=>true,null)){Assert.IsFalse((await incomplete.OpenAsync()).Succeeded);}
+            Assert.IsTrue(prior.IsCurrent);Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsFalse(system.OutsideExploration.IsPresented);Assert.IsFalse(system.OutsideExploration.IsEnded);Assert.AreEqual(before,resources.OwnedInstanceCount);
+        }
     }
 }

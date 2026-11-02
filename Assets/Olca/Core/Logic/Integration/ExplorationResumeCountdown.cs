@@ -18,3 +18,27 @@ namespace Olca.Core.Logic.Integration
         }
     }
 }
+
+namespace Olca.Core.Logic.Integration
+{
+    /// <summary>外界の表示から独立した開始範囲。座標・能力値・攻略の仮ルールを持たない。</summary>
+    public sealed class OutsideExplorationSession : System.IDisposable
+    {
+        public sealed class PresentationLease : System.IDisposable
+        {
+            private OutsideExplorationSession owner;
+            internal PresentationLease(OutsideExplorationSession owner){this.owner=owner;}
+            public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
+            public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
+        }
+        private PresentationLease current;
+        public bool IsEnded{get;private set;}
+        public bool IsPresented=>current!=null;
+        public PresentationLease AttachPresentation()
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            return current=new PresentationLease(this);
+        }
+        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;}
+    }
+}

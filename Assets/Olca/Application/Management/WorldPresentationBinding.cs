@@ -55,3 +55,31 @@ namespace Olca.Application.Management
         }
     }
 }
+
+namespace Olca.Application.Management
+{
+    /// <summary>外界入口Viewの生成・開始結果だけを調整。RootのSessionをView破棄で終了しない。</summary>
+    public sealed class OutsideExplorationPresentationBinding : IDisposable
+    {
+        public const string ScreenKey="outside-exploration-entry";
+        private readonly object registrationOwner=new object();
+        private readonly ViewManager layer;
+        private readonly Olca.Core.Logic.Integration.OutsideExplorationSession session;
+        private Func<bool> allowed;private Action returned;private bool disposed;
+        public Olca.Presentation.Exploration.OutsideExplorationView View{get;private set;}
+        public bool IsOpen=>!disposed&&View!=null&&View.IsOpen;
+        public bool HasLostView=>!disposed&&!ReferenceEquals(View,null)&&View==null;
+        public OutsideExplorationPresentationBinding(ViewManager views,Olca.Core.Logic.Integration.OutsideExplorationSession session,Func<CancellationToken,Task<GameObject>> factory,Func<bool> allowed,Action returned)
+        {
+            this.session=session??throw new ArgumentNullException(nameof(session));this.allowed=allowed??throw new ArgumentNullException(nameof(allowed));this.returned=returned;layer=views.GetLayer("return-hub");
+            layer.Register(registrationOwner,ScreenKey,factory,(panel,context)=>{
+                if(disposed||!this.allowed())throw new OperationCanceledException();
+                View=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()??throw new InvalidOperationException("外界Viewがありません");
+                var lease=session.AttachPresentation();try{View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();});}catch{lease.Dispose();throw;}
+            },panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()?.Hide();});
+        }
+        public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
+        {if(disposed||!allowed())return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
+        public void Dispose(){if(disposed)return;disposed=true;layer.UnregisterOwner(registrationOwner);View=null;allowed=null;returned=null;}
+    }
+}

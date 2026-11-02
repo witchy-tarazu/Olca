@@ -1,0 +1,23 @@
+{
+  "implemented": [
+    "Initial hub real entry/Back/reentry",
+    "Root-owned pure OutsideExplorationSession lifecycle independent of Dungeon Core/View",
+    "ViewManager same return-hub layer atomic switch and ResourceManager creation/disposal",
+    "Old callbacks/Chrome/sameframe guard, load cancellation/missing error, natural View recreation, host reentry"
+  ],
+  "notImplemented": [
+    "playable outside map and authored initial map registration",
+    "horizontal/vertical movement or physics",
+    "outside combat/enemies/cards/deck/gauge",
+    "outside save/continue/death/recovery/map transition",
+    "outside-Dungeon travel/state transfer"
+  ],
+  "noNewGameplayValues": true,
+  "temporaryDependency": "Initial hub is still supplied by existing managed DungeonHost; its Core remains frozen while outside static View is open. New View does not clone grid/world logic.",
+  "existingLimits": [
+    "real build/physical input/audio hearing/all HotReload",
+    "product stat/Item skip/NPC registration/extreme old names",
+    "historical UGUI/Pipeline/CLI/UnityAI/unidentifiedSprite2095"
+  ],
+  "next": "Choose a specified outside map/input/movement slice after reviewing authored starting-map data and unresolved values; no speculative stats."
+}

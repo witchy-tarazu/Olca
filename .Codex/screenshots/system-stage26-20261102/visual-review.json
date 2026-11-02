@@ -1,0 +1,163 @@
+{
+  "stage": 26,
+  "reviewType": "final v3 native static entry visual review",
+  "reviewer": "independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T03:37:48.321287+00:00",
+  "viewedImageCount": 12,
+  "unresolvedRequiredVisualFindings": 0,
+  "findings": [],
+  "images": [
+    {
+      "file": "system-stage26-initial-hub-fhd.png",
+      "sha256": "c50d64a00b6af1139edc722252bf884cf71906aed5599a600c82f8c42a518b73",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-initial-hub-4k.png",
+      "sha256": "439af59719272ee4f53416ff1bffbb0b2b6d50f3ad216ee06e7b340e877743e9",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage26-initial-hub-4by3.png",
+      "sha256": "1bf02a9641a20170873d8d4c573e9b585cf83a01b0846ff4793c7008d561f4eb",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-outside-active-fhd.png",
+      "sha256": "567def47eaa78991c797c58874e49c61b5c666bc7a760cc19c277a08dd1f807f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-outside-active-4k.png",
+      "sha256": "c432d119b9c8546bc011151fd7cc5fda4ae386c2958451cf47baa7ac11025e70",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage26-outside-active-4by3.png",
+      "sha256": "9369066deb0bf233df0e44757cecfe417e10a53ffc26701283099fbc7af0652a",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-returned-hub-fhd.png",
+      "sha256": "46e82e18b5c1125f3c76a27a4a459e7f9f715715c47bf6e0b84f8cb5d1fb8bb8",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-returned-hub-4k.png",
+      "sha256": "89a7417ad61e5205824831b3dee08c54fd21b129dfd187bf82888d11e88ff543",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage26-returned-hub-4by3.png",
+      "sha256": "a4d88263e81df57cd4299514b64c745dbbc48ef686d69cabe6ba5294a88ba64c",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-outside-reentry-fhd.png",
+      "sha256": "567def47eaa78991c797c58874e49c61b5c666bc7a760cc19c277a08dd1f807f",
+      "viewed": true,
+      "dimensions": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "file": "system-stage26-outside-reentry-4k.png",
+      "sha256": "c432d119b9c8546bc011151fd7cc5fda4ae386c2958451cf47baa7ac11025e70",
+      "viewed": true,
+      "dimensions": [
+        3840,
+        2160
+      ]
+    },
+    {
+      "file": "system-stage26-outside-reentry-4by3.png",
+      "sha256": "9369066deb0bf233df0e44757cecfe417e10a53ffc26701283099fbc7af0652a",
+      "viewed": true,
+      "dimensions": [
+        1440,
+        1080
+      ]
+    }
+  ],
+  "resolvedFindings": [
+    {
+      "id": "prototype-entry-reading",
+      "resolution": "All final hub images read ガイカイ タンサク without retained kanji 界; consistent with outside heading."
+    }
+  ],
+  "observations": [
+    "All12 final files actually reopened. New entry remains separated from equipment/unlock column in FHD/4K/4:3; no text/frame overlap visible. Appearance now reflects parent-reported final product placement, rather than the earlier runtime-only trial.",
+    "Hub entry is subordinate to the larger departure action. Existing buttons and text remain readable;4:3 places entry beside main heading without crowding the stage row.",
+    "Outside title and return affordance are fully visible and visually distinct within the top water-mirror bar. Original cave texture and grounded actor are clear, with no observed cropping, stretching or competing UI. Actor numerical scale equivalence was not independently measured.",
+    "Static outside view is intentionally sparse; no additional gameplay instructions or mechanics are demanded by this review.",
+    "Returned hub has the outside-entry visual focus accent. Still appearance does not prove actual EventSystem selection or input routing."
+  ],
+  "native4kSupplement": {
+    "method": "Whole4K files opened with original detail, displayed reduced by viewer; lossless unscaled in-memory local crops supplement native glyph reading. Original PNGs unchanged.",
+    "crops": [
+      {
+        "file": "system-stage26-initial-hub-4k.png",
+        "box": [
+          1880,
+          230,
+          2560,
+          370
+        ],
+        "observation": "Entry kana and button frame readable."
+      },
+      {
+        "file": "system-stage26-outside-active-4k.png",
+        "box": [
+          3280,
+          50,
+          3740,
+          210
+        ],
+        "observation": "Return label and water-mirror affordance readable."
+      }
+    ]
+  },
+  "limits": [
+    "Parent reports runtimeLayoutTrial=false and actual header click/strict returned focus success; these runtime facts were not independently executed or proved by still images.",
+    "This is static outside entry View/RootSession only. No playable map, movement, combat or broader outside-gameplay completion claimed.",
+    "No matched-before whole-scene pixel/frame identity, global aesthetic approval, physical-device or audio verification.",
+    "No Unity commands, input, tests or product edits performed. Prototype review/history remains separate."
+  ]
+}

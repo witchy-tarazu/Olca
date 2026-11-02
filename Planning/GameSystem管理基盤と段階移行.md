@@ -856,3 +856,10 @@ FHD/4K/4:3の12枚と独立code/visual review必須指摘0。[証跡・比較・
 統合確認の終点: Bootstrap単独本番起動／必要ViewとDialogの生成・終了・再生成／Root共通実体一意／Session・Core・入力・時計と表示の寿命分離／保存復帰・失敗取消・旧世代遮断／音・Camera・資源の返却／関連・同Editor反復・全件回帰。これらの管理基盤必須移行は本段階で一区切りとする。検証用DungeonScene直起動とcompat API、通常View内のwidget組立、全widget Prefab化や追加の汎用抽象化は、それだけを理由に未完の必須へ増やさない。
 
 実build、製品装備stat実値、Item skip native操作、製品NPC台本登録、極端な旧長名、物理入力/聴感/全HotReload、歴史的UGUI/Pipeline/CLI/UnityAI、登録外Sprite2095基準群は独立の未確認/歴史的問題として保持。既知6系統cache0を全Sprite漏洩解決とはしない。新外界/依頼/ボスラッシュ機能やD05/工場/S08未決値は実装していない。次は最新追加仕様と未決値を再照合し、外界探索View/Sessionからダンジョン接続へ進む最小単位、製品データ登録/不足素材の具体的対応を選ぶ。今回その新機能には着手していない。
+
+
+## 管理基盤後の機能第一段階: 外界探索入口
+
+基盤必須移行の一区切り後、Root所有OutsideExplorationSessionと独立した静的初期Viewを本番の初期拠点へ接続した。ViewManager同layerの原子的な切替、ResourceManager寿命、Root Canvasとhost contentの分離を実利用する。[実装範囲・次の単位](外界探索入口の実装段階.md)。元のCore/runtime/論理frame/保存を停止・保護し、View破棄/host再入では外界Sessionを終了しない。移動可能な外界・戦闘・外界保存・ダンジョン往復の完成ではない。
+
+最終3662件/反復38成功、原寸3比率12枚と独立review0。[証跡](../.Codex/screenshots/system-stage26-20261102/README.md)。新Manager/時計/Camera/ListenerやSceneは増設していない。既存の未確認/歴史的問題と未決値は前節および外界入口文書へ分離して保持する。
