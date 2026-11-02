@@ -1,0 +1,162 @@
+{
+  "stage": 33,
+  "version": "v2",
+  "reviewer": "/root/independent_refactor_review",
+  "reviewedAtUtc": "2026-11-02T16:02:03.034044+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "70f427abfd3fb3f894afb13286d4f5809fb8d7f32f501979670de8f8d61cae73",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "ac51fb47f8126ebbc25a446bf5ec89de8a085d1b912dccbb84abb8d09d335d48",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "796d34d9b80730c8421651c530b4f82c353774c8f7222bfc7a55a1c2d2d85759",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "5d9e3cd15c46770d210cf993bc616adab4fe65374f21bc49f3b8a1b47083678e",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "e097ee471c50d397052458a337d6fb1871edcf54460b6d8b9040b8283cb0d6c2",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "4e999b43b9cd7e46730acfd2b501db148372c8024859afc00f5202849b5330d1",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "viewedImageCount": 12,
+  "unresolvedRequiredVisualFindings": 0,
+  "images": [
+    {
+      "file": "system-stage33-unregistered-fhd.png",
+      "sha256": "db91927545311e600c972f5876d20f289cf4eaf75451627bdc4af400c25e029f",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-unregistered-4k.png",
+      "sha256": "b21e745cc90b39abccad157f4b5394d319cffa3d5506e79a1773a92d39ae972a",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-unregistered-4by3.png",
+      "sha256": "6bf24cfbae1def97ca12d1981869b0774a343d3fe69b1dcfd62c5651f3d75ffd",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-open-before-fhd.png",
+      "sha256": "35ef1cdbe6392fe7b49f2618efc95d989ac138989dbd43286e8da43a9f690808",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-open-before-4k.png",
+      "sha256": "7753ddfd655861700d1e7ebb111297e69506a6e8f97d5a59e0cd5d92d960ad05",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-open-before-4by3.png",
+      "sha256": "3618d2f5463f182c361d567d6773f010c1382d3ae990ef873f10ceeae9cd179b",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-closed-after-destroy-fhd.png",
+      "sha256": "4c1af25fac937a83756cf9558b8813ea206b6825fa52475140321c2046dfa80c",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-closed-after-destroy-4k.png",
+      "sha256": "873586b160d05ed89a415c6f02979b510469757d5b8d23d70c71dccf55040db4",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-closed-after-destroy-4by3.png",
+      "sha256": "285baa9991fe72d0c223d4fb9efefbe4ce228d2b66892d363b7dc2c30e68291a",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-active-recovered-fhd.png",
+      "sha256": "a4d6998f9a928fa45bd05a33939b17420559ad2fd5fa59fcac4a328760d96b67",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-active-recovered-4k.png",
+      "sha256": "49f22e92cba1bcccab13ee9e858ddacdcac7eba1b4e3e0d6dae6b88def9d2520",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage33-active-recovered-4by3.png",
+      "sha256": "666c335e06f043983e923cd1ee5862e26e69b8e2f9779a68b503088261d7e76d",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "nativeCrops": [
+    {
+      "file": "system-stage33-active-recovered-4k.png",
+      "box": [
+        2450,
+        250,
+        3180,
+        450
+      ],
+      "viewed": true,
+      "method": "Unscaled in-memory crop; original unchanged"
+    }
+  ],
+  "observations": [
+    "All 12 final images actually opened. Native FHD/4:3 full views; 4K viewer-resized full views supplemented with an unscaled hand HUD local crop.",
+    "Three hand columns clearly separate their small square mini, white name and pale-blue cost line. Count heading reads hand3/deck17, distinct from left gauge20.0/100. No new overlap with Pause/Back/header, actor or floor observed at the three ratios.",
+    "Unregistered state explicitly labels deck unregistered and shows three dashes rather than fabricated cards. Open/recovered show fire_card, ヒール, fire_card with costs1/2/1; these are existing fixture definitions, not newly completed product data.",
+    "HUD is visually lightweight without button framing, focus outline or use prompt; this review makes no claim of card selection/usability.",
+    "Closed-after-destroy hub contains no outside gauge/hand residue; existing cave art, grounded actor proportions and Jiki/water-mirror appearance remain coherent."
+  ],
+  "limitations": [
+    "Still images cannot establish initial-deck construction, randomness, order retention, selection/use/redraw, input/focus routing, lifetime or persistence correctness.",
+    "Product registration source and card-use/redraw controls remain unimplemented; isolated20-card fixture is separate from a registered product deck.",
+    "Validation platform/map and existing fallback fire_card naming/art are not claimed as final product presentation.",
+    "No Unity, code, product, git or test actions were performed. Only this private JSON was written; PNG originals unchanged.",
+    "No matched-before whole-scene pixel equality asserted."
+  ]
+}

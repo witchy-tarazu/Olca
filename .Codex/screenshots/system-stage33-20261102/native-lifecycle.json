@@ -1,0 +1,976 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "70f427abfd3fb3f894afb13286d4f5809fb8d7f32f501979670de8f8d61cae73",
+    "Assets/Olca/Application/Management/GameSystem.cs": "a49154814851411400be01f9e8f4f6b373e4b3acf6b17fcd7fc1bd06e0592d5c",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "dabd354557cbbeeb611644429911409e5f1118387c193ef07b0e9524928d3a51",
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "ac51fb47f8126ebbc25a446bf5ec89de8a085d1b912dccbb84abb8d09d335d48",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "50d71472caea09b0135e01891926fa3fab3d2495c4e552cce9625754b8c4d483",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "796d34d9b80730c8421651c530b4f82c353774c8f7222bfc7a55a1c2d2d85759",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "040bdc1d0dc91aeb7d555e128b2d0616816ba930601e8498e9edebed4f0526cf",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "9ccb565743493d92213c9fe7a5e9220615d8c255554d3b7b54a939b06f2c4555",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "5d9e3cd15c46770d210cf993bc616adab4fe65374f21bc49f3b8a1b47083678e",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "b2a3d00d66ebd7f2896fbdfa41754b8b0dde5ebc28e20567e3432cfa1471d09e",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "e097ee471c50d397052458a337d6fb1871edcf54460b6d8b9040b8283cb0d6c2",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "4e999b43b9cd7e46730acfd2b501db148372c8024859afc00f5202849b5330d1",
+    "Assets/Olca/Unity/Management/UIRuntimeManager.cs": "e39e801b8b074cfe400e25341bac1f8bbb8bbc3f87657c385a14faad0fad12f9",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "66a39e865f7793fb45d248cedc4c9c15bf482b0cf6cfbe6cecaaff4ce6238b9d",
+    "Assets/Olca/Unity/UnityTimeProvider.cs": "797684ed29d1da86d6d18109d3a87d6337d61fac84338b72de54dd5483dc7e0a"
+  },
+  "fixture": "External Destroy only through verification helper. Normal Back/entry/pause use actual EventSystem Raycast; movement uses timestamped InputSystem keyboard. Partial gauge20 is explicit fixture, not card mechanic.",
+  "unregistered": {
+    "state": {
+      "cards": 0,
+      "hand": null,
+      "remaining": null,
+      "total": null,
+      "frame": 124,
+      "clock": 124,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 6000,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 1
+    },
+    "heading": "テフダ  /  デッキ ミトウロク",
+    "rows": [
+      {
+        "slot": 0,
+        "name": "—",
+        "cost": "",
+        "icon": null,
+        "iconEnabled": false,
+        "iconRect": [
+          36,
+          36
+        ],
+        "font": "JikiTourai",
+        "fontSize": 6
+      },
+      {
+        "slot": 1,
+        "name": "—",
+        "cost": "",
+        "icon": null,
+        "iconEnabled": false,
+        "iconRect": [
+          36,
+          36
+        ],
+        "font": "JikiTourai",
+        "fontSize": 6
+      },
+      {
+        "slot": 2,
+        "name": "—",
+        "cost": "",
+        "icon": null,
+        "iconEnabled": false,
+        "iconRect": [
+          36,
+          36
+        ],
+        "font": "JikiTourai",
+        "fontSize": 6
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "validationRegistration": {
+    "explicitValidationDeck": true,
+    "notProductRegistration": true,
+    "source": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "Cost": 1
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "Cost": 1
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "Cost": 1
+      },
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "Cost": 1
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "Cost": 2
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "Cost": 2
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "Cost": 2
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "Cost": 2
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "Cost": 2
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "Cost": 2
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "Cost": 2
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "Cost": 2
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "Cost": 1
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "Cost": 1
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "Cost": 1
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "Cost": 1
+      },
+      {
+        "Id": "fire",
+        "Name": "fire_card",
+        "Cost": 1
+      },
+      {
+        "Id": "fire",
+        "Name": "fire_card",
+        "Cost": 1
+      },
+      {
+        "Id": "fire",
+        "Name": "fire_card",
+        "Cost": 1
+      },
+      {
+        "Id": "fire",
+        "Name": "fire_card",
+        "Cost": 1
+      }
+    ],
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 6000,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 1
+    }
+  },
+  "initialHand": {
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "heading": "テフダ 3  /  ヤマフダ 17",
+    "rows": [
+      {
+        "slot": 0,
+        "name": "fire_card",
+        "cost": "コスト 1",
+        "icon": "SwordCustomIcon",
+        "iconEnabled": true,
+        "iconRect": [
+          36,
+          36
+        ],
+        "font": "JikiTourai",
+        "fontSize": 6
+      },
+      {
+        "slot": 1,
+        "name": "ヒール",
+        "cost": "コスト 2",
+        "icon": "healCustomIcon",
+        "iconEnabled": true,
+        "iconRect": [
+          36,
+          36
+        ],
+        "font": "JikiTourai",
+        "fontSize": 6
+      },
+      {
+        "slot": 2,
+        "name": "fire_card",
+        "cost": "コスト 1",
+        "icon": "SwordCustomIcon",
+        "iconEnabled": true,
+        "iconRect": [
+          36,
+          36
+        ],
+        "font": "JikiTourai",
+        "fontSize": 6
+      }
+    ],
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "finalHand": {
+    "cards": 1657928422,
+    "hand": [
+      {
+        "id": "fire",
+        "name": "fire_card",
+        "cost": 1,
+        "instance": -89180428
+      },
+      {
+        "id": "heal",
+        "name": "ヒール",
+        "cost": 2,
+        "instance": -1993869888
+      },
+      {
+        "id": "fire",
+        "name": "fire_card",
+        "cost": 1,
+        "instance": -165392548
+      }
+    ],
+    "remaining": 17,
+    "total": 20,
+    "frame": 891,
+    "clock": 891,
+    "position": 660000,
+    "height": 0,
+    "velocity": 0,
+    "support": "floor",
+    "gauge": 358838466,
+    "core": -308287520,
+    "units": 5100,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": false,
+    "paused": false,
+    "scale": 1
+  },
+  "before": {
+    "cards": 1657928422,
+    "hand": [
+      {
+        "id": "fire",
+        "name": "fire_card",
+        "cost": 1,
+        "instance": -89180428
+      },
+      {
+        "id": "heal",
+        "name": "ヒール",
+        "cost": 2,
+        "instance": -1993869888
+      },
+      {
+        "id": "fire",
+        "name": "fire_card",
+        "cost": 1,
+        "instance": -165392548
+      }
+    ],
+    "remaining": 17,
+    "total": 20,
+    "frame": 501,
+    "clock": 501,
+    "position": 480000,
+    "height": 0,
+    "velocity": 0,
+    "support": "floor",
+    "gauge": 358838466,
+    "core": -308287520,
+    "units": 1200,
+    "maximum": 100,
+    "maximumUnits": 6000,
+    "recovery": 10,
+    "presented": true,
+    "paused": false,
+    "scale": 0
+  },
+  "closedNaturalDestroy": {
+    "naturalDestroy": true,
+    "closedWaitMilliseconds": 1000,
+    "oldId": -325695908,
+    "oldCallbackIgnored": true,
+    "focus": "OutsideExplorationEntry",
+    "after": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  "explicitReentry": {
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    },
+    "text": "カードゲージ  20.0 / 100",
+    "shown": 20,
+    "actual": 20,
+    "width": 79.2,
+    "expected": 79.2,
+    "labelWidth": 400,
+    "font": "JikiTourai",
+    "fontUsed": 7,
+    "visibleCharacters": 18,
+    "screen": [
+      640,
+      360
+    ]
+  },
+  "activeNaturalDestroy": {
+    "actualHiddenReturn700ms": true,
+    "activeNaturalDestroyRecovery": true,
+    "oldId": -325696798,
+    "replacementId": -325697324,
+    "after": {
+      "state": {
+        "cards": 1657928422,
+        "hand": [
+          {
+            "id": "fire",
+            "name": "fire_card",
+            "cost": 1,
+            "instance": -89180428
+          },
+          {
+            "id": "heal",
+            "name": "ヒール",
+            "cost": 2,
+            "instance": -1993869888
+          },
+          {
+            "id": "fire",
+            "name": "fire_card",
+            "cost": 1,
+            "instance": -165392548
+          }
+        ],
+        "remaining": 17,
+        "total": 20,
+        "frame": 501,
+        "clock": 501,
+        "position": 480000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": 358838466,
+        "core": -308287520,
+        "units": 1200,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  20.0 / 100",
+      "shown": 20,
+      "actual": 20,
+      "width": 79.2,
+      "expected": 79.2,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "freshMovement": {
+    "actualTimestampedKeyboard": true,
+    "requestedFrames": 30,
+    "delta": 30,
+    "beforeUnits": 1320,
+    "beforePosition": 480000,
+    "after": {
+      "state": {
+        "cards": 1657928422,
+        "hand": [
+          {
+            "id": "fire",
+            "name": "fire_card",
+            "cost": 1,
+            "instance": -89180428
+          },
+          {
+            "id": "heal",
+            "name": "ヒール",
+            "cost": 2,
+            "instance": -1993869888
+          },
+          {
+            "id": "fire",
+            "name": "fire_card",
+            "cost": 1,
+            "instance": -165392548
+          }
+        ],
+        "remaining": 17,
+        "total": 20,
+        "frame": 543,
+        "clock": 543,
+        "position": 648000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": 358838466,
+        "core": -308287520,
+        "units": 1620,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": false,
+        "scale": 0
+      },
+      "text": "カードゲージ  27.0 / 100",
+      "shown": 27,
+      "actual": 27,
+      "width": 106.92,
+      "expected": 106.92,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "pause": {
+    "actualPause": true,
+    "after": {
+      "state": {
+        "cards": 1657928422,
+        "hand": [
+          {
+            "id": "fire",
+            "name": "fire_card",
+            "cost": 1,
+            "instance": -89180428
+          },
+          {
+            "id": "heal",
+            "name": "ヒール",
+            "cost": 2,
+            "instance": -1993869888
+          },
+          {
+            "id": "fire",
+            "name": "fire_card",
+            "cost": 1,
+            "instance": -165392548
+          }
+        ],
+        "remaining": 17,
+        "total": 20,
+        "frame": 543,
+        "clock": 543,
+        "position": 648000,
+        "height": 0,
+        "velocity": 0,
+        "support": "floor",
+        "gauge": 358838466,
+        "core": -308287520,
+        "units": 1620,
+        "maximum": 100,
+        "maximumUnits": 6000,
+        "recovery": 10,
+        "presented": true,
+        "paused": true,
+        "scale": 0
+      },
+      "text": "カードゲージ  27.0 / 100",
+      "shown": 27,
+      "actual": 27,
+      "width": 106.92,
+      "expected": 106.92,
+      "labelWidth": 400,
+      "font": "JikiTourai",
+      "fontUsed": 7,
+      "visibleCharacters": 18,
+      "screen": [
+        640,
+        360
+      ]
+    }
+  },
+  "heldInputAfterPause": {
+    "actualKeyboardAndPauseRaycast": true,
+    "physicalInputNotRun": true,
+    "paused": {
+      "frame": 728,
+      "clock": 728,
+      "gaugeUnits": 3470,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10,
+      "position": 750000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 12.5,
+      "Facing": 1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -325694130,
+          "session": 1544728800,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -325697324,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1544728800,
+        "core": 215510636,
+        "runtime": 2091114576,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": true,
+        "scale": 0,
+        "focus": "GamepadSettingsButton",
+        "buttons": [
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "KeyboardSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "LoadCheckpointButton",
+            "interactable": false
+          },
+          {
+            "name": "AudioSettingsButton",
+            "interactable": true
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "RetreatButton",
+            "interactable": false
+          },
+          {
+            "name": "OwnedCardsButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "TransformationAnimationSetting",
+            "interactable": true
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "ResumeButton",
+            "interactable": true
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "VibrationSetting",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "DialogueTextSpeedButton",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          },
+          {
+            "name": "GamepadSettingsButton",
+            "interactable": true
+          }
+        ]
+      }
+    },
+    "after": {
+      "frame": 793,
+      "clock": 793,
+      "gaugeUnits": 4120,
+      "gaugeMaximum": 100,
+      "gaugeRecovery": 10,
+      "position": 660000,
+      "height": 0,
+      "velocity": 0,
+      "grounded": true,
+      "support": "floor",
+      "worldX": 11,
+      "Facing": -1,
+      "map": "validation-landing-32",
+      "baseState": {
+        "runtimeLayoutTrial": false,
+        "root": {
+          "root": -325694130,
+          "session": 1544728800,
+          "presented": true,
+          "ended": false,
+          "resources": 11,
+          "dialogs": 0,
+          "events": 1,
+          "cameras": 1,
+          "listeners": 1,
+          "audio": 3
+        },
+        "view": -325697324,
+        "open": true,
+        "rootParent": true,
+        "layer": "outside-exploration-entry",
+        "session": 1544728800,
+        "core": 215510636,
+        "runtime": 2091114576,
+        "phase": "Dungeon",
+        "position": 0,
+        "hp": 100,
+        "revision": 1,
+        "pending": false,
+        "logicalFrame": 0,
+        "paused": false,
+        "scale": 1,
+        "focus": "PauseOutsideExploration",
+        "buttons": [
+          {
+            "name": "ManualSaveButton",
+            "interactable": false
+          },
+          {
+            "name": "OpenCustomizationEditor",
+            "interactable": false
+          },
+          {
+            "name": "CardCollectionButton",
+            "interactable": false
+          },
+          {
+            "name": "NewGameButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseButton",
+            "interactable": false
+          },
+          {
+            "name": "PauseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "CloseOutsideExploration",
+            "interactable": true
+          },
+          {
+            "name": "OpenCustomizationUnlocks",
+            "interactable": false
+          }
+        ]
+      }
+    }
+  },
+  "legacyBefore": {
+    "core": 215510636,
+    "runtime": 2091114576,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "legacyAfter": {
+    "core": 215510636,
+    "runtime": 2091114576,
+    "phase": "Dungeon",
+    "position": 0,
+    "hp": 100,
+    "revision": 1,
+    "pending": false,
+    "logicalFrame": 0
+  },
+  "notImplemented": "Product deck source/edit/save, selection/use/refill/redraw and gauge consumption are not connected. No new key/gamepad controls.",
+  "saveHashesBefore": {
+    "progress/progress.json": "060414ab81fd0020f20a16f2dc6c42a32e9eee66908b3dc3b1a9cf594ed1d934"
+  },
+  "saveHashesAfter": {
+    "progress/progress.json": "060414ab81fd0020f20a16f2dc6c42a32e9eee66908b3dc3b1a9cf594ed1d934"
+  },
+  "nativePhysicalNotRun": true,
+  "saveComparisonScope": "resumed explicit digest interval; pre-registration through closedDestroy byte comparison passed before helper capture failure and is retained as trace assertion, original local digest not serialized",
+  "captureHelperRecovery": {
+    "saveHashes": {
+      "progress/progress.json": "060414ab81fd0020f20a16f2dc6c42a32e9eee66908b3dc3b1a9cf594ed1d934"
+    },
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    },
+    "legacy": {
+      "core": 215510636,
+      "runtime": 2091114576,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "revision": 1,
+      "pending": false,
+      "logicalFrame": 0
+    },
+    "originalPreRegistrationComparison": "assert hashes()==before passed after closedDestroy before failed closed-view projection; original local digest was not serialized, so resumed digest is recorded separately. No registration/Destroy re-executed.",
+    "preFailureTrace": "system-stage33-native-capture-helper-history/system-stage33-native-check-process.log"
+  }
+}

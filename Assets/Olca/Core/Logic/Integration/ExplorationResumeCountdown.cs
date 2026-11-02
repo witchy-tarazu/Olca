@@ -43,6 +43,23 @@ namespace Olca.Core.Logic.Integration
         // 仕様で仮値が許可された最大量/回復速度。初期満量も検証マップだけの設定。
         public static OutsideCardGauge ValidationDefault=>new OutsideCardGauge(100,10,100);
     }
+    /// <summary>探索専用デッキの初期手札。Dungeonとは個体もドロー履歴も共有しない。</summary>
+    public sealed class OutsideExplorationCards
+    {
+        private readonly Olca.Core.Domain.Deck deck;
+        public System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> Hand {get;}
+        public int RemainingCount=>deck.RemainingCount;
+        public int TotalCount=>deck.TotalCount;
+        private OutsideExplorationCards(Olca.Core.Domain.Deck deck,Olca.Core.Interfaces.IRandomProvider random)
+        {this.deck=deck;Hand=deck.DrawCards(3,random).AsReadOnly();}
+        public static bool TryCreate(System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> cards,System.Collections.Generic.IReadOnlyDictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out OutsideExplorationCards result,out string error)
+        {
+            if(random==null)throw new System.ArgumentNullException(nameof(random));
+            result=null;
+            if(!Olca.Core.Domain.DepartureDeckRules.TryCreate(cards,owned,out var deck,out error))return false;
+            result=new OutsideExplorationCards(deck,random);return true;
+        }
+    }
     /// <summary>外界マップの水平カメラ方針。投影倍率やゲーム座標は変更しない。</summary>
     public sealed class OutsideCameraPolicy
     {
@@ -69,12 +86,23 @@ namespace Olca.Core.Logic.Integration
             internal PresentationLease(OutsideExplorationSession owner){this.owner=owner;}
             public OutsideExplorationCore Core=>owner?.Core;
             public OutsideCameraPolicy Camera=>owner?.Camera;
+            public OutsideExplorationCards Cards=>owner?.Cards;
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
         }
         private PresentationLease current;
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
+        public OutsideExplorationCards Cards {get;private set;}
+        // 入場前の初回登録だけ。再表示で再抽選せず、製品デッキの保存/切替は別接続とする。
+        public bool TryInitializeCards(System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> cards,System.Collections.Generic.IReadOnlyDictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out string error)
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            if(IsPresented||Cards!=null){error="探索デッキは既に登録済み、または表示中です";return false;}
+            if(!OutsideExplorationCards.TryCreate(cards,owned,random,out var prepared,out error))return false;
+            Cards=prepared;return true;
+        }
+
         // マップ入場前に設定する。表示中の変更は画面の急な移動を防ぐため受理しない。
         public bool TryConfigureCamera(OutsideCameraPolicy policy)
         {

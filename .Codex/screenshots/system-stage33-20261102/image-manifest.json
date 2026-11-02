@@ -1,0 +1,521 @@
+[
+  {
+    "file": "unregistered-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "db91927545311e600c972f5876d20f289cf4eaf75451627bdc4af400c25e029f",
+    "state": {
+      "cards": 0,
+      "hand": null,
+      "remaining": null,
+      "total": null,
+      "frame": 389,
+      "clock": 389,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 6000,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "unregistered-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "b21e745cc90b39abccad157f4b5394d319cffa3d5506e79a1773a92d39ae972a",
+    "state": {
+      "cards": 0,
+      "hand": null,
+      "remaining": null,
+      "total": null,
+      "frame": 389,
+      "clock": 389,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 6000,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "unregistered-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "6bf24cfbae1def97ca12d1981869b0774a343d3fe69b1dcfd62c5651f3d75ffd",
+    "state": {
+      "cards": 0,
+      "hand": null,
+      "remaining": null,
+      "total": null,
+      "frame": 389,
+      "clock": 389,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 6000,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "open-before-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "35ef1cdbe6392fe7b49f2618efc95d989ac138989dbd43286e8da43a9f690808",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "open-before-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "7753ddfd655861700d1e7ebb111297e69506a6e8f97d5a59e0cd5d92d960ad05",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "open-before-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "3618d2f5463f182c361d567d6773f010c1382d3ae990ef873f10ceeae9cd179b",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "closed-after-destroy-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "4c1af25fac937a83756cf9558b8813ea206b6825fa52475140321c2046dfa80c",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "closed-after-destroy-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "873586b160d05ed89a415c6f02979b510469757d5b8d23d70c71dccf55040db4",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "closed-after-destroy-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "285baa9991fe72d0c223d4fb9efefbe4ce228d2b66892d363b7dc2c30e68291a",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": false,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "active-recovered-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "a4d6998f9a928fa45bd05a33939b17420559ad2fd5fa59fcac4a328760d96b67",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "active-recovered-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "49f22e92cba1bcccab13ee9e858ddacdcac7eba1b4e3e0d6dae6b88def9d2520",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  },
+  {
+    "file": "active-recovered-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "666c335e06f043983e923cd1ee5862e26e69b8e2f9779a68b503088261d7e76d",
+    "state": {
+      "cards": 1657928422,
+      "hand": [
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -89180428
+        },
+        {
+          "id": "heal",
+          "name": "ヒール",
+          "cost": 2,
+          "instance": -1993869888
+        },
+        {
+          "id": "fire",
+          "name": "fire_card",
+          "cost": 1,
+          "instance": -165392548
+        }
+      ],
+      "remaining": 17,
+      "total": 20,
+      "frame": 501,
+      "clock": 501,
+      "position": 480000,
+      "height": 0,
+      "velocity": 0,
+      "support": "floor",
+      "gauge": 358838466,
+      "core": -308287520,
+      "units": 1200,
+      "maximum": 100,
+      "maximumUnits": 6000,
+      "recovery": 10,
+      "presented": true,
+      "paused": false,
+      "scale": 0
+    }
+  }
+]

@@ -776,6 +776,19 @@ namespace Olca.Tests.Application
             Assert.IsFalse(model.IsPresented);
         }
 
+        [TestCase("攻撃", "コウゲキ")] [TestCase("ひらがな Latin", "ひらがな Latin")] public async Task 外界初期手札HUDはRootの三枚を表示し閉鎖と再表示で再抽選しない(string name,string shown)
+        {
+            var source=Enumerable.Range(0,5).SelectMany(id=>Enumerable.Range(0,4).Select(n=>new Olca.Core.Domain.Card("outside-hud-"+id,name,1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))).ToArray();var owned=source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var model=system.OutsideExploration;
+            Assert.IsTrue(model.TryInitializeCards(source,owned,new Olca.Tests.Mocks.MockRandomProvider(),out _));var cards=model.Cards;var hand=cards.Hand.ToArray();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;
+                for(int slot=0;slot<3;slot++){Assert.AreEqual(shown,view.transform.Find("OutsideHandName"+slot).GetComponent<Text>().text);Assert.AreEqual(name,hand[slot].Name);Assert.AreEqual(name,source[slot].Name);Assert.AreEqual("コスト "+hand[slot].GetFinalCost(),view.transform.Find("OutsideHandCost"+slot).GetComponent<Text>().text);Assert.IsFalse(view.transform.Find("OutsideHandName"+slot).GetComponent<Text>().raycastTarget);}
+                StringAssert.Contains("17",view.transform.Find("OutsideHandHeading").GetComponent<Text>().text);
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsFalse(model.IsPresented);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);Assert.AreSame(cards,model.Cards);CollectionAssert.AreEqual(hand,model.Cards.Hand);Assert.AreEqual(0,model.Core.Frame);Assert.AreEqual(6000,model.Core.CardGauge.CurrentUnits);
+            }
+        }
+
         [Test] public async Task 外界入口の取消と欠損失敗は前画面のfocusとSessionを変更せず再試行できる()
         {
             var layer=views.GetLayer("return-hub");var hub=Panel("outside-failure-hub");var entry=Button(hub,"outside-failure-entry");ManagedScreenContext prior=null;

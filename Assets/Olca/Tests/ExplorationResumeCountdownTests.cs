@@ -4,6 +4,27 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static Olca.Core.Domain.Card[] CardFixture()=>System.Linq.Enumerable.ToArray(System.Linq.Enumerable.SelectMany(System.Linq.Enumerable.Range(0,5),id=>System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0,4),n=>new Olca.Core.Domain.Card("outside-fixture-"+id,"fixture",1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))));
+        private static System.Collections.Generic.Dictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> Owned(Olca.Core.Domain.Card[] cards)=>System.Linq.Enumerable.ToDictionary(System.Linq.Enumerable.GroupBy(cards,c=>(c.Id,c.ExceedLevel)),g=>g.Key,g=>System.Linq.Enumerable.Count(g));
+        [Test] public void 外界初期手札は独立した二十枚から三枚を引き表示借用と時計で再抽選しない()
+        {
+            var source=CardFixture();var random=new Olca.Tests.Mocks.MockRandomProvider();using(var session=new OutsideExplorationSession()){
+                Assert.IsTrue(session.TryInitializeCards(source,Owned(source),random,out _));var cards=session.Cards;Assert.AreEqual(20,cards.TotalCount);Assert.AreEqual(17,cards.RemainingCount);Assert.AreEqual(3,cards.Hand.Count);
+                foreach(var card in cards.Hand)foreach(var original in source)Assert.AreNotSame(original,card);
+                var first=session.AttachPresentation();var hand=System.Linq.Enumerable.ToArray(cards.Hand);for(int n=0;n<120;n++)session.Core.TickFrame(0);first.Dispose();var next=session.AttachPresentation();Assert.AreSame(cards,next.Cards);CollectionAssert.AreEqual(hand,next.Cards.Hand);Assert.IsFalse(session.TryInitializeCards(source,Owned(source),random,out _));next.Dispose();Assert.IsFalse(session.TryInitializeCards(source,Owned(source),random,out _));
+            }
+        }
+        [Test] public void 外界初回登録は所持と構築制限を共用し拒否で状態を作らない()
+        {
+            var source=CardFixture();var random=new Olca.Tests.Mocks.MockRandomProvider();using(var session=new OutsideExplorationSession()){
+                Assert.IsFalse(session.TryInitializeCards(System.Array.Empty<Olca.Core.Domain.Card>(),Owned(source),random,out _));Assert.IsNull(session.Cards);
+                Assert.IsFalse(session.TryInitializeCards(source,new System.Collections.Generic.Dictionary<(string,Olca.Core.Domain.ExceedLevel),int>(),random,out _));Assert.IsNull(session.Cards);
+                using(var lease=session.AttachPresentation())Assert.IsFalse(session.TryInitializeCards(source,Owned(source),random,out _));Assert.IsNull(session.Cards);
+                Assert.Throws<System.ArgumentNullException>(()=>session.TryInitializeCards(source,Owned(source),null,out _));Assert.IsNull(session.Cards);
+                var over=(Olca.Core.Domain.Card[])source.Clone();over[4]=source[0];Assert.IsFalse(session.TryInitializeCards(over,Owned(over),random,out _));Assert.IsNull(session.Cards);
+                Assert.IsTrue(session.TryInitializeCards(source,Owned(source),random,out _));
+            }
+        }
         [TestCase(1)] [TestCase(5)] [TestCase(90)]
         public void 論理フレームのまとめ方にかかわらず三二一は各三十で完了通知は一回(int batch)
         {
