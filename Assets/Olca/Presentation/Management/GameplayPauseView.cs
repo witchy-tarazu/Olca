@@ -220,7 +220,9 @@ namespace Olca.Presentation.Management
     public abstract class OwnedPopup : MonoBehaviour
     {
         protected Button confirm,cancel;
-        protected ScrollRect inputScroll;protected bool directionScroll=true;
+        protected ScrollRect inputScroll;protected bool directionScroll=true,manageMenu=true;
+        public Func<IEnumerable<Button>> MenuExtras {get;set;}
+        protected bool CanOperatePopup=>generation!=null&&Live(generation)&&gameObject.activeInHierarchy;
         private DialogManager manager;
         private IDialogOwner owner;
         private DialogOwnerScope scope;
@@ -255,25 +257,31 @@ namespace Olca.Presentation.Management
             if(manager!=null){
                 if(owner==null){scope=manager.CreateOwner(()=>IsOpen&&!suspended&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false));owner=scope;}
                 Action<DialogResult> completed=result=>{if(Live(token))Finish(result);};
-                request=confirm==null?manager.ShowNotice(owner,gameObject,cancel,inputScroll,completed):manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),completed,inputScroll,directionScroll);
+                request=confirm==null?manager.ShowNotice(owner,gameObject,cancel,inputScroll,completed,manageMenu,()=>Live(token),MenuExtras):manager.ShowPersistent(owner,gameObject,confirm,cancel,()=>Live(token)&&Attempt(),completed,inputScroll,directionScroll,MenuExtras);
                 if(request.IsCompleted){if(request.Result==DialogResult.ParentClosed||request.Result==DialogResult.Busy){Finish(DialogResult.ParentClosed);return false;}}
             }else{
                 if(confirm!=null)confirm.onClick.AddListener(()=>{if(!Live(token)||!confirm.IsInteractable()||!confirm.gameObject.activeSelf)return;attempting=true;bool close;try{close=Attempt();}finally{attempting=false;}if(close&&Live(token))Finish(DialogResult.Confirmed);});
                 cancel.onClick.AddListener(()=>{if(Live(token)&&cancel.IsInteractable())Finish(DialogResult.Cancelled);});
-                legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&Olca.Unity.MenuPadScope.IsTopmost(transform));
-                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke(),inputScroll,directionScroll:directionScroll);
+                if(manageMenu){legacyMenu=new Olca.Unity.MenuPadScope(()=>Live(token)&&Olca.Unity.MenuPadScope.IsTopmost(transform),MenuExtras);
+                legacyMenu.Bind(transform,cancel.name,()=>cancel.onClick.Invoke(),inputScroll,directionScroll:directionScroll);}
             }
             return true;
         }
         private bool Live(object token)=>this!=null&&IsOpen&&!suspended&&!attempting&&ReferenceEquals(generation,token)&&(valid?.Invoke()??false)&&(owner==null||owner.IsCurrent);
-        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);transform.SetAsLastSibling();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm!=null?confirm.gameObject:null);}
+        protected void Rendered(){if(!IsOpen||suspended)return;gameObject.SetActive(true);BringToFront();VisibilityChanged?.Invoke();EventSystem.current?.SetSelectedGameObject(cancel.IsInteractable()?cancel.gameObject:confirm!=null?confirm.gameObject:null);}
         public void RefreshLifetime()
         {
             if(!IsOpen)return;
             if(!(valid?.Invoke()??false)||owner!=null&&!owner.IsCurrent){Abort();return;}
             if(suspended){if(manager==null||manager.ActiveCount==0){suspended=false;if(Attach())Redraw();}return;}
             if(request?.IsCompleted==true){Finish(DialogResult.ParentClosed);return;}
-            legacyMenu?.Tick();if(this!=null&&gameObject.activeInHierarchy)transform.SetAsLastSibling();
+            legacyMenu?.Tick();if(this!=null&&gameObject.activeInHierarchy)BringToFront();
+        }
+        // 親が所有する共用操作は借り替えず、明示された同階層のボタンだけ覆いより前へ保つ。
+        private void BringToFront()
+        {
+            transform.SetAsLastSibling();var external=MenuExtras?.Invoke();if(external==null)return;
+            foreach(var button in external)if(button!=null&&button.gameObject.activeInHierarchy&&button.transform.parent==transform.parent)button.transform.SetAsLastSibling();
         }
         public void Suspend()
         {
@@ -300,7 +308,7 @@ namespace Olca.Presentation.Management
         protected abstract bool Attempt();
         protected abstract void Redraw();
         protected abstract void OnResult(DialogResult result,string focusName);
-        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;confirmFeedback=cancelFeedback=null;confirm=cancel=null;inputScroll=null;}
+        protected virtual void OnDestroy(){Abort();VisibilityChanged=null;confirmFeedback=cancelFeedback=null;confirm=cancel=null;inputScroll=null;MenuExtras=null;}
     }
     public enum ProgressPendingAction { None,ManualSave,NewGame }
     public interface IProgressActionOperations

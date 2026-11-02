@@ -1,0 +1,12 @@
+{
+  "reviewer": "equipment_save_review / independent_refactor_review",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "evidence": "code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "evidence": "visual-review.json"
+  },
+  "scope": "Dialogue skip shared ConfirmationDialog; dedicated DialogueBacklogDialog owns read-only page/scroll/menu/close; parent normal progression and existing Session domain retained."
+}

@@ -1396,7 +1396,9 @@ namespace Olca.Presentation.Management
     {
         public bool ReferenceLayout;
         public Vector2 MessagePosition,MessageSize,ConfirmPosition,CancelPosition,ButtonSize;
-        public int MessageFontSize=30,ButtonFontSize=25;public bool ButtonOutline;
+        public int MessageFontSize=30,ButtonFontSize=25,TitleFontSize=32;public bool ButtonOutline;
+        public Vector2 TitlePosition,TitleSize;public TextAnchor MessageAlignment=TextAnchor.MiddleCenter;
+        public Color? ReadingColor;
         public string ReadingName;public Vector2 ReadingPosition,ReadingSize;public float ReadingSideInset=80;
         public Color Surface=UiLook.Surface;
     }
@@ -1413,8 +1415,9 @@ namespace Olca.Presentation.Management
             if(data==null)throw new ArgumentNullException(nameof(data));var value=CreateShell<ConfirmationDialog>(host,font,data.RootName,data.BodyName,data.Layout==null||data.Layout.ReferenceLayout);value.confirmEnabled=data.ConfirmEnabled;
             if(data.Layout!=null){
                 var layout=value.layout=data.Layout;value.GetComponent<Image>().color=layout.Surface;
-                if(layout.ReadingName!=null){var face=value.widgets.Face(layout.ReadingName);face.rectTransform.anchoredPosition=layout.ReadingPosition;face.rectTransform.sizeDelta=layout.ReadingSize;value.reading=face.rectTransform;}
-                value.widgets.Text(data.MessageName,data.Message,layout.MessagePosition.x,layout.MessagePosition.y,layout.MessageSize.x,layout.MessageSize.y,layout.MessageFontSize);
+                if(data.Title!=null)value.widgets.Text(data.TitleName,data.Title,layout.TitlePosition.x,layout.TitlePosition.y,layout.TitleSize.x,layout.TitleSize.y,layout.TitleFontSize);
+                if(layout.ReadingName!=null){var face=value.widgets.Face(layout.ReadingName);if(layout.ReadingColor.HasValue){face.sprite=null;face.color=layout.ReadingColor.Value;}face.rectTransform.anchoredPosition=layout.ReadingPosition;face.rectTransform.sizeDelta=layout.ReadingSize;value.reading=face.rectTransform;}
+                value.widgets.Text(data.MessageName,data.Message,layout.MessagePosition.x,layout.MessagePosition.y,layout.MessageSize.x,layout.MessageSize.y,layout.MessageFontSize).alignment=layout.MessageAlignment;
                 value.confirm=value.widgets.Button(data.ConfirmName,data.ConfirmLabel,layout.ConfirmPosition.x,layout.ConfirmPosition.y,layout.ButtonSize.x,layout.ButtonSize.y,layout.ButtonFontSize,layout.ButtonOutline);
                 value.cancel=value.widgets.Button(data.CancelName,data.CancelLabel,layout.CancelPosition.x,layout.CancelPosition.y,layout.ButtonSize.x,layout.ButtonSize.y,layout.ButtonFontSize,layout.ButtonOutline);
                 value.confirm.interactable=value.confirmEnabled;value.confirm.onClick.AddListener(()=>data.ButtonFeedback?.Invoke(data.ConfirmName));value.cancel.onClick.AddListener(()=>data.ButtonFeedback?.Invoke(data.CancelName));value.directionScroll=false;value.CaptureFeedback();return value;

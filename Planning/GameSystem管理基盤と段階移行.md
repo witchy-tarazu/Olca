@@ -802,3 +802,25 @@ ProgressActionDialogは確認revision、pending計画、同ticket再試行、取
 最終Application541/Integration605/同Editor84/全3653件が成功、全件247秒・console error0。警告59は既存fixture診断5分類。隔離23001の実入口で両機器の候補作成/初期化取消と確定/保存前失敗→通常再試行2回/旧callback/同frame背面入力/親終了、host CloseOpen/Singleとcheckpoint実再開、撤退取消/旧確定/保存失敗→同計画再試行2回を確認。経験値等は実保存前hashとbackupを照合し確認状態で不変、非ゼロ報酬の破棄等は既存回帰の範囲と区別。FHD/4K/4:3原寸18枚、独立code/visual review必須指摘0。保存bytes・入力機器/注入/proof・EventSystem登録/管理生成lease・原本/928資産・640復元のcleanupを確認。[証跡と比較](../.Codex/screenshots/system-stage23-20261101/README.md)。
 
 残必須は会話skipの共通確認化、backlog固有内容/scroll、Custom詳細固有内容/入力の3機能。専用classの個数や任意の全widget Prefab化を必須に増やさない。今回で全体安定化完了とはしない。実build/物理入力/聴感/全HotReload、製品データ・極端な旧長名・登録外Sprite2095、歴史的UGUI/Pipeline/CLI/UnityAIは既存の未確認として保持。新外界仕様/未決数値の実装は混ぜず、最新fetchでStage22から文書差分なしを確認した。
+
+
+## 第24段階: 会話skip共通確認と履歴専用Dialog（検証完了）
+
+会話skipは既存ConfirmationDialogへ文言と純粋な表示geometry、可否と結果通知を渡す。DialogueViewは通常の会話表示・既存DialogueSession進行とPopup起動/結果連携を担当し、既読/選択/台本/保存のルールは移さない。スキップ確定/取消も既存Session APIへ返す。DialogManagerに会話の種別分岐や台本依存を追加しない。
+
+DialogueBacklogDialogは読取専用履歴のsnapshot、本文組立、前後ページ、本文高さとscroll、閉鎖Menuを所有する。親はopaqueなDialogueBacklogPositionだけをPause往復に保持し、新ticketで再開する。通常内容は非表示のまま保持し、共用Pauseは親所有を維持。共通MenuExtrasで外部buttonを入力対象へ含めるが、その用途をManagerへ持ち込まない。閉鎖/Bind/親終了のepochとSession/context一致、同frame遮断を維持し、終了後の旧callbackを次の会話へ作用させない。
+
+この段階の最終結果は以下へ追記する。残必須はCustom詳細の固有表示/入力所有を適切なDialogへ移すこと。今回を全基盤安定化完了としない。既存の製品NPC会話登録、実build/物理入力/聴感/全HotReload、製品装備stat実値・Itemskip・極端な旧長名・登録外Sprite2095、歴史的UGUI/Pipeline/CLI/UnityAIは別の未確認/問題として保持する。新外界仕様や未決値を今回実装しない。
+
+
+第24段階の初回関連543件は541成功2失敗。Popupが内容だけを覆う構成となり、Pause時の親CanvasGroup未生成経路でCLRの`??`とUnity missing-object判定の差が表面化したため、明示的なUnity null判定へ最小修正。修正版の関連543/Integration605は成功したが、実Raycastで履歴PopupがPauseを覆うことを発見した。OwnedPopupが毎frame末尾へ移動するため初回だけの親Pause前面化を上書きしていた。共通BringToFrontはPopupの後に明示されたactive・同階層のMenuExtrasだけを前へ保ち、reparentや新Canvas/Manager固有分岐を加えない。既存2ケースへ毎frame順序assertを追加し、最終ソースで関連/全件と実Raycastを改めて検証する。単体/関連成功だけで実操作や全基盤完了としない。
+
+
+最終候補の関連543/Integration605成功後、公開legacy `Bind A→履歴→Bind B→skip→取消`で前の履歴focusが次会話へ残ることを隔離UIで再現。新Bindは新会話世代なのでpopupOrigin/restoredFocusをリセットし、終端破棄でも解除する。同じ会話のPause復帰では保持する既存方針を変えない。旧close拒否と新skip入口focusを1ケース追加し、最終検証件数はApplication544/全3656/同Editor94予定。初回private probeの重複Image前提誤りは特定名fixture2の除去と検証Scene復元を行い、製品focus退行とは分けて記録する。
+
+
+第24段階の最終v4でApplication544/Integration605/同Editor反復94/全3656件が成功。全件246.37秒、console error0、警告59は既存fixture診断5分類。隔離24002のBootstrap実入口からTryStartDialogueで台本を開始し、skip取消/一度だけ確定、選択肢/既存skip不可、履歴80行末尾・3ページ往復、実RaycastでPause到達と別確認往復・位置/focus復帰、同frame旧入力・旧ticket、親終了/CloseOpen/Single再入/欠損取消とimportフォント生存を確認。閲覧取消の実保存4ファイルhash不変、意図したhost中断の既存checkpoint保存は別計測。製品NPC登録を実行済みとはしない。
+
+FHD/4K/4:3最終12枚と独立code/visual reviewの必須指摘0。原本・928資産の照合（従来の検証用URP2例外のみ）、640復元、専用TMPDIR/save guard、入力機器/注入/proof/lease/EventSystemと終了後・テスト後の保存bytesを確認。v4再読込で解像度jobが消失した際は再送せず、実RenderTextureの読取で640を確認。初回status timeoutとNative読取の待機上限は同job追跡で回収し、Editor再起動/VM・モデル・認証変更なし。初回例外と途中の実操作不具合/検証helper前提誤りも履歴として保持。[証跡・比較・残件](../.Codex/screenshots/system-stage24-20261101/README.md)。
+
+残必須はCustom詳細の固有内容/入力/closeを適切なDialogへ移すこと。単純確認は共通化、専用読取状態は専用Dialog、DialogManagerは共通調整のみという完了条件を維持する。今回を全基盤完了としない。任意の全widget Prefab化やManager増殖は必須にしない。既存の未確認/歴史的問題は上記どおり保持し、追加外界機能や未決値は実装していない。最終安全pullでは8357b2eから追加仕様差分なし。

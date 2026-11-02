@@ -1,0 +1,118 @@
+{
+  "raycast": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"diagnostics\": [], \"compileMs\": 99, \"executeMs\": 6, \"assemblyName\": \"PipelineRunScript_Dialogue24Proof_b75c4ccca1834da6b817ad1c62dfcfb0\", \"success\": true, \"command\": \"run_script\", \"result\": {\"button\": \"DialoguePause\", \"point\": [583.3334, 331.6667], \"sibling\": 1, \"parent\": \"DialoguePanel\", \"hits\": [{\"name\": \"DialogueBacklog\", \"parent\": \"DialoguePanel\", \"sibling\": 2, \"depth\": 14, \"sortingOrder\": 32000, \"sortingLayer\": 0}, {\"name\": \"DialoguePause\", \"parent\": \"DialoguePanel\", \"sibling\": 1, \"depth\": 12, \"sortingOrder\": 32000, \"sortingLayer\": 0}, {\"name\": \"DialoguePanel\", \"parent\": \"GameplayPauseCanvas\", \"sibling\": 10, \"depth\": 11, \"sortingOrder\": 32000, \"sortingLayer\": 0}, {\"name\": \"PauseButton\", \"parent\": \"GameplayPauseCanvas\", \"sibling\": 0, \"depth\": 0, \"sortingOrder\": 32000, \"sortingLayer\": 0}]}, \"executionTimeMs\": 123, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-01T23:07:51.254449Z\"}"
+      }
+    ],
+    "trackedCliJob": "81738d1c767948eb877c9b3bdd2e52c8",
+    "targetPid": 137059
+  },
+  "raycastAfterFix": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"diagnostics\": [], \"compileMs\": 101, \"executeMs\": 8, \"assemblyName\": \"PipelineRunScript_Dialogue24Proof_27da63de04124b58b6f4ae16c1d532f3\", \"success\": true, \"command\": \"run_script\", \"result\": {\"button\": \"DialoguePause\", \"point\": [583.3334, 331.6667], \"sibling\": 2, \"parent\": \"DialoguePanel\", \"hits\": [{\"name\": \"DialoguePause\", \"parent\": \"DialoguePanel\", \"sibling\": 2, \"depth\": 19, \"sortingOrder\": 32000, \"sortingLayer\": 0}, {\"name\": \"DialogueBacklog\", \"parent\": \"DialoguePanel\", \"sibling\": 1, \"depth\": 9, \"sortingOrder\": 32000, \"sortingLayer\": 0}, {\"name\": \"DialoguePanel\", \"parent\": \"GameplayPauseCanvas\", \"sibling\": 10, \"depth\": 8, \"sortingOrder\": 32000, \"sortingLayer\": 0}, {\"name\": \"PauseButton\", \"parent\": \"GameplayPauseCanvas\", \"sibling\": 0, \"depth\": 0, \"sortingOrder\": 32000, \"sortingLayer\": 0}]}, \"executionTimeMs\": 125, \"message\": null, \"error\": null, \"errorDetails\": null, \"executedAt\": \"2026-11-01T23:56:12.011838Z\"}"
+      }
+    ],
+    "trackedCliJob": "372dd6a4efa6461faccad6a023282a0d",
+    "targetPid": 137059
+  },
+  "cleanup": {
+    "readCloseAndParentCloseBytesUnchanged": true,
+    "hashesBeforeClose": {
+      "progress/progress.json": "f3c6e36d2d082f5eae0ee50fb5f45967a091f9e1384b9df480e2d0e308fbc909",
+      "progress/progress.backup.json": "c8883a583aa53e2492ecb2ccfadde9584b1e25e2207b8390674df7d13f38a5fc",
+      "checkpoints/runs/06a997ecd0e04ff7a3506c583b0aa880/active.json": "09ae5f23b8e74f7efa464247c778226ffeda3a9f5e710325e321e24617f77624",
+      "checkpoints/runs/06a997ecd0e04ff7a3506c583b0aa880/active.backup.json": "a62b551746b17d48db5c9d19bdbb92d863f65208f0710987af19e613f78cb3cb"
+    },
+    "afterIntentionalHostSuspend": {
+      "progress/progress.json": "f3c6e36d2d082f5eae0ee50fb5f45967a091f9e1384b9df480e2d0e308fbc909",
+      "progress/progress.backup.json": "c8883a583aa53e2492ecb2ccfadde9584b1e25e2207b8390674df7d13f38a5fc",
+      "checkpoints/runs/06a997ecd0e04ff7a3506c583b0aa880/active.json": "09ae5f23b8e74f7efa464247c778226ffeda3a9f5e710325e321e24617f77624",
+      "checkpoints/runs/06a997ecd0e04ff7a3506c583b0aa880/active.backup.json": "a62b551746b17d48db5c9d19bdbb92d863f65208f0710987af19e613f78cb3cb"
+    },
+    "host": {
+      "oldInputDisposed": true,
+      "oldCoreSubscriptionsRemoved": true,
+      "oldCameraReferencesRemoved": true,
+      "cameraReturnedInactiveWithDefaults": true,
+      "oldBattleCustomReferencesReleased": true,
+      "oldCustomInputDisposed": true,
+      "oldGeneratedSpritesReleased": true,
+      "oldPresentationObjectsDestroyed": true,
+      "oldWorldReferencesReleased": true,
+      "oldWorldSubscriptionsRemoved": true,
+      "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+      "state": {
+        "playing": true,
+        "screen": [
+          640,
+          360
+        ],
+        "activeScene": "Assets/Scenes/BootstrapScene.unity",
+        "scenes": [
+          {
+            "path": "Assets/Scenes/BootstrapScene.unity",
+            "handleHash": -320635954,
+            "isLoaded": true
+          }
+        ],
+        "roots": 1,
+        "rootId": -305285864,
+        "rootScene": "DontDestroyOnLoad",
+        "rootStartupError": null,
+        "cameraBorrowed": false,
+        "borrowedCameraId": null,
+        "gameplayView": null,
+        "worldViewKey": null,
+        "worldRegistered": 0,
+        "worldFields": 0,
+        "backgroundViews": 0,
+        "numberPools": 0,
+        "battleViewKey": null,
+        "battleRegistered": 0,
+        "battleViews": 0,
+        "customViews": 0,
+        "gameplayRegistered": 0,
+        "hudCount": 0,
+        "host": null,
+        "loading": false,
+        "ownedScenes": 0,
+        "ownedViews": 3,
+        "registeredViews": 0,
+        "dialogs": 0,
+        "session": false,
+        "controllerIds": [],
+        "controllerScenes": [],
+        "rewardViews": 0,
+        "rewardRegistered": 0,
+        "rewardViewKey": null,
+        "cameras": 0,
+        "listeners": 0,
+        "events": 1,
+        "audioIds": [
+          -305285870,
+          -305285876,
+          -305285882
+        ],
+        "defaultStoreExists": false,
+        "store": null
+      }
+    },
+    "console": {
+      "sampledUtc": "2026-11-01T23:09:04.298857Z",
+      "ageMs": 139,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 20,
+      "seeded": true
+    },
+    "failure": "Actual raycast Pause blocked by popup sibling order; no pause press reached handler; initial read-only helper failure was lazy View assumption, corrected privately."
+  },
+  "fix": "OwnedPopup consistently brings explicit active same-parent MenuExtras ahead after popup. Existing two lifecycle tests now assert ordering; final native raycast path retested.",
+  "privateHelperIssue": "Before any dialogue Start, read helper assumed lazy DialogueView already existed; helper corrected only. No product rule changed."
+}

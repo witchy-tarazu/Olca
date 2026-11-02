@@ -1565,81 +1565,119 @@ namespace Olca.Presentation.Field
 
     public sealed class DialogueView : MonoBehaviour
     {
-        private DialogueSession owner;private Font font;private Text title,body;private ScrollRect scroll;
+        private DialogueSession owner;private Font font;private Text title,body;private ScrollRect scroll;private GameObject content;
         private Button next,fast,history,skip,pause;private readonly List<Button> choices=new List<Button>();
-        private Olca.Unity.MenuPadScope menu;private string navigationKey;private bool wasBacklog;
-        private Olca.Presentation.Management.ManagedScreenContext context;
-        private Olca.Presentation.Management.DialogManager dialogs;
-        private GameObject popup;private readonly List<Transform> popupChildren=new List<Transform>();
-        private CanvasGroup presentation;private bool presentationPaused,popupTicket,popupSkip;
-        private int generation,popupGeneration;private string restoredFocus;
-        private GameObject popupOrigin;
-        private bool Live=>owner!=null&&owner.IsOpen&&!owner.IsPaused&&!presentationPaused&&(context==null||context.IsCurrent);
-        private bool CanAct=>Live&&(dialogs==null||popupTicket||!owner.SkipConfirmationOpen&&!owner.BacklogOpen&&dialogs.ActiveCount==0&&!context.DialogBlocksInput);
-        private void LateUpdate(){menu?.Tick();}
+        private Olca.Unity.MenuPadScope menu;private string navigationKey,restoredFocus;
+        private Olca.Presentation.Management.ManagedScreenContext context;private Olca.Presentation.Management.DialogManager dialogs;
+        private Olca.Presentation.Management.ReturnDialog popup;private Olca.Presentation.Management.DialogueBacklogPosition? backlogPosition;
+        private CanvasGroup presentation;private bool presentationPaused;private int generation,bindEpoch,popupEpoch,choiceNode=-1;private long rendered=-1;
+        private GameObject popupOrigin;private System.Action pauseAction;
+        private bool Live=>this!=null&&gameObject.activeSelf&&owner!=null&&owner.IsOpen&&!owner.IsPaused&&!presentationPaused&&(context==null||context.IsCurrent);
+        private bool CanAct=>Live&&popup==null&&!owner.SkipConfirmationOpen&&!owner.BacklogOpen&&(dialogs==null||dialogs.ActiveCount==0&&!context.DialogBlocksInput);
+        private bool CanPause=>Live&&(popup!=null&&popup.IsOpen&&popup.gameObject.activeInHierarchy||dialogs==null||dialogs.ActiveCount==0&&!context.DialogBlocksInput);
+        private void LateUpdate(){if(popup==null)menu?.Tick();}
         public void BindManaged(DialogueSession value,Olca.Presentation.Management.ManagedScreenContext current,Olca.Presentation.Management.DialogManager manager){HideManaged();context=current;dialogs=manager;Bind(value);}
-        public void HideManaged(){CancelPopup();foreach(var button in GetComponentsInChildren<Button>(true))button.onClick=new Button.ButtonClickedEvent();context=null;dialogs=null;owner=null;generation++;navigationKey=null;popupOrigin=null;restoredFocus=null;menu?.Dispose();menu=null;if(presentation!=null){presentation.alpha=1;presentation.blocksRaycasts=true;}presentationPaused=false;gameObject.SetActive(false);}
-        public void SetPresentationPaused(bool paused){if(presentationPaused==paused)return;presentationPaused=paused;if(paused){CancelPopup();menu?.Suspend();navigationKey=null;}if(presentation==null)presentation=gameObject.AddComponent<CanvasGroup>();presentation.alpha=paused?0:1;presentation.blocksRaycasts=!paused;rendered=-1;if(!paused)Refresh();}
-        // 同じ座標系の子Popupへ表示部品だけを借用し、会話本体のView寿命を維持する。
-        private void RestoreContent(){foreach(var child in popupChildren)if(child!=null){child.SetParent(transform,false);child.SetSiblingIndex(popupChildren.IndexOf(child));}popupChildren.Clear();if(popup!=null)popup.SetActive(false);}
-        private void CancelPopup(){dialogs?.CancelActiveOwner(context);popupTicket=false;popupGeneration++;RestoreContent();}
-        private void PresentPopup(bool skipMode){
-            if(dialogs==null||popupTicket)return;
-            if(!Live||dialogs.ActiveCount>0||context.DialogBlocksInput)return;
-            if(popup==null){popup=new GameObject("DialoguePopup",typeof(RectTransform));popup.transform.SetParent(transform,false);var rect=(RectTransform)popup.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;}
+        public void HideManaged(){CancelPopup();foreach(var button in GetComponentsInChildren<Button>(true))button.onClick=new Button.ButtonClickedEvent();context=null;dialogs=null;owner=null;generation++;bindEpoch++;navigationKey=null;popupOrigin=null;restoredFocus=null;backlogPosition=null;menu?.Dispose();menu=null;if(presentation!=null){presentation.alpha=1;presentation.blocksRaycasts=true;}presentationPaused=false;gameObject.SetActive(false);}
+        public void SetPresentationPaused(bool paused){if(presentationPaused==paused)return;presentationPaused=paused;if(paused){CancelPopup();menu?.Suspend();navigationKey=null;}if(presentation==null){presentation=GetComponent<CanvasGroup>();if(presentation==null)presentation=gameObject.AddComponent<CanvasGroup>();}presentation.alpha=paused?0:1;presentation.blocksRaycasts=!paused;rendered=-1;if(!paused)Refresh();}
+        private void CancelPopup(){if(popup!=null&&popup is Olca.Presentation.Management.DialogueBacklogDialog reading)backlogPosition=reading.Position;var old=popup;popup=null;popupEpoch++;if(old!=null)old.Abort();if(content!=null)content.SetActive(true);}
+        private void PresentPopup(bool skipMode)
+        {
+            if(popup!=null||!Live||dialogs!=null&&(dialogs.ActiveCount>0||context.DialogBlocksInput))return;
+            var captured=owner;var current=context;int epoch=bindEpoch,ticket=++popupEpoch;
             if(popupOrigin==null){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;popupOrigin=selected!=null&&selected.transform.IsChildOf(transform)?selected:(skipMode?skip.gameObject:history.gameObject);}
-            popupChildren.Clear();foreach(Transform child in transform)if(child!=popup.transform)popupChildren.Add(child);
-            foreach(var child in popupChildren)child.SetParent(popup.transform,false);
-            popupTicket=true;popupSkip=skipMode;int ticket=++popupGeneration;var captured=owner;var current=context;
-            history.onClick=new Button.ButtonClickedEvent();if(skipMode)next.onClick=new Button.ButtonClickedEvent();
-            System.Action<Olca.Presentation.Management.DialogResult> complete=result=>{
-                if(this==null||ticket!=popupGeneration||!ReferenceEquals(owner,captured)||!ReferenceEquals(context,current)||!current.IsCurrent)return;
-                popupTicket=false;popupGeneration++;RestoreContent();var focus=popupOrigin;restoredFocus=focus!=null?focus.name:null;popupOrigin=null;
-                if(result==Olca.Presentation.Management.DialogResult.Confirmed&&skipMode)captured.ConfirmSkip();
-                else if(result==Olca.Presentation.Management.DialogResult.Cancelled){if(skipMode)captured.CancelSkip();else if(captured.BacklogOpen)captured.ToggleBacklog();}
-                rendered=-1;navigationKey=null;Refresh();
-                // 入力fence中も選択表示だけを返す。確定終了や親終了には返さない。
-                if(captured.IsOpen&&Live&&focus!=null&&focus.activeInHierarchy&&focus.GetComponent<UnityEngine.UI.Selectable>()?.IsInteractable()==true)UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(focus);
-            };
-            var task=skipMode?dialogs.Show(current,popup,next,history,complete,scroll,false,false,()=>Live):dialogs.ShowNotice(current,popup,history,scroll,complete,false,()=>Live);
-            if(task.IsCompleted&&(task.Result==Olca.Presentation.Management.DialogResult.Busy||task.Result==Olca.Presentation.Management.DialogResult.ParentClosed)){popupTicket=false;RestoreContent();rendered=-1;}
+            Olca.Presentation.Management.ReturnDialog dialog;
+            if(skipMode){
+                var confirmation=Olca.Presentation.Management.ConfirmationDialog.Create(transform,font,new Olca.Presentation.Management.ConfirmationContent{RootName="DialogueSkipConfirmation",TitleName="DialogueTitle",Title="会話のスキップ確認",MessageName="DialogueText",Message="この会話を終了しますか？",ConfirmName="DialogueNext",ConfirmLabel="スキップして終了",CancelName="DialogueHistory",CancelLabel="取消して戻る",Layout=new Olca.Presentation.Management.ConfirmationLayout{TitlePosition=new Vector2(0,400),TitleSize=new Vector2(1400,100),MessagePosition=new Vector2(0,100),MessageSize=new Vector2(1480,420),MessageAlignment=TextAnchor.UpperLeft,ButtonFontSize=26,ConfirmPosition=new Vector2(-600,-360),CancelPosition=new Vector2(200,-360),ButtonSize=new Vector2(350,75),ReadingName="DialogueScroll",ReadingPosition=new Vector2(0,100),ReadingSize=new Vector2(1500,440),ReadingColor=new Color(.2f,.5f,.6f,.035f)}});
+                confirmation.CanConfirm=()=>SamePopup(captured,current,epoch)&&captured.SkipConfirmationOpen&&captured.Script.CanSkip;confirmation.Finished+=result=>FinishPopup(confirmation,captured,current,epoch,ticket,true,result);dialog=confirmation;
+            }else{
+                var reading=Olca.Presentation.Management.DialogueBacklogDialog.Create(transform,font,captured.Backlog,backlogPosition);reading.Finished+=result=>FinishPopup(reading,captured,current,epoch,ticket,false,result);dialog=reading;
+            }
+            popup=dialog;menu?.Suspend();dialog.MenuExtras=()=>pause!=null?new[]{pause}:System.Array.Empty<Button>();pause.transform.SetAsLastSibling();
+            if(!dialog.Open(content,dialogs,current,()=>SamePopup(captured,current,epoch)&&(skipMode?captured.SkipConfirmationOpen:captured.BacklogOpen),true)){popup=null;popupOrigin=null;rendered=-1;content.SetActive(true);}
+            pause.transform.SetAsLastSibling();
+        }
+        private bool SamePopup(DialogueSession captured,Olca.Presentation.Management.ManagedScreenContext current,int epoch)=>epoch==bindEpoch&&ReferenceEquals(owner,captured)&&ReferenceEquals(context,current)&&Live;
+        private void FinishPopup(Olca.Presentation.Management.ReturnDialog dialog,DialogueSession captured,Olca.Presentation.Management.ManagedScreenContext current,int epoch,int ticket,bool skipMode,Olca.Presentation.Management.DialogResult result)
+        {
+            if(this==null||ticket!=popupEpoch||!ReferenceEquals(popup,dialog))return;
+            if(dialog is Olca.Presentation.Management.DialogueBacklogDialog reading)backlogPosition=reading.Position;
+            popup=null;popupEpoch++;var focus=popupOrigin;popupOrigin=null;rendered=-1;navigationKey=null;
+            if(result==Olca.Presentation.Management.DialogResult.ParentClosed||!SamePopup(captured,current,epoch))return;
+            restoredFocus=focus!=null?focus.name:null;
+            if(skipMode){if(result==Olca.Presentation.Management.DialogResult.Confirmed)captured.ConfirmSkip();else captured.CancelSkip();}
+            else{if(captured.BacklogOpen)captured.ToggleBacklog();backlogPosition=null;}
+            Refresh();
+            // 閉鎖frame中も選択表示を戻し、入力自体のfenceはManagerに保持する。
+            if(captured.IsOpen&&Live&&focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true)UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(focus);
         }
         private void OnDisable(){CancelPopup();menu?.Suspend();navigationKey=null;context?.NotifyHidden();}
-        private void OnDestroy(){CancelPopup();context?.NotifyHidden();context=null;dialogs=null;owner=null;menu?.Dispose();menu=null;pauseAction=null;}
-        private void CancelMenu(){if(!CanAct)return;if(dialogs!=null&&popupTicket){history.onClick.Invoke();return;}if(owner.SkipConfirmationOpen)owner.CancelSkip();else if(owner.BacklogOpen)owner.ToggleBacklog();Refresh();}
-        private System.Action pauseAction;private long rendered=-1;private int choiceNode=-1,page;
+        private void OnDestroy(){CancelPopup();context?.NotifyHidden();context=null;dialogs=null;owner=null;menu?.Dispose();menu=null;pauseAction=null;backlogPosition=null;popupOrigin=null;restoredFocus=null;}
+        private void CancelMenu(){if(CanAct)Refresh();}
         private Text Label(string name,Transform parent,Vector2 pos,Vector2 size,int fontSize){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(parent,false);var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.supportRichText=false;text.alignment=TextAnchor.MiddleCenter;Olca.Presentation.Dungeon.UiLook.Label(text);text.rectTransform.anchoredPosition=pos;text.rectTransform.sizeDelta=size;return text;}
-        private Button Make(string name,string label,Vector2 pos,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);var rect=(RectTransform)obj.transform;rect.anchoredPosition=pos;rect.sizeDelta=size;var button=obj.GetComponent<Button>();var text=Label(name+"Label",obj.transform,Vector2.zero,size-new Vector2(16,8),26);text.text=label;Olca.Presentation.Dungeon.UiLook.Button(button);return button;}
+        private Button Make(string name,string label,Vector2 pos,Vector2 size,Transform parent=null){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(parent??content.transform,false);var rect=(RectTransform)obj.transform;rect.anchoredPosition=pos;rect.sizeDelta=size;var button=obj.GetComponent<Button>();var text=Label(name+"Label",obj.transform,Vector2.zero,size-new Vector2(16,8),26);text.text=label;Olca.Presentation.Dungeon.UiLook.Button(button);return button;}
         public void Initialize(Font font,System.Action pauseAction){this.font=font;this.pauseAction=pauseAction;var rect=(RectTransform)transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.AddComponent<Image>().color=Olca.Presentation.Dungeon.UiLook.Surface;
-            title=Label("DialogueTitle",transform,new Vector2(0,400),new Vector2(1400,100),32);
-            var area=new GameObject("DialogueScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(transform,false);var ar=(RectTransform)area.transform;ar.anchoredPosition=new Vector2(0,100);ar.sizeDelta=new Vector2(1500,440);area.GetComponent<Image>().color=new Color(.2f,.5f,.6f,.035f);
+            content=new GameObject("DialogueContents",typeof(RectTransform));content.transform.SetParent(transform,false);var cr=(RectTransform)content.transform;cr.anchorMin=Vector2.zero;cr.anchorMax=Vector2.one;cr.offsetMin=cr.offsetMax=Vector2.zero;
+            title=Label("DialogueTitle",content.transform,new Vector2(0,400),new Vector2(1400,100),32);
+            var area=new GameObject("DialogueScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(content.transform,false);var ar=(RectTransform)area.transform;ar.anchoredPosition=new Vector2(0,100);ar.sizeDelta=new Vector2(1500,440);area.GetComponent<Image>().color=new Color(.2f,.5f,.6f,.035f);
             body=Label("DialogueText",area.transform,Vector2.zero,new Vector2(1480,440),30);body.alignment=TextAnchor.UpperLeft;body.verticalOverflow=VerticalWrapMode.Overflow;body.rectTransform.anchorMin=body.rectTransform.anchorMax=new Vector2(0,1);body.rectTransform.pivot=new Vector2(0,1);body.rectTransform.anchoredPosition=new Vector2(10,-10);
             scroll=area.GetComponent<ScrollRect>();scroll.viewport=ar;scroll.content=body.rectTransform;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;scroll.scrollSensitivity=35;
-            next=Make("DialogueNext","決定",new Vector2(-600,-360),new Vector2(350,75));fast=Make("DialogueFast","早送り",new Vector2(-200,-360),new Vector2(350,75));history=Make("DialogueHistory","バックログ",new Vector2(200,-360),new Vector2(350,75));skip=Make("DialogueSkip","スキップ",new Vector2(600,-360),new Vector2(350,75));pause=Make("DialoguePause","ポーズ",new Vector2(790,455),new Vector2(260,60));var pauseRect=(RectTransform)pause.transform;pauseRect.anchorMin=pauseRect.anchorMax=Vector2.one;pauseRect.anchoredPosition=new Vector2(-170,-85);
-            pause.onClick.AddListener(()=>this.pauseAction());gameObject.SetActive(false);
+            next=Make("DialogueNext","決定",new Vector2(-600,-360),new Vector2(350,75));fast=Make("DialogueFast","早送り",new Vector2(-200,-360),new Vector2(350,75));history=Make("DialogueHistory","バックログ",new Vector2(200,-360),new Vector2(350,75));skip=Make("DialogueSkip","スキップ",new Vector2(600,-360),new Vector2(350,75));pause=Make("DialoguePause","ポーズ",new Vector2(790,455),new Vector2(260,60),transform);var pauseRect=(RectTransform)pause.transform;pauseRect.anchorMin=pauseRect.anchorMax=Vector2.one;pauseRect.anchoredPosition=new Vector2(-170,-85);gameObject.SetActive(false);
         }
         private void OnEnable(){rendered=-1;navigationKey=null;}
-        public void Bind(DialogueSession value){CancelPopup();generation++;menu?.Suspend();navigationKey=null;owner=value;rendered=-1;choiceNode=-1;page=0;gameObject.SetActive(value!=null);if(value==null){body.text="";title.text="";foreach(var b in choices)b.gameObject.SetActive(false);}Refresh();}
-        private void Action(Button button,string label,bool enabled,System.Action<DialogueSession> action){button.gameObject.SetActive(true);button.interactable=enabled;button.GetComponentInChildren<Text>().text=label;if(dialogs!=null&&popupTicket&&(button==history||popupSkip&&button==next))return;button.onClick=new Button.ButtonClickedEvent();var captured=owner;long version=captured.Version;int epoch=generation;button.onClick.AddListener(()=>{if(epoch==generation&&ReferenceEquals(owner,captured)&&captured.Version==version&&CanAct)action(captured);});}
-        public void Refresh(){if(this==null||owner==null||!owner.IsOpen)return;if(presentationPaused)return;if(rendered==owner.Version&&!(dialogs!=null&&!popupTicket&&(owner.SkipConfirmationOpen||owner.BacklogOpen)))return;rendered=owner.Version;generation++;
-            Action(pause,"ポーズ",true,_=>pauseAction?.Invoke());
-            foreach(var b in choices)b.gameObject.SetActive(false);fast.gameObject.SetActive(true);skip.gameObject.SetActive(true);next.gameObject.SetActive(true);history.gameObject.SetActive(true);
-            string text;bool resetScroll=false;
-            if(owner.SkipConfirmationOpen){title.text="会話のスキップ確認";text="この会話を終了しますか？";Action(next,"スキップして終了",true,s=>s.ConfirmSkip());Action(history,"取消して戻る",true,s=>s.CancelSkip());fast.gameObject.SetActive(false);skip.gameObject.SetActive(false);resetScroll=true;}
-            else if(owner.BacklogOpen){var entries=owner.Backlog;page=Mathf.Clamp(page,0,Mathf.Max(0,entries.Count-1));title.text="バックログ "+(entries.Count==0?0:page+1)+" / "+entries.Count;text=entries.Count==0?"表示済みの文章はありません。":entries[page];Action(next,"前の文章",page>0,s=>{page--;rendered=-1;Refresh();});Action(fast,"次の文章",page+1<entries.Count,s=>{page++;rendered=-1;Refresh();});Action(history,"会話に戻る",true,s=>s.ToggleBacklog());skip.gameObject.SetActive(false);resetScroll=true;}
-            else{title.text=owner.Current.Speaker;text=owner.VisibleText;Action(next,!owner.TextComplete?"全文表示":owner.Index==owner.Script.Lines.Count-1?"閉じる":"次へ",!owner.WaitingForChoice,s=>s.Decide());Action(fast,owner.FastForward?(owner.WaitingForChoice?"早送り：選択待ち":"早送り：ON"):"早送り：OFF",true,s=>s.ToggleFastForward());Action(history,"バックログ",true,s=>{page=Mathf.Max(0,s.Backlog.Count-1);s.ToggleBacklog();});Action(skip,owner.Script.CanSkip?"スキップ":"分岐のためスキップ不可",owner.Script.CanSkip,s=>s.RequestSkip());
-                if(owner.WaitingForChoice){if(choiceNode!=owner.Index){foreach(var b in choices)Destroy(b.gameObject);choices.Clear();choiceNode=owner.Index;for(int n=0;n<owner.Current.Choices.Count;n++)choices.Add(Make("DialogueChoice"+n,"",new Vector2((n-(owner.Current.Choices.Count-1)*.5f)*370,-200),new Vector2(350,80)));}
-                    for(int n=0;n<choices.Count;n++){int index=n;Action(choices[n],owner.Current.Choices[n].Label,true,s=>s.Choose(index));}
-                }
-            }
-            // 描画直前のカナ変換で折返しが増えるため、最終本文を先に測定する。
-            text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text);
-            if(body.text!=text){body.text=text;body.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,body.preferredHeight+20));if(resetScroll)scroll.verticalNormalizedPosition=1;}
-            if(dialogs!=null&&(owner.SkipConfirmationOpen||owner.BacklogOpen))PresentPopup(owner.SkipConfirmationOpen);
-            string key=owner.Index+":"+owner.SkipConfirmationOpen+":"+owner.BacklogOpen+":"+owner.WaitingForChoice+":"+page;
-            if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>CanAct&&Olca.Unity.MenuPadScope.IsTopmost(transform));
-            if(navigationKey!=key){string preferred=owner.SkipConfirmationOpen?"DialogueHistory":owner.BacklogOpen?(wasBacklog?menu.FocusName:"DialogueHistory"):owner.WaitingForChoice?"DialogueChoice0":"DialogueNext";if(restoredFocus!=null){preferred=restoredFocus;restoredFocus=null;}navigationKey=key;wasBacklog=owner.BacklogOpen;menu.Bind(transform,preferred,CancelMenu,scroll,directionScroll:false);}
-
+        public void Bind(DialogueSession value){CancelPopup();popupOrigin=null;restoredFocus=null;generation++;bindEpoch++;menu?.Suspend();navigationKey=null;owner=value;rendered=-1;choiceNode=-1;backlogPosition=null;gameObject.SetActive(value!=null);if(value==null){body.text="";title.text="";foreach(var b in choices)b.gameObject.SetActive(false);}Refresh();}
+        private void Action(Button button,string label,bool enabled,System.Action<DialogueSession> action){button.gameObject.SetActive(true);button.interactable=enabled;button.GetComponentInChildren<Text>().text=label;button.onClick=new Button.ButtonClickedEvent();var captured=owner;long version=captured.Version;int epoch=generation;button.onClick.AddListener(()=>{if(epoch==generation&&ReferenceEquals(owner,captured)&&captured.Version==version&&CanAct)action(captured);});}
+        public void Refresh(){if(this==null||owner==null||!owner.IsOpen||presentationPaused)return;if(rendered==owner.Version&&!(popup==null&&(owner.SkipConfirmationOpen||owner.BacklogOpen)))return;rendered=owner.Version;generation++;
+            var captured=owner;var current=context;int epoch=bindEpoch,action=generation;long version=captured.Version;pause.onClick=new Button.ButtonClickedEvent();pause.onClick.AddListener(()=>{if(epoch==bindEpoch&&action==generation&&captured.Version==version&&ReferenceEquals(owner,captured)&&ReferenceEquals(context,current)&&CanPause)pauseAction?.Invoke();});
+            if(owner.SkipConfirmationOpen||owner.BacklogOpen){PresentPopup(owner.SkipConfirmationOpen);return;}
+            if(popup!=null)CancelPopup();backlogPosition=null;content.SetActive(true);foreach(var b in choices)b.gameObject.SetActive(false);
+            title.text=owner.Current.Speaker;Action(next,!owner.TextComplete?"全文表示":owner.Index==owner.Script.Lines.Count-1?"閉じる":"次へ",!owner.WaitingForChoice,s=>s.Decide());Action(fast,owner.FastForward?(owner.WaitingForChoice?"早送り：選択待ち":"早送り：ON"):"早送り：OFF",true,s=>s.ToggleFastForward());Action(history,"バックログ",true,s=>s.ToggleBacklog());Action(skip,owner.Script.CanSkip?"スキップ":"分岐のためスキップ不可",owner.Script.CanSkip,s=>s.RequestSkip());
+            if(owner.WaitingForChoice){if(choiceNode!=owner.Index){foreach(var b in choices)Destroy(b.gameObject);choices.Clear();choiceNode=owner.Index;for(int n=0;n<owner.Current.Choices.Count;n++)choices.Add(Make("DialogueChoice"+n,"",new Vector2((n-(owner.Current.Choices.Count-1)*.5f)*370,-200),new Vector2(350,80)));}for(int n=0;n<choices.Count;n++){int index=n;Action(choices[n],owner.Current.Choices[n].Label,true,s=>s.Choose(index));}}
+            string text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(owner.VisibleText);if(body.text!=text){body.text=text;body.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,body.preferredHeight+20));}
+            string key=owner.Index+":"+owner.WaitingForChoice;if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>CanAct&&Olca.Unity.MenuPadScope.IsTopmost(transform));if(navigationKey!=key){string preferred=restoredFocus??(owner.WaitingForChoice?"DialogueChoice0":"DialogueNext");restoredFocus=null;navigationKey=key;menu.Bind(transform,preferred,CancelMenu,scroll,directionScroll:false);}
         }
+    }
+}
+
+namespace Olca.Presentation.Management
+{
+    /// <summary>履歴Dialogが所有する読取位置。会話進行・保存データとは独立した表示状態。</summary>
+    public readonly struct DialogueBacklogPosition
+    {
+        public readonly int Page;public readonly float Scroll;
+        public DialogueBacklogPosition(int page,float scroll){Page=page;Scroll=scroll;}
+    }
+    /// <summary>公開済み履歴の本文・ページ・scroll・閉鎖入力を所有し、Sessionの進行を扱わない。</summary>
+    public sealed class DialogueBacklogDialog : ReturnDialog
+    {
+        private string[] entries;private int page,renderedPage=-1;private float initialScroll=1;private Text title,text;private Button previous,next;private Olca.Unity.MenuPadScope readingMenu;
+        public ScrollRect Scroll=>inputScroll;
+        public DialogueBacklogPosition Position=>new DialogueBacklogPosition(page,inputScroll!=null?Mathf.Clamp01(inputScroll.verticalNormalizedPosition):1);
+        public event System.Action<DialogResult> Finished;
+        public static DialogueBacklogDialog Create(Transform host,Font font,IReadOnlyList<string> values,DialogueBacklogPosition? restore=null)
+        {
+            var dialog=CreateShell<DialogueBacklogDialog>(host,font,"DialogueBacklog",null,false);dialog.entries=values?.ToArray()??System.Array.Empty<string>();dialog.page=Mathf.Clamp(restore?.Page??dialog.entries.Length-1,0,Mathf.Max(0,dialog.entries.Length-1));dialog.initialScroll=restore?.Scroll??1;dialog.manageMenu=false;
+            dialog.title=dialog.widgets.Text("DialogueTitle","",0,400,1400,100,32);dialog.title.supportRichText=false;
+            var area=new GameObject("DialogueScroll",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(ScrollRect));area.transform.SetParent(dialog.body,false);var rect=(RectTransform)area.transform;rect.anchoredPosition=new Vector2(0,100);rect.sizeDelta=new Vector2(1500,440);area.GetComponent<Image>().color=new Color(.2f,.5f,.6f,.035f);
+            dialog.text=dialog.widgets.Text("DialogueText","",0,0,1480,440,30);dialog.text.transform.SetParent(area.transform,false);dialog.text.supportRichText=false;dialog.text.alignment=TextAnchor.UpperLeft;dialog.text.verticalOverflow=VerticalWrapMode.Overflow;var tr=dialog.text.rectTransform;tr.anchorMin=tr.anchorMax=new Vector2(0,1);tr.pivot=new Vector2(0,1);tr.anchoredPosition=new Vector2(10,-10);
+            dialog.inputScroll=area.GetComponent<ScrollRect>();dialog.inputScroll.viewport=rect;dialog.inputScroll.content=tr;dialog.inputScroll.horizontal=false;dialog.inputScroll.vertical=true;dialog.inputScroll.movementType=ScrollRect.MovementType.Clamped;dialog.inputScroll.scrollSensitivity=35;
+            dialog.previous=dialog.widgets.Button("DialogueNext","前の文章",-600,-360,350,75,26,false);dialog.next=dialog.widgets.Button("DialogueFast","次の文章",-200,-360,350,75,26,false);dialog.cancel=dialog.widgets.Button("DialogueHistory","会話に戻る",200,-360,350,75,26,false);dialog.previous.onClick.AddListener(()=>dialog.ChangePage(-1));dialog.next.onClick.AddListener(()=>dialog.ChangePage(1));dialog.CaptureFeedback();return dialog;
+        }
+        private void ChangePage(int direction)
+        {
+            if(!CanOperatePopup)return;int target=Mathf.Clamp(page+direction,0,Mathf.Max(0,entries.Length-1));if(target==page)return;string focus=readingMenu?.FocusName;page=target;initialScroll=1;RefreshContents();BindReading(focus??"DialogueHistory");
+        }
+        private void BindReading(string focus){if(readingMenu==null)readingMenu=new Olca.Unity.MenuPadScope(()=>CanOperatePopup&&Olca.Unity.MenuPadScope.IsTopmost(transform),()=>MenuExtras?.Invoke()??System.Array.Empty<Button>());readingMenu.Bind(transform,focus,()=>cancel.onClick.Invoke(),inputScroll,directionScroll:false);}
+        protected override void Redraw(){RefreshContents();Rendered();BindReading("DialogueHistory");}
+        protected override void RefreshContents()
+        {
+            if(text==null)return;float position=renderedPage==page?inputScroll.verticalNormalizedPosition:initialScroll;
+            title.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("バックログ "+(entries.Length==0?0:page+1)+" / "+entries.Length);text.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(entries.Length==0?"表示済みの文章はありません。":entries[page]);
+            text.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,text.preferredHeight+20));inputScroll.verticalNormalizedPosition=Mathf.Clamp01(position);renderedPage=page;previous.interactable=page>0;next.interactable=page+1<entries.Length;
+        }
+        protected override void LateUpdate(){base.LateUpdate();if(this!=null&&IsOpen)readingMenu?.Tick();}
+        protected override bool Attempt()=>false;
+        protected override void Closing(DialogResult result){readingMenu?.Dispose();readingMenu=null;var callback=Finished;Finished=null;callback?.Invoke(result);}
+        protected override void Deliver(DialogResult result){}
+        protected override void ReleaseCallbacks(){readingMenu?.Dispose();readingMenu=null;Finished=null;entries=null;title=text=null;previous=next=null;}
     }
 }

@@ -1,0 +1,31 @@
+{
+  "editorPid": 137059,
+  "sameVmModelAuthentication": true,
+  "noEditorRestart": true,
+  "explicitCompileJobs": [
+    "934d6c0b13ea42a2ada74705dd914097",
+    "7c60084bdc734df4bede433ad551a1b6",
+    "167cbe6d645748a4ace9abedfda17b31",
+    "fc6e7c7f208545dc840163d957ecfb1f"
+  ],
+  "finalCompiledSources": {
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "2945db731338682732aeaddcb3d72652ad25b9b7c6b2fac78cb8b22b6c534467",
+    "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+    "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "10bc2973f3e122f338f905f94174373fe3affce0a40918e7c4ca8a45210751a6",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "091ddae3f2a18b35871a71173e591964984e8aa7275a6d1cb0c2995c47c54daf"
+  },
+  "initialRelatedFailureRetained": "541/543; two missing CanvasGroup failures at pause; explicit Unity null fixed, expectations unchanged",
+  "firstColdHelper": "4e18079af13341d888d4bc8bd4fffc2d completed; queued/running result retained without resubmission",
+  "fullWrapperTimeout": true,
+  "lostResolutionJob": {
+    "id": "bfd52191e7be484fbcc46affa7c40b44",
+    "outcome": "Job Not Found after domain reload; not resubmitted. Actual current640 proved by readonly job1c8ce73544e74f9faab63e7be2d5bc8a"
+  },
+  "readonlyStatusTimeout": "editor_status35s timed out once during recovery; warm status succeeded after readonly render completed; exact Pipeline error retained separately",
+  "nativeColdWait": {
+    "id": "9850e86364564cb2ad4f756a4676d948",
+    "outcome": "420s wrapper deadline while job running; adopted same result by extended status reads, not resubmitted"
+  },
+  "historicalIssuesRetained": "UGUI/Pipeline/CLI/UnityAI and unidentified Sprite2095 baseline remain separate."
+}

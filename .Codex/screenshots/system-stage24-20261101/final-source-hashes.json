@@ -1,0 +1,7 @@
+{
+  "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "660ba6212775cbae666e7bb609c5b9a47579236a869c51e9f2a47558311f05fb",
+  "Assets/Olca/Presentation/Field/GameFieldView.cs": "2945db731338682732aeaddcb3d72652ad25b9b7c6b2fac78cb8b22b6c534467",
+  "Assets/Olca/Presentation/Management/DialogManager.cs": "63dd457670884fcfd673a9a893dd887516448157f81c0a3c77d1ed5b927b4820",
+  "Assets/Olca/Presentation/Management/GameplayPauseView.cs": "10bc2973f3e122f338f905f94174373fe3affce0a40918e7c4ca8a45210751a6",
+  "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "091ddae3f2a18b35871a71173e591964984e8aa7275a6d1cb0c2995c47c54daf"
+}

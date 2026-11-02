@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
@@ -56,12 +57,12 @@ namespace Olca.Presentation.Management
         public Task<DialogResult> Show(IDialogOwner owner, GameObject panel, Button confirm, Button cancel, Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true,bool manageMenu=true,Func<bool> inputAllowed=null)
             =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,null,completed,scroll,directionScroll,manageMenu,inputAllowed);
         /// <summary>保存の再試行は同ticket内で実行する。true時だけ閉じ、falseなら更新済み表示を保つ。</summary>
-        public Task<DialogResult> ShowPersistent(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true)
-            =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,attempt??throw new ArgumentNullException(nameof(attempt)),completed,scroll,directionScroll);
+        public Task<DialogResult> ShowPersistent(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll=null,bool directionScroll=true,Func<IEnumerable<Button>> external=null)
+            =>confirm==null?Task.FromResult(DialogResult.ParentClosed):ShowCore(owner,panel,confirm,cancel,attempt??throw new ArgumentNullException(nameof(attempt)),completed,scroll,directionScroll,external:external);
         /// <summary>読取専用Popupは閉じる操作一つを持ち、スクロールをDialogの入力所有へ渡す。</summary>
-        public Task<DialogResult> ShowNotice(IDialogOwner owner,GameObject panel,Button close,ScrollRect scroll,Action<DialogResult> completed,bool manageMenu=true,Func<bool> inputAllowed=null)
-            =>ShowCore(owner,panel,null,close,null,completed,scroll,true,manageMenu,inputAllowed);
-        private Task<DialogResult> ShowCore(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll,bool directionScroll=true,bool manageMenu=true,Func<bool> inputAllowed=null)
+        public Task<DialogResult> ShowNotice(IDialogOwner owner,GameObject panel,Button close,ScrollRect scroll,Action<DialogResult> completed,bool manageMenu=true,Func<bool> inputAllowed=null,Func<IEnumerable<Button>> external=null)
+            =>ShowCore(owner,panel,null,close,null,completed,scroll,true,manageMenu,inputAllowed,external);
+        private Task<DialogResult> ShowCore(IDialogOwner owner,GameObject panel,Button confirm,Button cancel,Func<bool> attempt,Action<DialogResult> completed,ScrollRect scroll,bool directionScroll=true,bool manageMenu=true,Func<bool> inputAllowed=null,Func<IEnumerable<Button>> external=null)
         {
             if (disposed || owner == null || !owner.IsCurrent || panel == null || cancel == null)
                 return Task.FromResult(DialogResult.ParentClosed);
@@ -75,7 +76,7 @@ namespace Olca.Presentation.Management
             if(confirm!=null)confirm.onClick.AddListener(ticket.ConfirmAction); cancel.onClick.AddListener(ticket.CancelAction);
             EventSystem.current?.SetSelectedGameObject(null);
             panel.SetActive(true); panel.transform.SetAsLastSibling();
-            if(manageMenu){ticket.Menu = new MenuPadScope(() => !ticket.Closed && ticket.Owner.IsCurrent && (ticket.InputAllowed?.Invoke()??true) && MenuPadScope.IsTopmost(panel.transform));
+            if(manageMenu){ticket.Menu = new MenuPadScope(() => !ticket.Closed && ticket.Owner.IsCurrent && (ticket.InputAllowed?.Invoke()??true) && MenuPadScope.IsTopmost(panel.transform),external);
                 ticket.Menu.Bind(panel.transform, cancel.name, ticket.CancelAction.Invoke,scroll,directionScroll:directionScroll);}
             return ticket.Result.Task;
         }
