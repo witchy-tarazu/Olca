@@ -1,0 +1,37 @@
+[
+  {
+    "FullName": "Olca.Tests.Application.GameSystemManagementTests.外界新規進行は保存済みGUIDでない要求を拒否し現状態を保持する(null)",
+    "Status": "Passed",
+    "Duration": 0.0026668,
+    "Message": null,
+    "StackTrace": null
+  },
+  {
+    "FullName": "Olca.Tests.Application.GameSystemManagementTests.外界新規進行は保存済みGUIDでない要求を拒否し現状態を保持する(\"\")",
+    "Status": "Passed",
+    "Duration": 0.0010558,
+    "Message": null,
+    "StackTrace": null
+  },
+  {
+    "FullName": "Olca.Tests.Application.GameSystemManagementTests.外界新規進行は保存済みGUIDでない要求を拒否し現状態を保持する(\"not-a-generation\")",
+    "Status": "Passed",
+    "Duration": 0.000767,
+    "Message": null,
+    "StackTrace": null
+  },
+  {
+    "FullName": "Olca.Tests.Application.GameSystemManagementTests.外界新規進行は旧表示時計手札を終了し同世代の重複通知では再初期化しない",
+    "Status": "Passed",
+    "Duration": 0.0047083,
+    "Message": null,
+    "StackTrace": null
+  },
+  {
+    "FullName": "Olca.Tests.Application.GameSystemManagementTests.通常host終了再開は新規進行と見なさず外界状態を保持する",
+    "Status": "Passed",
+    "Duration": 0.0015794,
+    "Message": null,
+    "StackTrace": null
+  }
+]

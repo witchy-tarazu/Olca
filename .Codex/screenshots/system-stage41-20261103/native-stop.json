@@ -1,0 +1,12 @@
+{
+  "oneStopOnly": true,
+  "status": {
+    "status": "ready",
+    "compiling": false,
+    "domainReloadInProgress": false,
+    "playMode": "stopped",
+    "lastHeartbeat": "2026-11-03T01:03:41.399131Z",
+    "projectPath": "/workspace/olca-validation-20261024/project",
+    "unityVersion": "6000.3.26f1"
+  }
+}

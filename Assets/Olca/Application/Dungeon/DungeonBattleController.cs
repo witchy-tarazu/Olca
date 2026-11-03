@@ -1220,6 +1220,13 @@ namespace Olca.Application.Dungeon
         private void ConfirmNewGame(){if(progressActionDialog!=null)progressActionDialog.ConfirmFromCompatibilityApi();}
         private void ApplyNewGameResult()
         {
+            // 保存成功の同じ通知を再受信しても、現世代の表示や入力を再度破棄しない。
+            var generation=clearReturnSession.Snapshot.CheckpointGeneration;
+            if(gameSystem!=null&&gameSystem.OutsideProgressGeneration!=generation){
+                outsideExploration?.Dispose();outsideExploration=null;
+                gameSystem.ResetOutsideForNewProgress(generation);
+                outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();
+            }
             manager.SuspendForCheckpoint();combatFeedbackAudio?.Bind(null);battleSession?.Detach();transitionCts?.Cancel();battleView?.gameObject.SetActive(false);gameFieldView?.OnBattleEnded();
             awaitingCheckpointChoice=false;SetCheckpointPanelVisible(false);SetPausePanelVisible(false);initialHub=true;clearReturnVisible=true;
             dungeonSelectionOpen=false;selectedDungeon=selectionBeforeOpen=0;floorSwapPending=false;clearReturnError=null;nonClearReturnRequest=null;

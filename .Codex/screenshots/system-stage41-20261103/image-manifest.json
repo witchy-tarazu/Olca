@@ -1,0 +1,98 @@
+[
+  {
+    "file": "repro-before-newgame-fhd.png",
+    "sha256": "0059922804de96024d3b468321db07790edb3b34744b3fc114c11aa076711da2",
+    "dimensions": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "file": "repro-before-newgame-4k.png",
+    "sha256": "ecd9a9dd57193ec67696b1b516a4aaced452c7f1bb7df983479abf200626e6e7",
+    "dimensions": [
+      3840,
+      2160
+    ]
+  },
+  {
+    "file": "repro-before-newgame-4by3.png",
+    "sha256": "42c409d9db37e042f660da6016530771c85abeb71c26187c8865489851e7ef5f",
+    "dimensions": [
+      1440,
+      1080
+    ]
+  },
+  {
+    "file": "repro-after-newgame-fhd.png",
+    "sha256": "6335659dce56fec0339bb8de348172057356dced6cca95e28053436ee818c4f2",
+    "dimensions": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "file": "repro-after-newgame-4k.png",
+    "sha256": "71972a922d6361057bbbccb98b34a505f4c24e28eb1fc813c30d9cacbdad5233",
+    "dimensions": [
+      3840,
+      2160
+    ]
+  },
+  {
+    "file": "repro-after-newgame-4by3.png",
+    "sha256": "dbba0ad2c38fa2ad36081e101d7df3a817312118bde6c988438a2b298dd48f64",
+    "dimensions": [
+      1440,
+      1080
+    ]
+  },
+  {
+    "file": "final-before-newgame-fhd.png",
+    "sha256": "405d62ab8585ccac54de4a5acf3cbb69271da88592a2d33214a8625b79eac5a8",
+    "dimensions": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "file": "final-before-newgame-4k.png",
+    "sha256": "09b31832203997fb4f24357ef3ad2b78e405b474ebee1299b37ed66315f45640",
+    "dimensions": [
+      3840,
+      2160
+    ]
+  },
+  {
+    "file": "final-before-newgame-4by3.png",
+    "sha256": "9da58e1dff46f549f9f223fb90b45b59d0f6d849d6f018c64c46f62e6bfe2848",
+    "dimensions": [
+      1440,
+      1080
+    ]
+  },
+  {
+    "file": "final-after-newgame-fhd.png",
+    "sha256": "743123d80e5bbb676ecab5ccf426e55d92ad2e35b51710dad00c55d8ff66f553",
+    "dimensions": [
+      1920,
+      1080
+    ]
+  },
+  {
+    "file": "final-after-newgame-4k.png",
+    "sha256": "b19e4dceeba850928f89393f151b960cac3a8b2880dd710f97d60bc8e6559e51",
+    "dimensions": [
+      3840,
+      2160
+    ]
+  },
+  {
+    "file": "final-after-newgame-4by3.png",
+    "sha256": "da100043c193ff49e1d7466523f43b1c226e27f120e8ce167e758b4f8a896c52",
+    "dimensions": [
+      1440,
+      1080
+    ]
+  }
+]
