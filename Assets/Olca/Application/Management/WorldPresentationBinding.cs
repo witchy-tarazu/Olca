@@ -147,7 +147,7 @@ namespace Olca.Application.Management
         {
             if(!Live||!IsOpen)return;Ensure();var source=Projection();var options=source.Owned.Select(resolve).ToArray();
             bool valid=Olca.Core.Domain.SavedDepartureDeck.TryValidateEquipped(source,new Olca.Core.Domain.SavedDepartureDeck{Cards=draft.ToArray()},out var invalid);
-            var cards=draft.Select(slot=>{var row=Olca.Core.Domain.OwnedDefinition.Resolve(source,slot);return row==null?null:resolve(row);}).ToArray();
+            var cards=ResolveDraftCards(source,options,draft.ToArray());
             valid&=cards.All(c=>c!=null);
             view.RenderOwnedDeparture(source,options,cards,session.Error??(valid?null:invalid??"定義未解決のカードがあります"),valid,(index,delta)=>{
                 if(!Operate||session.HasPendingSave||index<0||index>=source.Owned.Length)return;
@@ -161,6 +161,12 @@ namespace Olca.Application.Management
                 if(draft.Any(slot=>{var row=Olca.Core.Domain.OwnedDefinition.Resolve(latest,slot);return row==null||resolve(row)==null;}))return;
                 bool saved=session.Save(editingId,name,draft,latest);if(saved){dirty=false;RenderList();}else RenderEditor();
             },name,value=>{if(!Operate||session.HasPendingSave)return;name=value;dirty=true;},session.HasPendingSave,Retry,draft.Select(c=>c.DefinitionKey).ToArray(),persistedName);
+        }
+        private static Olca.Core.Domain.Card[] ResolveDraftCards(Olca.Core.Domain.ClearReturnProfile source,Olca.Core.Domain.Card[] options,Olca.Core.Domain.SavedDeckCard[] slots)
+        {
+            // 同じ描画で解決済みの候補を使う。採用slotの可変状態は個別Cloneに分ける。
+            return slots.Select(slot=>{var row=Olca.Core.Domain.OwnedDefinition.Resolve(source,slot);
+                return row==null?null:options[Array.IndexOf(source.Owned,row)]?.Clone();}).ToArray();
         }
         public void Tick(){if(Live&&IsOpen&&view==null){if(editing)RenderEditor();else RenderList();}}
         private void Retry(){if(!Live||!IsOpen||!session.HasPendingSave)return;bool saved=session.Retry();if(saved){dirty=false;RenderList();}else if(editing)RenderEditor();else RenderList();}

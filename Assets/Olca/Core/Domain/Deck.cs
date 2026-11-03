@@ -389,8 +389,14 @@ namespace Olca.Core.Domain
         public static OwnedCardCount Resolve(ClearReturnProfile profile,SavedDeckCard slot)
         {
             if(profile==null||slot==null)return null;
-            var matches=profile.Owned.Where(o=>o.Id==slot.Id&&o.Level==slot.Level&&(slot.DefinitionKey==null||Key(o)==slot.DefinitionKey)).ToArray();
-            return matches.Length==1?matches[0]:null;
+            var rows=profile.Owned??throw new ArgumentNullException("source");
+            OwnedCardCount match=null;bool ambiguous=false;
+            // 一時配列を作らず一意性だけ判定する。曖昧でも末尾の不正行を読み飛ばさない。
+            foreach(var owned in rows){
+                if(owned.Id!=slot.Id||owned.Level!=slot.Level||(slot.DefinitionKey!=null&&Key(owned)!=slot.DefinitionKey))continue;
+                if(match!=null)ambiguous=true;else match=owned;
+            }
+            return ambiguous?null:match;
         }
         public static Dictionary<(string Id,ExceedLevel Level),int> AggregateCounts(ClearReturnProfile p) => p.Owned.GroupBy(o=>(o.Id,o.Level)).ToDictionary(g=>g.Key,g=>g.Sum(o=>o.Count));
         public static bool CardMatches(OwnedCardCount owned,Card card) => owned!=null&&card!=null&&owned.Id==card.Id&&owned.Level==card.ExceedLevel&&owned.Name==card.Name&&owned.Rarity==card.Rarity&&

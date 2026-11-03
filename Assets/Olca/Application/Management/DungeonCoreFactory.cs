@@ -37,7 +37,12 @@ namespace Olca.Application.Management
             var player=new PlayerCharacter(settings.MaxHp(level),new Vector2Int(0,0),attackPower:settings.Attack(level),staggerDurationFrames:staggerFrames,poiseRecoveryDelayFrames:poiseRecoveryFrames);
             player.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(level));return player;
         }
-        public Processing CreateProcessing()=>new Processing(cards(),new SimpleFusionRecipeProvider(cards()));
+        public Processing CreateProcessing()
+        {
+            // 一回の組立では同じ定義元を渡し、別組立へはキャッシュしない。
+            var definitions=cards();
+            return new Processing(definitions,new SimpleFusionRecipeProvider(definitions));
+        }
         public DungeonBattleManager Create(Launch request)
         {
             if(request==null)throw new ArgumentNullException(nameof(request));

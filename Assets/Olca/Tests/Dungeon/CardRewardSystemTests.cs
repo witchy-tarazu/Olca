@@ -588,3 +588,62 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture]
+    public class OwnedDefinitionResolutionTests
+    {
+        private static OwnedCardCount Row(string hash=null,string name="ソード") => new OwnedCardCount {
+            Id="sword",Name=name,Level=ExceedLevel.Normal,Rarity=CardRarity.Normal,Count=4,DefinitionHash=hash };
+        private static SavedDeckCard Slot(string key=null) => new SavedDeckCard {Id="sword",Level=ExceedLevel.Normal,DefinitionKey=key};
+
+        [Test]
+        public void Resolve_一意の旧参照と明示参照は所持行そのものを返し変更しない()
+        {
+            var owned=Row(new string('A',64));var other=Row(new string('B',64));other.Level=ExceedLevel.Lv1;
+            var rows=new[]{other,owned};var profile=new ClearReturnProfile{Owned=rows};
+            Assert.AreSame(owned,OwnedDefinition.Resolve(profile,Slot()));
+            Assert.AreSame(owned,OwnedDefinition.Resolve(profile,Slot(owned.DefinitionHash)));
+            Assert.AreSame(rows,profile.Owned);Assert.AreSame(other,rows[0]);Assert.AreEqual(4,owned.Count);
+        }
+        [Test]
+        public void Resolve_同ID同段階の複数定義はキーなしでは曖昧で明示キーだけを解決する()
+        {
+            var a=Row(new string('A',64));var b=Row(new string('B',64));var profile=new ClearReturnProfile{Owned=new[]{a,b}};
+            Assert.IsNull(OwnedDefinition.Resolve(profile,Slot()));
+            Assert.AreSame(a,OwnedDefinition.Resolve(profile,Slot(a.DefinitionHash)));
+            Assert.AreSame(b,OwnedDefinition.Resolve(profile,Slot(b.DefinitionHash)));
+            Assert.IsNull(OwnedDefinition.Resolve(profile,Slot(new string('C',64))));
+            profile.Owned=new[]{b,a};Assert.IsNull(OwnedDefinition.Resolve(profile,Slot()));Assert.AreSame(a,OwnedDefinition.Resolve(profile,Slot(a.DefinitionHash)));
+        }
+        [Test]
+        public void Resolve_同じ明示キーの重複でも先頭の行を選ばない()
+        {
+            var a=Row(new string('A',64));var profile=new ClearReturnProfile{Owned=new[]{a,a.Copy()}};
+            Assert.IsNull(OwnedDefinition.Resolve(profile,Slot(a.DefinitionHash)));Assert.IsNull(OwnedDefinition.Resolve(profile,Slot()));
+        }
+        [Test]
+        public void Resolve_欠損入力と未知IDは従来どおり解決せず不正な所持配列は拒否する()
+        {
+            var profile=new ClearReturnProfile{Owned=new OwnedCardCount[0]};
+            Assert.IsNull(OwnedDefinition.Resolve(null,Slot()));Assert.IsNull(OwnedDefinition.Resolve(profile,null));Assert.IsNull(OwnedDefinition.Resolve(profile,Slot()));
+            profile.Owned=new[]{Row(new string('A',64))};Assert.IsNull(OwnedDefinition.Resolve(profile,new SavedDeckCard{Id="unregistered",Level=ExceedLevel.Normal}));
+            profile.Owned=null;var error=Assert.Throws<ArgumentNullException>(()=>OwnedDefinition.Resolve(profile,Slot()));Assert.AreEqual("source",error.ParamName);
+        }
+        [Test]
+        public void Resolve_旧メタデータキーは現行hash定義と混同しない()
+        {
+            var legacy=Row(null,"旧ソード");var current=Row(new string('A',64));var profile=new ClearReturnProfile{Owned=new[]{legacy,current}};
+            Assert.IsNull(OwnedDefinition.Resolve(profile,Slot()));Assert.AreSame(legacy,OwnedDefinition.Resolve(profile,Slot(OwnedDefinition.Key(legacy))));
+            Assert.AreSame(current,OwnedDefinition.Resolve(profile,Slot(current.DefinitionHash)));Assert.IsNull(OwnedDefinition.Resolve(profile,Slot("legacy/unknown")));
+        }
+        [Test]
+        public void Resolve_曖昧でも末尾の不正行を読み飛ばして受理しない()
+        {
+            var a=Row(new string('A',64));var profile=new ClearReturnProfile{Owned=new[]{a,a.Copy(),null}};
+            Assert.Throws<NullReferenceException>(()=>OwnedDefinition.Resolve(profile,Slot(a.DefinitionHash)));
+            Assert.Throws<NullReferenceException>(()=>OwnedDefinition.Resolve(profile,Slot()));
+        }
+    }
+}

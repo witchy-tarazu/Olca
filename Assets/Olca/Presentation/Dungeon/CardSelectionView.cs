@@ -401,7 +401,7 @@ namespace Olca.Presentation.Dungeon
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
             Fit("ReturnSummary",270,110,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
+        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
         public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
@@ -896,6 +896,44 @@ namespace Olca.Presentation.Dungeon
             SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryStyleDeparture":"StyleChoice_"+selected,blocked);
         }
 
+        // 探索デッキだけの水鏡表示。共通の帰還/出撃画面や入力領域には波及させない。
+        private void ApplyExplorationDeckLook(bool valid)
+        {
+            if(!explorationDeckLibrary)return;
+            var surface=GetComponent<Image>();if(surface!=null)surface.color=new Color(.025f,.075f,.105f,.995f);
+            var primary=new Color(.88f,.97f,1f,1f);
+            var secondary=new Color(.65f,.82f,.88f,1f);
+            foreach(var label in content.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+                if(label.GetComponentInParent<Button>()==null)label.color=primary;
+            void Tone(string name,Color color){var label=content.transform.Find(name)?.GetComponent<UnityEngine.UI.Text>();if(label!=null)label.color=color;}
+            foreach(var name in new[]{"DepartureRules","DepartureCandidateHeading","DepartureCountHeading","DepartureOwnedHeading","SavedDeckHelp","SavedDeckNameLimit","SavedDeckPage","DeparturePage","SavedDeckNameHeading","SavedDeckCountHeading"})Tone(name,secondary);
+            foreach(var label in content.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+                if(label.name.StartsWith("DeparturePerformance_",StringComparison.Ordinal)||label.name.StartsWith("SavedDeckQuantity_",StringComparison.Ordinal))label.color=secondary;
+            Tone("DepartureDraftCount",new Color(.58f,.94f,1f,1f));
+            Tone("DepartureValidation",valid?new Color(.69f,.94f,.86f,1f):new Color(1f,.84f,.58f,1f));
+            Tone("SavedDeckError",new Color(1f,.84f,.58f,1f));
+            // 既存の透過素材を共有する。輸入素材を生成/破棄したりカード絵を差し替えたりしない。
+            var glass=Resources.Load<Sprite>("OlcaUI/description");
+            foreach(var name in new[]{"DepartureSummary","DepartureCandidates","SavedDeckName"}){
+                var image=content.transform.Find(name)?.GetComponent<Image>();if(image==null)continue;
+                if(glass!=null){image.sprite=glass;image.type=Image.Type.Sliced;image.color=new Color(1f,1f,1f,.88f);}
+                else image.color=new Color(.06f,.20f,.27f,.86f);
+            }
+            if(content.name=="SavedDeckContents"){
+                // 見出しと一覧を既存ガラス面で受ける。裏のHUDを見せず、装飾に入力を奪わせない。
+                void Glass(string name,float anchorY,float y,float height,float margins){
+                    var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(content.transform,false);obj.transform.SetAsFirstSibling();
+                    var rect=(RectTransform)obj.transform;rect.anchorMin=new Vector2(0,anchorY);rect.anchorMax=new Vector2(1,anchorY);rect.sizeDelta=new Vector2(-margins,height);rect.anchoredPosition=new Vector2(0,y);
+                    var image=obj.GetComponent<Image>();image.sprite=glass;image.type=Image.Type.Sliced;image.color=glass!=null?new Color(1f,1f,1f,.88f):new Color(.06f,.20f,.27f,.86f);image.raycastTarget=false;
+                }
+                Glass("DeckLibraryHeaderGlass",1,-137,230,160);
+                if(content.transform.Find("SavedDeckEmpty")!=null)Glass("DeckLibraryEmptyGlass",.5f,80,190,300);
+                else Glass("DeckLibraryListGlass",.5f,20,510,160);
+            }
+            var input=content.GetComponentInChildren<InputField>();
+            if(input!=null){input.customCaretColor=true;input.caretColor=primary;input.selectionColor=new Color(.18f,.60f,.74f,.65f);}
+        }
+
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
             string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null, string persistedDeckName=null)
         {
@@ -985,6 +1023,7 @@ namespace Olca.Presentation.Dungeon
             string preferred=pending?"RetrySavedDeckSave":save!=null?"SaveNamedDeck":
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureDetails_",StringComparison.Ordinal)&&b.IsInteractable())?.name??
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureRow_",StringComparison.Ordinal)&&b.name.EndsWith("Details",StringComparison.Ordinal)&&b.IsInteractable())?.name??"CloseOwnedDeparture";
+            ApplyExplorationDeckLook(valid&&error==null);
             SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();
         }
 
@@ -997,6 +1036,18 @@ namespace Olca.Presentation.Dungeon
             var generator=new TextGenerator();
             float Width(string text)=>generator.GetPreferredWidth(Olca.Presentation.CustomScreen.CustomDisplay.Katakana(text),settings);
             return Width("［装備中］ "+value+"　20枚")<=680&&Width(value+"　"+int.MaxValue+"枚")<=680;
+        }
+
+        private void FitExplorationSavedRows()
+        {
+            if(!explorationDeckLibrary||content==null||content.name!="SavedDeckContents")return;
+            float width=Mathf.Min(700,((RectTransform)content.transform).rect.width*.5f-250);
+            foreach(var label in content.GetComponentsInChildren<Text>()){
+                if(label.name!="SavedDeckNameHeading"&&!label.name.StartsWith("SavedDeckRow_",StringComparison.Ordinal))continue;
+                bool details=label.name.StartsWith("SavedDeckRow_",StringComparison.Ordinal)&&content.transform.Find("SavedDeckName_"+label.name.Substring("SavedDeckRow_".Length)+"Details")!=null;
+                var rect=label.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.5f);rect.pivot=new Vector2(0,.5f);
+                rect.anchoredPosition=new Vector2(140,rect.anchoredPosition.y);rect.sizeDelta=new Vector2(Mathf.Max(1,width-(details?180:0)),rect.sizeDelta.y);
+            }
         }
 
         public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
@@ -1020,9 +1071,21 @@ namespace Olca.Presentation.Dungeon
             help.rectTransform.anchorMin=new Vector2(0,1);help.rectTransform.anchorMax=Vector2.one;help.rectTransform.sizeDelta=new Vector2(-170,100);help.rectTransform.anchoredPosition=new Vector2(0,-175);
             AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
+            if(explorationDeckLibrary&&decks.Length>0){
+                Text("SavedDeckNameHeading","デッキのナマエ",-470,235,700,36,22).alignment=TextAnchor.MiddleLeft;
+                Text("SavedDeckCountHeading","マイスウ",-20,235,140,36,22);
+            }
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
-                var row=Text("SavedDeckRow_"+d.Id,(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
-                if(!CanUseDeckName(d.Name)&&NeedsTextDetails(row)){
+                var row=Text("SavedDeckRow_"+d.Id,explorationDeckLibrary?d.Name:(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
+                if(explorationDeckLibrary){
+                    row.alignment=TextAnchor.MiddleLeft;
+                    Text("SavedDeckQuantity_"+d.Id,d.Cards.Length+"枚",-20,y,140,70,25);
+                    // 文字列の長さに左右されず、名前・枚数・操作を同じ行で追う。
+                    var rule=new GameObject("SavedDeckRowRule_"+d.Id,typeof(RectTransform),typeof(Image));rule.transform.SetParent(content.transform,false);
+                    var line=rule.GetComponent<Image>();line.color=new Color(.35f,.77f,.85f,.18f);line.raycastTarget=false;
+                    var lr=(RectTransform)rule.transform;lr.anchorMin=new Vector2(0,.5f);lr.anchorMax=new Vector2(1,.5f);lr.anchoredPosition=new Vector2(0,y-42);lr.sizeDelta=new Vector2(-280,1);
+                }
+                if(!CanUseDeckName(d.Name)&&(explorationDeckLibrary||NeedsTextDetails(row))){
                     row.rectTransform.sizeDelta-=new Vector2(180,0);row.rectTransform.anchoredPosition-=new Vector2(90,0);
                     TextDetailsButton("SavedDeckName_"+d.Id+"Details",row.text,"デッキのナマエ",-210,y,140,50);
                 }
@@ -1051,6 +1114,7 @@ namespace Olca.Presentation.Dungeon
                 var child=content.transform.Find(name);if(child==null)continue;var control=(RectTransform)child;
                 control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
             }
+            ApplyExplorationDeckLook(error==null);FitExplorationSavedRows();
             SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+(explorationDeckLibrary?decks[0].Id:profile.EquippedDeckId),force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
         }
 
@@ -1445,7 +1509,20 @@ namespace Olca.Presentation.Management
             }
             value.widgets.Text(data.MessageName,data.Message,0,subject?-25:100,1700,subject?90:130,30);
             value.confirm=value.widgets.Button(data.ConfirmName,data.ConfirmLabel,subject?-400:420,-150,subject?700:750,subject?75:80);value.confirm.interactable=value.confirmEnabled;
-            value.cancel=value.widgets.Button(data.CancelName,data.CancelLabel,subject?400:-420,-150,subject?700:750,subject?75:80);value.directionScroll=false;value.CaptureFeedback();return value;
+            value.cancel=value.widgets.Button(data.CancelName,data.CancelLabel,subject?400:-420,-150,subject?700:750,subject?75:80);value.ApplyStandardLook(data,subject);value.directionScroll=false;value.CaptureFeedback();return value;
+        }
+        // 標準確認だけを既存の水鏡面へまとめる。専用layoutと操作領域は変更しない。
+        private void ApplyStandardLook(ConfirmationContent data,bool subject)
+        {
+            GetComponent<Image>().color=new Color(.025f,.075f,.105f,.995f);
+            var face=widgets.Face("ConfirmationReadingFace");var glass=Resources.Load<Sprite>("OlcaUI/description");
+            if(glass!=null){face.sprite=glass;face.color=Color.white;}else face.color=new Color(.06f,.20f,.27f,.96f);
+            face.rectTransform.anchoredPosition=new Vector2(0,100);face.rectTransform.sizeDelta=new Vector2(1780,680);face.transform.SetAsFirstSibling();
+            foreach(var label in body.GetComponentsInChildren<Text>(true))
+                if(label.GetComponentInParent<Button>(true)==null)label.color=new Color(.88f,.97f,1f,1f);
+            var title=body.Find(data.TitleName)?.GetComponent<Text>();
+            if(title!=null){title.rectTransform.anchorMin=title.rectTransform.anchorMax=new Vector2(.5f,.5f);title.rectTransform.sizeDelta=new Vector2(1700,subject?70:60);title.rectTransform.anchoredPosition=new Vector2(0,subject?400:300);title.color=new Color(.58f,.94f,1f,1f);}
+            if(subject){var status=body.Find(data.StatusName)?.GetComponent<Text>();if(status!=null){status.rectTransform.anchorMin=status.rectTransform.anchorMax=new Vector2(.5f,.5f);status.rectTransform.anchoredPosition=new Vector2(0,300);status.rectTransform.sizeDelta=new Vector2(1750,100);status.color=new Color(1f,.84f,.58f,1f);}}
         }
         protected override void RefreshContents(){if(reading!=null)reading.sizeDelta=new Vector2(Mathf.Min(layout.ReadingSize.x,Mathf.Max(1,((RectTransform)transform).rect.width-layout.ReadingSideInset)),layout.ReadingSize.y);}
         protected override bool Attempt()=>confirmEnabled&&(CanConfirm?.Invoke()??true);
@@ -1467,14 +1544,24 @@ namespace Olca.Presentation.Management
             var text=popup.widgets.Text("ReadonlyCardPerformance",value,0,0,1500,600,30);text.supportRichText=false;text.alignment=TextAnchor.UpperLeft;text.transform.SetParent(area.transform,false);text.rectTransform.anchorMin=new Vector2(0,1);text.rectTransform.anchorMax=Vector2.one;text.rectTransform.pivot=new Vector2(.5f,1);text.rectTransform.anchoredPosition=Vector2.zero;text.rectTransform.sizeDelta=Vector2.zero;
             if(card!=null)Olca.Presentation.CustomScreen.CardAttackPropertyIcons.Bind(text,card,Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value));
             popup.inputScroll=area.GetComponent<ScrollRect>();popup.inputScroll.viewport=ar;popup.inputScroll.content=text.rectTransform;popup.inputScroll.horizontal=false;popup.inputScroll.movementType=ScrollRect.MovementType.Clamped;
-            popup.cancel=popup.widgets.Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75);var close=(RectTransform)popup.cancel.transform;close.anchorMin=close.anchorMax=new Vector2(.5f,0);close.anchoredPosition=new Vector2(0,100);popup.CaptureFeedback();return popup;
+            popup.cancel=popup.widgets.Button("CloseReadonlyCardDetails","戻る / East・Esc",0,-440,850,75);var close=(RectTransform)popup.cancel.transform;close.anchorMin=close.anchorMax=new Vector2(.5f,0);close.anchoredPosition=new Vector2(0,100);if(!collection)popup.ApplyStandardReadingLook();popup.CaptureFeedback();return popup;
+        }
+        // 標準詳細だけを既存の水鏡へそろえる。図鑑専用layoutと文字/操作領域は保持する。
+        private void ApplyStandardReadingLook()
+        {
+            GetComponent<Image>().color=new Color(.025f,.075f,.105f,1f);
+            transform.Find("ReadonlyCardTitle").GetComponent<Text>().color=new Color(.58f,.94f,1f,1f);
+            inputScroll.content.GetComponent<Text>().color=new Color(.88f,.97f,1f,1f);
+            var face=widgets.Face("ReadonlyReadingFace");face.transform.SetAsFirstSibling();
+            var glass=Resources.Load<Sprite>("OlcaUI/description");face.sprite=glass;
+            face.color=glass!=null?Color.white:new Color(.06f,.20f,.27f,.96f);
         }
         public void RefreshLayout()=>RefreshContents();
         protected override void RefreshContents()
         {
             if(inputScroll==null||inputScroll.viewport==null||inputScroll.content==null)return;var viewport=inputScroll.viewport;var text=inputScroll.content.GetComponent<Text>();var parent=((RectTransform)transform).rect.size;float ppu=text.pixelsPerUnit;
             if(viewport.rect.size==viewportSize&&parent==parentSize&&text.text==bodyValue&&Mathf.Approximately(ppu,pixelsPerUnit)){scrollPosition=inputScroll.verticalNormalizedPosition;return;}
-            float position=viewportSize==Vector2.zero?1:scrollPosition;float maximum=Mathf.Max(1,parent.y*(viewport.anchorMax.y-viewport.anchorMin.y)+viewport.offsetMax.y);float needed=text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text,text.GetGenerationSettings(new Vector2(viewport.rect.width,0)))/ppu+20;float height=Mathf.Clamp(needed,Mathf.Min(120,maximum),maximum);viewport.offsetMin=new Vector2(viewport.offsetMin.x,maximum-height);viewportSize=viewport.rect.size;parentSize=parent;bodyValue=text.text;pixelsPerUnit=ppu;text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(viewportSize.y,needed));if(transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,viewportSize.y+40);inputScroll.verticalNormalizedPosition=Mathf.Clamp01(position);scrollPosition=inputScroll.verticalNormalizedPosition;
+            float position=viewportSize==Vector2.zero?1:scrollPosition;float maximum=Mathf.Max(1,parent.y*(viewport.anchorMax.y-viewport.anchorMin.y)+viewport.offsetMax.y);float needed=text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text,text.GetGenerationSettings(new Vector2(viewport.rect.width,0)))/ppu+20;float height=Mathf.Clamp(needed,Mathf.Min(120,maximum),maximum);viewport.offsetMin=new Vector2(viewport.offsetMin.x,maximum-height);viewportSize=viewport.rect.size;parentSize=parent;bodyValue=text.text;pixelsPerUnit=ppu;text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(viewportSize.y,needed));if(transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,viewportSize.y+40);if(transform.Find("ReadonlyReadingFace") is RectTransform plainReading){plainReading.anchorMin=viewport.anchorMin;plainReading.anchorMax=viewport.anchorMax;plainReading.offsetMin=viewport.offsetMin-new Vector2(20,20);plainReading.offsetMax=viewport.offsetMax+new Vector2(20,32);}inputScroll.verticalNormalizedPosition=Mathf.Clamp01(position);scrollPosition=inputScroll.verticalNormalizedPosition;
         }
         protected override bool Attempt()=>false;
         protected override void Deliver(DialogResult result){var callback=Closed;Closed=null;callback?.Invoke();}

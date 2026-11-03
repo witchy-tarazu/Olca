@@ -1344,11 +1344,13 @@ namespace Olca.Application.Dungeon
         }
         private bool TryResolveSavedDeck(SavedDepartureDeck saved,out Deck deck,out string error)
         {
-            deck=null;if(!SavedDepartureDeck.TryValidateEquipped(clearReturnSession.Snapshot,saved,out error))return false;
-            var cards=new List<Card>();
-            foreach(var slot in saved.Cards){var owned=OwnedDefinition.Resolve(clearReturnSession.Snapshot,slot);
-                if(!ResolveOwnedDefinition(owned,out var card)){error="保存デッキの定義が未特定です。別定義へ置換せず保存を保持しています";return false;}cards.Add(card);}
-            return OwnedDefinition.TryCreate(clearReturnSession.Snapshot,cards,saved.Cards,out deck,out error);
+            deck=null;var profile=clearReturnSession.Snapshot;
+            if(!SavedDepartureDeck.TryValidateEquipped(profile,saved,out error))return false;
+            // 一回の解決では同じ所持と定義元を使う。別操作へは保持しない。
+            var definitions=CurrentCollectionDefinitions();var cards=new List<Card>();
+            foreach(var slot in saved.Cards){var owned=OwnedDefinition.Resolve(profile,slot);
+                if(!TryResolveOwnedFromDefinitions(owned,definitions,out var card)){error="保存デッキの定義が未特定です。別定義へ置換せず保存を保持しています";return false;}cards.Add(card);}
+            return OwnedDefinition.TryCreate(profile,cards,saved.Cards,out deck,out error);
         }
 
         private void EquipSavedDeck(string id)
@@ -1376,7 +1378,12 @@ namespace Olca.Application.Dungeon
         private bool ResolveOwnedDefinition(OwnedCardCount owned,out Card card)
         {
             card=null;if(owned==null)return false;
-            var matches=CurrentCollectionDefinitions().Where(c=>OwnedDefinition.CardMatches(owned,c)).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
+            return TryResolveOwnedFromDefinitions(owned,CurrentCollectionDefinitions(),out card);
+        }
+        private static bool TryResolveOwnedFromDefinitions(OwnedCardCount owned,IReadOnlyList<Card> definitions,out Card card)
+        {
+            card=null;if(owned==null)return false;
+            var matches=definitions.Where(c=>OwnedDefinition.CardMatches(owned,c)).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
             if(matches.Length!=1)return false;card=matches[0].Clone();return true;
         }
         private Card[] ownedDepartureOptions;
