@@ -1,0 +1,10 @@
+{
+  "utc": 1793659136.5933692,
+  "pid": 1150919,
+  "priorChainExited": "Zs",
+  "oneOriginalPlay": true,
+  "repeatPlay": false,
+  "fixtureNotStarted": true,
+  "lastReadStatus": "metadata available-commands timeout; Editor CPU/log progressed, server listening7800",
+  "steps": "readiness/helper + never-started native/file/UI checks; no boot repetition"
+}

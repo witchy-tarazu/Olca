@@ -1,0 +1,31 @@
+{
+  "fixtureOnly": true,
+  "path": "/workspace/olca-validation-20261024/save/system-stage39-39001/seven-resistance-fixture/active.json",
+  "hash": "7CB784F1F481DBAE770364A637D7A9CE674617AE6CF118A94E8AAC44B0BE3CFB",
+  "restored": [
+    {
+      "metal": 38,
+      "wood": -38,
+      "yin": 73,
+      "yang": -69,
+      "wind": 0
+    },
+    {
+      "metal": 38,
+      "wood": -38,
+      "yin": 73,
+      "yang": -69,
+      "wind": 0
+    },
+    {
+      "metal": 38,
+      "wood": -38,
+      "yin": 73,
+      "yang": -69,
+      "wind": 0
+    }
+  ],
+  "player": "eyJBZGRpdGlvbmFsRWxlbWVudFJlc2lzdGFuY2VzIjpbMzMsLTQ0LDY2LC03N10sIkF0dGFja0dyb3d0aCI6bnVsbCwiQXR0YWNrUG93ZXIiOjEwLCJCbGluZFJlc2lzdGFuY2UiOjAsIkNvbmZ1c2lvblJlc2lzdGFuY2UiOjAsIkN1c3RvbVNwZWVkIjoxLCJDdXN0b21pemF0aW9uQWJpbGl0aWVzIjp7IkRlZmluaXRpb25JZCI6Imlzb2xhdGVkLXNldmVuIiwiU291cmNlcyI6W3siQWRkaXRpb25hbEVsZW1lbnRzIjpbNSw2LDcsOF0sIkJsaW5kIjowLCJDb25mdXNpb24iOjAsIkVhcnRoIjowLCJGaXJlIjowLCJGbG9hdGluZyI6ZmFsc2UsIkl0ZW1JZCI6ImZpeHR1cmUiLCJLaW5kIjoicGFydCIsIlBhcmFseXplIjowLCJQb2lzb24iOjAsIlNvdXJjZUlkIjoiaW5zdGFuY2UiLCJXYXRlciI6MCwiV2luZCI6MH1dLCJWZXJzaW9uIjoxfSwiRWFydGhSZXNpc3RhbmNlIjo1NSwiRmlyZVJlc2lzdGFuY2UiOjExLCJHcmlkWCI6MCwiR3JpZFkiOjAsIkhwIjoxMDAsIk1heEhwIjoxMDAsIlBhcmFseXplUmVzaXN0YW5jZSI6MCwiUG9pc2UiOjMwLCJQb2lzZVJlY292ZXJ5RnJhbWVzIjpudWxsLCJQb2lzb25SZXNpc3RhbmNlIjowLCJQb2lzb25zIjpbXSwiUmF3QmFzZUVhcnRoUmVzaXN0YW5jZSI6NTUsIlJhd0Jhc2VGaXJlUmVzaXN0YW5jZSI6MTEsIlJhd0Jhc2VXYXRlclJlc2lzdGFuY2UiOi0yMiwiUmF3QmFzZVdpbmRSZXNpc3RhbmNlIjowLCJTdGFnZ2VyRnJhbWVzIjowLCJTdHlsZSI6bnVsbCwiV2F0ZXJSZXNpc3RhbmNlIjotMjIsIldpbmRSZXNpc3RhbmNlIjowfQ==",
+  "mainSessionUntouched": true,
+  "automaticAffinityNotImplemented": true
+}

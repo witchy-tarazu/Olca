@@ -129,6 +129,7 @@ namespace Olca.Core.Domain
     public sealed class CheckpointPlayerDto
     {
         public Olca.Core.Logic.Customization.CustomizationAbilitiesDto CustomizationAbilities; // 旧欠損は装備能力なし
+        public int[] AdditionalElementResistances; // 金/木/陰/陽の原値。旧欠損は0、旧Wind欄と別。
         public int? RawBaseFireResistance,RawBaseWaterResistance,RawBaseWindResistance,RawBaseEarthResistance; // 装備補正との合算前の基礎値
         public int PoisonResistance,ParalyzeResistance,ConfusionResistance,BlindResistance; // 基礎状態耐性。旧欠損は0
         public AttackMilestoneDto AttackGrowth; // 旧保存nullは速度/タメの成長なしを維持
@@ -142,6 +143,7 @@ namespace Olca.Core.Domain
         public int GridX, GridY;
         public void ValidatePermanentAbilities()
         {
+            ElementResistances.ValidateAdditional(AdditionalElementResistances);
             CustomizationAbilities?.Validate();
             if(PoisonResistance<0||ParalyzeResistance<0||ConfusionResistance<0||BlindResistance<0)throw new System.ArgumentException("保存された状態耐性が不正です");
             var raw=new[]{RawBaseFireResistance,RawBaseWaterResistance,RawBaseWindResistance,RawBaseEarthResistance};
@@ -152,6 +154,7 @@ namespace Olca.Core.Domain
         }
         public CheckpointPlayerDto Copy() {
             var copy=(CheckpointPlayerDto)MemberwiseClone();
+            copy.AdditionalElementResistances=AdditionalElementResistances==null?null:(int[])AdditionalElementResistances.Clone();
             copy.Style=Style?.Copy();copy.AttackGrowth=AttackGrowth?.Copy();copy.CustomizationAbilities=CustomizationAbilities?.Copy();
             copy.Poisons=Poisons==null ? null : System.Array.ConvertAll(Poisons,p=>p?.Copy()); return copy;
         }

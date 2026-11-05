@@ -37,8 +37,9 @@ namespace Olca.Application.Management
         public CameraRuntimeManager Cameras { get; }
         public UIRuntimeManager UI { get; }
         public Session CurrentSession { get; private set; }
-        public OutsideExplorationSession OutsideExploration { get; } = new OutsideExplorationSession();
-        public OutsideExplorationRuntime OutsideRuntime {get;}
+        public OutsideExplorationSession OutsideExploration { get; private set; } = new OutsideExplorationSession();
+        public OutsideExplorationRuntime OutsideRuntime {get;private set;}
+        public string OutsideProgressGeneration {get;private set;}
         private bool disposed;
         public GameSystem(SaveManager saves, ResourceManager resources, SoundManager sounds, ViewManager views, DialogManager dialogs, UIRuntimeManager ui = null, CameraRuntimeManager cameras = null)
         { OutsideRuntime=new OutsideExplorationRuntime(OutsideExploration); Cameras = cameras; UI = ui; Saves = saves; Resources = resources; Sounds = sounds; Views = views; Dialogs = dialogs; Hosts = new GameHostManager(resources,()=>CurrentSession!=null); Resources.RetainGeneratedSprites(); }
@@ -51,6 +52,18 @@ namespace Olca.Application.Management
                 throw new InvalidOperationException("攻略の所有者が重複しています");
             }
             return CurrentSession = new Session(this, owner, Saves.OpenContext(settings, checkpoints, progress));
+        }
+        /// <summary>新規ゲームの保存成功後だけ呼ぶ。通常のhost/View再入では外界を保持する。</summary>
+        public bool ResetOutsideForNewProgress(string generation)
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(GameSystem));
+            if(!Guid.TryParseExact(generation,"N",out _))throw new ArgumentException("保存済みの新規進行世代が必要です",nameof(generation));
+            if(OutsideProgressGeneration==generation)return false;
+            var next=new OutsideExplorationSession();
+            var runtime=new OutsideExplorationRuntime(next);
+            OutsideRuntime.Dispose();OutsideExploration.Dispose();
+            OutsideExploration=next;OutsideRuntime=runtime;OutsideProgressGeneration=generation;
+            return true;
         }
         private void EndSession(Session session, object owner)
         {

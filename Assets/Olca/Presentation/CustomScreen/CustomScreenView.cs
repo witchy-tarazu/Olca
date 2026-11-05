@@ -2022,9 +2022,11 @@ namespace Olca.Presentation.CustomScreen
             }
             return Katakana(result);
         }
-        private static string ElementName(ElementType value)=>value==ElementType.Fire?"ヒ":value==ElementType.Water?"ミズ":value==ElementType.Wind?"カゼ":value==ElementType.Earth?"ツチ":"ムゾクセイ";
-        private static string Resistances(ElementResistances value,TimedStatusResistances status)
-            =>$"ゾクセイタイセイ (%)\nヒ {value.Get(ElementType.Fire)} / ミズ {value.Get(ElementType.Water)} / カゼ {value.Get(ElementType.Wind)} / ツチ {value.Get(ElementType.Earth)}"+(status==null?"":$"\nジョウタイタイセイ (%)\nドク {status.Poison} / マヒ {status.Paralyze} / コンラン {status.Confusion} / モウモク {status.Blind}");
+        public static string ElementName(ElementType value) {
+            switch(value){case ElementType.None:return "ムゾクセイ";case ElementType.Fire:return "ヒ";case ElementType.Water:return "ミズ";case ElementType.Wind:return "カゼ";case ElementType.Earth:return "ツチ";case ElementType.Metal:return "キン";case ElementType.Wood:return "キ";case ElementType.Yin:return "イン";case ElementType.Yang:return "ヨウ";default:return "ミテイギ";}
+        }
+        public static string Resistances(ElementResistances value,TimedStatusResistances status)
+            =>$"ゾクセイタイセイ (%)\nヒ {value.Get(ElementType.Fire)} / ミズ {value.Get(ElementType.Water)} / キュウカゼ {value.Get(ElementType.Wind)} / ツチ {value.Get(ElementType.Earth)}\nキン {value.Get(ElementType.Metal)} / キ {value.Get(ElementType.Wood)} / イン {value.Get(ElementType.Yin)} / ヨウ {value.Get(ElementType.Yang)}"+(status==null?"":$"\nジョウタイタイセイ (%)\nドク {status.Poison} / マヒ {status.Paralyze} / コンラン {status.Confusion} / モウモク {status.Blind}");
         private static string Statuses(IReadOnlyList<StatusEffectSnapshot> values)
         {
             if(values.Count==0)return "ジョウタイイジョウ: なし";
@@ -2140,7 +2142,7 @@ namespace Olca.Presentation.CustomScreen
         public void SetTransformation(TransformationDefenseDefinition value,string name)
         {
             kind=DetailKind.Transformation;inspectionIndex=-1;battle=null;card=null;
-            string text=$"{name}\n手札上限 +{value.HandSizeBonus}\n弱点: {value.Weakness.Element} / {value.Weakness.Property}\n火 {value.Resistances.Get(ElementType.Fire)} / 水 {value.Resistances.Get(ElementType.Water)} / 風 {value.Resistances.Get(ElementType.Wind)} / 土 {value.Resistances.Get(ElementType.Earth)}";if(value.Attack!=null)text+=$"\n固有攻撃: {value.Attack.Element} / 通常 {value.Attack.NormalPowerPercent}% / タメ {value.Attack.ChargedPowerPercent}% / {value.Attack.ChargeFrames}フレーム";SetValue(text);
+            string text=$"{name}\n手札上限 +{value.HandSizeBonus}\n弱点: {value.Weakness.Element} / {value.Weakness.Property}\n{CustomDisplay.Resistances(value.Resistances,null)}";if(value.Attack!=null)text+=$"\n固有攻撃: {value.Attack.Element} / 通常 {value.Attack.NormalPowerPercent}% / タメ {value.Attack.ChargedPowerPercent}% / {value.Attack.ChargeFrames}フレーム";SetValue(text);
         }
         public void SetCombatants(BattleSystem value,int index){kind=DetailKind.Combatant;battle=value;card=null;inspectionIndex=index;EnsureCycleControls();SetValue(CombatantText());}
         private Enemy[] Enemies()=>battle?.Enemies.Where(e=>!e.IsDead).ToArray()??System.Array.Empty<Enemy>();

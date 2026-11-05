@@ -1,0 +1,27 @@
+{
+  "actualChangedFields": [
+    "focus",
+    "texts",
+    "buttons"
+  ],
+  "domainKeysVerifiedUnchanged": [
+    "dungeonCore",
+    "phase",
+    "hp",
+    "attack",
+    "position",
+    "frame",
+    "styleId",
+    "storedStyleName",
+    "styleCapture",
+    "styleElement",
+    "owned",
+    "outsideFrame",
+    "outsidePosition",
+    "outsideRegistered",
+    "profile"
+  ],
+  "reason": "Original final assertion compared full GUI snapshot across collection->hub transition. Product conditions unchanged; resume with explicit domain invariants and separate GUI conditions.",
+  "firstResultPreserved": "system-stage38-native-final.json",
+  "sourceUnchanged": true
+}

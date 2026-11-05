@@ -1,0 +1,70 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/Card.cs": "c9e6aa327daf551aec3ca9cf1b59edff91b43a8275b37efb057a7d2fa4ce69f1",
+    "Assets/Olca/Core/Domain/Deck.cs": "3bb640177405d8ccdde395ca320af03c87824b60b01672870fb9ccdc208b02fc",
+    "Assets/Olca/Core/Domain/DungeonConfig.cs": "a6e59cd4ccededdfb0712d20b284d65b51f8553481c7bce0aa3ee45e77c8a59c",
+    "Assets/Olca/Core/Domain/ElementType.cs": "3639d14934dcbba4edafd64a001de141ffb0622c8f786c9913c6fe3aadfaf47d",
+    "Assets/Olca/Core/Domain/Enemy.cs": "696c4769a8ab0ee611084ba2ce9f8b2462a3131864f80ffb62a59aa94c3bda98",
+    "Assets/Olca/Core/Logic/Customization/CustomizationAbilities.cs": "fe4e8e5c4c50362d089a23da9abe228f9a22814469e25e94cc6dcadb7660cbfb",
+    "Assets/Olca/Core/Logic/Dungeon/CheckpointPlayerMapper.cs": "c7b52535899b2362be6584c470442089f295409fbdc7299cc0c1a1f726d5b374",
+    "Assets/Olca/Core/Logic/Dungeon/DungeonSystem.cs": "ee6205a858a20dc131fe001e494896675ab267d1aa41b425ab29de60d09d2930",
+    "Assets/Olca/Core/Logic/Dungeon/PortableBattleCatalog.cs": "f2a9377a6043ff108c050c70094e293e4fd7b2aba56009782705c56227a23a31",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b7c0ca9413cecd28a2349f0e0e664105dab3c1dfd0896a83a0420c75b380274b",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "c3ef9c3395c0774c616dbd01976961e703cfa9c5d3819a71aa45c8d07096cace",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "5d285428c9ffac89a86b301ce63ca24a0599736fda6c358c999976091421847c"
+  },
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "currentAndMirrorMatch": true,
+  "checked": [
+    "Legacy enum0..4/Wind retained; current8 versus known9 entry APIs separated; unknown values rejected, no auto element/resistance matchup mapping.",
+    "New4 base/source resistance arrays validated length4 and deep-copied; capture/restore retains raw source values before aggregate clamp. Legacy missing/null means zero.",
+    "Enemy portable accepts exactly old4/new8 shape, emits old4 when new values0; MapHash retains old prefix/values and only appends extension for nonzero new resistance.",
+    "Old envelope verifies SHA on original Payload bytes before deserialize; read path contains no write/migration. New DTO fields may appear on later explicit new writes, not read-time rewrite.",
+    "v3 shared resistance formatter explicitly labels old Wind キュウカゼ; qualified dialog call and Core PerformanceText format attribute term only, leaving arbitrary description/name text unmodified and legacy5 output unchanged.",
+    "Regression coverage added for old literal hashes, new attributes UI/save, legacy sampled JSON/raw envelope, source array deep copies and MapHash equivalence/difference. Tests not executed by reviewer.",
+    "v4 Card constructor validates nonnull Modifier.ElementOverride via ValidateKnown; CheckpointValues.Modifier repeats validation before binary hash write to reject mutable post-construction unknown values. Existing Wind3 remains accepted; valid override hash bytes unchanged. Added test covers constructor/portable restoration/mutable Hash-Capture rejection and old Wind/new Yang clone. Only Card/DungeonSystem/test changed from prior version."
+  ],
+  "history": [
+    "v1 formatter qualification and v2 test helper type-shadow compile errors fixed before final v3; parent reports Tundra success5.52s, reload pending. No final test/native validation.",
+    {
+      "version": "v3",
+      "sourceHashes": {
+        "Assets/Olca/Core/Domain/Card.cs": "53903e44171734ae6614fc49d2c5d5f039cd1c1e82fe2a1a6aa83e7537c8521d",
+        "Assets/Olca/Core/Domain/Deck.cs": "3bb640177405d8ccdde395ca320af03c87824b60b01672870fb9ccdc208b02fc",
+        "Assets/Olca/Core/Domain/DungeonConfig.cs": "a6e59cd4ccededdfb0712d20b284d65b51f8553481c7bce0aa3ee45e77c8a59c",
+        "Assets/Olca/Core/Domain/ElementType.cs": "3639d14934dcbba4edafd64a001de141ffb0622c8f786c9913c6fe3aadfaf47d",
+        "Assets/Olca/Core/Domain/Enemy.cs": "696c4769a8ab0ee611084ba2ce9f8b2462a3131864f80ffb62a59aa94c3bda98",
+        "Assets/Olca/Core/Logic/Customization/CustomizationAbilities.cs": "fe4e8e5c4c50362d089a23da9abe228f9a22814469e25e94cc6dcadb7660cbfb",
+        "Assets/Olca/Core/Logic/Dungeon/CheckpointPlayerMapper.cs": "c7b52535899b2362be6584c470442089f295409fbdc7299cc0c1a1f726d5b374",
+        "Assets/Olca/Core/Logic/Dungeon/DungeonSystem.cs": "4fe9c0cbecc92ab5319331374e5533a9711687a1eb306456fafad18bcd879ccc",
+        "Assets/Olca/Core/Logic/Dungeon/PortableBattleCatalog.cs": "f2a9377a6043ff108c050c70094e293e4fd7b2aba56009782705c56227a23a31",
+        "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b7c0ca9413cecd28a2349f0e0e664105dab3c1dfd0896a83a0420c75b380274b",
+        "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "c3ef9c3395c0774c616dbd01976961e703cfa9c5d3819a71aa45c8d07096cace",
+        "Assets/Olca/Tests/AttackPropertyIconTests.cs": "4c3a64be0cc1f4052340a247e51e267b45bdb1b1e7725080d7481d54c92484fe"
+      },
+      "status": "Before tests; local waiter stopped, existing render job completed before v4 mirror/recompile."
+    },
+    "v4 compile completed failedfalse/compilationFailedfalse per parent; reload pending, related22/full3734 not yet run."
+  ],
+  "limits": [
+    "Scoped static review is not universal runtime or backward-reader-forward-compatibility assurance.",
+    "Final related22/full3734, actual old file read/no-rewrite, new source resistance save roundtrip and three-ratio detail rendering pending.",
+    "Legacy Wind remapping/checkpoint policy remains unresolved; new schema acceptance does not decide migration.",
+    "No production edits, Unity operations or tests performed by reviewer."
+  ],
+  "reviewArtifactOrigin": "system-stage39-independent-source-hashes.json contained full static review; duplicated here under explicitly requested code-review filename.",
+  "reportedValidation": {
+    "related": {
+      "passed": 22,
+      "total": 22,
+      "durationSeconds": 38.7,
+      "freshRun": true,
+      "consoleErrors": 0,
+      "sourceMatch": true
+    },
+    "native": "One Play reload recovery in progress per parent",
+    "full3734": "not run",
+    "reviewScope": "This review remains static; parent test result recorded as reported validation, not reviewer execution."
+  }
+}

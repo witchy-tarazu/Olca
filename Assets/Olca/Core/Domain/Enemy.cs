@@ -404,6 +404,7 @@ namespace Olca.Core.Domain
         /// </summary>
         public Enemy(string enemyId, string name, int maxHp, ElementType element, Vector2Int initialPosition, bool isSummoned = false, ElementResistances resistances = null, TimedStatusResistances statusResistances = null, EnemyPoiseDefinition poiseDefinition = null, EnemyDashContactDefinition dashContact = null)
         {
+            ElementRules.ValidateKnown(element);
             DashContact = dashContact;
             PoiseDefinition = poiseDefinition; Poise = poiseDefinition?.Maximum;
             poiseRecovery.Configure(poiseDefinition?.RecoveryDelayFrames);

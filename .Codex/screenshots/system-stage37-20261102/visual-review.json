@@ -1,0 +1,132 @@
+{
+  "reviewer": "independent_refactor_review",
+  "reviewedAt": "2026-11-02T20:23:37.511350+00:00",
+  "version": "v2",
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "b429855a4052bf8ba4e03207c04249e00adc3679713a2b71152c944f52cde665",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "75033abafffd0ca7e899f66054c285fec7501bc860f30a9f4d70e044f0e2c1d9",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "992ffe9ef66e188c3a3fb841e1ccbda0d5fb7c81149247daf1ae3ea63162cb80",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "28e64a661cdb702e7720c346495346123e0c6b4db400e2ecf07576b4a2a34518"
+  },
+  "viewedImageCount": 9,
+  "imageHashes": [
+    {
+      "file": "system-stage37-hub-fhd.png",
+      "sha256": "8093c3685dcbd8031375b0a7e56d205bb82e40c61fbdd106f7b1f2a13291ff2b",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-hub-4k.png",
+      "sha256": "ee1a8d7551696e63141c0812b75b6dc1fbadccf3b1e86e5a99b6e170eb82aced",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-hub-4by3.png",
+      "sha256": "9f7315b78f3f65f4aa47f7b5851cc4bf7bb18d0ce38a447181a85428c12aef9b",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-style-fhd.png",
+      "sha256": "74a5bf5050fc321ddf0986ae712340045388ad94c89d3fa2a2ba7d1bdee7f5e8",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-style-4k.png",
+      "sha256": "ce764f20b8f9b753865277889762ed1cb7c8a5efa0c41788b80c0c3b45561c0c",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-style-4by3.png",
+      "sha256": "1a3871062d24a4e6af8adc6b9fd1782d07c3e5740cef5629b72ea0fab00658b0",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-return-layout-fhd.png",
+      "sha256": "c3e63795cc59a80d8cbdafd2fb95f7f063fc35a89236222f47d91ac76e366440",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-return-layout-4k.png",
+      "sha256": "0d22174a89db9f2d8f7021bb50625e997148a5216e01ebd27d3b9c4fa9729799",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage37-return-layout-4by3.png",
+      "sha256": "18240b057ff9311079042fca7a6f323601e50073d8eb6b0fb6174b270b005c8e",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "observations": [
+    "全9枚の全景を実見。通常状態と無属性（カムイなし）の新表示は3比率で枠内に収まり、欠字や隣接操作との新たな競合は認めない。",
+    "スタイル画面は現在保存値と候補・変更なしの区分が読め、新ラベルによる比較関係の混同は認めない。",
+    "帰還表示fixtureの再出撃ボタンは2行で表示され、上下の字形が枠に切られず操作名まで読める。",
+    "既存水鏡面材とJiki字体の調和を維持。新表示に伴う必須の見た目退行は確認しなかった。"
+  ],
+  "nativeLocalInspection": [
+    {
+      "file": "system-stage37-return-layout-4k.png",
+      "crop": [
+        1980,
+        1840,
+        3630,
+        2000
+      ],
+      "method": "元PNGを変更せずメモリ上で無拡縮切出し。再出撃2行の字形・上下余白を確認。"
+    },
+    {
+      "file": "system-stage37-style-4k.png",
+      "crop": [
+        470,
+        1090,
+        1570,
+        1200
+      ],
+      "method": "元PNGを変更せずメモリ上で無拡縮切出し。通常状態ラベル字形を確認。"
+    }
+  ],
+  "limits": [
+    "4K全景はviewer縮小表示を含み、明記した局所だけ無拡縮で補足。pixel完全一致の比較ではない。",
+    "hub/styleは主担当が実入口・Raycast経路で取得した画像。レビュー担当はUnity操作・入力・保存検証を実施していない。",
+    "return-layoutは現profileコピーとReturned表示flowの明示fixture。HP0/100はReturnedHp初期値由来で、実PlayerHPや正常帰還transactionの成功を判定しない。",
+    "Core basic ID・旧Name・保存Capture・性能の維持は画像だけでは証明しない。",
+    "過去Stage35/Round57は参考でありmatched-before/afterではない。物理機器・IME・聴感・全条件美的完成は未確認。"
+  ]
+}

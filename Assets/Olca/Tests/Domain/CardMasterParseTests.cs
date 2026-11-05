@@ -90,7 +90,7 @@ namespace Olca.Tests.Domain
             var plain = new Card("p", "検証", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.None, CardSeries.Sword, 10, "検証");
             Assert.AreEqual(AttackProperty.None, plain.ApplyTuning(material).Properties, "素材の性質は追加仕様なしで付与しない");
-            master.Properties = (AttackProperty)8;
+            master.Properties = (AttackProperty)64;
             Assert.Throws<System.ArgumentOutOfRangeException>(() => Card.FromMaster(master));
         }
 

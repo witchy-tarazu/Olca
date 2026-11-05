@@ -1221,6 +1221,7 @@ namespace Olca.Core.Logic.Dungeon
                     w.Write(e.EnemyId); w.Write(e.Name); w.Write(e.MaxHp); w.Write((int)e.Element);
                     // 中立の既存定義hashは維持し、設定済み耐性だけを定義照合に含める。
                     if (!e.Resistances.IsNeutral) { w.Write("resistances"); w.Write(e.Resistances.Fire); w.Write(e.Resistances.Water); w.Write(e.Resistances.Wind); w.Write(e.Resistances.Earth); }
+                    if(e.Resistances.HasAdditionalValues){w.Write("additional-elements-v1");w.Write(e.Resistances.Metal);w.Write(e.Resistances.Wood);w.Write(e.Resistances.Yin);w.Write(e.Resistances.Yang);}
                     // 未設定の旧マップhashは維持。設定値だけを保存復帰時の定義照合へ含める。
                     if (e.StatusResistances.Poison != 0 || e.StatusResistances.Paralyze != 0) { w.Write("timed-status-resistances"); w.Write(e.StatusResistances.Poison); w.Write(e.StatusResistances.Paralyze); }
                     if (e.StatusResistances.Confusion != 0 || e.StatusResistances.Blind != 0) {
@@ -1391,6 +1392,7 @@ namespace Olca.Core.Logic.Dungeon
         private static void Modifier(System.IO.BinaryWriter w, CardModifier m)
         {
             if (m == null || m.AdditionalEffects == null) throw new ArgumentException("効果定義が不完全です");
+            if(m.ElementOverride.HasValue)ElementRules.ValidateKnown(m.ElementOverride.Value);
             w.Write(m.ZeroCost); w.Write(m.CostAdjustment); w.Write(m.BonusDamage); w.Write(m.DamageMultiplier);
             w.Write(m.ElementOverride.HasValue); if (m.ElementOverride.HasValue) w.Write((int)m.ElementOverride.Value);
             w.Write(m.AdditionalEffects.Count);

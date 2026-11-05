@@ -1,0 +1,100 @@
+{
+  "reviewer": "independent_refactor_review",
+  "reviewedAt": "2026-11-02T23:49:58.433989+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "e8eafa1995ee38aae58e47309ffe462025f8e805143f5d754943a0d5fd26d39c",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "318372e7096391e7fefcb697047cca7b5337bdaa05ad3992264f02233bbf307d"
+  },
+  "viewedImageCount": 6,
+  "imageHashes": [
+    {
+      "file": "system-stage40-metal-enemy-fhd.png",
+      "sha256": "7c25d26758c15a9d3127402019e9a46f5cda1b231f4e713c17b5189fd8993064",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage40-metal-enemy-4k.png",
+      "sha256": "300aebf1b5f7ca732cef740200fbba3ae9b82167b061f9a6dee1fbb32dd9bdd8",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage40-metal-enemy-4by3.png",
+      "sha256": "fd35b2740516ea3ae5d70b6cfe11fa47ee78adce6667bd31e272ff9cb4a9d460",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage40-yin-enemy-fhd.png",
+      "sha256": "4584de44d50e28391e6579292e5477402c6918ed78d94c7be8502e00ff226dc6",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage40-yin-enemy-4k.png",
+      "sha256": "e29b6f1ad2fed5757027357702d841f40af4a10ab067b18b3327338eb0fbab7e",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage40-yin-enemy-4by3.png",
+      "sha256": "4b7c47db62930e791ea33b92dd2854eee25bca6bfc8ebcc737df623e685be098",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "observations": [
+    "全6枚を実見。キン/インの対象名・HP200/200・属性名・耐性見出しは明瞭で欠字や切れを認めない。",
+    "Metalはヒ-50/キ0、Yinはヨウ-50、双方キュウカゼ0を全比率で読める。4K等倍局所でも符号と数値が分離しない。",
+    "前の対象/次の対象は同じ水平帯、閉じるは下の独立帯として判別でき、本文や互いのボタンと競合しない。",
+    "元背景/本体/床/前景と詳細面の割合に新たな異常は見当たらない。4:3では2体の外側HP群が段違いになる既存配置が見えるが、本文や循環操作は隠さない。"
+  ],
+  "nativeLocalInspection": [
+    {
+      "file": "system-stage40-metal-enemy-4k.png",
+      "crop": [
+        70,
+        640,
+        1120,
+        825
+      ]
+    },
+    {
+      "file": "system-stage40-yin-enemy-4k.png",
+      "crop": [
+        70,
+        640,
+        1120,
+        825
+      ]
+    }
+  ],
+  "method": "全景はview_image original。4K全景viewer縮小を上記無拡縮メモリcropで補足。原画像不変更。",
+  "limits": [
+    "隔離ルートの新規明示Enemy防御定義/名前/HP/地形fixtureであり、製品データ正式追加ではない。",
+    "静止画では属性計算/保存/循環入力/閉鎖focus/寿命の成功を証明しない。主担当の別実操作証跡と分離。",
+    "matched-beforeではなくpixel完全一致や本体全条件の比率不変を主張しない。",
+    "物理機器/聴感/全景全条件/完全重複個体識別は未検証。"
+  ]
+}

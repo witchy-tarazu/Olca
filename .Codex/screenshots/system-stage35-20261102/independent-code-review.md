@@ -1,0 +1,25 @@
+# Stage35 independent static review
+
+必須未解決: 0（未公開8 C#変更範囲）。テスト・compile/native結果は未確認、実テスト未開始。
+
+探索専用profile/session/atomicStoreは所持・Dungeon保存をwriteしない。20枚保存は今回の明示範囲であり、不完全draft保存を新仕様として追加しない。generationはOpenで再評価し、各操作Liveでも照合。保存直前に最新所持/定義解決を再確認する。
+
+失敗時pending revision/CommitId/内容を固定し、Retryのみ実行可能。取消/編集/削除を拒否して未確定計画を変更しない。同bytes再試行をrevision競合前に判定し、書換え後エラーもreadbackで収束させる。未知IDは読込・一覧で破棄せず、未解決編集は保存拒否する。
+
+Viewは独立管理インスタンス、共通Confirmationで取消後再描画/focusと同frame owner fenceを維持。旧callbackはcontent owner/context/Library Liveで制限される。Controllerの拠点・図鑑・進行操作をlibrary中拒否し、Pause中aliveも拒否する。表示中自然Destroy時はTickが同じSession/draftを用いて再生成し、再書込みしない。
+
+UIはコピーprojectionと専用callbackを利用、探索専用の破棄/削除文言を供給する。専用所持複製やDungeon equipped書換え、探索手札初期化/使用/リロードは行わない。
+
+重点動的確認: 取消focus/同frame旧入力、保存前および書換え後失敗と同計画Retry、generation切替、未知ID/同名hash、所持/Dungeon bytes不変、自然Destroyとhost終了/再入、競合再読込。失敗保存計画の永続復旧や機能全体の保証ではなく、今回実装の範囲として評価する。
+
+Source hashes: system-stage35-independent-source-hashes.json。レビュー役は製品編集・Unity操作・テスト起動・git変更を行っていない。
+
+追加入口修正: initialHub限定を既存CanSelectDungeonが許すReturnedの出撃先へ拡張。aliveはinitialHub/Returned、clearReturnVisible、非Pauseを要求し、旧攻略途中の編集を新たに許可しない。再新規開始不要で既存拠点編集に到達する表示/入口修正。静的必須未解決0、動的未検証。
+
+v2必須未解決1: library戻りcallbackがoutsideClosedFrameを設定しない。CloseでIsOpen=false→拠点復帰後、永続Chromeの旧ManualSave/NewGameイベントが同frameに現IsProgressHub判定を通過できる。静的制御フローで確認した抜けであり、native再現済みではない。returned先頭の閉鎖frame設定を最小修正として推奨。ソース未変更、v3解消確認待ち。
+
+v3解消確認: Controller library returned callback先頭にoutsideClosedFrame=Time.frameCountを設定。既存Chromeの同frame guardと一致し、先の必須指摘を静的に解消。v2 new15成功は修正前履歴、v3明示compile要求後の動的検証は未完。nativeの実Close同frame旧ManualSave/NewGame拒否・Dialog0/savebytes不変の確認待ち。
+
+v4表示差分確認: 探索デッキ入口を外界探索の下(150,305,340)へ移動し、入口ありのHelpは既存overflow helperのreserveAuxiliary=trueで右400を常時予約。破棄文言を既存変換対応「未確定の編成」へ変更。操作callback/可否/保存は不変。今回更新はCardSelectionViewのみ、必須未解決0。v4最終native/関連/全件は未確認、v3はcompileのみ。
+
+v5最小差分: 探索表示modeだけconditionTextの出撃デッキを探索デッキへ置換し、表示用2箇所へ渡す。Core error原文/判定/保存/入力は変更しない。必須未解決0。v5最終動的検証は未確認。v4実経路/終了復元は履歴保存し、hubのpad Pause非対応というhelper前提と再生成直後Canvas待ち不足を製品修正と混同しない。

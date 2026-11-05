@@ -389,8 +389,14 @@ namespace Olca.Core.Domain
         public static OwnedCardCount Resolve(ClearReturnProfile profile,SavedDeckCard slot)
         {
             if(profile==null||slot==null)return null;
-            var matches=profile.Owned.Where(o=>o.Id==slot.Id&&o.Level==slot.Level&&(slot.DefinitionKey==null||Key(o)==slot.DefinitionKey)).ToArray();
-            return matches.Length==1?matches[0]:null;
+            var rows=profile.Owned??throw new ArgumentNullException("source");
+            OwnedCardCount match=null;bool ambiguous=false;
+            // 一時配列を作らず一意性だけ判定する。曖昧でも末尾の不正行を読み飛ばさない。
+            foreach(var owned in rows){
+                if(owned.Id!=slot.Id||owned.Level!=slot.Level||(slot.DefinitionKey!=null&&Key(owned)!=slot.DefinitionKey))continue;
+                if(match!=null)ambiguous=true;else match=owned;
+            }
+            return ambiguous?null:match;
         }
         public static Dictionary<(string Id,ExceedLevel Level),int> AggregateCounts(ClearReturnProfile p) => p.Owned.GroupBy(o=>(o.Id,o.Level)).ToDictionary(g=>g.Key,g=>g.Sum(o=>o.Count));
         public static bool CardMatches(OwnedCardCount owned,Card card) => owned!=null&&card!=null&&owned.Id==card.Id&&owned.Level==card.ExceedLevel&&owned.Name==card.Name&&owned.Rarity==card.Rarity&&
@@ -654,8 +660,9 @@ namespace Olca.Core.Domain
         }
         public static CollectionRecipeRow[] RecipeRows(ClearReturnProfile profile,IEnumerable<CollectionRecipe> recipes,IReadOnlyList<Card> catalog=null)
             => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
+        private static string DisplayElement(ElementType value) => value==ElementType.Metal?"キン":value==ElementType.Wood?"キ":value==ElementType.Yin?"イン":value==ElementType.Yang?"ヨウ":System.Enum.IsDefined(typeof(ElementType),value)?value.ToString():"未定義";
         public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+
-            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+card.Element+"　シリーズ "+card.Series?.Name+
+            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+DisplayElement(card.Element)+"　シリーズ "+card.Series?.Name+
             "\n"+(description??card.Description);
     }
     /// <summary>公開判定後の表示専用値。未公開行には結果定義自体を渡さない。</summary>
@@ -1112,5 +1119,68 @@ namespace Olca.Core.Domain
                 if(Speed==DialogueTextSpeed.Instant){Reveal();return;}if(FastForward||frames>=interval){VisibleElements=Math.Min(elements.Length,VisibleElements+(FastForward?4:1));frames=0;Version++;if(TextComplete)Record();}return;}
             if(FastForward&&!WaitingForChoice&&++frames>=12)Move(Index+1);
         }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>探索デッキだけの独立保存。所持・ダンジョン進行・装備先は複製しない。</summary>
+    public sealed class ExplorationDeckProfile
+    {
+        public int Version=1;
+        public long Revision;
+        public string CommitId;
+        public SavedDepartureDeck[] Decks=Array.Empty<SavedDepartureDeck>();
+        public ExplorationDeckProfile Copy()=>new ExplorationDeckProfile{Version=Version,Revision=Revision,CommitId=CommitId,Decks=Decks?.Select(d=>d?.Copy()).ToArray()};
+        public static void Validate(ExplorationDeckProfile value)
+        {
+            if(value==null||value.Version!=1||value.Revision<0||(value.Revision>0&&!Guid.TryParseExact(value.CommitId,"N",out _))||value.Decks==null||
+                value.Decks.Any(d=>d==null||!Guid.TryParseExact(d.Id,"N",out _)||string.IsNullOrWhiteSpace(d.Name)||d.Cards==null||
+                    d.Cards.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||!Enum.IsDefined(typeof(ExceedLevel),c.Level)||c.Level==ExceedLevel.Lv3))||
+                value.Decks.Select(d=>d.Id).Distinct().Count()!=value.Decks.Length)throw new ArgumentException("探索デッキ保存の形式が不正です");
+        }
+    }
+    public interface IExplorationDeckStore
+    {
+        ExplorationDeckProfile Read(out string error);
+        bool TryWrite(long expectedRevision,ExplorationDeckProfile next,out string error);
+    }
+    /// <summary>保存失敗時は計画を固定して再試行。成功するまで読取済み状態を確定しない。</summary>
+    public sealed class ExplorationDeckSession:IDisposable
+    {
+        private readonly IExplorationDeckStore store;
+        private ExplorationDeckProfile current,pending;
+        private bool disposed,writing;
+        public bool Ready=>!disposed&&current!=null;
+        public bool HasPendingSave=>pending!=null;
+        public string Error{get;private set;}
+        public ExplorationDeckProfile Snapshot=>current?.Copy();
+        public ExplorationDeckSession(IExplorationDeckStore store){this.store=store??throw new ArgumentNullException(nameof(store));Reload();}
+        public bool Reload(){if(disposed||writing||pending!=null)return false;var read=store.Read(out var error);Error=error;if(read==null)return false;ExplorationDeckProfile.Validate(read);current=read.Copy();return true;}
+        private bool Fail(string error){Error=error;return false;}
+        public bool Save(string id,string name,IReadOnlyList<SavedDeckCard> cards,ClearReturnProfile owned)
+        {
+            if(!Ready||writing||pending!=null)return false;
+            var previous=id==null?null:current.Decks.SingleOrDefault(d=>d.Id==id);
+            if(id!=null&&previous==null)return Fail("保存デッキがありません");
+            if(previous==null||name!=previous.Name){name=name?.Trim();if(!SavedDeckNameRules.IsValid(name))return Fail("デッキ名は16文字以内の一行で入力してください");}
+            var deck=new SavedDepartureDeck{Id=id??Guid.NewGuid().ToString("N"),Name=name,Cards=cards?.Select(c=>c?.Copy()).ToArray()};
+            if(!SavedDepartureDeck.TryValidateEquipped(owned,deck,out var error))return Fail(error);
+            var next=current.Copy();next.Decks=previous==null?next.Decks.Concat(new[]{deck}).ToArray():next.Decks.Select(d=>d.Id==id?deck:d).ToArray();return Stage(next);
+        }
+        public bool Delete(string id)
+        {
+            if(!Ready||writing||pending!=null)return false;
+            if(!current.Decks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
+            var next=current.Copy();next.Decks=next.Decks.Where(d=>d.Id!=id).ToArray();return Stage(next);
+        }
+        private bool Stage(ExplorationDeckProfile next){next.Revision=checked(current.Revision+1);next.CommitId=Guid.NewGuid().ToString("N");ExplorationDeckProfile.Validate(next);pending=next;return Retry();}
+        public bool Retry()
+        {
+            if(!Ready||writing||pending==null)return false;writing=true;
+            try{if(!store.TryWrite(current.Revision,pending.Copy(),out var error)){Error=error;return false;}current=pending;pending=null;Error=null;return true;}
+            finally{writing=false;}
+        }
+        public void Dispose(){disposed=true;pending=null;current=null;}
     }
 }

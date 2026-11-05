@@ -1,0 +1,152 @@
+[
+  {
+    "file": "metal-fhd.png",
+    "sha256": "6c9bda09e7afe306fde88fdf07692f020a1f0aadc6191698bc40a043219090e8",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "state": "metal",
+    "fixture": true
+  },
+  {
+    "file": "metal-4k.png",
+    "sha256": "220e833c62d37f04e28aabec330eb67e2cffe69021d883b86e7558a22bd5d6dc",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "state": "metal",
+    "fixture": true
+  },
+  {
+    "file": "metal-4by3.png",
+    "sha256": "e01ace98f4c612026f232a901b15884569f47135091c93946a4cb292e3b58985",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "state": "metal",
+    "fixture": true
+  },
+  {
+    "file": "wood-fhd.png",
+    "sha256": "a975d66527d2153845a34831507f4ade78fa9b8de7bf6f4720a1046a58c8d0b9",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "state": "wood",
+    "fixture": true
+  },
+  {
+    "file": "wood-4k.png",
+    "sha256": "d3e41aead4f222afe58cf96f32366f6f17b158cc50eabd7cbeed858108e5cfdc",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "state": "wood",
+    "fixture": true
+  },
+  {
+    "file": "wood-4by3.png",
+    "sha256": "bd796ccb863e11a4e0085c3f9a02a35b49ee6735dd20301d6c96d3a60854e445",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "state": "wood",
+    "fixture": true
+  },
+  {
+    "file": "yin-fhd.png",
+    "sha256": "ee8a40583e716c67e112a92ce885a0f564fdcf31f24bfdbefb16cad29c16684e",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "state": "yin",
+    "fixture": true
+  },
+  {
+    "file": "yin-4k.png",
+    "sha256": "68de42721472fc6997686a3d27a2e0bef8a54a0c269bdf1ccc3fa1fffdbbc0b7",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "state": "yin",
+    "fixture": true
+  },
+  {
+    "file": "yin-4by3.png",
+    "sha256": "6644a4e97dc40db25b44afa4c538b5b14a4d4b8997d2a1d20b8f68c47c80ab85",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "state": "yin",
+    "fixture": true
+  },
+  {
+    "file": "yang-fhd.png",
+    "sha256": "293ebdb52515e378e7937e4c47c8670fc1ce76b6b23aff42e8227c333306711c",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "state": "yang",
+    "fixture": true
+  },
+  {
+    "file": "yang-4k.png",
+    "sha256": "ed06aed113c10ecf0f2f3797abdb0bc90318ddf1ef66f5dfd5b8b1bb5c638ac3",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "state": "yang",
+    "fixture": true
+  },
+  {
+    "file": "yang-4by3.png",
+    "sha256": "0718adbd8653e61952011c6cb97ba6d89794eb0a93a64cfe88414f18b824f4df",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "state": "yang",
+    "fixture": true
+  },
+  {
+    "file": "seven-resistances-fhd.png",
+    "sha256": "9e5f09b07c76f3d3a6a187a96311446f9edebaf4002daa28a3b67474ce7f66a6",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "state": "seven-resistances",
+    "fixture": true
+  },
+  {
+    "file": "seven-resistances-4k.png",
+    "sha256": "5880c96a565c3aab000835f4755ac13c503123144e3bc3ca73d4ed7b631deeae",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "state": "seven-resistances",
+    "fixture": true
+  },
+  {
+    "file": "seven-resistances-4by3.png",
+    "sha256": "161d901b07706dcfc7bb64e60bff9023f754a28811827975e546633a7c56657b",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "state": "seven-resistances",
+    "fixture": true
+  }
+]

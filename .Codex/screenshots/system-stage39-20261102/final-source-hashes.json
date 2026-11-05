@@ -1,0 +1,14 @@
+{
+  "Assets/Olca/Core/Domain/Card.cs": "c9e6aa327daf551aec3ca9cf1b59edff91b43a8275b37efb057a7d2fa4ce69f1",
+  "Assets/Olca/Core/Domain/Deck.cs": "3bb640177405d8ccdde395ca320af03c87824b60b01672870fb9ccdc208b02fc",
+  "Assets/Olca/Core/Domain/DungeonConfig.cs": "a6e59cd4ccededdfb0712d20b284d65b51f8553481c7bce0aa3ee45e77c8a59c",
+  "Assets/Olca/Core/Domain/ElementType.cs": "3639d14934dcbba4edafd64a001de141ffb0622c8f786c9913c6fe3aadfaf47d",
+  "Assets/Olca/Core/Domain/Enemy.cs": "696c4769a8ab0ee611084ba2ce9f8b2462a3131864f80ffb62a59aa94c3bda98",
+  "Assets/Olca/Core/Logic/Customization/CustomizationAbilities.cs": "fe4e8e5c4c50362d089a23da9abe228f9a22814469e25e94cc6dcadb7660cbfb",
+  "Assets/Olca/Core/Logic/Dungeon/CheckpointPlayerMapper.cs": "c7b52535899b2362be6584c470442089f295409fbdc7299cc0c1a1f726d5b374",
+  "Assets/Olca/Core/Logic/Dungeon/DungeonSystem.cs": "ee6205a858a20dc131fe001e494896675ab267d1aa41b425ab29de60d09d2930",
+  "Assets/Olca/Core/Logic/Dungeon/PortableBattleCatalog.cs": "f2a9377a6043ff108c050c70094e293e4fd7b2aba56009782705c56227a23a31",
+  "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b7c0ca9413cecd28a2349f0e0e664105dab3c1dfd0896a83a0420c75b380274b",
+  "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "c3ef9c3395c0774c616dbd01976961e703cfa9c5d3819a71aa45c8d07096cace",
+  "Assets/Olca/Tests/AttackPropertyIconTests.cs": "5d285428c9ffac89a86b301ce63ca24a0599736fda6c358c999976091421847c"
+}

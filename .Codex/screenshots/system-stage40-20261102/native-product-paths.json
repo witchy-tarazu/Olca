@@ -1,0 +1,1951 @@
+{
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "e8eafa1995ee38aae58e47309ffe462025f8e805143f5d754943a0d5fd26d39c",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "318372e7096391e7fefcb697047cca7b5337bdaa05ad3992264f02233bbf307d"
+  },
+  "initial": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 164558336,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"a7538037cfad4be1b9010c52d2180bbd\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"9eab2b5b6a90479f9cd6561b1e1a70d2\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "texts": [
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      }
+    ]
+  },
+  "legacyBefore": {
+    "cards": [
+      {
+        "element": 0,
+        "hash": "783273C4EBBA0FCD0134AAF913ADB40FC58404C03D7E6A96029A3060C6CFCB3D",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjowLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6Ijc4MzI3M0M0RUJCQTBGQ0QwMTM0QUFGOTEzQURCNDBGQzU4NDA0QzAzRDdFNkE5NjAyOUEzMDYwQzZDRkNCM0QiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8wIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 1,
+        "hash": "7885BE65F98F74A369C6D4BF808F29183CF66FACF4C88BB69E12AAB72C65E11B",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjoxLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6Ijc4ODVCRTY1Rjk4Rjc0QTM2OUM2RDRCRjgwOEYyOTE4M0NGNjZGQUNGNEM4OEJCNjlFMTJBQUI3MkM2NUUxMUIiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8xIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 2,
+        "hash": "B79048C52EA2F661EF2145A8D3F00A12A97F4C41FC40D621A51172DF2CEF5281",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjoyLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6IkI3OTA0OEM1MkVBMkY2NjFFRjIxNDVBOEQzRjAwQTEyQTk3RjRDNDFGQzQwRDYyMUE1MTE3MkRGMkNFRjUyODEiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8yIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 3,
+        "hash": "FFECE248A1C1CE40C10C5C972654556839FA637BFC604BEFD24F03CDF5645A75",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjozLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6IkZGRUNFMjQ4QTFDMUNFNDBDMTBDNUM5NzI2NTQ1NTY4MzlGQTYzN0JGQzYwNEJFRkQyNEYwM0NERjU2NDVBNzUiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8zIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 4,
+        "hash": "49CEE3E9ABFCD4A4C442B7CF2057D7A801C4EDF1586C82AC7130028A2A7C6C81",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50Ijo0LCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6IjQ5Q0VFM0U5QUJGQ0Q0QTRDNDQyQjdDRjIwNTdEN0E4MDFDNEVERjE1ODZDODJBQzcxMzAwMjhBMkE3QzZDODEiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC80IiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      }
+    ],
+    "enemy": "eyJEYXNoIjpudWxsLCJEYXNoVmFsdWUiOm51bGwsIkVsZW1lbnQiOjMsIkhwIjoxMDAsIklkIjoibGVnYWN5LXdpbmQiLCJOYW1lIjoi5pen6aKoIiwiUG9pc2UiOm51bGwsIlJlY292ZXJ5IjpudWxsLCJSZXNpc3RhbmNlcyI6WzExLC0yMiwzMyw0NF0sIlN0YWdnZXIiOm51bGwsIlN0YXR1cyI6WzAsMCwwLDBdLCJYIjo0LCJZIjoxfQ==",
+    "player": "eyJBZGRpdGlvbmFsRWxlbWVudFJlc2lzdGFuY2VzIjpudWxsLCJBdHRhY2tHcm93dGgiOm51bGwsIkF0dGFja1Bvd2VyIjoxMCwiQmxpbmRSZXNpc3RhbmNlIjowLCJDb25mdXNpb25SZXNpc3RhbmNlIjowLCJDdXN0b21TcGVlZCI6MSwiQ3VzdG9taXphdGlvbkFiaWxpdGllcyI6bnVsbCwiRWFydGhSZXNpc3RhbmNlIjo0NCwiRmlyZVJlc2lzdGFuY2UiOjExLCJHcmlkWCI6MCwiR3JpZFkiOjAsIkhwIjo3MCwiTWF4SHAiOjEwMCwiUGFyYWx5emVSZXNpc3RhbmNlIjowLCJQb2lzZSI6MzAsIlBvaXNlUmVjb3ZlcnlGcmFtZXMiOm51bGwsIlBvaXNvblJlc2lzdGFuY2UiOjAsIlBvaXNvbnMiOm51bGwsIlJhd0Jhc2VFYXJ0aFJlc2lzdGFuY2UiOm51bGwsIlJhd0Jhc2VGaXJlUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdhdGVyUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdpbmRSZXNpc3RhbmNlIjpudWxsLCJTdGFnZ2VyRnJhbWVzIjowLCJTdHlsZSI6bnVsbCwiV2F0ZXJSZXNpc3RhbmNlIjotMjIsIldpbmRSZXNpc3RhbmNlIjozM30=",
+    "products": [
+      {
+        "Id": "sword",
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "element": 0
+      },
+      {
+        "Id": "bomb",
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "element": 0
+      },
+      {
+        "Id": "heal",
+        "hash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "element": 0
+      },
+      {
+        "Id": "shield",
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "element": 0
+      },
+      {
+        "Id": "tuning",
+        "hash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "element": 0
+      },
+      {
+        "Id": "fire_sword",
+        "hash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+        "element": 1
+      },
+      {
+        "Id": "sword",
+        "hash": "1FC17C6DD1A12891D4E424446DBC484419BF84315F551CAA860EA16D80D4FA3F",
+        "element": 0
+      },
+      {
+        "Id": "sword",
+        "hash": "32AC390531376B97233A72E81F610D49C32887CC884A40A74BDC7FFD73FA1088",
+        "element": 0
+      },
+      {
+        "Id": "sword",
+        "hash": "7F919139649B76644CB2959C65A028B82890807A18B0B6B9B5B0B1150A240D12",
+        "element": 0
+      },
+      {
+        "Id": "heal",
+        "hash": "D857847C3882E5F5AF41257F5956A686F6F9BE731E3572AC3D00BB25CD514949",
+        "element": 0
+      },
+      {
+        "Id": "shield",
+        "hash": "449732BE6511DAEA9981EF8905159B6A911ECFB94033490501DD5D9695E44D60",
+        "element": 0
+      },
+      {
+        "Id": "fire",
+        "hash": "D27F010885A04B9CF4A5202F89ECA29608A27F74EB2D4081795D0F7541433127",
+        "element": 0
+      },
+      {
+        "Id": "ice",
+        "hash": "464E5E19F7BC90E4F815242C2EA0EC2A78DA4FACB34685DA542C175EA069662B",
+        "element": 0
+      },
+      {
+        "Id": "sword",
+        "hash": "645834FFF3B4C7539190ED3C9ECFE14BC8023AC70FD2DA78127C56A692B7C026",
+        "element": 0
+      },
+      {
+        "Id": "heal",
+        "hash": "ABFA524D5473530ADF1CE54023D99333E2C6413ADA22DAE5102D0110B060A205",
+        "element": 0
+      },
+      {
+        "Id": "shield",
+        "hash": "013087DD985FBA84FFBC4F648CA32635D52CD8346750A87A1D187A02B221CA47",
+        "element": 0
+      },
+      {
+        "Id": "fire",
+        "hash": "130530AB13A4CC2794FBB65232394D0008CED4A85F5BC27B47B97412D4B76CE0",
+        "element": 0
+      },
+      {
+        "Id": "ice",
+        "hash": "BA3EB787AE873E8B02360ACCBD1A1969CDC4B05099EC3ACA8DAC10B7E80C9203",
+        "element": 0
+      }
+    ]
+  },
+  "legacyAfter": {
+    "cards": [
+      {
+        "element": 0,
+        "hash": "783273C4EBBA0FCD0134AAF913ADB40FC58404C03D7E6A96029A3060C6CFCB3D",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjowLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6Ijc4MzI3M0M0RUJCQTBGQ0QwMTM0QUFGOTEzQURCNDBGQzU4NDA0QzAzRDdFNkE5NjAyOUEzMDYwQzZDRkNCM0QiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8wIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 1,
+        "hash": "7885BE65F98F74A369C6D4BF808F29183CF66FACF4C88BB69E12AAB72C65E11B",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjoxLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6Ijc4ODVCRTY1Rjk4Rjc0QTM2OUM2RDRCRjgwOEYyOTE4M0NGNjZGQUNGNEM4OEJCNjlFMTJBQUI3MkM2NUUxMUIiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8xIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 2,
+        "hash": "B79048C52EA2F661EF2145A8D3F00A12A97F4C41FC40D621A51172DF2CEF5281",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjoyLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6IkI3OTA0OEM1MkVBMkY2NjFFRjIxNDVBOEQzRjAwQTEyQTk3RjRDNDFGQzQwRDYyMUE1MTE3MkRGMkNFRjUyODEiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8yIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 3,
+        "hash": "FFECE248A1C1CE40C10C5C972654556839FA637BFC604BEFD24F03CDF5645A75",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50IjozLCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6IkZGRUNFMjQ4QTFDMUNFNDBDMTBDNUM5NzI2NTQ1NTY4MzlGQTYzN0JGQzYwNEJFRkQyNEYwM0NERjU2NDVBNzUiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC8zIiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      },
+      {
+        "element": 4,
+        "hash": "49CEE3E9ABFCD4A4C442B7CF2057D7A801C4EDF1586C82AC7130028A2A7C6C81",
+        "bytes": "eyJBdHRhY2tNb3Rpb25UaW1lIjowLCJDYXRlZ29yeSI6MCwiQ29zdCI6MSwiRGVzY3JpcHRpb24iOiIiLCJFbGVtZW50Ijo0LCJFeGNlZWRMZXZlbCI6MCwiRXh0ZW5kUmVjb3ZlcnlEdXJpbmdEZXJpdmF0aXZlIjpmYWxzZSwiSGFzaCI6IjQ5Q0VFM0U5QUJGQ0Q0QTRDNDQyQjdDRjIwNTdEN0E4MDFDNEVERjE1ODZDODJBQzcxMzAwMjhBMkE3QzZDODEiLCJIaXRJbnZpbmNpYmlsaXR5TXMiOjAsIklkIjoibGVnYWN5LWVsZW1lbnQiLCJJc0luc3RhbnRFZmZlY3QiOmZhbHNlLCJLZXkiOiJsZWdhY3lcL3YxXC80IiwiTW9kaWZpZXIiOnsiQWRkaXRpb25hbEVmZmVjdHMiOltdLCJCb251c0RhbWFnZSI6MCwiQ29zdEFkanVzdG1lbnQiOjAsIkRhbWFnZU11bHRpcGxpZXIiOjEsIkVsZW1lbnRPdmVycmlkZSI6bnVsbCwiWmVyb0Nvc3QiOmZhbHNlfSwiTW92ZURpcmVjdGlvbiI6bnVsbCwiTW92ZURpc3RhbmNlIjowLCJNb3ZlTW90aW9uVGltZSI6MCwiTmFtZSI6IuaknOiovCIsIlBhbmVsQ2hhbmdlVHlwZSI6bnVsbCwiUGVuZXRyYXRpb25Nb2RlIjowLCJQb2lzZURhbWFnZSI6bnVsbCwiUG93ZXIiOjE3LCJQcm9wZXJ0aWVzIjowLCJSYXJpdHkiOjAsIlJlY292ZXJ5Q2FuY2VsQWZ0ZXJGcmFtZXMiOm51bGwsIlJlY292ZXJ5RnJhbWVzIjpudWxsLCJSZWNvdmVyeVRpbWUiOjAsIlNlcmllcyI6IuOBquOBlyIsIlN0YXJ0dXBGcmFtZXMiOm51bGwsIlN0YXJ0dXBUaW1lIjowLCJTdWJDYXRlZ29yeSI6MCwiVGFyZ2V0VHlwZSI6MCwiVHVuaW5nRGVmaW5pdGlvbiI6bnVsbH0="
+      }
+    ],
+    "enemy": "eyJEYXNoIjpudWxsLCJEYXNoVmFsdWUiOm51bGwsIkVsZW1lbnQiOjMsIkhwIjoxMDAsIklkIjoibGVnYWN5LXdpbmQiLCJOYW1lIjoi5pen6aKoIiwiUG9pc2UiOm51bGwsIlJlY292ZXJ5IjpudWxsLCJSZXNpc3RhbmNlcyI6WzExLC0yMiwzMyw0NF0sIlN0YWdnZXIiOm51bGwsIlN0YXR1cyI6WzAsMCwwLDBdLCJYIjo0LCJZIjoxfQ==",
+    "player": "eyJBZGRpdGlvbmFsRWxlbWVudFJlc2lzdGFuY2VzIjpudWxsLCJBdHRhY2tHcm93dGgiOm51bGwsIkF0dGFja1Bvd2VyIjoxMCwiQmxpbmRSZXNpc3RhbmNlIjowLCJDb25mdXNpb25SZXNpc3RhbmNlIjowLCJDdXN0b21TcGVlZCI6MSwiQ3VzdG9taXphdGlvbkFiaWxpdGllcyI6bnVsbCwiRWFydGhSZXNpc3RhbmNlIjo0NCwiRmlyZVJlc2lzdGFuY2UiOjExLCJHcmlkWCI6MCwiR3JpZFkiOjAsIkhwIjo3MCwiTWF4SHAiOjEwMCwiUGFyYWx5emVSZXNpc3RhbmNlIjowLCJQb2lzZSI6MzAsIlBvaXNlUmVjb3ZlcnlGcmFtZXMiOm51bGwsIlBvaXNvblJlc2lzdGFuY2UiOjAsIlBvaXNvbnMiOm51bGwsIlJhd0Jhc2VFYXJ0aFJlc2lzdGFuY2UiOm51bGwsIlJhd0Jhc2VGaXJlUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdhdGVyUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdpbmRSZXNpc3RhbmNlIjpudWxsLCJTdGFnZ2VyRnJhbWVzIjowLCJTdHlsZSI6bnVsbCwiV2F0ZXJSZXNpc3RhbmNlIjotMjIsIldpbmRSZXNpc3RhbmNlIjozM30=",
+    "products": [
+      {
+        "Id": "sword",
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "element": 0
+      },
+      {
+        "Id": "bomb",
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "element": 0
+      },
+      {
+        "Id": "heal",
+        "hash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "element": 0
+      },
+      {
+        "Id": "shield",
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "element": 0
+      },
+      {
+        "Id": "tuning",
+        "hash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "element": 0
+      },
+      {
+        "Id": "fire_sword",
+        "hash": "592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5",
+        "element": 1
+      },
+      {
+        "Id": "sword",
+        "hash": "1FC17C6DD1A12891D4E424446DBC484419BF84315F551CAA860EA16D80D4FA3F",
+        "element": 0
+      },
+      {
+        "Id": "sword",
+        "hash": "32AC390531376B97233A72E81F610D49C32887CC884A40A74BDC7FFD73FA1088",
+        "element": 0
+      },
+      {
+        "Id": "sword",
+        "hash": "7F919139649B76644CB2959C65A028B82890807A18B0B6B9B5B0B1150A240D12",
+        "element": 0
+      },
+      {
+        "Id": "heal",
+        "hash": "D857847C3882E5F5AF41257F5956A686F6F9BE731E3572AC3D00BB25CD514949",
+        "element": 0
+      },
+      {
+        "Id": "shield",
+        "hash": "449732BE6511DAEA9981EF8905159B6A911ECFB94033490501DD5D9695E44D60",
+        "element": 0
+      },
+      {
+        "Id": "fire",
+        "hash": "D27F010885A04B9CF4A5202F89ECA29608A27F74EB2D4081795D0F7541433127",
+        "element": 0
+      },
+      {
+        "Id": "ice",
+        "hash": "464E5E19F7BC90E4F815242C2EA0EC2A78DA4FACB34685DA542C175EA069662B",
+        "element": 0
+      },
+      {
+        "Id": "sword",
+        "hash": "645834FFF3B4C7539190ED3C9ECFE14BC8023AC70FD2DA78127C56A692B7C026",
+        "element": 0
+      },
+      {
+        "Id": "heal",
+        "hash": "ABFA524D5473530ADF1CE54023D99333E2C6413ADA22DAE5102D0110B060A205",
+        "element": 0
+      },
+      {
+        "Id": "shield",
+        "hash": "013087DD985FBA84FFBC4F648CA32635D52CD8346750A87A1D187A02B221CA47",
+        "element": 0
+      },
+      {
+        "Id": "fire",
+        "hash": "130530AB13A4CC2794FBB65232394D0008CED4A85F5BC27B47B97412D4B76CE0",
+        "element": 0
+      },
+      {
+        "Id": "ice",
+        "hash": "BA3EB787AE873E8B02360ACCBD1A1969CDC4B05099EC3ACA8DAC10B7E80C9203",
+        "element": 0
+      }
+    ]
+  },
+  "actualFiles": {
+    "fixtureOnly": true,
+    "rows": [
+      {
+        "adjusted": false,
+        "ActivePath": "/workspace/olca-validation-20261024/save/system-stage40-40001/affinity-files/baseline/active.json",
+        "hash": "5408D4C764972E8A743252444B6A5F49E359F1482C1AAE577A4E8803FE83F9E0",
+        "checks": [
+          {
+            "hp": 145,
+            "enemyHp": 145,
+            "water": -50,
+            "metal": 50,
+            "yang": -50
+          },
+          {
+            "hp": 145,
+            "enemyHp": 145,
+            "water": -50,
+            "metal": 50,
+            "yang": -50
+          },
+          {
+            "hp": 145,
+            "enemyHp": 145,
+            "water": -50,
+            "metal": 50,
+            "yang": -50
+          }
+        ],
+        "player": "eyJBZGRpdGlvbmFsRWxlbWVudFJlc2lzdGFuY2VzIjpbNTAsMCwwLDBdLCJBdHRhY2tHcm93dGgiOm51bGwsIkF0dGFja1Bvd2VyIjoxMCwiQmxpbmRSZXNpc3RhbmNlIjowLCJDb25mdXNpb25SZXNpc3RhbmNlIjowLCJDdXN0b21TcGVlZCI6MSwiQ3VzdG9taXphdGlvbkFiaWxpdGllcyI6bnVsbCwiRWFydGhSZXNpc3RhbmNlIjowLCJGaXJlUmVzaXN0YW5jZSI6MCwiR3JpZFgiOjAsIkdyaWRZIjowLCJIcCI6MjAwLCJNYXhIcCI6MjAwLCJQYXJhbHl6ZVJlc2lzdGFuY2UiOjAsIlBvaXNlIjozMCwiUG9pc2VSZWNvdmVyeUZyYW1lcyI6bnVsbCwiUG9pc29uUmVzaXN0YW5jZSI6MCwiUG9pc29ucyI6W10sIlJhd0Jhc2VFYXJ0aFJlc2lzdGFuY2UiOm51bGwsIlJhd0Jhc2VGaXJlUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdhdGVyUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdpbmRSZXNpc3RhbmNlIjpudWxsLCJTdGFnZ2VyRnJhbWVzIjowLCJTdHlsZSI6eyJDYW5jZWxBZnRlckZyYW1lcyI6bnVsbCwiQ2hhcmdlRnJhbWVzIjo2MCwiQ2hhcmdlZFBlcmNlbnQiOjIwMCwiRWxlbWVudCI6MSwiSGFzQXR0YWNrIjp0cnVlLCJIYXNUaW1pbmciOmZhbHNlLCJJZCI6ImV4cGxpY2l0LWZpcmUiLCJJbnRlcnZhbEZyYW1lcyI6MTIsIk5hbWUiOiLjgrHjg7Pjgrfjg6fjgqYiLCJOb3JtYWxQZXJjZW50IjoxMDAsIlJlY292ZXJ5RnJhbWVzIjowLCJTdGFydHVwRnJhbWVzIjowLCJUcmFuc2Zvcm1hdGlvblBoYXNlQm9udXMiOm51bGwsIlRyYW5zZm9ybWF0aW9uUGhhc2VCb251c1ZlcnNpb24iOm51bGx9LCJXYXRlclJlc2lzdGFuY2UiOi01MCwiV2luZFJlc2lzdGFuY2UiOjB9",
+        "mapHash": "7621E43C0DC2291D4BB91124FCC20EC18D68C95F569393700B28F96BD8D6B9C5"
+      },
+      {
+        "adjusted": true,
+        "ActivePath": "/workspace/olca-validation-20261024/save/system-stage40-40001/affinity-files/adjusted/active.json",
+        "hash": "9D7C84CE85EBDF2E81D5092FC3CED427CD71DD1BCA5330406C91090538C4B8AE",
+        "checks": [
+          {
+            "hp": 170,
+            "enemyHp": 145,
+            "water": 17,
+            "metal": 13,
+            "yang": -50
+          },
+          {
+            "hp": 170,
+            "enemyHp": 145,
+            "water": 17,
+            "metal": 13,
+            "yang": -50
+          },
+          {
+            "hp": 170,
+            "enemyHp": 145,
+            "water": 17,
+            "metal": 13,
+            "yang": -50
+          }
+        ],
+        "player": "eyJBZGRpdGlvbmFsRWxlbWVudFJlc2lzdGFuY2VzIjpbMTMsMCwwLDBdLCJBdHRhY2tHcm93dGgiOm51bGwsIkF0dGFja1Bvd2VyIjoxMCwiQmxpbmRSZXNpc3RhbmNlIjowLCJDb25mdXNpb25SZXNpc3RhbmNlIjowLCJDdXN0b21TcGVlZCI6MSwiQ3VzdG9taXphdGlvbkFiaWxpdGllcyI6bnVsbCwiRWFydGhSZXNpc3RhbmNlIjowLCJGaXJlUmVzaXN0YW5jZSI6MCwiR3JpZFgiOjAsIkdyaWRZIjowLCJIcCI6MjAwLCJNYXhIcCI6MjAwLCJQYXJhbHl6ZVJlc2lzdGFuY2UiOjAsIlBvaXNlIjozMCwiUG9pc2VSZWNvdmVyeUZyYW1lcyI6bnVsbCwiUG9pc29uUmVzaXN0YW5jZSI6MCwiUG9pc29ucyI6W10sIlJhd0Jhc2VFYXJ0aFJlc2lzdGFuY2UiOm51bGwsIlJhd0Jhc2VGaXJlUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdhdGVyUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdpbmRSZXNpc3RhbmNlIjpudWxsLCJTdGFnZ2VyRnJhbWVzIjowLCJTdHlsZSI6eyJDYW5jZWxBZnRlckZyYW1lcyI6bnVsbCwiQ2hhcmdlRnJhbWVzIjo2MCwiQ2hhcmdlZFBlcmNlbnQiOjIwMCwiRWxlbWVudCI6MSwiSGFzQXR0YWNrIjp0cnVlLCJIYXNUaW1pbmciOmZhbHNlLCJJZCI6ImV4cGxpY2l0LWZpcmUiLCJJbnRlcnZhbEZyYW1lcyI6MTIsIk5hbWUiOiLjgrHjg7Pjgrfjg6fjgqYiLCJOb3JtYWxQZXJjZW50IjoxMDAsIlJlY292ZXJ5RnJhbWVzIjowLCJTdGFydHVwRnJhbWVzIjowLCJUcmFuc2Zvcm1hdGlvblBoYXNlQm9udXMiOm51bGwsIlRyYW5zZm9ybWF0aW9uUGhhc2VCb251c1ZlcnNpb24iOm51bGx9LCJXYXRlclJlc2lzdGFuY2UiOjE3LCJXaW5kUmVzaXN0YW5jZSI6MH0=",
+        "mapHash": "7621E43C0DC2291D4BB91124FCC20EC18D68C95F569393700B28F96BD8D6B9C5"
+      }
+    ],
+    "sourceRules": "Weakness-50/player advantage50/enemy advantage0; adjusted complete base not added; resolved persistence no re-derivation"
+  },
+  "beforeFile": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 164558336,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"a7538037cfad4be1b9010c52d2180bbd\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"9eab2b5b6a90479f9cd6561b1e1a70d2\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "texts": [
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      }
+    ]
+  },
+  "afterFile": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "dungeonCore": 164558336,
+    "phase": "Dungeon",
+    "hp": 100,
+    "attack": 10,
+    "position": 0,
+    "frame": 0,
+    "styleId": "basic",
+    "storedStyleName": "基本 / 無属性",
+    "styleCapture": "{\"Id\":\"basic\",\"Name\":\"基本 / 無属性\",\"Element\":0,\"HasAttack\":false,\"HasTiming\":false,\"NormalPercent\":100,\"ChargedPercent\":200,\"ChargeFrames\":60,\"IntervalFrames\":12,\"StartupFrames\":0,\"RecoveryFrames\":0}",
+    "styleElement": "None",
+    "profile": "{\"Version\":1,\"Revision\":1,\"Experience\":0,\"Tokens\":0,\"Level\":1,\"ReturnedHp\":0,\"CommitId\":\"a7538037cfad4be1b9010c52d2180bbd\",\"CheckpointGeneration\":\"\",\"ClearedDungeons\":[],\"EquippedDeckId\":\"9eab2b5b6a90479f9cd6561b1e1a70d2\",\"RevealedRecipes\":[],\"SelectedStyleId\":\"\"}",
+    "revision": 1,
+    "selectedStyle": null,
+    "owned": [
+      {
+        "Id": "sword",
+        "Name": "ソード",
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      },
+      {
+        "Id": "tuning",
+        "Name": "チューニング",
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+        "Rarity": 0,
+        "Level": 0,
+        "Count": 4
+      }
+    ],
+    "outsideFrame": 0,
+    "outsidePosition": 480000,
+    "outsideRegistered": false,
+    "roots": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "events": 1,
+    "audio": 3,
+    "dialogs": 0,
+    "focus": "DungeonChoice_0",
+    "texts": [
+      {
+        "name": "DungeonSelectionTitle",
+        "text": "シュツゲキサキをエラぶ",
+        "font": "JikiTourai",
+        "size": 36,
+        "missing": []
+      },
+      {
+        "name": "DungeonSelectionHelp",
+        "text": "スタイル: ツウジョウジョウタイ / ムゾクセイ（カムイなし）",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationDeckEntryLabel",
+        "text": "タンサク デッキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "マスカイホウ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ホゾン（スロット1）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "SelectDepartureStyleLabel",
+        "text": "スタイルをヘンコウ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ポーズ",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "OutsideExplorationEntryLabel",
+        "text": "ガイカイ タンサク",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CurrencyBalance",
+        "text": "ツウカ: 0",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "ConfirmDungeonSelectionLabel",
+        "text": "このイきサキでシュツゲキ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "ExplorationHpText",
+        "text": "HP: 100 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "InstructionText",
+        "text": "ジドウゼンシン  Space: ジャンプ  LeftShift / RightShift: ダッシュ  Escape: ポーズ",
+        "font": "LegacyRuntime",
+        "size": 18,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonChoice_0Label",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "はじめから",
+        "font": "JikiTourai",
+        "size": 30,
+        "missing": []
+      },
+      {
+        "name": "DungeonPreviewInformation",
+        "text": "テキゾクセイ: ムゾクセイ　チケイ: ノーマル / コオリ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      },
+      {
+        "name": "OpenTokenExchangeLabel",
+        "text": "トークンコウカンジョ",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "CancelDungeonSelectionLabel",
+        "text": "ヘンコウせずモドる",
+        "font": "JikiTourai",
+        "size": 25,
+        "missing": []
+      },
+      {
+        "name": "FloorProgressText",
+        "text": "1カイ  0 / 100",
+        "font": "JikiTourai",
+        "size": 28,
+        "missing": []
+      },
+      {
+        "name": "Label",
+        "text": "カードズカン",
+        "font": "JikiTourai",
+        "size": 26,
+        "missing": []
+      },
+      {
+        "name": "DungeonCardCounts",
+        "text": "デッキ: 20マイ\nカクトク: 0マイ",
+        "font": "JikiTourai",
+        "size": 24,
+        "missing": []
+      }
+    ],
+    "buttons": [
+      {
+        "name": "OpenTokenExchange",
+        "text": "トークンコウカンジョ",
+        "interactable": true
+      },
+      {
+        "name": "DungeonChoice_0",
+        "text": "センタクチュウ  テストダンジョン　ミクリア",
+        "interactable": true
+      },
+      {
+        "name": "ManualSaveButton",
+        "text": "ホゾン（スロット1）",
+        "interactable": true
+      },
+      {
+        "name": "ExplorationDeckEntry",
+        "text": "タンサク デッキ",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationUnlocks",
+        "text": "マスカイホウ",
+        "interactable": false
+      },
+      {
+        "name": "SelectDepartureStyle",
+        "text": "スタイルをヘンコウ",
+        "interactable": true
+      },
+      {
+        "name": "OutsideExplorationEntry",
+        "text": "ガイカイ タンサク",
+        "interactable": true
+      },
+      {
+        "name": "NewGameButton",
+        "text": "はじめから",
+        "interactable": true
+      },
+      {
+        "name": "ConfirmDungeonSelection",
+        "text": "このイきサキでシュツゲキ",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "text": "ポーズ",
+        "interactable": true
+      },
+      {
+        "name": "CancelDungeonSelection",
+        "text": "ヘンコウせずモドる",
+        "interactable": true
+      },
+      {
+        "name": "CardCollectionButton",
+        "text": "カードズカン",
+        "interactable": true
+      },
+      {
+        "name": "OpenCustomizationEditor",
+        "text": "ソウビ・パーツ\n（ミトウロク）",
+        "interactable": false
+      }
+    ]
+  },
+  "actors": {
+    "phase": "Battle",
+    "enemies": [
+      {
+        "EnemyId": "enemy_10",
+        "Name": "キン ケンショウ",
+        "element": 5,
+        "CurrentHp": 200,
+        "fire": -50,
+        "wood": 0,
+        "yang": 0
+      },
+      {
+        "EnemyId": "enemy_11",
+        "Name": "イン ケンショウ",
+        "element": 7,
+        "CurrentHp": 200,
+        "fire": 0,
+        "wood": 0,
+        "yang": -50
+      }
+    ],
+    "core": 678946426,
+    "roots": 1
+  },
+  "before": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -1568812032
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -2054934756
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -315963108
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -659181548
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 415427828
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 0,
+    "modal": false,
+    "dialogs": 0,
+    "owner": false,
+    "blocked": false,
+    "text": null,
+    "normalized": null,
+    "content": null,
+    "viewport": null,
+    "focus": "ConfirmDungeonSelection",
+    "focusId": -334341042,
+    "paused": false,
+    "root": -334337576,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "opened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -1568812032
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -2054934756
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -315963108
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -659181548
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 415427828
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": true,
+    "detailsVersion": 1,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "キン ケンショウ\nHP 200/200 / ゾクセイ キン\nキョウジンド ミテイギ\nゾクセイタイセイ (%)\nヒ -50 / ミズ 0 / キュウカゼ 0 / ツチ 0\nキン 0 / キ 0 / イン 0 / ヨウ 0\nジョウタイタイセイ (%)\nドク 0 / マヒ 0 / コンラン 0 / モウモク 0\n\nジョウタイイジョウ: なし\nボウギョ・ホジョ: なし",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -334342402,
+    "paused": false,
+    "root": -334337576,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "PreviousInspection",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "NextInspection",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "cycled": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -1568812032
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -2054934756
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -315963108
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -659181548
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 415427828
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": true,
+    "detailsVersion": 2,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "イン ケンショウ\nHP 200/200 / ゾクセイ イン\nキョウジンド ミテイギ\nゾクセイタイセイ (%)\nヒ 0 / ミズ 0 / キュウカゼ 0 / ツチ 0\nキン 0 / キ 0 / イン 0 / ヨウ -50\nジョウタイタイセイ (%)\nドク 0 / マヒ 0 / コンラン 0 / モウモク 0\n\nジョウタイイジョウ: なし\nボウギョ・ホジョ: なし",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "NextInspection",
+    "focusId": -334342456,
+    "paused": false,
+    "root": -334337576,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "PreviousInspection",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "NextInspection",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "closed": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -1568812032
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -2054934756
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -315963108
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -659181548
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 415427828
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": true,
+    "detailsVersion": 4,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "PauseButton",
+    "focusId": -334340410,
+    "paused": false,
+    "root": -334337576,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "RestoreCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectEnemies",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "InspectPlayerHidden",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "reopened": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -1568812032
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -2054934756
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -315963108
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -659181548
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 415427828
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": true,
+    "detailsVersion": 5,
+    "modal": true,
+    "dialogs": 1,
+    "owner": true,
+    "blocked": true,
+    "text": "キン ケンショウ\nHP 200/200 / ゾクセイ キン\nキョウジンド ミテイギ\nゾクセイタイセイ (%)\nヒ -50 / ミズ 0 / キュウカゼ 0 / ツチ 0\nキン 0 / キ 0 / イン 0 / ヨウ 0\nジョウタイタイセイ (%)\nドク 0 / マヒ 0 / コンラン 0 / モウモク 0\n\nジョウタイイジョウ: なし\nボウギョ・ホジョ: なし",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "CloseCustomPadDetails",
+    "focusId": -334342402,
+    "paused": false,
+    "root": -334337576,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "CloseCustomPadDetails",
+        "interactable": true
+      },
+      {
+        "name": "PreviousInspection",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "NextInspection",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "after": {
+    "playing": true,
+    "screen": [
+      640,
+      360
+    ],
+    "phase": "Battle",
+    "frame": 0,
+    "custom": true,
+    "confirming": false,
+    "hand": [
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -1568812032
+      },
+      {
+        "Id": "shield",
+        "Name": "シールド",
+        "reference": -2054934756
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": -315963108
+      },
+      {
+        "Id": "heal",
+        "Name": "ヒール",
+        "reference": -659181548
+      },
+      {
+        "Id": "bomb",
+        "Name": "ボム",
+        "reference": 415427828
+      }
+    ],
+    "selected": [],
+    "cost": 0,
+    "hidden": false,
+    "detailsVersion": 6,
+    "modal": false,
+    "dialogs": 0,
+    "owner": true,
+    "blocked": false,
+    "text": "",
+    "normalized": 0,
+    "content": 649.2,
+    "viewport": 649.2,
+    "focus": "PauseButton",
+    "focusId": -334340410,
+    "paused": false,
+    "root": -334337576,
+    "events": 1,
+    "cameras": 1,
+    "listeners": 1,
+    "audio": 3,
+    "availableTransforms": 0,
+    "buttons": [
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "TouchCardUseButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "SelectionIndicator",
+        "interactable": true
+      },
+      {
+        "name": "HideCustomPresentation",
+        "interactable": true
+      },
+      {
+        "name": "BasicAttackButton",
+        "interactable": false
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "PauseButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "UndoCustomizationButton",
+        "interactable": false
+      },
+      {
+        "name": "ConfirmButton",
+        "interactable": true
+      },
+      {
+        "name": "HandCardViewPrefab(Clone)",
+        "interactable": true
+      },
+      {
+        "name": "InspectCombatants",
+        "interactable": true
+      }
+    ]
+  },
+  "saveBeforeDetails": {
+    "progress/progress.json": "b3ab85d359c4fe5aa98b25b2b77026b3b0112dbb72c30ae9d9b1ac1f43948922",
+    "affinity-files/adjusted/active.json": "9d7c84ce85ebdf2e81d5092fc3ced427cd71dd1bca5330406c91090538c4b8ae",
+    "affinity-files/baseline/active.json": "5408d4c764972e8a743252444b6a5f49e359f1482c1aae577a4e8803fe83f9e0",
+    "explicit-host/progress/progress.json": "e1adc9d484735a6bff80e4ac1ea30e90cea1b2a5c4fdc75d04bcd8ae1d874493",
+    "explicit-host/checkpoints/runs/0734014750e847af8b22742f3be4a0b4/floors.active.json": "a389b7f3e8085eca65b1f3a80aa21b4234d566d5bed918fd5ae2a0615f643c17",
+    "explicit-host/checkpoints/runs/0734014750e847af8b22742f3be4a0b4/floors.backup.json": "142ef09a002ac631099afd8200dc45745aeabc62c24ebf0c37501e70730e80f9"
+  },
+  "saveAfterDetails": {
+    "progress/progress.json": "b3ab85d359c4fe5aa98b25b2b77026b3b0112dbb72c30ae9d9b1ac1f43948922",
+    "affinity-files/adjusted/active.json": "9d7c84ce85ebdf2e81d5092fc3ced427cd71dd1bca5330406c91090538c4b8ae",
+    "affinity-files/baseline/active.json": "5408d4c764972e8a743252444b6a5f49e359f1482c1aae577a4e8803fe83f9e0",
+    "explicit-host/progress/progress.json": "e1adc9d484735a6bff80e4ac1ea30e90cea1b2a5c4fdc75d04bcd8ae1d874493",
+    "explicit-host/checkpoints/runs/0734014750e847af8b22742f3be4a0b4/floors.active.json": "a389b7f3e8085eca65b1f3a80aa21b4234d566d5bed918fd5ae2a0615f643c17",
+    "explicit-host/checkpoints/runs/0734014750e847af8b22742f3be4a0b4/floors.backup.json": "142ef09a002ac631099afd8200dc45745aeabc62c24ebf0c37501e70730e80f9"
+  },
+  "scope": "Public new defense definition -> fresh Player/CoreFactory/FileCheckpoint; registered explicit enemy route -> normal product departure/contact/Custom/InspectEnemies. Fixture stats/maps only; old production and old checkpoint unchanged; old constructors and current main Player generator not opted in.",
+  "physicalNotRun": true
+}

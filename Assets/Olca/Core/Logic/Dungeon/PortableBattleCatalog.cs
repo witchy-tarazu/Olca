@@ -90,10 +90,10 @@ namespace Olca.Core.Logic.Dungeon
     {
         public string Id,Name;public int Hp,Element,X,Y;public int[] Resistances,Status;public int? Poise,Stagger,Recovery,Dash,DashValue;
         public static PortableEnemyDefinition Capture(Enemy e)=>new PortableEnemyDefinition{Id=e.EnemyId,Name=e.Name,Hp=e.MaxHp,Element=(int)e.Element,X=e.GridPosition.X,Y=e.GridPosition.Y,
-            Resistances=new[]{e.Resistances.Fire,e.Resistances.Water,e.Resistances.Wind,e.Resistances.Earth},Status=new[]{e.StatusResistances.Poison,e.StatusResistances.Paralyze,e.StatusResistances.Confusion,e.StatusResistances.Blind},
+            Resistances=e.Resistances.HasAdditionalValues?new[]{e.Resistances.Fire,e.Resistances.Water,e.Resistances.Wind,e.Resistances.Earth,e.Resistances.Metal,e.Resistances.Wood,e.Resistances.Yin,e.Resistances.Yang}:new[]{e.Resistances.Fire,e.Resistances.Water,e.Resistances.Wind,e.Resistances.Earth},Status=new[]{e.StatusResistances.Poison,e.StatusResistances.Paralyze,e.StatusResistances.Confusion,e.StatusResistances.Blind},
             Poise=e.PoiseDefinition?.Maximum,Stagger=e.PoiseDefinition?.StaggerFrames,Recovery=e.PoiseDefinition?.RecoveryDelayFrames,Dash=(int?)e.DashContact?.Outcome,DashValue=e.DashContact?.Value};
-        public Enemy Restore(){if(Resistances?.Length!=4||Status?.Length!=4)throw new ArgumentException("敵耐性が欠損しています");
-            return new Enemy(Id,Name,Hp,(ElementType)Element,new Vector2Int(X,Y),resistances:new ElementResistances(Resistances[0],Resistances[1],Resistances[2],Resistances[3]),
+        public Enemy Restore(){if((Resistances?.Length!=4&&Resistances?.Length!=8)||Status?.Length!=4)throw new ArgumentException("敵耐性が欠損しています");
+            return new Enemy(Id,Name,Hp,(ElementType)Element,new Vector2Int(X,Y),resistances:ElementResistances.Restore(Resistances[0],Resistances[1],Resistances[2],Resistances[3],Resistances.Length==8?new[]{Resistances[4],Resistances[5],Resistances[6],Resistances[7]}:null),
                 statusResistances:new TimedStatusResistances(Status[0],Status[1],Status[2],Status[3]),poiseDefinition:Poise.HasValue?new EnemyPoiseDefinition(Poise.Value,Stagger.Value,Recovery):null,
                 dashContact:Dash.HasValue?new EnemyDashContactDefinition((DashContactOutcome)Dash.Value,DashValue.Value):null);}
     }

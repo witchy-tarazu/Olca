@@ -1,0 +1,15 @@
+{
+  "reviewer": "equipment_save_review + independent_refactor_review",
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "e8eafa1995ee38aae58e47309ffe462025f8e805143f5d754943a0d5fd26d39c",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "318372e7096391e7fefcb697047cca7b5337bdaa05ad3992264f02233bbf307d"
+  },
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "details": "independent-code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "details": "visual-review.json"
+  }
+}

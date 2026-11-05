@@ -1,0 +1,165 @@
+{
+  "reviewer": "independent_refactor_review",
+  "reviewedAt": "2026-11-03T01:03:39.068270+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Application/Management/GameSystem.cs": "7f9f1078f5f33ebb04358116cc1496f9c0055e617a276671bc7825f81809cbf7",
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "152dfd02c77bd099c978428a914e43417de08d8e39c4fe55d3c70a132eecc81b",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "830fc79ad66f9e093705cfc5865040555770e583acac7623faec5e4cdcee59bb"
+  },
+  "viewedImageCount": 12,
+  "imageHashes": [
+    {
+      "file": "system-stage41-repro-before-newgame-fhd.png",
+      "sha256": "0059922804de96024d3b468321db07790edb3b34744b3fc114c11aa076711da2",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-repro-before-newgame-4k.png",
+      "sha256": "ecd9a9dd57193ec67696b1b516a4aaced452c7f1bb7df983479abf200626e6e7",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-repro-before-newgame-4by3.png",
+      "sha256": "42c409d9db37e042f660da6016530771c85abeb71c26187c8865489851e7ef5f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-repro-after-newgame-fhd.png",
+      "sha256": "6335659dce56fec0339bb8de348172057356dced6cca95e28053436ee818c4f2",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-repro-after-newgame-4k.png",
+      "sha256": "71972a922d6361057bbbccb98b34a505f4c24e28eb1fc813c30d9cacbdad5233",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-repro-after-newgame-4by3.png",
+      "sha256": "dbba0ad2c38fa2ad36081e101d7df3a817312118bde6c988438a2b298dd48f64",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-final-before-newgame-fhd.png",
+      "sha256": "405d62ab8585ccac54de4a5acf3cbb69271da88592a2d33214a8625b79eac5a8",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-final-before-newgame-4k.png",
+      "sha256": "09b31832203997fb4f24357ef3ad2b78e405b474ebee1299b37ed66315f45640",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-final-before-newgame-4by3.png",
+      "sha256": "9da58e1dff46f549f9f223fb90b45b59d0f6d849d6f018c64c46f62e6bfe2848",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-final-after-newgame-fhd.png",
+      "sha256": "743123d80e5bbb676ecab5ccf426e55d92ad2e35b51710dad00c55d8ff66f553",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-final-after-newgame-4k.png",
+      "sha256": "b19e4dceeba850928f89393f151b960cac3a8b2880dd710f97d60bc8e6559e51",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage41-final-after-newgame-4by3.png",
+      "sha256": "da100043c193ff49e1d7466523f43b1c226e27f120e8ce167e758b4f8a896c52",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "observations": [
+    "全12画像を実見。旧再現の前後は80/100と3手札が残り、最終成功後は100/100とデッキ未登録/3本のダッシュへ変化している。これは意図された新世代の表示差であり見た目退行として扱わない。",
+    "最終前後でヘッダー/ポーズ/戻る/ゲージ帯/手札欄のアンカーと文字の読みやすさに新たな競合や欠字は認めない。",
+    "最終成功後の空欄に旧miniや名前/コストの残像は見当たらない。4K等倍局所でも未登録とダッシュが明瞭。",
+    "本体の灰黒衣装/見かけの縦横比/足底と床の接地/背景と床の構成に新しい歪みや切れは認めない。検証足場位置が変わるのは新規開始位置の差として区別。",
+    "前段で既知の検証足場ラベルが本体の脚に隠れる制限は修正前/最終前に残る。今回の寿命修正による新規退行ではない。"
+  ],
+  "nativeLocalInspection": [
+    {
+      "file": "system-stage41-final-before-newgame-4k.png",
+      "crop": [
+        2430,
+        250,
+        3650,
+        450
+      ]
+    },
+    {
+      "file": "system-stage41-final-after-newgame-4k.png",
+      "crop": [
+        2430,
+        250,
+        3650,
+        450
+      ]
+    },
+    {
+      "file": "system-stage41-final-after-newgame-4k.png",
+      "crop": [
+        1790,
+        1210,
+        2050,
+        1720
+      ]
+    }
+  ],
+  "method": "全景をview_image originalで実見。4K全景viewer縮小を上記無拡縮メモリcropで補足。原PNGは変更しない。",
+  "limits": [
+    "旧/新規世代の論理frame・位置は異なる。全12枚が同frameであるとは主張しない。各状態の3比率だけ主担当が凍結/Canvas更新済みとして取得したもの。",
+    "静止画はnewgame取消/失敗/再試行、旧runtime破棄、保存整合や入力成功を証明しない。これらは主担当の別receiptに属する。",
+    "検証地形と隔離fixture手札であり製品マップ完成/攻撃実装を意味しない。",
+    "物理入力/聴感/動きの自然さ/全条件の美的完成は未確認。"
+  ]
+}

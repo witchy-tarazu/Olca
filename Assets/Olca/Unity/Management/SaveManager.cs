@@ -21,6 +21,11 @@ namespace Olca.Unity
             public KeyboardBindingFileStore Keyboard => keyboard ?? (keyboard = new KeyboardBindingFileStore(SettingsDirectory));
             public GamepadBindingFileStore Gamepad => gamepad ?? (gamepad = new GamepadBindingFileStore(SettingsDirectory));
             public AudioVolumeFileStore Audio => audio ?? (audio = new AudioVolumeFileStore(SettingsDirectory));
+            public ExplorationDeckFileStore ExplorationDecks(string generation)
+            {
+                if(generation!=null&&!Guid.TryParseExact(generation,"N",out _))throw new ArgumentException("保存世代が不正です",nameof(generation));
+                return new ExplorationDeckFileStore(Path.Combine(ProgressDirectory,"exploration-decks",generation??"legacy"));
+            }
             public ClearReturnFileStore Progress => progress ?? (progress = new ClearReturnFileStore(ProgressDirectory));
         }
         // Contextの作成だけでは読み書きしない。検証用保存ガードは呼出元が先に確定する。

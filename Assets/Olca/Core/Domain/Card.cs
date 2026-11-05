@@ -184,6 +184,7 @@ namespace Olca.Core.Domain
             if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
             if (hitInvincibilityMs < 0) throw new System.ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
             PoiseDamage = poiseDamage; HitInvincibilityMs = hitInvincibilityMs;
+            ElementRules.ValidateKnown(element);
             AttackPropertyRules.Validate(properties);
             Properties = properties;
             Id = id;
@@ -208,6 +209,7 @@ namespace Olca.Core.Domain
             ExtendRecoveryDuringDerivative = extendRecoveryDuringDerivative;
             IsInstantEffect = isInstantEffect;
             Modifier = modifier ?? new CardModifier();
+            if(Modifier.ElementOverride.HasValue)ElementRules.ValidateKnown(Modifier.ElementOverride.Value);
             foreach (var effect in Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             ExceedLevel = exceedLevel;
         }
@@ -292,6 +294,10 @@ namespace Olca.Core.Domain
         /// <summary>
         /// マスターデータからCardを生成
         /// </summary>
+        public static Card FromCurrentMaster(CardMaster master) {
+            if(master==null)throw new System.ArgumentNullException(nameof(master));ElementRules.ValidateCurrent(master.Element);return FromMaster(master);
+        }
+        // 旧マスター/保存読取はWindを含む既知値を維持する。
         public static Card FromMaster(CardMaster master)
         {
             // SeriesTypeからCardSeriesに変換

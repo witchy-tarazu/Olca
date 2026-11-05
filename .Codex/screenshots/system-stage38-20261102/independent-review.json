@@ -1,0 +1,18 @@
+{
+  "reviewer": "equipment_save_review + independent_refactor_review",
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "7b1d60e6e3eb4ad98590e6af4cf4bfdce3aa2a65ab541fbbfb03a99ebac5d2f0",
+    "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs": "1f231273a730752f95afb8a9f13da4bb4f616325637e8e19804f97c39e3c0113",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "38c7b902900d26ebe8c680275daf1abbb3ea030c03eed51b2712b74c52a8f655",
+    "Assets/Olca/Tests/Battle/ElementalDamageTests.cs": "4d8ebe529f6d2fd10aa9eb0d746c894afbb599b7d14999c302d82e374a536631",
+    "Assets/Olca/Tests/Domain/CardMasterParseTests.cs": "32d634593f145ba19f37256f6b556910f1544249f91bc27bf6fe1c826498621a"
+  },
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "details": "independent-code-review.json"
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "details": "visual-review.json"
+  }
+}

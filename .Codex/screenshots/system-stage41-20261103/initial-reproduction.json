@@ -1,0 +1,356 @@
+{
+  "reproduced": true,
+  "entry": "Bootstrap > outside > actual keyboard movement > back > NewGameButton > ConfirmNewGame > outside",
+  "fixtureOnly": [
+    "initial hand through existing API",
+    "20 gauge units test perturbation"
+  ],
+  "initial": {
+    "root": -335625370,
+    "session": -744624472,
+    "runtime": -1435996128,
+    "core": 809164976,
+    "ended": false,
+    "presented": false,
+    "position": 480000,
+    "height": 0,
+    "frame": 0,
+    "clock": 0,
+    "gauge": 6000,
+    "gaugeMax": 6000,
+    "camera": null,
+    "cards": [
+      {
+        "Id": "sword",
+        "identity": -1691746448,
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "identity": 830193928,
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "shield",
+        "identity": -588669668,
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      }
+    ],
+    "remaining": 17,
+    "generation": null,
+    "revision": 1,
+    "owned": [
+      {
+        "Id": "sword",
+        "Count": 4,
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "Count": 4,
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "heal",
+        "Count": 4,
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+      },
+      {
+        "Id": "shield",
+        "Count": 4,
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      },
+      {
+        "Id": "tuning",
+        "Count": 4,
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+      }
+    ],
+    "pending": false,
+    "scale": 1
+  },
+  "before": {
+    "root": -335625370,
+    "session": -744624472,
+    "runtime": -1435996128,
+    "core": 809164976,
+    "ended": false,
+    "presented": true,
+    "position": 750000,
+    "height": 0,
+    "frame": 250,
+    "clock": 250,
+    "gauge": 4800,
+    "gaugeMax": 6000,
+    "camera": null,
+    "cards": [
+      {
+        "Id": "sword",
+        "identity": -1691746448,
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "identity": 830193928,
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "shield",
+        "identity": -588669668,
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      }
+    ],
+    "remaining": 17,
+    "generation": null,
+    "revision": 1,
+    "owned": [
+      {
+        "Id": "sword",
+        "Count": 4,
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "Count": 4,
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "heal",
+        "Count": 4,
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+      },
+      {
+        "Id": "shield",
+        "Count": 4,
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      },
+      {
+        "Id": "tuning",
+        "Count": 4,
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+      }
+    ],
+    "pending": false,
+    "scale": 0
+  },
+  "closed": {
+    "root": -335625370,
+    "session": -744624472,
+    "runtime": -1435996128,
+    "core": 809164976,
+    "ended": false,
+    "presented": false,
+    "position": 750000,
+    "height": 0,
+    "frame": 250,
+    "clock": 250,
+    "gauge": 4800,
+    "gaugeMax": 6000,
+    "camera": null,
+    "cards": [
+      {
+        "Id": "sword",
+        "identity": -1691746448,
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "identity": 830193928,
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "shield",
+        "identity": -588669668,
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      }
+    ],
+    "remaining": 17,
+    "generation": null,
+    "revision": 1,
+    "owned": [
+      {
+        "Id": "sword",
+        "Count": 4,
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "Count": 4,
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "heal",
+        "Count": 4,
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+      },
+      {
+        "Id": "shield",
+        "Count": 4,
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      },
+      {
+        "Id": "tuning",
+        "Count": 4,
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+      }
+    ],
+    "pending": false,
+    "scale": 0
+  },
+  "successfulNewGame": {
+    "root": -335625370,
+    "session": -744624472,
+    "runtime": -1435996128,
+    "core": 809164976,
+    "ended": false,
+    "presented": false,
+    "position": 750000,
+    "height": 0,
+    "frame": 250,
+    "clock": 250,
+    "gauge": 4800,
+    "gaugeMax": 6000,
+    "camera": null,
+    "cards": [
+      {
+        "Id": "sword",
+        "identity": -1691746448,
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "identity": 830193928,
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "shield",
+        "identity": -588669668,
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      }
+    ],
+    "remaining": 17,
+    "generation": "3cfda29dce3b4a2780690b41555afa49",
+    "revision": 2,
+    "owned": [
+      {
+        "Id": "sword",
+        "Count": 4,
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "Count": 4,
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "heal",
+        "Count": 4,
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+      },
+      {
+        "Id": "shield",
+        "Count": 4,
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      },
+      {
+        "Id": "tuning",
+        "Count": 4,
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+      }
+    ],
+    "pending": false,
+    "scale": 0
+  },
+  "after": {
+    "root": -335625370,
+    "session": -744624472,
+    "runtime": -1435996128,
+    "core": 809164976,
+    "ended": false,
+    "presented": true,
+    "position": 750000,
+    "height": 0,
+    "frame": 250,
+    "clock": 250,
+    "gauge": 4800,
+    "gaugeMax": 6000,
+    "camera": null,
+    "cards": [
+      {
+        "Id": "sword",
+        "identity": -1691746448,
+        "hash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "identity": 830193928,
+        "hash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "shield",
+        "identity": -588669668,
+        "hash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      }
+    ],
+    "remaining": 17,
+    "generation": "3cfda29dce3b4a2780690b41555afa49",
+    "revision": 2,
+    "owned": [
+      {
+        "Id": "sword",
+        "Count": 4,
+        "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+      },
+      {
+        "Id": "bomb",
+        "Count": 4,
+        "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+      },
+      {
+        "Id": "heal",
+        "Count": 4,
+        "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+      },
+      {
+        "Id": "shield",
+        "Count": 4,
+        "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+      },
+      {
+        "Id": "tuning",
+        "Count": 4,
+        "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+      }
+    ],
+    "pending": false,
+    "scale": 0
+  },
+  "oldPair": {
+    "sameSession": true,
+    "sameRuntime": true,
+    "ended": false,
+    "runtimeDisposed": false,
+    "driverNull": false,
+    "inputNull": false,
+    "frame": 250,
+    "clock": 250,
+    "position": 750000,
+    "gauge": 4800,
+    "cards": [
+      -1691746448,
+      830193928,
+      -588669668
+    ]
+  },
+  "defaults": {
+    "position": 480000,
+    "height": 0,
+    "frame": 0,
+    "clock": 0,
+    "gauge": 6000,
+    "gaugeMax": 6000,
+    "cards": null,
+    "camera": null
+  },
+  "noProductSourceChanges": true
+}

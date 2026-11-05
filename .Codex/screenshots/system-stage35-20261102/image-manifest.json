@@ -1,0 +1,4319 @@
+[
+  {
+    "file": "base-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "b9fe2d360d2a16e3dcb77d548b7f5e52df45c21438b287fe533c52ed00618c99",
+    "state": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": false,
+      "layer": "return-hub",
+      "dialogs": 0,
+      "deckProfile": null,
+      "ready": null,
+      "pending": null,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DungeonChoice_0",
+      "buttons": [
+        {
+          "name": "ExplorationDeckEntry",
+          "enabled": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "enabled": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "enabled": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "enabled": true
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "enabled": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "NewGameButton",
+          "enabled": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "enabled": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "enabled": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "enabled": false
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "enabled": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 9,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "base-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "875e6d0e537111e22bbdb7700f5ca237d82fe292b0b3f32d08c058ea0f7c7755",
+    "state": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": false,
+      "layer": "return-hub",
+      "dialogs": 0,
+      "deckProfile": null,
+      "ready": null,
+      "pending": null,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DungeonChoice_0",
+      "buttons": [
+        {
+          "name": "ExplorationDeckEntry",
+          "enabled": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "enabled": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "enabled": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "enabled": true
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "enabled": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "NewGameButton",
+          "enabled": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "enabled": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "enabled": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "enabled": false
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "enabled": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 9,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "base-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "d956c7fa7751e8f2aabbb268f95509cb586771b75cdc1b4c8d943e642a858bf6",
+    "state": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": false,
+      "layer": "return-hub",
+      "dialogs": 0,
+      "deckProfile": null,
+      "ready": null,
+      "pending": null,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DungeonChoice_0",
+      "buttons": [
+        {
+          "name": "ExplorationDeckEntry",
+          "enabled": true
+        },
+        {
+          "name": "CardCollectionButton",
+          "enabled": true
+        },
+        {
+          "name": "SelectDepartureStyle",
+          "enabled": true
+        },
+        {
+          "name": "DungeonChoice_0",
+          "enabled": true
+        },
+        {
+          "name": "OutsideExplorationEntry",
+          "enabled": true
+        },
+        {
+          "name": "ManualSaveButton",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "NewGameButton",
+          "enabled": true
+        },
+        {
+          "name": "CancelDungeonSelection",
+          "enabled": true
+        },
+        {
+          "name": "OpenTokenExchange",
+          "enabled": true
+        },
+        {
+          "name": "OpenCustomizationUnlocks",
+          "enabled": false
+        },
+        {
+          "name": "ConfirmDungeonSelection",
+          "enabled": true
+        },
+        {
+          "name": "OpenCustomizationEditor",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 9,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "empty-list-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "ab1c9a58aa574db85e7d32408db50a10139efb9c723eec699f2bf0704527731f",
+    "state": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "NewSavedDeck",
+      "buttons": [
+        {
+          "name": "NewSavedDeck",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "enabled": false
+        },
+        {
+          "name": "ReloadSavedDecks",
+          "enabled": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "enabled": true
+        },
+        {
+          "name": "PreviousSavedDeckPage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "empty-list-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "2407e445782a90cfa03339ea83d8fcc0bd15541147175f938c5b1534a8b428d1",
+    "state": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "NewSavedDeck",
+      "buttons": [
+        {
+          "name": "NewSavedDeck",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "enabled": false
+        },
+        {
+          "name": "ReloadSavedDecks",
+          "enabled": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "enabled": true
+        },
+        {
+          "name": "PreviousSavedDeckPage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "empty-list-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "c0e1f907a9e1bcde4fd407112525ed75476d59632b1b144990310c0164856fb7",
+    "state": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "NewSavedDeck",
+      "buttons": [
+        {
+          "name": "NewSavedDeck",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "enabled": false
+        },
+        {
+          "name": "ReloadSavedDecks",
+          "enabled": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "enabled": true
+        },
+        {
+          "name": "PreviousSavedDeckPage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "new-editor-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "73385b15bc0ddaa67bfb583b13545e65e2acc12cb4a4abad3e486f1574be9bc4",
+    "state": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DepartureDetails_0",
+      "buttons": [
+        {
+          "name": "RemoveDepartureCard_2",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_3",
+          "enabled": true
+        },
+        {
+          "name": "CloseOwnedDeparture",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_0",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_4",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_0",
+          "enabled": false
+        },
+        {
+          "name": "PreviousDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_4",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_0",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_3",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_3",
+          "enabled": true
+        },
+        {
+          "name": "SaveNamedDeck",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_1",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_2",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_2",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_1",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_4",
+          "enabled": false
+        },
+        {
+          "name": "NextDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_1",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "new-editor-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "32205a22210d48ea08d7937e70d1f1ff34746173f308891208c5fa92b54079b2",
+    "state": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DepartureDetails_0",
+      "buttons": [
+        {
+          "name": "RemoveDepartureCard_2",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_3",
+          "enabled": true
+        },
+        {
+          "name": "CloseOwnedDeparture",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_0",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_4",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_0",
+          "enabled": false
+        },
+        {
+          "name": "PreviousDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_4",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_0",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_3",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_3",
+          "enabled": true
+        },
+        {
+          "name": "SaveNamedDeck",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_1",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_2",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_2",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_1",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_4",
+          "enabled": false
+        },
+        {
+          "name": "NextDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_1",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "new-editor-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "22fb680c74cedc97842143f4619cda5e0d2acf5e80474882752043f68078f957",
+    "state": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DepartureDetails_0",
+      "buttons": [
+        {
+          "name": "RemoveDepartureCard_2",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_3",
+          "enabled": true
+        },
+        {
+          "name": "CloseOwnedDeparture",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_0",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_4",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_0",
+          "enabled": false
+        },
+        {
+          "name": "PreviousDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_4",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_0",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_3",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_3",
+          "enabled": true
+        },
+        {
+          "name": "SaveNamedDeck",
+          "enabled": false
+        },
+        {
+          "name": "AddDepartureCard_1",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_2",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_2",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_1",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_4",
+          "enabled": false
+        },
+        {
+          "name": "NextDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_1",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "editor-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "80a27b1c7cb83e011c1ed107b2c9c6b830a5d8144f43355cb9acd8e22c7d6aeb",
+    "state": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DepartureDetails_0",
+      "buttons": [
+        {
+          "name": "AddDepartureCard_0",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_1",
+          "enabled": true
+        },
+        {
+          "name": "NextDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_0",
+          "enabled": true
+        },
+        {
+          "name": "SaveNamedDeck",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_4",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_2",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_3",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_1",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_0",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_3",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_2",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_4",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_2",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_3",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_1",
+          "enabled": false
+        },
+        {
+          "name": "CloseOwnedDeparture",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_4",
+          "enabled": true
+        },
+        {
+          "name": "PreviousDeparturePage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "editor-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "6c987a2b0ffe72afe9854b914d5b07aabf539a2517b92068551c3e4905bf35ab",
+    "state": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DepartureDetails_0",
+      "buttons": [
+        {
+          "name": "AddDepartureCard_0",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_1",
+          "enabled": true
+        },
+        {
+          "name": "NextDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_0",
+          "enabled": true
+        },
+        {
+          "name": "SaveNamedDeck",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_4",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_2",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_3",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_1",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_0",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_3",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_2",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_4",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_2",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_3",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_1",
+          "enabled": false
+        },
+        {
+          "name": "CloseOwnedDeparture",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_4",
+          "enabled": true
+        },
+        {
+          "name": "PreviousDeparturePage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "editor-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "ba0be13bc64d50ef463707da3348f35de4e9d8a0228369bb5ef3ca024e1ec237",
+    "state": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 0,
+        "CommitId": null,
+        "Decks": []
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "DepartureDetails_0",
+      "buttons": [
+        {
+          "name": "AddDepartureCard_0",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_1",
+          "enabled": true
+        },
+        {
+          "name": "NextDeparturePage",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_0",
+          "enabled": true
+        },
+        {
+          "name": "SaveNamedDeck",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_4",
+          "enabled": false
+        },
+        {
+          "name": "RemoveDepartureCard_2",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_3",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_1",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_0",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_3",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_2",
+          "enabled": true
+        },
+        {
+          "name": "DepartureDetails_4",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_2",
+          "enabled": false
+        },
+        {
+          "name": "DepartureDetails_3",
+          "enabled": true
+        },
+        {
+          "name": "AddDepartureCard_1",
+          "enabled": false
+        },
+        {
+          "name": "CloseOwnedDeparture",
+          "enabled": true
+        },
+        {
+          "name": "RemoveDepartureCard_4",
+          "enabled": true
+        },
+        {
+          "name": "PreviousDeparturePage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "saved-list-fhd.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "sha256": "59671a8f52bd96dd783e5af2b55a3683816c653758ac3dd76d9462b6dab8261d",
+    "state": {
+      "screen": [
+        1920,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 2,
+        "CommitId": "818ca86d67644a74b556f0cc736c9112",
+        "Decks": [
+          {
+            "Id": "20e2c2937390491e9e71e090ee40d9d2",
+            "Name": "タンサク1",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              }
+            ]
+          },
+          {
+            "Id": "e0c61e9fe31e47b9945c67f6bbae5894",
+            "Name": "タンサク2",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "NewSavedDeck",
+      "buttons": [
+        {
+          "name": "DeleteDeck_e0c61e9fe31e47b9945c67f6bbae5894",
+          "enabled": true
+        },
+        {
+          "name": "EditDeck_e0c61e9fe31e47b9945c67f6bbae5894",
+          "enabled": true
+        },
+        {
+          "name": "DeleteDeck_20e2c2937390491e9e71e090ee40d9d2",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "enabled": true
+        },
+        {
+          "name": "EditDeck_20e2c2937390491e9e71e090ee40d9d2",
+          "enabled": true
+        },
+        {
+          "name": "PreviousSavedDeckPage",
+          "enabled": false
+        },
+        {
+          "name": "NewSavedDeck",
+          "enabled": true
+        },
+        {
+          "name": "ReloadSavedDecks",
+          "enabled": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "saved-list-4k.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "sha256": "a39d750843c4b9360e1a96ae8ede84979e536463189af297d460721cd2c1159a",
+    "state": {
+      "screen": [
+        3840,
+        2160
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 2,
+        "CommitId": "818ca86d67644a74b556f0cc736c9112",
+        "Decks": [
+          {
+            "Id": "20e2c2937390491e9e71e090ee40d9d2",
+            "Name": "タンサク1",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              }
+            ]
+          },
+          {
+            "Id": "e0c61e9fe31e47b9945c67f6bbae5894",
+            "Name": "タンサク2",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "NewSavedDeck",
+      "buttons": [
+        {
+          "name": "DeleteDeck_e0c61e9fe31e47b9945c67f6bbae5894",
+          "enabled": true
+        },
+        {
+          "name": "EditDeck_e0c61e9fe31e47b9945c67f6bbae5894",
+          "enabled": true
+        },
+        {
+          "name": "DeleteDeck_20e2c2937390491e9e71e090ee40d9d2",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "enabled": true
+        },
+        {
+          "name": "EditDeck_20e2c2937390491e9e71e090ee40d9d2",
+          "enabled": true
+        },
+        {
+          "name": "PreviousSavedDeckPage",
+          "enabled": false
+        },
+        {
+          "name": "NewSavedDeck",
+          "enabled": true
+        },
+        {
+          "name": "ReloadSavedDecks",
+          "enabled": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  },
+  {
+    "file": "saved-list-4by3.png",
+    "size": [
+      1440,
+      1080
+    ],
+    "sha256": "c30696f737ae2c34093c85a50055bdc8da1de64ad101467e659e35ac82975089",
+    "state": {
+      "screen": [
+        1440,
+        1080
+      ],
+      "playing": true,
+      "dungeonCore": 44303106,
+      "phase": "Dungeon",
+      "position": 0,
+      "hp": 100,
+      "logicalFrame": 0,
+      "outsideFrame": 0,
+      "outsidePosition": 480000,
+      "outsideRegistered": false,
+      "library": true,
+      "layer": "exploration-decks",
+      "dialogs": 0,
+      "deckProfile": {
+        "Version": 1,
+        "Revision": 2,
+        "CommitId": "818ca86d67644a74b556f0cc736c9112",
+        "Decks": [
+          {
+            "Id": "20e2c2937390491e9e71e090ee40d9d2",
+            "Name": "タンサク1",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              }
+            ]
+          },
+          {
+            "Id": "e0c61e9fe31e47b9945c67f6bbae5894",
+            "Name": "タンサク2",
+            "Cards": [
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "sword",
+                "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "bomb",
+                "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "heal",
+                "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "shield",
+                "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              },
+              {
+                "Id": "tuning",
+                "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+                "Level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "ready": true,
+      "pending": false,
+      "error": null,
+      "owned": [
+        {
+          "Id": "sword",
+          "Count": 4,
+          "DefinitionHash": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55"
+        },
+        {
+          "Id": "bomb",
+          "Count": 4,
+          "DefinitionHash": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644"
+        },
+        {
+          "Id": "heal",
+          "Count": 4,
+          "DefinitionHash": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626"
+        },
+        {
+          "Id": "shield",
+          "Count": 4,
+          "DefinitionHash": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17"
+        },
+        {
+          "Id": "tuning",
+          "Count": 4,
+          "DefinitionHash": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E"
+        }
+      ],
+      "mainRevision": 1,
+      "generation": null,
+      "dungeonDecks": [
+        {
+          "Id": "483092667be94d57ba5e24efb203ad94",
+          "Name": "スターター",
+          "Cards": [
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "sword",
+              "DefinitionKey": "1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "bomb",
+              "DefinitionKey": "948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "heal",
+              "DefinitionKey": "E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "shield",
+              "DefinitionKey": "6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            },
+            {
+              "Id": "tuning",
+              "DefinitionKey": "57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E",
+              "Level": 0
+            }
+          ]
+        }
+      ],
+      "focus": "NewSavedDeck",
+      "buttons": [
+        {
+          "name": "DeleteDeck_e0c61e9fe31e47b9945c67f6bbae5894",
+          "enabled": true
+        },
+        {
+          "name": "EditDeck_e0c61e9fe31e47b9945c67f6bbae5894",
+          "enabled": true
+        },
+        {
+          "name": "DeleteDeck_20e2c2937390491e9e71e090ee40d9d2",
+          "enabled": true
+        },
+        {
+          "name": "PauseButton",
+          "enabled": true
+        },
+        {
+          "name": "CloseSavedDeckMenu",
+          "enabled": true
+        },
+        {
+          "name": "EditDeck_20e2c2937390491e9e71e090ee40d9d2",
+          "enabled": true
+        },
+        {
+          "name": "PreviousSavedDeckPage",
+          "enabled": false
+        },
+        {
+          "name": "NewSavedDeck",
+          "enabled": true
+        },
+        {
+          "name": "ReloadSavedDecks",
+          "enabled": true
+        },
+        {
+          "name": "NextSavedDeckPage",
+          "enabled": false
+        }
+      ],
+      "input": [
+        {
+          "name": "Mouse",
+          "layout": "Mouse"
+        },
+        {
+          "name": "Keyboard",
+          "layout": "Keyboard"
+        }
+      ],
+      "resources": 10,
+      "roots": 1,
+      "events": 1,
+      "cameras": 1,
+      "listeners": 1,
+      "audio": 3
+    }
+  }
+]

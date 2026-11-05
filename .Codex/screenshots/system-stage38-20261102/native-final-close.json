@@ -1,0 +1,154 @@
+{
+  "saveHashesAfter": {
+    "progress/isolated-property-1.fixture-definition": "c778e8373de42a3c272784ac7fb14bb6983eb49c16f5d221287917a1737138a5",
+    "progress/isolated-property-4.fixture-definition": "5d56246ca5c8153ca226130695789939ba18f2f5560183b2cd4be2761c37fdd6",
+    "progress/isolated-property-2.fixture-definition": "1f61c09fa8f239288aabc6dece8ca5e7861ced592ff18dc16f1c79c45612cd83",
+    "progress/progress.json": "9d169352f86e135da1431ee9d8be89e58d865609cd3cc7621c206163221d13bf",
+    "progress/isolated-property-8.fixture-definition": "dfa18fd21ce6e4bfd629a589482413c99db2bbdbc85c6c4445faf96296525fe1",
+    "progress/isolated-property-63.fixture-definition": "7771264a0e2f385abc1d851fc9979811462ecee88a6cf5283695a1fc6c16b2ad",
+    "progress/isolated-property-32.fixture-definition": "d5a7c7cc2f1657187ccafaa5479e4a621065027afaa4350c70b3de8027cd0a7e",
+    "progress/progress.backup.json": "9f240d59276e9c2c341d96f2468a8ce676567950a3a2f2d4e31542e663d24e3d",
+    "progress/isolated-property-16.fixture-definition": "2e511713e0104ee4d9d8dd2c85bcea2db62b48b4c6b9dacdee9c02d165c63689"
+  },
+  "close": {
+    "oldInputDisposed": true,
+    "oldCoreSubscriptionsRemoved": true,
+    "oldCameraReferencesRemoved": true,
+    "cameraReturnedInactiveWithDefaults": true,
+    "oldBattleCustomReferencesReleased": true,
+    "oldCustomInputDisposed": true,
+    "oldGeneratedSpritesReleased": true,
+    "oldPresentationObjectsDestroyed": true,
+    "oldWorldReferencesReleased": true,
+    "oldWorldSubscriptionsRemoved": true,
+    "oldWorldActorPoolBackgroundObjectsDestroyed": true,
+    "state": {
+      "playing": true,
+      "screen": [
+        640,
+        360
+      ],
+      "activeScene": "Assets/Scenes/BootstrapScene.unity",
+      "scenes": [
+        {
+          "path": "Assets/Scenes/BootstrapScene.unity",
+          "handleHash": 1098533344,
+          "isLoaded": true
+        }
+      ],
+      "roots": 1,
+      "rootId": -331756572,
+      "rootScene": "DontDestroyOnLoad",
+      "rootStartupError": null,
+      "cameraBorrowed": false,
+      "borrowedCameraId": null,
+      "gameplayView": null,
+      "worldViewKey": null,
+      "worldRegistered": 0,
+      "worldFields": 0,
+      "backgroundViews": 0,
+      "numberPools": 0,
+      "battleViewKey": null,
+      "battleRegistered": 0,
+      "battleViews": 0,
+      "customViews": 0,
+      "gameplayRegistered": 0,
+      "hudCount": 0,
+      "host": null,
+      "loading": false,
+      "ownedScenes": 0,
+      "ownedViews": 3,
+      "registeredViews": 0,
+      "dialogs": 0,
+      "session": false,
+      "controllerIds": [],
+      "controllerScenes": [],
+      "rewardViews": 0,
+      "rewardRegistered": 0,
+      "rewardViewKey": null,
+      "cameras": 0,
+      "listeners": 0,
+      "events": 1,
+      "audioIds": [
+        -331756578,
+        -331756584,
+        -331756590
+      ],
+      "defaultStoreExists": false,
+      "store": null
+    }
+  },
+  "ownProofKeys": {
+    "keys": [
+      {
+        "name": "Deck35Old",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseSave",
+        "present": false
+      },
+      {
+        "name": "Deck35BaseNew",
+        "present": false
+      },
+      {
+        "name": "Deck35Io",
+        "present": false
+      }
+    ]
+  },
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "7b1d60e6e3eb4ad98590e6af4cf4bfdce3aa2a65ab541fbbfb03a99ebac5d2f0",
+    "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs": "1f231273a730752f95afb8a9f13da4bb4f616325637e8e19804f97c39e3c0113",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "38c7b902900d26ebe8c680275daf1abbb3ea030c03eed51b2712b74c52a8f655",
+    "Assets/Olca/Tests/Battle/ElementalDamageTests.cs": "4d8ebe529f6d2fd10aa9eb0d746c894afbb599b7d14999c302d82e374a536631",
+    "Assets/Olca/Tests/Domain/CardMasterParseTests.cs": "32d634593f145ba19f37256f6b556910f1544249f91bc27bf6fe1c826498621a"
+  },
+  "console": {
+    "entries": [],
+    "cursor": 554344,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 391
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T21:32:12.196516Z",
+      "ageMs": 44,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 391,
+      "seeded": true
+    }
+  },
+  "warnings": {
+    "entries": [],
+    "cursor": 554344,
+    "session": "1d6289ebbd3941d6976ca2529ae9203c",
+    "returned": 0,
+    "dropped": false,
+    "reset": false,
+    "counts": {
+      "error": 0,
+      "warn": 0,
+      "log": 391
+    },
+    "groundTruth": {
+      "sampledUtc": "2026-11-02T21:32:12.196516Z",
+      "ageMs": 211,
+      "compilationFailed": false,
+      "compiling": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 391,
+      "seeded": true
+    }
+  }
+}

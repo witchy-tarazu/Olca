@@ -1,0 +1,56 @@
+[
+  {
+    "file": "metal-enemy-fhd.png",
+    "sha256": "7c25d26758c15a9d3127402019e9a46f5cda1b231f4e713c17b5189fd8993064",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "fixture": true
+  },
+  {
+    "file": "metal-enemy-4k.png",
+    "sha256": "300aebf1b5f7ca732cef740200fbba3ae9b82167b061f9a6dee1fbb32dd9bdd8",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "fixture": true
+  },
+  {
+    "file": "metal-enemy-4by3.png",
+    "sha256": "fd35b2740516ea3ae5d70b6cfe11fa47ee78adce6667bd31e272ff9cb4a9d460",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "fixture": true
+  },
+  {
+    "file": "yin-enemy-fhd.png",
+    "sha256": "4584de44d50e28391e6579292e5477402c6918ed78d94c7be8502e00ff226dc6",
+    "dimensions": [
+      1920,
+      1080
+    ],
+    "fixture": true
+  },
+  {
+    "file": "yin-enemy-4k.png",
+    "sha256": "e29b6f1ad2fed5757027357702d841f40af4a10ab067b18b3327338eb0fbab7e",
+    "dimensions": [
+      3840,
+      2160
+    ],
+    "fixture": true
+  },
+  {
+    "file": "yin-enemy-4by3.png",
+    "sha256": "4b7c47db62930e791ea33b92dd2854eee25bca6bfc8ebcc737df623e685be098",
+    "dimensions": [
+      1440,
+      1080
+    ],
+    "fixture": true
+  }
+]

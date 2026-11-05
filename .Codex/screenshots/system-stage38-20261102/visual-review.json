@@ -1,0 +1,194 @@
+{
+  "reviewer": "independent_refactor_review",
+  "reviewedAt": "2026-11-02T21:29:58.608837+00:00",
+  "sourceHashes": {
+    "Assets/Olca/Core/Domain/ElementType.cs": "7b1d60e6e3eb4ad98590e6af4cf4bfdce3aa2a65ab541fbbfb03a99ebac5d2f0",
+    "Assets/Olca/Presentation/CustomScreen/CardAttackPropertyIcons.cs": "1f231273a730752f95afb8a9f13da4bb4f616325637e8e19804f97c39e3c0113",
+    "Assets/Olca/Tests/AttackPropertyIconTests.cs": "38c7b902900d26ebe8c680275daf1abbb3ea030c03eed51b2712b74c52a8f655",
+    "Assets/Olca/Tests/Battle/ElementalDamageTests.cs": "4d8ebe529f6d2fd10aa9eb0d746c894afbb599b7d14999c302d82e374a536631",
+    "Assets/Olca/Tests/Domain/CardMasterParseTests.cs": "32d634593f145ba19f37256f6b556910f1544249f91bc27bf6fe1c826498621a"
+  },
+  "viewedImageCount": 15,
+  "imageHashes": [
+    {
+      "file": "system-stage38-legacy-slash-fhd.png",
+      "sha256": "71125a36174703a80bdeacc9a940539ed7ee3c4501836dbc770331de3d14f9a7",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-legacy-slash-4k.png",
+      "sha256": "75adcc0e2fa673ced44b959e8299beeb3230963e3b0e51789fbd756bcfb70cda",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-legacy-slash-4by3.png",
+      "sha256": "c53c5ccb288e20296733bb619dfe7d16890795778f4a1e6b050fae559809b070",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-shooting-fhd.png",
+      "sha256": "bbcf0816fe4f19401161b8dae16f8f329232bf40047314131fcbd8a73d87030c",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-shooting-4k.png",
+      "sha256": "da5aa6c52a6d94d219ebb6e445151c4a3c2a76e9622d554a564d6f87f92d057a",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-shooting-4by3.png",
+      "sha256": "dce61274bd2ab93062f60d2cdde6703feb839cc586243d17ec244945dab9366f",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-healing-fhd.png",
+      "sha256": "851539470fe800c396b5794712930ccdc268c64b1fcc9e52ccabb4573546b973",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-healing-4k.png",
+      "sha256": "746e5db427add556906cc57a71c39ebaa4111bad6b726514f8bba7f34c5afb0f",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-healing-4by3.png",
+      "sha256": "e792b95a6f3be181d865c51dd18e79f719a9d4468fe770098c2a1eef5e217fed",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-support-fhd.png",
+      "sha256": "b67e109635b39d1bdf3844064bfc27723486c4819d7e2b6ca92624e26aad3866",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-support-4k.png",
+      "sha256": "b71bff187856bd8e276d2c20a2f0dca49a7286125d24a7ec17c54bcc96491a6f",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-support-4by3.png",
+      "sha256": "82aabc1b2568c8525cb9d0457fc5d0557b766798e52998192293d06ed6010ace",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-six-classifications-fhd.png",
+      "sha256": "8291e964624ec704a63ed2f0aa2e40e489ce0894d5c8208d177506b799fedc07",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-six-classifications-4k.png",
+      "sha256": "e5e74f5ca5014a8b7e97fb9ffe367910c6bbc8e779546cf230ee81a43ec46d0a",
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "viewed": true
+    },
+    {
+      "file": "system-stage38-six-classifications-4by3.png",
+      "sha256": "5c3d25b7ddb276649b4fafb9e7ee898dc55b4ac84788d9415f8425cfbc3c35e3",
+      "dimensions": [
+        1440,
+        1080
+      ],
+      "viewed": true
+    }
+  ],
+  "unresolvedRequiredFindings": 0,
+  "findings": [],
+  "observations": [
+    "Stage38全15枚を累積して実見。先行9枚は部分レビュー記録SHAと現在PNGが一致。",
+    "旧斬撃miniと六分類時の旧3miniは本文と分離し、文字の上へ重ならない。",
+    "新射撃/回復/支援は専用画像なしの文字fallbackとして明瞭に読める。暗い字形と淡い面のcontrast、本文と戻るの分離に必須問題なし。",
+    "六分類の全名称は今回3比率とも1行内に収まり、末尾シエンまで欠けない。折返しが発生した画像ではないため折返し動作の実証とはしない。",
+    "戻るは全15枚で下中央に固定され、短文面から離れても操作として認識できる。"
+  ],
+  "nativeLocalInspection": [
+    {
+      "file": "system-stage38-legacy-slash-4k.png",
+      "crop": [
+        290,
+        350,
+        1460,
+        750
+      ]
+    },
+    {
+      "file": "system-stage38-support-4k.png",
+      "crop": [
+        290,
+        350,
+        2260,
+        820
+      ]
+    },
+    {
+      "file": "system-stage38-six-classifications-4k.png",
+      "crop": [
+        290,
+        350,
+        2260,
+        820
+      ]
+    }
+  ],
+  "method": "全景をview_image originalで実見。4K全景のviewer縮小を補うため明記3局所を元PNG変更なし/無拡縮でメモリ切出し確認。",
+  "limits": [
+    "視覚レビューのみ。native-result.jsonはこの記録作成時未生成で、戻る/reopen/旧callback拒否/保存bytesの成功判定は主担当の別receipt待ち。",
+    "明示定義の隔離表示fixtureであり、製品カード追加/新攻撃完成/専用画像追加を意味しない。",
+    "物理入力/IME/聴感/全条件での外観完成は未確認。今回スクリーン外の長い分類文の折返しは未確認。",
+    "新matched-before画像はなくpixel完全一致や全UI無欠陥を主張しない。Stage37画像の流用なし。"
+  ]
+}

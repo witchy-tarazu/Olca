@@ -175,6 +175,30 @@ namespace Olca.Tests
                 scroll.verticalNormalizedPosition=0;Assert.AreEqual(0,scroll.verticalNormalizedPosition,.01f);Assert.GreaterOrEqual(scroll.content.rect.height,body.preferredHeight);
             }finally{Object.DestroyImmediate(root);}
         }
+        [TestCase(1f)][TestCase(.4f)][TestCase(0f)]
+        public void 詳細のCanvas倍率切替は先頭中間末尾の読取位置を保つ(float position)
+        {
+            var canvasRoot=new GameObject("ScaledDetailsCanvas",typeof(RectTransform),typeof(Canvas));var canvas=canvasRoot.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.scaleFactor=1;
+            try{
+                var root=new GameObject("ScaledDetailsViewport",typeof(RectTransform));root.transform.SetParent(canvasRoot.transform,false);((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+                var host=new GameObject("ScaledDetailsView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});
+                var card=new Card("scaled-details","テスト",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,string.Concat(Enumerable.Repeat("リサイズしてもヨミトリイチをホジします。",200)));view.Render(new ClearReturnProfile(),new ClearReturnData{Stage=ClearReturnStage.Returned},false,null);typeof(ClearReturnView).GetMethod("OpenCardDetails",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,new object[]{card,null});
+                var update=typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);var scroll=host.GetComponentInChildren<ScrollRect>();Canvas.ForceUpdateCanvases();update.Invoke(view,null);scroll.verticalNormalizedPosition=position;update.Invoke(view,null);
+                foreach(float scale in new[]{2f,.8660254f,1f}){canvas.scaleFactor=scale;Canvas.ForceUpdateCanvases();update.Invoke(view,null);Canvas.ForceUpdateCanvases();update.Invoke(view,null);Assert.AreEqual(position,scroll.verticalNormalizedPosition,.01f,"倍率 "+scale);Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);}
+            }finally{Object.DestroyImmediate(canvasRoot);}
+        }
+        [TestCase(1f)][TestCase(.4f)][TestCase(0f)]
+        public void 詳細が一時的に全文表示へ収まっても再拡大時に読取位置を保つ(float position)
+        {
+            var root=new GameObject("TransientFitViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("TransientFitView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});view.Render(new ClearReturnProfile(),new ClearReturnData{Stage=ClearReturnStage.Returned},false,null);
+                string value=string.Concat(Enumerable.Repeat("ながいなまえ",600))+"オワリシルシ";typeof(ClearReturnView).GetMethod("OpenReadonlyText",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,new object[]{"テスト",value,null,null});
+                var update=typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);var scroll=host.GetComponentInChildren<ScrollRect>();Canvas.ForceUpdateCanvases();update.Invoke(view,null);Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);scroll.verticalNormalizedPosition=position;update.Invoke(view,null);
+                viewport.sizeDelta=new Vector2(6000,2160);Canvas.ForceUpdateCanvases();update.Invoke(view,null);Canvas.ForceUpdateCanvases();update.Invoke(view,null);Assert.LessOrEqual(scroll.content.rect.height,scroll.viewport.rect.height+.1f,"中間では全文が収まる条件");
+                viewport.sizeDelta=new Vector2(1920,1080);Canvas.ForceUpdateCanvases();update.Invoke(view,null);Canvas.ForceUpdateCanvases();update.Invoke(view,null);Assert.Greater(scroll.content.rect.height,scroll.viewport.rect.height);Assert.AreEqual(position,scroll.verticalNormalizedPosition,.01f);
+            }finally{Object.DestroyImmediate(root);}
+        }
         [TestCase(1920f,1080f,0,false)] [TestCase(1662.77f,1247.08f,0,false)] [TestCase(2199.64f,942.70f,0,false)]
         [TestCase(1920f,1080f,0,true)] [TestCase(1662.77f,1247.08f,0,true)] [TestCase(2199.64f,942.70f,0,true)]
         [TestCase(1920f,1080f,1,false)] [TestCase(1662.77f,1247.08f,1,false)] [TestCase(2199.64f,942.70f,1,false)]
@@ -634,7 +658,11 @@ namespace Olca.Tests
         }
         [Test] public void スタイル表示は登録名と解放条件を保ち定義済み属性だけを読みへ変換する()
         {
-            Assert.AreEqual(DepartureStyleDefinition.Basic.Name,ClearReturnView.FormatDepartureStyleChoice(DepartureStyleDefinition.Basic));var elements=new[]{ElementType.None,ElementType.Fire,ElementType.Water,ElementType.Wind,ElementType.Earth};var labels=new[]{"ムゾクセイ","ヒ","ミズ","カゼ","ツチ"};
+            var basic=DepartureStyleDefinition.Basic;string before=JsonUtility.ToJson(basic.Capture());
+            Assert.AreEqual("通常状態 / 無属性（カムイなし）",ClearReturnView.FormatDepartureStyleName(basic));
+            Assert.AreEqual(ClearReturnView.FormatDepartureStyleName(basic),ClearReturnView.FormatDepartureStyleChoice(basic));
+            Assert.AreEqual("ツウジョウジョウタイ / ムゾクセイ（カムイなし）",Olca.Presentation.CustomScreen.CustomDisplay.Katakana(ClearReturnView.FormatDepartureStyleChoice(basic)));
+            Assert.AreEqual(before,JsonUtility.ToJson(basic.Capture()));Assert.AreEqual("basic",basic.Id);Assert.AreEqual("基本 / 無属性",basic.Name);Assert.IsNull(basic.Attack);var elements=new[]{ElementType.None,ElementType.Fire,ElementType.Water,ElementType.Wind,ElementType.Earth};var labels=new[]{"ムゾクセイ","ヒ","ミズ","カゼ","ツチ"};
             for(int i=0;i<elements.Length;i++){var value=new DepartureStyleDefinition("display-"+i,"ほのおA / test", "route-x",new TransformationAttackDefinition(elements[i]));string display=ClearReturnView.FormatDepartureStyleChoice(value);StringAssert.Contains(value.Name,display);StringAssert.Contains("ゾクセイ "+labels[i],display);StringAssert.Contains("route-x",display);Assert.AreEqual("ほのおA / test",value.Name);Assert.AreEqual(elements[i],value.Attack.Element);}
         }
         [Test] public void 出撃先表示は出撃と行き先確定を区別し未解放と空一覧を漏らさない()

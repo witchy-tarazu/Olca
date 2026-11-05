@@ -18,8 +18,9 @@ namespace Olca.Core.Logic.Customization
     {
         public string Kind,SourceId,ItemId;
         public int Fire,Water,Wind,Earth,Poison,Paralyze,Confusion,Blind;
+        public int[] AdditionalElements; // 金/木/陰/陽。旧欠損は0。
         public bool Floating;
-        public CustomizationAbilitySourceDto Copy()=>(CustomizationAbilitySourceDto)MemberwiseClone();
+        public CustomizationAbilitySourceDto Copy(){var copy=(CustomizationAbilitySourceDto)MemberwiseClone();copy.AdditionalElements=AdditionalElements==null?null:(int[])AdditionalElements.Clone();return copy;}
     }
     /// <summary>出撃時の解決入力を保存する。復帰時に現在の製品定義を再適用しない。</summary>
     public sealed class CustomizationAbilitiesDto
@@ -30,6 +31,7 @@ namespace Olca.Core.Logic.Customization
         public CustomizationAbilitiesDto Copy()=>new CustomizationAbilitiesDto{Version=Version,DefinitionId=DefinitionId,Sources=Sources?.Select(v=>v?.Copy()).ToArray()};
         public void Validate()
         {
+            if(Sources!=null)foreach(var source in Sources)if(source!=null)ElementResistances.ValidateAdditional(source.AdditionalElements);
             if(Version!=1||string.IsNullOrWhiteSpace(DefinitionId)||Sources==null||Sources.Any(v=>v==null||(v.Kind!="accessory"&&v.Kind!="part")||string.IsNullOrWhiteSpace(v.SourceId)||string.IsNullOrWhiteSpace(v.ItemId)||(v.Kind=="accessory"&&v.SourceId!=v.ItemId)||v.Poison<0||v.Paralyze<0||v.Confusion<0||v.Blind<0)||Sources.Select(v=>(v.Kind,v.SourceId)).Distinct().Count()!=Sources.Length)throw new ArgumentException("出撃能力の保存が不正です");
         }
     }
@@ -43,7 +45,7 @@ namespace Olca.Core.Logic.Customization
         {
             if(value==null)throw new ArgumentNullException(nameof(value));value.Validate();snapshot=value.Copy();
             // 不変の装備元だけを変換して保持する。基礎値との合算やclampをここで先取りしない。
-            elementSources=snapshot.Sources.Select(v=>new ElementResistances(v.Fire,v.Water,v.Wind,v.Earth)).ToArray();
+            elementSources=snapshot.Sources.Select(v=>ElementResistances.Restore(v.Fire,v.Water,v.Wind,v.Earth,v.AdditionalElements)).ToArray();
             statusSources=snapshot.Sources.Select(v=>new TimedStatusResistances(v.Poison,v.Paralyze,v.Confusion,v.Blind)).ToArray();
             Floating=snapshot.Sources.Any(v=>v.Floating);
         }
@@ -64,7 +66,7 @@ namespace Olca.Core.Logic.Customization
         public ResolvedCustomizationAbilities Resolve(CustomizationLoadoutSources loadout)
         {
             if(loadout==null)throw new ArgumentNullException(nameof(loadout));var values=new List<CustomizationAbilitySourceDto>();
-            void Add(string kind,string source,string item,IReadOnlyDictionary<string,CustomizationAbilityValue> map){if(!map.TryGetValue(item,out var value))throw new ArgumentException("ソウビノウリョクのタイオウがミトウロクです");values.Add(new CustomizationAbilitySourceDto{Kind=kind,SourceId=source,ItemId=item,Fire=value.Elements.Fire,Water=value.Elements.Water,Wind=value.Elements.Wind,Earth=value.Elements.Earth,Poison=value.Statuses.Poison,Paralyze=value.Statuses.Paralyze,Confusion=value.Statuses.Confusion,Blind=value.Statuses.Blind,Floating=value.Floating});}
+            void Add(string kind,string source,string item,IReadOnlyDictionary<string,CustomizationAbilityValue> map){if(!map.TryGetValue(item,out var value))throw new ArgumentException("ソウビノウリョクのタイオウがミトウロクです");values.Add(new CustomizationAbilitySourceDto{Kind=kind,SourceId=source,ItemId=item,AdditionalElements=value.Elements.CaptureAdditional(),Fire=value.Elements.Fire,Water=value.Elements.Water,Wind=value.Elements.Wind,Earth=value.Elements.Earth,Poison=value.Statuses.Poison,Paralyze=value.Statuses.Paralyze,Confusion=value.Statuses.Confusion,Blind=value.Statuses.Blind,Floating=value.Floating});}
             foreach(var id in loadout.Accessories)Add("accessory",id,id,accessories);
             foreach(var part in loadout.Parts)Add("part",part.InstanceId,part.PartId,parts);
             return new ResolvedCustomizationAbilities(new CustomizationAbilitiesDto{DefinitionId=DefinitionId,Sources=values.ToArray()});

@@ -801,6 +801,51 @@ namespace Olca.Tests.Application
             Assert.IsTrue(prior.IsCurrent);Assert.IsTrue(hub.activeSelf);Assert.AreSame(entry.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsFalse(system.OutsideExploration.IsPresented);Assert.IsFalse(system.OutsideExploration.IsEnded);Assert.AreEqual(before,resources.OwnedInstanceCount);
         }
 
+        [TestCase(null)] [TestCase("")] [TestCase("not-a-generation")]
+        public void 外界新規進行は保存済みGUIDでない要求を拒否し現状態を保持する(string generation)
+        {
+            var model=system.OutsideExploration;var runtime=system.OutsideRuntime;
+            model.Core.TickFrame(1,false,false);long position=model.Core.Position;
+            Assert.Throws<ArgumentException>(()=>system.ResetOutsideForNewProgress(generation));
+            Assert.AreSame(model,system.OutsideExploration);Assert.AreSame(runtime,system.OutsideRuntime);
+            Assert.IsFalse(model.IsEnded);Assert.AreEqual(position,model.Core.Position);Assert.IsNull(system.OutsideProgressGeneration);
+        }
+        [Test] public void 外界新規進行は旧表示時計手札を終了し同世代の重複通知では再初期化しない()
+        {
+            var model=system.OutsideExploration;var runtime=system.OutsideRuntime;
+            var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards();
+            var owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            Assert.IsTrue(model.TryInitializeCards(cards,owned,new Olca.Core.Logic.Battle.SeededBattleRandom(7),out var error),error);
+            Assert.IsTrue(model.TryConfigureCamera(Olca.Core.Logic.Integration.OutsideCameraPolicy.FixedAt(60000)));
+            using(var input=new UnityInputProvider())using(var lease=model.AttachPresentation()){
+                var driver=new object();runtime.Attach(driver,input);model.Core.TickFrame(1,false,false);Assert.IsTrue(model.Core.CardGauge.TrySpend(20));
+                string generation=Guid.NewGuid().ToString("N");Assert.IsTrue(system.ResetOutsideForNewProgress(generation));
+                Assert.IsTrue(model.IsEnded);Assert.IsFalse(lease.IsCurrent);Assert.IsNull(lease.Core);
+                Assert.Throws<ObjectDisposedException>(()=>runtime.Attach(driver,input));runtime.Pump(driver,true);
+                Assert.AreNotSame(model,system.OutsideExploration);Assert.AreNotSame(runtime,system.OutsideRuntime);
+                using(var defaults=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                    var fresh=system.OutsideExploration;Assert.AreEqual(defaults.Core.Position,fresh.Core.Position);
+                    Assert.AreEqual(0,fresh.Core.Frame);Assert.AreEqual(0,system.OutsideRuntime.Frame);
+                    Assert.AreEqual(defaults.Core.CardGauge.CurrentUnits,fresh.Core.CardGauge.CurrentUnits);
+                    Assert.IsNull(fresh.Cards);Assert.IsNull(fresh.Camera.FixedCenter);Assert.IsFalse(fresh.IsPresented);
+                    fresh.Core.TickFrame(-1,false,false);Assert.IsFalse(system.ResetOutsideForNewProgress(generation));
+                    Assert.AreSame(fresh,system.OutsideExploration);Assert.AreEqual(1,fresh.Core.Frame);Assert.AreEqual(generation,system.OutsideProgressGeneration);
+                }
+            }
+            system.Dispose();Assert.Throws<ObjectDisposedException>(()=>system.ResetOutsideForNewProgress(Guid.NewGuid().ToString("N")));
+        }
+        [Test] public void 通常host終了再開は新規進行と見なさず外界状態を保持する()
+        {
+            var model=system.OutsideExploration;var runtime=system.OutsideRuntime;model.Core.TickFrame(1,false,false);
+            string path=Path.Combine(Path.GetTempPath(),"olca-outside-normal-"+Guid.NewGuid().ToString("N"));
+            try{
+                using(system.BeginSession(owner,path+"/settings",path+"/checkpoints",path+"/progress")){}
+                using(system.BeginSession(new object(),path+"/settings",path+"/checkpoints",path+"/progress")){}
+                Assert.AreSame(model,system.OutsideExploration);Assert.AreSame(runtime,system.OutsideRuntime);
+                Assert.AreEqual(1,model.Core.Frame);Assert.IsFalse(model.IsEnded);Assert.IsNull(system.OutsideProgressGeneration);
+            }finally{if(Directory.Exists(path))Directory.Delete(path,true);}
+        }
+
         [Test] public void 外界Runtimeは単一driverだけを許し解放後も同じRoot状態と時計を再利用する()
         {
             var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();
