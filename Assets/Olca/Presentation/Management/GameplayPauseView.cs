@@ -155,15 +155,26 @@ namespace Olca.Presentation.Management
             panel.transform.SetAsFirstSibling();
             var rect = (RectTransform)panel.transform;
             rect.sizeDelta = new Vector2(1440, 840);
-            UiLook.Face(panel.GetComponent<Image>());
-            panel.GetComponent<Image>().color = new Color(1, 1, 1, .96f);
+            // 既存の暗い読取面を借用し、背面Customよりポーズ操作を読み取りやすくする。
+            var surface = panel.GetComponent<Image>();
+            surface.sprite = Resources.Load<Sprite>("OlcaUI/description");
+            surface.type = Image.Type.Sliced;
+            surface.color = surface.sprite != null ? Color.white : new Color(.025f, .075f, .105f, .98f);
             panel.GetComponent<Image>().raycastTarget = false;
+            // 読取面の内側だけ背面文字を遮り、既存ベベル外縁の透明感は残す。
+            var backing = new GameObject("PauseMenuBacking", typeof(RectTransform), typeof(Image));
+            backing.transform.SetParent(pauseOverlay.transform, false);
+            backing.transform.SetAsFirstSibling();
+            ((RectTransform)backing.transform).sizeDelta = rect.sizeDelta - new Vector2(24, 24);
+            var backingImage = backing.GetComponent<Image>();
+            backingImage.color = new Color(.025f, .075f, .105f, 1f);
+            backingImage.raycastTarget = false;
             Text Heading(string name, string text, Vector2 position, Vector2 size, int fontSize)
             {
                 var obj = new GameObject(name, typeof(RectTransform), typeof(Text));
                 obj.transform.SetParent(panel.transform, false);
                 var label = obj.GetComponent<Text>(); label.font = Font; label.text = text;
-                UiLook.Label(label); label.fontSize = fontSize; label.alignment = TextAnchor.MiddleLeft;
+                UiLook.Label(label); label.color = new Color(.58f, .94f, 1f, 1f); label.fontSize = fontSize; label.alignment = TextAnchor.MiddleLeft;
                 label.rectTransform.sizeDelta = size; label.rectTransform.anchoredPosition = position;
                 return label;
             }
