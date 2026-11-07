@@ -3132,6 +3132,26 @@ namespace Olca.Tests.Integration
             }
             return c;
         }
+        [Test]
+        public void スタイル表示中は残るcheckpointフラグで共通補助操作を出さず旧操作も拒否して戻れば復帰する()
+        {
+            var c=StartStyles(true);Set(c,"awaitingCheckpointChoice",true);
+            Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
+            var newGame=(UnityEngine.UI.Button)Get(c,"newGameButton");var collection=(UnityEngine.UI.Button)Get(c,"cardCollectionButton");
+            Assert.IsTrue(newGame.gameObject.activeSelf);Assert.IsTrue(collection.gameObject.activeSelf);
+            var oldNewGame=newGame.onClick;var oldCollection=collection.onClick;
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(store.ActivePath);long revision=c.PersistentProgress.Revision;
+            KeyboardButton(c,"SelectDepartureStyle");Assert.IsTrue((bool)Get(c,"styleSelectionOpen"));
+            Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
+            Assert.IsFalse(newGame.gameObject.activeSelf,"スタイル見出しを共通NewGameで覆わない");
+            Assert.IsFalse(collection.gameObject.activeSelf,"スタイル上へ共通図鑑を重ねない");
+            oldNewGame.Invoke();oldCollection.Invoke();
+            Assert.IsFalse((bool)Get(c,"progressDialogOpen"));Assert.IsFalse((bool)Get(c,"cardCollectionOpen"));Assert.IsTrue((bool)Get(c,"styleSelectionOpen"));
+            Assert.IsTrue(SelectionButton(c,"CancelStyleSelection").gameObject.activeInHierarchy);
+            KeyboardButton(c,"CancelStyleSelection");Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
+            Assert.IsFalse((bool)Get(c,"styleSelectionOpen"));Assert.IsTrue(newGame.gameObject.activeSelf);Assert.IsTrue(collection.gameObject.activeSelf);
+            Assert.AreEqual(revision,c.PersistentProgress.Revision);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+        }
         [TestCase(false)][TestCase(true)]
         public void 出撃先からスタイルと交換へ進んで取消しても選択先と保存を保持する(bool returned)
         {
@@ -4369,6 +4389,7 @@ namespace Olca.Tests.Integration
                 Assert.IsNull(Get(hud, "hpText"));
                 var custom = UnityEngine.Resources.Load<UnityEngine.GameObject>("OlcaSystem/BattlePresentation").GetComponentInChildren<Olca.Presentation.CustomScreen.CustomScreenView>(true);
                 var uiFont = custom.GetComponentInChildren<UnityEngine.UI.Text>(true).font;
+                Assert.AreSame(uiFont, hudObject.GetComponentsInChildren<UnityEngine.UI.Text>(true).Single(t => t.name == "InstructionText").font, "管理起動HUDの操作案内も既存UIフォントを使う");
                 hud.ConfigureMissingStatusFont(uiFont);
                 foreach (var value in new (int hp, int max)[] { (100, 100), (83, 100), (100, 100), (73, 100), (0, 590), (1, 1), (1, 590), (590, 590), (int.MaxValue, int.MaxValue) })
                 {

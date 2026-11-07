@@ -69,6 +69,12 @@ namespace Olca.Presentation.Effects
             }
         }
 
+        internal void InitializeTarget(Image image)
+        {
+            targetImage = image;
+            InitializeIfNeeded();
+        }
+
         /// <summary>
         /// 初期化（targetImageが設定された後に呼ぶ）
         /// </summary>

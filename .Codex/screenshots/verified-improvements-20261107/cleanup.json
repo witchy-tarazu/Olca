@@ -1,0 +1,526 @@
+{
+  "success": true,
+  "originalHead": "5c4f7e647f6a8685a954b504e76ca499d25716f6",
+  "originalClean": true,
+  "trackedAssetComparison": 928,
+  "exceptPrivateURP": [
+    "Assets/Settings/UniversalRP.asset",
+    "Assets/UniversalRenderPipelineGlobalSettings.asset"
+  ],
+  "differences": [],
+  "actualRender": {
+    "screen": [
+      640,
+      360
+    ],
+    "textures": [
+      {
+        "name": "GameView.m_RenderTexture",
+        "width": 640,
+        "height": 360
+      },
+      {
+        "name": "PlayModeView.m_TargetTexture",
+        "width": 640,
+        "height": 360
+      }
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/",
+    "playing": false
+  },
+  "storageGuard": true,
+  "storageConfigurationRestored": true,
+  "defaultStoreAbsent": true,
+  "devices": {
+    "devices": [
+      {
+        "name": "Mouse",
+        "layout": "Mouse",
+        "native": true
+      },
+      {
+        "name": "Keyboard",
+        "layout": "Keyboard",
+        "native": true
+      }
+    ],
+    "events": [],
+    "screen": [
+      640,
+      360
+    ],
+    "temp": "/workspace/olca-validation-20261024/save/tmp/"
+  },
+  "generatedAssets": {
+    "generations": 0,
+    "roots": 0,
+    "borrowers": 0,
+    "entries": 0,
+    "pendingNativeDestroy": 0,
+    "caches": []
+  },
+  "eventRegistry": {
+    "playing": false,
+    "currentClrNull": true,
+    "currentUnityNull": true,
+    "registered": [],
+    "sceneEvents": []
+  },
+  "proofAndFaultKeys": {
+    "playing": false,
+    "scale": 1,
+    "keys": [
+      {
+        "key": "Outside26HeaderTrial",
+        "present": false
+      },
+      {
+        "key": "Outside26Entry",
+        "present": false
+      },
+      {
+        "key": "Outside26Save",
+        "present": false
+      },
+      {
+        "key": "Outside26New",
+        "present": false
+      },
+      {
+        "key": "Outside26Back",
+        "present": false
+      },
+      {
+        "key": "Outside26Session",
+        "present": false
+      },
+      {
+        "key": "Custom25FixtureOriginalVisuals",
+        "present": false
+      },
+      {
+        "key": "Custom25FixtureOriginalScreen",
+        "present": false
+      },
+      {
+        "key": "Custom25FixtureOriginalTransform",
+        "present": false
+      },
+      {
+        "key": "Custom25FixtureFixtureTransform",
+        "present": false
+      },
+      {
+        "key": "Custom25Origin",
+        "present": false
+      },
+      {
+        "key": "Custom25OldCycle",
+        "present": false
+      },
+      {
+        "key": "Custom25OriginalText",
+        "present": false
+      },
+      {
+        "key": "Custom25OldNormal",
+        "present": false
+      },
+      {
+        "key": "Custom25OldClose",
+        "present": false
+      },
+      {
+        "key": "Custom25OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Custom25End",
+        "present": false
+      },
+      {
+        "key": "Custom25Finished",
+        "present": false
+      },
+      {
+        "key": "Custom25Reason",
+        "present": false
+      },
+      {
+        "key": "Settings24Old",
+        "present": false
+      },
+      {
+        "key": "Settings24Fault",
+        "present": false
+      },
+      {
+        "key": "Settings24Store",
+        "present": false
+      },
+      {
+        "key": "Custom25OriginalReaderText",
+        "present": false
+      },
+      {
+        "key": "Custom25OldButton",
+        "present": false
+      },
+      {
+        "key": "Custom25OldClose",
+        "present": false
+      },
+      {
+        "key": "Custom25OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Custom25OldMain",
+        "present": false
+      },
+      {
+        "key": "Custom25OldCollection",
+        "present": false
+      },
+      {
+        "key": "Stage29OldClick",
+        "present": false
+      },
+      {
+        "key": "Stage29OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage29OldBinding",
+        "present": false
+      },
+      {
+        "key": "Stage29Hold",
+        "present": false
+      },
+      {
+        "key": "Stage29Fault",
+        "present": false
+      },
+      {
+        "key": "Stage29FaultSession",
+        "present": false
+      },
+      {
+        "key": "Stage29OldController",
+        "present": false
+      },
+      {
+        "key": "Stage29OldCustom",
+        "present": false
+      },
+      {
+        "key": "Stage29OldInput",
+        "present": false
+      },
+      {
+        "key": "Stage29OldManager",
+        "present": false
+      },
+      {
+        "key": "Stage29OldField",
+        "present": false
+      },
+      {
+        "key": "Stage29OldBackgrounds",
+        "present": false
+      },
+      {
+        "key": "Stage29BorrowedCamera",
+        "present": false
+      },
+      {
+        "key": "Stage29OldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage29OldCustomInput",
+        "present": false
+      },
+      {
+        "key": "Stage29FieldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage29FieldPlayer",
+        "present": false
+      },
+      {
+        "key": "Stage19OldNormal",
+        "present": false
+      },
+      {
+        "key": "Stage19OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage19OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage19End",
+        "present": false
+      },
+      {
+        "key": "Stage19Finished",
+        "present": false
+      },
+      {
+        "key": "Stage19Reason",
+        "present": false
+      },
+      {
+        "key": "Stage18Origin",
+        "present": false
+      },
+      {
+        "key": "Stage18OldCycle",
+        "present": false
+      },
+      {
+        "key": "Stage18OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage18OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage18OriginalText",
+        "present": false
+      },
+      {
+        "key": "Stage18End",
+        "present": false
+      },
+      {
+        "key": "Stage17OldReward",
+        "present": false
+      },
+      {
+        "key": "Stage17End",
+        "present": false
+      },
+      {
+        "key": "Stage16Source",
+        "present": false
+      },
+      {
+        "key": "Stage16OldEquipment",
+        "present": false
+      },
+      {
+        "key": "Stage16OldMenus",
+        "present": false
+      },
+      {
+        "key": "Stage16OldButton",
+        "present": false
+      },
+      {
+        "key": "Stage16OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage16OldMain",
+        "present": false
+      },
+      {
+        "key": "Stage16OldCollection",
+        "present": false
+      },
+      {
+        "key": "Stage16OldConfirm",
+        "present": false
+      },
+      {
+        "key": "Stage14OldButton",
+        "present": false
+      },
+      {
+        "key": "Stage14OldClose",
+        "present": false
+      },
+      {
+        "key": "Stage14OldMain",
+        "present": false
+      },
+      {
+        "key": "Stage14OldCollection",
+        "present": false
+      },
+      {
+        "key": "Stage14OwnedSprites",
+        "present": false
+      },
+      {
+        "key": "Stage14OwnedMiniTextures",
+        "present": false
+      },
+      {
+        "key": "Stage14ImportedTexture",
+        "present": false
+      },
+      {
+        "key": "Stage14ArtworkView",
+        "present": false
+      },
+      {
+        "key": "Stage13Confirm",
+        "present": false
+      },
+      {
+        "key": "Stage13OldManualSave",
+        "present": false
+      },
+      {
+        "key": "Stage13Store",
+        "present": false
+      },
+      {
+        "key": "Stage13Session",
+        "present": false
+      },
+      {
+        "key": "Stage13Fault",
+        "present": false
+      },
+      {
+        "key": "Stage13Hold",
+        "present": false
+      },
+      {
+        "key": "Stage13CheckpointSession",
+        "present": false
+      },
+      {
+        "key": "Stage13CheckpointStore",
+        "present": false
+      },
+      {
+        "key": "Stage13CheckpointFault",
+        "present": false
+      },
+      {
+        "key": "Stage10OldController",
+        "present": false
+      },
+      {
+        "key": "Stage10OldCustom",
+        "present": false
+      },
+      {
+        "key": "Stage10OldInput",
+        "present": false
+      },
+      {
+        "key": "Stage10OldManager",
+        "present": false
+      },
+      {
+        "key": "Stage10OldField",
+        "present": false
+      },
+      {
+        "key": "Stage10OldBackgrounds",
+        "present": false
+      },
+      {
+        "key": "Stage10BorrowedCamera",
+        "present": false
+      },
+      {
+        "key": "Stage10OldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage10OldCustomInput",
+        "present": false
+      },
+      {
+        "key": "Stage10FieldBattle",
+        "present": false
+      },
+      {
+        "key": "Stage10FieldPlayer",
+        "present": false
+      }
+    ],
+    "devices": [
+      {
+        "name": "Mouse",
+        "native": true,
+        "enabled": true
+      },
+      {
+        "name": "Keyboard",
+        "native": true,
+        "enabled": true
+      }
+    ],
+    "inputBlocked": true,
+    "isPaused": false,
+    "awaitRelease": true,
+    "resumeFrames": 2
+  },
+  "consoleErrors": 0,
+  "battleVisualClock": {
+    "owners": 0,
+    "paused": false
+  },
+  "savedRootsUnchanged": {
+    "/workspace/olca-validation-20261024/save/system-stage87-85000": {
+      "progress/progress.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "progress/progress.json": "9073cf21270f1d2ff32c82d7ad348cdc6f2212067c8c9bea4b1fabfef0c4db98",
+      "progress/progress.backup.json": "5644f2c629b8c8d20a5777251c6d8d4244022c73a6bc681bbc62021a31df86d7",
+      "progress/new-game-backups/progress-1-2ACDC515975EF86E8C85EF410A09EE6901F939882348721DEC773B7F8D96954E.json": "2acdc515975ef86e8c85ef410a09ee6901f939882348721dec773b7f8d96954e",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.json": "660f37e58f21b460db91042c31e330b8c7f25fd5bc6621543f03f695ff0474e4",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.backup.json": "8dfe3651a85240237768bc13333661d5086196c87cf5e005ddf7bed0f288e576",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/olca-validation-20261024/save/system-stage95-95000": {
+      "progress/progress.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "progress/progress.json": "adf9dd2a5092ec2db1ea11ef2d758a2a8ac3bafe63f7fe4de9b6747bbf5bb9b5",
+      "progress/progress.backup.json": "9073cf21270f1d2ff32c82d7ad348cdc6f2212067c8c9bea4b1fabfef0c4db98",
+      "progress/new-game-backups/progress-1-2ACDC515975EF86E8C85EF410A09EE6901F939882348721DEC773B7F8D96954E.json": "2acdc515975ef86e8c85ef410a09ee6901f939882348721dec773b7f8d96954e",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/6372c7396c074118bed593ce2d8be29e/active.json": "e10aaf55d95eb08b98d5f243b400616c8fb74083a6ddfc871d2a2273ffc1b53e",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/6372c7396c074118bed593ce2d8be29e/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.json": "660f37e58f21b460db91042c31e330b8c7f25fd5bc6621543f03f695ff0474e4",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.backup.json": "8dfe3651a85240237768bc13333661d5086196c87cf5e005ddf7bed0f288e576",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/olca-validation-20261024/save/system-stage96-96000": {
+      "progress/progress.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "progress/progress.json": "7765e14265d3a42b5e7d20c69851c6c608ff3b638c71041e858526a3d1859795",
+      "progress/progress.backup.json": "9073cf21270f1d2ff32c82d7ad348cdc6f2212067c8c9bea4b1fabfef0c4db98",
+      "progress/new-game-backups/progress-1-2ACDC515975EF86E8C85EF410A09EE6901F939882348721DEC773B7F8D96954E.json": "2acdc515975ef86e8c85ef410a09ee6901f939882348721dec773b7f8d96954e",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.json": "660f37e58f21b460db91042c31e330b8c7f25fd5bc6621543f03f695ff0474e4",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.backup.json": "8dfe3651a85240237768bc13333661d5086196c87cf5e005ddf7bed0f288e576",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/c9e5761916c546ceb8983dc043a779c8/active.json": "26de72f97c054769875c5b99bbf8db88c7f57fb3f1920745f3ad073709cb5606",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/c9e5761916c546ceb8983dc043a779c8/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/olca-validation-20261024/save/system-stage96-96100": {
+      "progress/progress.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "progress/progress.json": "1130e3a6547d8c64f4bdcfb8c3a7a640173fd80cfcc4b970b2731fa82995f962",
+      "progress/progress.backup.json": "9073cf21270f1d2ff32c82d7ad348cdc6f2212067c8c9bea4b1fabfef0c4db98",
+      "progress/new-game-backups/progress-1-2ACDC515975EF86E8C85EF410A09EE6901F939882348721DEC773B7F8D96954E.json": "2acdc515975ef86e8c85ef410a09ee6901f939882348721dec773b7f8d96954e",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.json": "660f37e58f21b460db91042c31e330b8c7f25fd5bc6621543f03f695ff0474e4",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.backup.json": "8dfe3651a85240237768bc13333661d5086196c87cf5e005ddf7bed0f288e576",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/5d66209758dd4141890bf324e4c0f5b8/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/1564f6427b0c461e9dadcd490979c915/active.json": "04e428a03cc2d3fc491cbc5d062c1b6205b005f7d4c8941feb2495cef6c9e747",
+      "checkpoints/profiles/48180477c0ca4baa9389f024c89a943f/runs/1564f6427b0c461e9dadcd490979c915/active.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "priorPacketsPreserved": 43,
+  "frozenSourceCount": 24,
+  "frozenSourceExact": true,
+  "changedAssetsAllIncludedInFull": true,
+  "rootAuthoredDocsReviewedSeparately": true,
+  "newPlayOrNative": false
+}

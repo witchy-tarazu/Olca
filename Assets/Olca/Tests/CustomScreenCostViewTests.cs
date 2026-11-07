@@ -740,9 +740,21 @@ namespace Olca.Tests
             try{
                 var host=new GameObject("SavedDeckView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
                 var profile=new ClearReturnProfile{SavedDecks=Enumerable.Range(0,6).Select(i=>new SavedDepartureDeck{Id="deck"+i,Name="テスト"+i}).ToArray(),EquippedDeckId="deck0"};int closes=0;
+                var glass=Resources.Load<Sprite>("OlcaUI/description");Assert.IsNotNull(glass);var texture=glass.texture;
                 for(int repeat=0;repeat<2;repeat++){
                     view.RenderSavedDeckMenu(profile,repeat==0?null:"ホゾンをカクニンしてください。",pending,()=>{},_=>{},_=>{},_=>{},_=>{},()=>closes++,()=>{},reload:()=>{});Canvas.ForceUpdateCanvases();
                     foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);
+                    var reading=host.transform.Find("SavedDeckContents");
+                    foreach(var name in new[]{"DeckLibraryHeaderGlass","DeckLibraryListGlass"}){
+                        var face=reading.GetComponentsInChildren<Image>().Single(image=>image.name==name);Assert.AreSame(glass,face.sprite);Assert.IsFalse(face.raycastTarget);RequireInside(viewport,face.rectTransform);
+                    }
+                    var panel=(RectTransform)reading.Find("DeckLibraryListGlass");var pageRect=(RectTransform)reading.Find("SavedDeckPage");var pagePosition=pageRect.anchoredPosition;var pageSize=pageRect.sizeDelta;
+                    void RequireReadingGap(){var a=new Vector3[4];var b=new Vector3[4];panel.GetWorldCorners(a);pageRect.GetWorldCorners(b);Assert.GreaterOrEqual(a.Min(c=>reading.InverseTransformPoint(c).y),b.Max(c=>reading.InverseTransformPoint(c).y)+7.9f);Assert.AreEqual(pagePosition,pageRect.anchoredPosition);Assert.AreEqual(pageSize,pageRect.sizeDelta);}
+                    RequireReadingGap();
+                    foreach(var size in new[]{new Vector2(1920,1080),new Vector2(2199.64f,942.7f),new Vector2(width,height)}){
+                        viewport.sizeDelta=size;Canvas.ForceUpdateCanvases();typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();RequireReadingGap();
+                    }
+                    Assert.AreNotEqual(UiLook.Surface,host.GetComponent<Image>().color,"一覧だけを読み面へ切り替える");
                     var title=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckTitle");RequireInside(viewport,title.rectTransform);Assert.AreSame(font,title.font);
                     var help=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckHelp");RequireInside(viewport,help.rectTransform);Assert.Less(help.rectTransform.position.y+help.rectTransform.rect.height/2,title.rectTransform.position.y-title.rectTransform.rect.height/2);var error=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckError");RequireInside(viewport,error.rectTransform);Assert.AreEqual(repeat==0,string.IsNullOrEmpty(error.text));Assert.AreEqual(repeat!=0,string.IsNullOrEmpty(help.text));
 
@@ -750,6 +762,13 @@ namespace Olca.Tests
                     var footer=host.GetComponentsInChildren<Button>().Single(t=>t.name==(pending?"RetrySavedDeckSave":"ReloadSavedDecks"));if(width==1920)Assert.AreEqual(-493,viewport.InverseTransformPoint(footer.transform.position).y,.1);
                 }
                 Assert.AreEqual(pending?0:2,closes);
+                var savedDeckReadingColor=host.GetComponent<Image>().color;
+                view.RenderOwnedDeparture(profile,new Card[0],new Card[0],null,false,(_,__)=>{},()=>{},_=>{},()=>{},false,save:()=>{},deckName:"テスト");
+                Assert.AreEqual(savedDeckReadingColor,host.GetComponent<Image>().color,"通常のDungeon編成と一覧は同じ読み面を使う");
+                foreach(var name in new[]{"DepartureSummary","DepartureCandidates","SavedDeckName"})
+                    Assert.AreSame(glass,host.GetComponentsInChildren<Image>().Single(image=>image.name==name).sprite,"編成の既存面へimport素材を借用する");
+                Assert.IsFalse(host.GetComponentsInChildren<Image>().Any(image=>image.name=="DeckLibraryHeaderGlass"||image.name=="DeckLibraryListGlass"));
+                Object.DestroyImmediate(host);Assert.IsTrue(glass!=null);Assert.IsTrue(texture!=null);
             }finally{Object.DestroyImmediate(root);}
         }
         [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
@@ -1108,22 +1127,37 @@ namespace Olca.Tests
             }finally{if(view!=null)typeof(ClearReturnView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Object.DestroyImmediate(root);}
         }
 
-        [Test]
-        public void 非アクティブな親でも手札初期化と選択がAwakeに依存せず再表示で寿命を作り直さない()
+        [TestCase(false)] [TestCase(true)]
+        public void 手札初期化はAwake前後とも対象の初期色とscaleを一度だけ捕捉し再表示で寿命を作り直さない(bool activeBeforeInitialize)
         {
             var root=new GameObject("InactiveCustom",typeof(RectTransform));root.SetActive(false);
             try {
                 var parent=root.AddComponent<CustomScreenView>();
                 var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/HandCardViewPrefab.prefab");
                 var obj=Object.Instantiate(prefab,root.transform);var hand=obj.GetComponent<HandCardView>();
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var image=(Image)typeof(HandCardView).GetField("cardImage",flags).GetValue(hand);
+                var originalColor=new Color(.23f,.45f,.67f,.9f);var originalScale=new Vector3(.8f,.9f,1);
+                image.color=originalColor;image.rectTransform.localScale=originalScale;
+                if(activeBeforeInitialize)root.SetActive(true);
                 var card=Create("sword",CardSeries.Sword);
                 hand.Initialize(card,parent);
                 var field=typeof(HandCardView).GetField("destroyCts",BindingFlags.Instance|BindingFlags.NonPublic);
                 var lifetime=field.GetValue(hand);Assert.IsNotNull(lifetime);
+                var effect=image.GetComponent<Olca.Presentation.Effects.CardEffectView>();Assert.IsNotNull(effect);
+                Assert.AreEqual(1,image.GetComponents<Olca.Presentation.Effects.CardEffectView>().Length);
+                Assert.AreSame(image,typeof(Olca.Presentation.Effects.CardEffectView).GetField("targetImage",flags).GetValue(effect));
+                Assert.AreEqual(originalColor,typeof(Olca.Presentation.Effects.CardEffectView).GetField("originalColor",flags).GetValue(effect));
+                Assert.AreEqual(originalScale,typeof(Olca.Presentation.Effects.CardEffectView).GetField("originalScale",flags).GetValue(effect));
                 Assert.DoesNotThrow(()=>hand.UpdateSelection(false));
                 Assert.DoesNotThrow(()=>hand.UpdateHighlight(CardHighlightType.None));
                 root.SetActive(true);Assert.AreSame(lifetime,field.GetValue(hand));
-                root.SetActive(false);hand.Initialize(card,parent);root.SetActive(true);
+                root.SetActive(false);image.color=Color.magenta;image.rectTransform.localScale=Vector3.one*1.7f;
+                hand.Initialize(card,parent);root.SetActive(true);
+                Assert.AreSame(effect,image.GetComponent<Olca.Presentation.Effects.CardEffectView>());
+                Assert.AreEqual(1,image.GetComponents<Olca.Presentation.Effects.CardEffectView>().Length);
+                Assert.AreEqual(originalColor,typeof(Olca.Presentation.Effects.CardEffectView).GetField("originalColor",flags).GetValue(effect));
+                Assert.AreEqual(originalScale,typeof(Olca.Presentation.Effects.CardEffectView).GetField("originalScale",flags).GetValue(effect));
                 Assert.AreSame(lifetime,field.GetValue(hand));Assert.AreSame(card,hand.Card);
             } finally {Object.DestroyImmediate(root);}
         }

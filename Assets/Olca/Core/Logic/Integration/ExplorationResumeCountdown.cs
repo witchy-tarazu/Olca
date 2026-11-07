@@ -235,39 +235,107 @@ namespace Olca.Core.Logic.Integration
         public const int DefaultRepeatFrames=9;
         private struct Sample {public long Time,PreviousAt,NextAt;public bool Previous,Next,PreviousDown,NextDown,Snapshot,AnyKey;}
         private readonly System.Collections.Generic.List<Sample> pending=new System.Collections.Generic.List<Sample>();
-        private bool neutral=true,resume,previous,next,blockedPrevious,blockedNext;
-        private int direction,remaining=DefaultInitialDelayFrames;
-        public void Reset(bool resumeHeld=false){pending.Clear();neutral=!resumeHeld;resume=resumeHeld;previous=next=blockedPrevious=blockedNext=false;direction=0;remaining=DefaultInitialDelayFrames;}
+        private bool waitingForNeutral=true,waitingForResumeSample,previousHeld,nextHeld,blockedPrevious,blockedNext;
+        private int repeatDirection,framesUntilRepeat=DefaultInitialDelayFrames;
+        public void Reset(bool resumeHeld=false)
+        {
+            pending.Clear();
+            waitingForNeutral=!resumeHeld;
+            waitingForResumeSample=resumeHeld;
+            previousHeld=nextHeld=blockedPrevious=blockedNext=false;
+            repeatDirection=0;
+            framesUntilRepeat=DefaultInitialDelayFrames;
+        }
         public void Queue(long time,bool prev,bool next,bool prevDown,bool nextDown,bool snapshot,bool anyKey,long previousAt,long nextAt)
             =>pending.Add(new Sample{Time=time,Previous=prev,Next=next,PreviousDown=prevDown,NextDown=nextDown,Snapshot=snapshot,AnyKey=anyKey,PreviousAt=previousAt,NextAt=nextAt});
         private static void Move(OutsideExplorationCards cards,int delta){if(cards!=null)cards.TrySelect((cards.SelectedIndex+delta+cards.Hand.Count)%cards.Hand.Count);}
-        private void Held(Sample s){
-            if(!s.Previous)blockedPrevious=false;if(!s.Next)blockedNext=false;
-            if(s.Snapshot&&!resume){if(s.Previous&&!previous)blockedPrevious=true;if(s.Next&&!next)blockedNext=true;}
-            if(s.PreviousDown)blockedPrevious=false;if(s.NextDown)blockedNext=false;
-            previous=s.Previous&&!blockedPrevious;next=s.Next&&!blockedNext;
+        private void UpdateHeld(Sample sample)
+        {
+            if(!sample.Previous)blockedPrevious=false;
+            if(!sample.Next)blockedNext=false;
+            if(sample.Snapshot&&!waitingForResumeSample){
+                if(sample.Previous&&!previousHeld)blockedPrevious=true;
+                if(sample.Next&&!nextHeld)blockedNext=true;
+            }
+            if(sample.PreviousDown)blockedPrevious=false;
+            if(sample.NextDown)blockedNext=false;
+            previousHeld=sample.Previous&&!blockedPrevious;
+            nextHeld=sample.Next&&!blockedNext;
+        }
+        // 中立sample自身まで消費し、同じ時刻群に後続sampleが残る場合だけ通常処理へ進む。
+        private bool ConsumeNeutralWait(ref int start,int end)
+        {
+            while(start<end){
+                var sample=pending[start++];
+                if(!sample.AnyKey){waitingForNeutral=false;previousHeld=nextHeld=false;break;}
+            }
+            return !waitingForNeutral&&start<end;
+        }
+        private void RestoreResumeHeld(Sample sample)
+        {
+            blockedPrevious=blockedNext=false;
+            previousHeld=sample.Previous;
+            nextHeld=sample.Next;
+            repeatDirection=previousHeld&&nextHeld?(sample.PreviousAt>sample.NextAt?-1:1):nextHeld?1:previousHeld?-1:0;
+            framesUntilRepeat=DefaultInitialDelayFrames;
+            waitingForResumeSample=false;
+        }
+        private bool ApplyTimestampGroup(OutsideExplorationCards cards,int start,int end,bool allowActions)
+        {
+            bool previousPressed=false,nextPressed=false,overlappingHeld=false;
+            for(int i=start;i<end;i++){
+                previousPressed|=pending[i].PreviousDown;
+                nextPressed|=pending[i].NextDown;
+                overlappingHeld|=pending[i].Previous&&pending[i].Next;
+            }
+            if(!waitingForResumeSample&&previousPressed&&nextPressed&&overlappingHeld){
+                for(int i=start;i<end;i++)UpdateHeld(pending[i]);
+                if(allowActions)Move(cards,1);
+                repeatDirection=nextHeld?1:previousHeld?-1:0;
+                framesUntilRepeat=DefaultInitialDelayFrames;
+                return true;
+            }
+            bool changed=false;
+            for(int i=start;i<end;i++){
+                var sample=pending[i];
+                UpdateHeld(sample);
+                if(sample.PreviousDown||sample.NextDown){
+                    int press=sample.NextDown?1:-1;
+                    if(allowActions)Move(cards,press);
+                    repeatDirection=press<0?(previousHeld?-1:nextHeld?1:0):(nextHeld?1:previousHeld?-1:0);
+                    framesUntilRepeat=DefaultInitialDelayFrames;
+                    changed=true;
+                }
+                else if(repeatDirection<0&&!previousHeld||repeatDirection>0&&!nextHeld){
+                    repeatDirection=nextHeld?1:previousHeld?-1:0;
+                    framesUntilRepeat=DefaultInitialDelayFrames;
+                    changed=true;
+                }
+            }
+            return changed;
         }
         public void AdvanceFrame(OutsideExplorationCards cards,bool allowActions=true)
         {
-            bool changed=false;
+            bool inputChangedThisFrame=false;
             for(int start=0;start<pending.Count;){
-                int end=start+1;while(end<pending.Count&&pending[end].Time==pending[start].Time)end++;
-                if(neutral){while(start<end){var s=pending[start++];if(!s.AnyKey){neutral=false;previous=next=false;break;}}if(neutral||start==end){start=end;continue;}}
-                if(resume&&start<end){var s=pending[start++];blockedPrevious=blockedNext=false;previous=s.Previous;next=s.Next;direction=previous&&next?(s.PreviousAt>s.NextAt?-1:1):next?1:previous?-1:0;remaining=DefaultInitialDelayFrames;resume=false;changed=true;if(start==end){start=end;continue;}}
-                bool pd=false,nd=false,both=false;for(int i=start;i<end;i++){pd|=pending[i].PreviousDown;nd|=pending[i].NextDown;both|=pending[i].Previous&&pending[i].Next;}
-                if(!resume&&pd&&nd&&both){
-                    for(int i=start;i<end;i++)Held(pending[i]);if(allowActions)Move(cards,1);direction=next?1:previous?-1:0;remaining=DefaultInitialDelayFrames;changed=true;start=end;continue;
+                int end=start+1;
+                while(end<pending.Count&&pending[end].Time==pending[start].Time)end++;
+                if(waitingForNeutral&&!ConsumeNeutralWait(ref start,end)){start=end;continue;}
+                if(waitingForResumeSample&&start<end){
+                    RestoreResumeHeld(pending[start++]);
+                    inputChangedThisFrame=true;
+                    if(start==end){start=end;continue;}
                 }
-                for(int i=start;i<end;i++){
-                    var s=pending[i];
-                    Held(s);
-                    if(s.PreviousDown||s.NextDown){int press=s.NextDown?1:-1;if(allowActions)Move(cards,press);direction=press<0?(previous?-1:next?1:0):(next?1:previous?-1:0);remaining=DefaultInitialDelayFrames;changed=true;}
-                    else if(direction<0&&!previous||direction>0&&!next){direction=next?1:previous?-1:0;remaining=DefaultInitialDelayFrames;changed=true;}
-                }
+                // 先の群ですでに変更済みでも、後続の全sampleを必ず適用する。
+                bool groupChanged=ApplyTimestampGroup(cards,start,end,allowActions);
+                inputChangedThisFrame|=groupChanged;
                 start=end;
             }
             pending.Clear();
-            if(!neutral&&!resume&&!changed&&direction!=0&&--remaining<=0){if(allowActions)Move(cards,direction);remaining=DefaultRepeatFrames;}
+            if(!waitingForNeutral&&!waitingForResumeSample&&!inputChangedThisFrame&&repeatDirection!=0&&--framesUntilRepeat<=0){
+                if(allowActions)Move(cards,repeatDirection);
+                framesUntilRepeat=DefaultRepeatFrames;
+            }
         }
     }
 }

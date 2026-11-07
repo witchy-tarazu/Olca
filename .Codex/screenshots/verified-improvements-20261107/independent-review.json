@@ -1,0 +1,167 @@
+{
+  "reviewer": "root; independent of production implementation author equipment_save_review",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "scope": "Root independently reviewed all 7 changed C# files and DungeonHud.prefab authored by equipment_save_review. Equipment_save_review independently reviewed root-authored README/S09 documentation and final evidence numerics; it does not claim independent review of its own source.",
+    "findings": [
+      "Stage85 preserves timestamp-group processing, neutral consumption, resume-held priority and 24/9 repeat timing; all groups execute before accumulated changed flag.",
+      "Typed effect initialization preserves lazy capture and does not add a second effect, lifetime or shared cache.",
+      "Style guards reject both display and stale action entry points only while styleSelectionOpen.",
+      "Deck reading look uses existing imported sprite and nonraycast surfaces, scoped to three named deck contexts; saved-list resize adjusts only reading surface, not controls.",
+      "HUD prefab differs by exactly one font reference; no gameplay or serialized geometry changes.",
+      "Tests cover state/capture identity, stale callbacks, save invariance, imported-resource survival and resize gap without relaxing existing gameplay expectations."
+    ]
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "basis": "Root independently viewed stage92/93/94/96 original native FHD before/after; prior per-stage reviews retained. Stage94 after revisited during Stage97. Other ratio evidence is stage-specific measurement, not a new universal pixel match.",
+    "limits": [
+      "No fresh Stage97 screenshot generation; unchanged exact asset/source visual evidence reused.",
+      "No claim that all existing UI fonts, physical devices or aesthetics are approved."
+    ]
+  },
+  "sourceHashes": {
+    "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "c35a55643f8369abe4216e3953cd049bc0b69c9b109f1d460ef9cdb2f4b067cf",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "a8b08228ed8241a08880d3d0e553e599f5abb2a313bbda5da4368c56db3c214e",
+    "Assets/Olca/Presentation/CustomScreen/HandCardView.cs": "eec7ce6870d5433806e2505c96345ee41070f1ed1ac8bf8e26cb338ab471b383",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "1dafe1acb31ec5678bd702aff19432edfd26f9a5d0ab481ec93e929fac725396",
+    "Assets/Olca/Presentation/Effects/CardEffectView.cs": "d5a2db78a86bf44115ed591ba4b26a4b9cdd2adb40911fd2f28952012b2e50c8",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "16ba400751ff0e7112107f1ad0762b4385ac2892cf332754d2292738ec283015",
+    "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "c85d1d2724094feaa5e42d92590c09f0f398e2074534450b4f3264f5f72eb182",
+    "Assets/Resources/OlcaSystem/DungeonHud.prefab": "4315736ea57eb0d1d2aa250485bff38f5bad596811c6a638e07429a7503a8379"
+  },
+  "gateUnitTests": {
+    "passed": 18,
+    "failed": 0
+  },
+  "publication": "Full3823, related1013 executions, cleanup and source/asset match verified; gate required before commit/push.",
+  "documentationIndependentReview": {
+    "reviewer": "equipment_save_review independent reviewer of root-authored documentation; source author portions rely on recorded root cross-reviews",
+    "staticReview": {
+      "unresolvedConcreteFindings": 0,
+      "README": "Subset wording matches verified_publish.py evidence_facts sourceHashes/productionSourceHashes union and same-path hash containment; code unchanged.",
+      "S09": "Published79/80 selection vs historical85 refactor distinguished; use specified-but-unimplemented, S10/use-binding/product-data blockers separate. Stage87 ItemSkip bounded evidence not currency/clear claim.",
+      "S09OutsideAllowedSectionsExactToHead": true,
+      "S09LinksExist": 61,
+      "stage85HistoricalWording": true
+    },
+    "sourceDependencyReview": {
+      "Stage85": "Private repeat state names/three helper extraction; 24/9, timestamp/all-group order preserved; prior root independent review reused.",
+      "Stage90": "Hand fallback typed InitializeTarget retains target assignment then capture; paired files and old/new tests depend together.",
+      "Stage92": "Style UI and old-callback authorization use same flag; Controller+Integration regression depend together.",
+      "Stage93_94": "Shared deck reading palette scope and list-only resizing guard; names/input/save unchanged; Custom UI boundary tests preserved.",
+      "Stage96": "Managed Instruction font ref and HP prefab assertion; no runtime source change, old Scene unchanged.",
+      "selfAuthoredPortionsNotClaimedNewIndependentReview": true
+    },
+    "sourceHashes": {
+      "Assets/Olca/Tests/Integration/DungeonBattleManagerTests.cs": "c85d1d2724094feaa5e42d92590c09f0f398e2074534450b4f3264f5f72eb182",
+      "Assets/Resources/OlcaSystem/DungeonHud.prefab": "4315736ea57eb0d1d2aa250485bff38f5bad596811c6a638e07429a7503a8379",
+      "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "1dafe1acb31ec5678bd702aff19432edfd26f9a5d0ab481ec93e929fac725396",
+      "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "16ba400751ff0e7112107f1ad0762b4385ac2892cf332754d2292738ec283015",
+      "Assets/Olca/Application/Dungeon/DungeonBattleController.cs": "c35a55643f8369abe4216e3953cd049bc0b69c9b109f1d460ef9cdb2f4b067cf",
+      "Assets/Olca/Presentation/Effects/CardEffectView.cs": "d5a2db78a86bf44115ed591ba4b26a4b9cdd2adb40911fd2f28952012b2e50c8",
+      "Assets/Olca/Presentation/CustomScreen/HandCardView.cs": "eec7ce6870d5433806e2505c96345ee41070f1ed1ac8bf8e26cb338ab471b383",
+      "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "a8b08228ed8241a08880d3d0e553e599f5abb2a313bbda5da4368c56db3c214e",
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "76ce41f1ad4f4a17f89a10763daea1830466d4307d74bcc951e72ad0b5552a58",
+      "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "33b18bde1b775f454c9cf3a75066fff902060ba7dfdeb5d5be3c3e120475b4d4",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9b053fc72655a5d8b0d1d44f9084abfda3f20974d118e2f7c3917c1ef521c5b7",
+      "Assets/Olca/Tests/SettingsWriteRefactorTests.cs": "5dfd101cb4c2e971834684432b62ddde665ae6a34a1c009805762d22c9c71d8d",
+      "Assets/Olca/Core/Interfaces/IInputProvider.cs": "2d986112e7b59de096b8af7bfc719fab3eb647f11205e1f8ce1c8b134223eb09",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "471f4fdd7dcd24b4bf7ac1636c855e4f3110258bfde0980880ff57601341a564",
+      "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "9a68d98cf296639f547e0caaa4636ed7948fb6b87ca09ce1568b1517a9e4936f",
+      "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "f66dc6ce3155edd558a005e2f3584e13186c47cb7c259f2daaecaa7eaa98503a",
+      "Assets/Olca/Unity/UnityInputProvider.cs": "655b95818b57b545c05eb12d452bacf6213f632609072735eb08e107d1588775",
+      "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "23150ecc5ae94c6a94f9b044b5de2a42f2c0f574f00b7a10d83507ad9149dba2",
+      "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b0a142e79bc78fd898619f56cbb95782320f3a1994d8ba386678581363730092",
+      "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs": "82e7bab05546014e38dea7d8c4db5581c3def9dc99589da86ef6e25dc5224443",
+      "Assets/Olca/Tests/ActionPoseRendererTests.cs": "257fea92c9f03faa93d02fc0fb97c46ee3d15d09106b6578332d96b9ca7d63a0",
+      "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "5a84f55436215ab4e8b11cc4d67d12bf9112012afc5610deedd981185f10ebdc",
+      "Assets/Olca/Presentation/Field/WorldEnemyView.cs": "90e6380bda17f4ef014a7b401c5f3ec3eb6ad66daa8eed4124faca397b4e13d0",
+      "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs": "6c2b05799f15957cb161952ad1ec95d747afd8efae368a2297fc35cc8296676a"
+    },
+    "documentHashes": {
+      "Planning/未決仕様引継ぎ.md": "87cc5f34f0449b0ba31b2f7dc51c46ddec17fd5c120e472d8e1272529f525337",
+      ".Codex/tools/README.md": "8fa0d8e43a13ded8469e23368a950db0333e25c6297fb874ae2706eada37905c"
+    },
+    "remainingScope": [
+      "S10 and use action/binding/product data not inferred",
+      "Old Scene Instruction font unchanged",
+      "No fresh Native or images for this integration cutoff; stage-specific independent visual evidence reused",
+      "No publication actions by this agent"
+    ],
+    "validation": {
+      "finalGroups": {
+        "hudFont": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "instruction": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "related": {
+          "total": 389,
+          "passed": 389,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "integration": {
+          "total": 621,
+          "passed": 621,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        }
+      },
+      "full": {
+        "summary": {
+          "total": 3823,
+          "passed": 3823,
+          "failed": 0,
+          "skipped": 0,
+          "inconclusive": 0
+        },
+        "duration": 235.57,
+        "sourceHashes24Frozen": true,
+        "testResubmitted": false,
+        "freshRun": {
+          "log": "/workspace/olca-validation-20261024/evidence/editor-stage85-20261107.log",
+          "offset": 199611901,
+          "bytes": 32703270,
+          "sha256": "b02dec8ec8c7846c9896e726060c19a963e716ea0c9acd0e88eaefd5808b87f9",
+          "started": true,
+          "finished": "[TestResultCollector] Run finished: 3823 total, 3823 passed, 0 failed",
+          "segmentCopied": false
+        },
+        "consoleErrors": 0
+      },
+      "cleanup": "system-stage97-cleanup.json",
+      "warnings": "system-stage97-warnings.json",
+      "noNewNativeImages": true,
+      "sameEditorRepeat": "Existing final stage85/90/92/93/94/96 repeat evidence reused; no unnecessary repeats in97."
+    },
+    "publicationReadmeReview": {
+      "path": ".Codex/screenshots/verified-improvements-20261107/README.md",
+      "sha256": "ccea504b8ea0624cc0074641adbff873413cbe165e1a423f9a917c07d7b5e9eb",
+      "unresolvedConcreteFindings": 0,
+      "stageCountsMatchedActual85_90_92_93_94_96Receipts": true,
+      "imageCopiesMatchImmutable94Zip": true,
+      "newNativeClaim": false,
+      "privateAbsolutePaths": false,
+      "pendingGateJsonReferences": "5JSON are explicitly final integration receipts; root will populate from actual97 results, not historic copies.",
+      "limits": "Target same saved20/name/clean FHD comparison, not pixel-identity or all-screen completion."
+    }
+  },
+  "finalEvidenceReview": {
+    "reviewer": "equipment_save_review",
+    "unresolvedConcreteFindings": 0,
+    "basis": "Final README and five gate JSON numerics/limits read after final run and cleanup."
+  }
+}

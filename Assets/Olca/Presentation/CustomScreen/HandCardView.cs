@@ -62,15 +62,7 @@ namespace Olca.Presentation.CustomScreen
             if (cardEffectView == null && cardImage != null)
             {
                 cardEffectView = cardImage.gameObject.AddComponent<CardEffectView>();
-                // 対象Imageを設定（リフレクションを使用）
-                var targetImageField = typeof(CardEffectView).GetField("targetImage",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (targetImageField != null)
-                {
-                    targetImageField.SetValue(cardEffectView, cardImage);
-                    // targetImageを設定した後、明示的に初期化を呼ぶ
-                    cardEffectView.InitializeIfNeeded();
-                }
+                cardEffectView.InitializeTarget(cardImage);
             }
         }
 
