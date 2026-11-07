@@ -466,6 +466,10 @@ namespace Olca.Core.Logic.Integration
         public float HorizontalTap => TouchHorizontalDown;
         public bool CancelTouchTap { get; set; }
         public float Vertical { get; set; }
+        public bool HasSelectionSample {get;set;} public bool AnyKeyExceptSelection {get;set;}
+        public bool SelectionPreviousHeld {get;set;} public bool SelectionNextHeld {get;set;}
+        public bool SelectionPreviousDown {get;set;} public bool SelectionNextDown {get;set;}
+        public bool SelectionSnapshot {get;set;} public long SelectionPreviousAt {get;set;} public long SelectionNextAt {get;set;}
         public bool JumpButtonDown { get; set; }
         public bool JumpButton { get; set; }
         public bool DashButton { get; set; }
@@ -480,7 +484,7 @@ namespace Olca.Core.Logic.Integration
         public bool MenuDecideButtonDown { get; set; }
         public bool MenuCancelButtonDown { get; set; }
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+        public void ClearEdges() { SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
     }
 
     /// <summary>指ごとの押下順だけを所有する。UI除外・座標・時計はUnity側で決める。</summary>
@@ -520,6 +524,7 @@ namespace Olca.Core.Logic.Integration
                 var next = pending.Dequeue().Value;
                 // 同じ論理フレーム内で再押下されても、解放前の連続保持時間を引き継がない。
                 if (!next.BasicAttackButton) heldFrames = 0;
+                next.SelectionPreviousDown|=held.SelectionPreviousDown;next.SelectionNextDown|=held.SelectionNextDown;
                 next.JumpButtonDown |= held.JumpButtonDown;
                 next.DashButtonDown |= held.DashButtonDown;
                 next.CardUseButtonDown |= held.CardUseButtonDown;

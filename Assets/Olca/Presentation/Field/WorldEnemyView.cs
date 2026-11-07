@@ -177,7 +177,7 @@ namespace Olca.Presentation.Field
             // Prefab 経由では Sprite がシリアライズされないためランタイムで生成
             var bodyRenderer = enemyView?.BodyRenderer;
             if (bodyRenderer != null && bodyRenderer.sprite == null)
-                bodyRenderer.sprite = CreateWhiteSprite();
+                bodyRenderer.sprite = GetOwnedWhiteSprite();
 
             enemyView?.Initialize(enemy);
             UpdatePosition();
@@ -197,11 +197,18 @@ namespace Olca.Presentation.Field
                 strongMarker.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
                 strongMarker.transform.localScale = new Vector3(0.22f, 0.22f, 1f);
                 var renderer = strongMarker.AddComponent<SpriteRenderer>();
-                renderer.sprite = CreateWhiteSprite();
+                renderer.sprite = GetOwnedWhiteSprite();
                 renderer.color = new Color(0.35f, 0.95f, 1f, 0.9f);
                 renderer.sortingOrder = 5;
             }
             if (strongMarker != null) strongMarker.SetActive(strong && gridView == null && enemy != null && !enemy.IsDead);
+        }
+
+        private Sprite ownedWhiteSprite;
+        private Sprite GetOwnedWhiteSprite()
+        {
+            if (ownedWhiteSprite == null) ownedWhiteSprite = CreateWhiteSprite();
+            return ownedWhiteSprite;
         }
 
         private static Sprite CreateWhiteSprite()
@@ -369,6 +376,14 @@ namespace Olca.Presentation.Field
             SetHiddenByBlindness(false);
             destroyCts?.Cancel();
             destroyCts?.Dispose();
+            // Rendererの借用import素材には触れず、自身が生成した白素材だけを返す。
+            if (ownedWhiteSprite != null)
+            {
+                var texture = ownedWhiteSprite.texture;
+                if (UnityEngine.Application.isPlaying) { Destroy(ownedWhiteSprite); Destroy(texture); }
+                else { DestroyImmediate(ownedWhiteSprite); DestroyImmediate(texture); }
+                ownedWhiteSprite = null;
+            }
         }
     }
 }

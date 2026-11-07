@@ -37,9 +37,10 @@ namespace Olca.Presentation.Exploration
         private Action returned;
         private Func<Olca.Core.Domain.Card,Sprite> cardIcon;
         private Olca.Core.Logic.Integration.OutsideExplorationCards renderedCards;
-        private Text handHeading;
+        private Text handHeading,selectionGuideText,movementGuideText;private Func<string> selectionGuide,movementGuide;
         private readonly Text[] handNames=new Text[3],handCosts=new Text[3];
-        private readonly Image[] handIcons=new Image[3];
+        private readonly Image[] handIcons=new Image[3],handSelectionMarks=new Image[3];
+        private readonly Button[] handButtons=new Button[3];
         private Sprite idleSprite,riseSprite,apexSprite,fallSprite;private AnimationClip moveClip,idleClip;private SpriteRenderer motionSample;
         private readonly System.Collections.Generic.List<(Image image,Text label)> landingViews=new System.Collections.Generic.List<(Image,Text)>();
         private Image player,terrain;private Text leftEnd,rightEnd,gaugeLabel;private RectTransform gaugeFill;private long lastGaugeUnits=-1,lastGaugeMaximum=-1;private float pixelsPerWorldUnit;
@@ -68,22 +69,35 @@ namespace Olca.Presentation.Exploration
             gaugeLabel=factory.Label("OutsideCardGaugeLabel",transform,new Vector2(0,1),new Vector2(240,-148),new Vector2(400,28));gaugeLabel.fontSize=22;gaugeLabel.alignment=TextAnchor.MiddleLeft;gaugeLabel.color=Color.white;gaugeLabel.raycastTarget=false;gaugeLabel.horizontalOverflow=HorizontalWrapMode.Wrap;gaugeLabel.verticalOverflow=VerticalWrapMode.Truncate;gaugeLabel.resizeTextForBestFit=true;gaugeLabel.resizeTextMinSize=18;gaugeLabel.resizeTextMaxSize=22;
             var track=new GameObject("OutsideCardGaugeTrack",typeof(RectTransform),typeof(Image));track.transform.SetParent(transform,false);var trackImage=track.GetComponent<Image>();trackImage.color=new Color(.05f,.14f,.2f,.94f);trackImage.raycastTarget=false;var trackRect=track.GetComponent<RectTransform>();trackRect.anchorMin=trackRect.anchorMax=new Vector2(0,1);trackRect.pivot=new Vector2(0,.5f);trackRect.anchoredPosition=new Vector2(40,-174);trackRect.sizeDelta=new Vector2(400,10);
             var fill=new GameObject("OutsideCardGaugeFill",typeof(RectTransform),typeof(Image));fill.transform.SetParent(track.transform,false);var fillImage=fill.GetComponent<Image>();fillImage.color=new Color(.55f,.88f,1,1);fillImage.raycastTarget=false;gaugeFill=fill.GetComponent<RectTransform>();gaugeFill.anchorMin=gaugeFill.anchorMax=new Vector2(0,.5f);gaugeFill.pivot=new Vector2(0,.5f);gaugeFill.anchoredPosition=new Vector2(2,0);gaugeFill.sizeDelta=new Vector2(396,6);
+            movementGuideText=factory.Label("OutsideMovementGuide",transform,new Vector2(0,1),new Vector2(380,-226),new Vector2(680,66));movementGuideText.fontSize=18;movementGuideText.alignment=TextAnchor.MiddleLeft;movementGuideText.color=Color.white;movementGuideText.raycastTarget=false;movementGuideText.horizontalOverflow=HorizontalWrapMode.Wrap;movementGuideText.verticalOverflow=VerticalWrapMode.Truncate;movementGuideText.resizeTextForBestFit=true;movementGuideText.resizeTextMinSize=16;movementGuideText.resizeTextMaxSize=18;
             handHeading=factory.Label("OutsideHandHeading",transform,Vector2.one,new Vector2(-365,-145),new Vector2(650,28));handHeading.fontSize=20;handHeading.alignment=TextAnchor.MiddleLeft;handHeading.color=Color.white;handHeading.raycastTarget=false;
             for(int slot=0;slot<3;slot++){
                 float x=-580+slot*220;
+                var hit=new GameObject("OutsideHandButton"+slot,typeof(RectTransform),typeof(Image),typeof(Button));hit.transform.SetParent(transform,false);
+                var hitRect=hit.GetComponent<RectTransform>();hitRect.anchorMin=hitRect.anchorMax=Vector2.one;hitRect.anchoredPosition=new Vector2(x,-195);hitRect.sizeDelta=new Vector2(204,66);
+                var hitImage=hit.GetComponent<Image>();hitImage.color=new Color(.05f,.12f,.16f,.35f);handButtons[slot]=hit.GetComponent<Button>();handButtons[slot].targetGraphic=hitImage;handButtons[slot].transition=Selectable.Transition.None;handButtons[slot].navigation=new Navigation{mode=Navigation.Mode.None};
+                var mark=new GameObject("OutsideHandSelected"+slot,typeof(RectTransform),typeof(Image));mark.transform.SetParent(hit.transform,false);handSelectionMarks[slot]=mark.GetComponent<Image>();handSelectionMarks[slot].color=new Color(.65f,.95f,1,1);handSelectionMarks[slot].raycastTarget=false;var mr=mark.GetComponent<RectTransform>();mr.anchorMin=new Vector2(0,0);mr.anchorMax=new Vector2(1,0);mr.anchoredPosition=new Vector2(0,2);mr.sizeDelta=new Vector2(0,3);
                 var icon=new GameObject("OutsideHandIcon"+slot,typeof(RectTransform),typeof(Image));icon.transform.SetParent(transform,false);handIcons[slot]=icon.GetComponent<Image>();handIcons[slot].raycastTarget=false;handIcons[slot].preserveAspect=true;var ir=handIcons[slot].rectTransform;ir.anchorMin=ir.anchorMax=Vector2.one;ir.anchoredPosition=new Vector2(x-72,-193);ir.sizeDelta=new Vector2(36,36);
                 handNames[slot]=factory.Label("OutsideHandName"+slot,transform,Vector2.one,new Vector2(x+20,-180),new Vector2(138,28));var label=handNames[slot];label.fontSize=20;label.alignment=TextAnchor.MiddleLeft;label.color=Color.white;label.raycastTarget=false;label.resizeTextForBestFit=true;label.resizeTextMinSize=16;label.resizeTextMaxSize=20;
                 handCosts[slot]=factory.Label("OutsideHandCost"+slot,transform,Vector2.one,new Vector2(x+20,-209),new Vector2(138,24));handCosts[slot].fontSize=18;handCosts[slot].alignment=TextAnchor.MiddleLeft;handCosts[slot].color=new Color(.7f,.89f,1);handCosts[slot].raycastTarget=false;
             }
+            selectionGuideText=factory.Label("OutsideSelectionGuide",transform,Vector2.one,new Vector2(-370,-246),new Vector2(650,26));selectionGuideText.fontSize=18;selectionGuideText.color=Color.white;selectionGuideText.raycastTarget=false;selectionGuideText.resizeTextForBestFit=true;selectionGuideText.resizeTextMinSize=16;selectionGuideText.resizeTextMaxSize=18;
             leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-45),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
             rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-45),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
             pause=factory.Button("PauseOutsideExploration","ポーズ",transform,Vector2.one,new Vector2(-430,-62));Olca.Presentation.Dungeon.UiLook.Button(pause);
             back=factory.Button("CloseOutsideExploration","戻る",transform,Vector2.one,new Vector2(-160,-62));Olca.Presentation.Dungeon.UiLook.Button(back);
         }
-        public void Show(Olca.Presentation.Management.ManagedScreenContext owner,Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Action onBack,Action onPause=null,Func<Olca.Core.Domain.Card,Sprite> icon=null)
+        public void Show(Olca.Presentation.Management.ManagedScreenContext owner,Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Action onBack,Action onPause=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Func<string> selectionGuide=null,Func<string> movementGuide=null)
         {
-            Hide();cardIcon=icon;renderedCards=null;handHeading.text="";covered=false;uncoveredFrame=-1;context=owner;presentation=lease;returned=onBack;gameObject.SetActive(true);transform.SetAsLastSibling();
-            var captured=owner;var capturedLease=lease;back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&!covered&&Time.frameCount!=uncoveredFrame&&!captured.DialogBlocksInput)returned?.Invoke();});
+            Hide();this.selectionGuide=selectionGuide;this.movementGuide=movementGuide;cardIcon=icon;renderedCards=null;handHeading.text="";covered=false;uncoveredFrame=-1;context=owner;presentation=lease;returned=onBack;gameObject.SetActive(true);transform.SetAsLastSibling();
+            var captured=owner;var capturedLease=lease;var capturedCards=lease.Cards;
+            for(int slot=0;slot<handButtons.Length;slot++){
+                int index=slot;var button=handButtons[slot];button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{
+                    if(this==null||button==null||!button.isActiveAndEnabled||!button.IsInteractable()||!ReferenceEquals(context,captured)||!captured.IsCurrent||!capturedLease.IsCurrent||!ReferenceEquals(presentation?.Cards,capturedCards)||capturedCards==null||!CanPlay)return;
+                    if(capturedCards.TrySelect(index))Render();
+                });
+            }
+            back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&!covered&&Time.frameCount!=uncoveredFrame&&!captured.DialogBlocksInput)returned?.Invoke();});
             if(pause!=null){pause.gameObject.SetActive(onPause!=null);pause.onClick=new Button.ButtonClickedEvent();pause.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&CanPlay)onPause?.Invoke();});}
             if(landingViews.Count==0){var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,back.GetComponentInChildren<Text>().font,null);
                 foreach(var surface in lease.Core.Definition.LandingSurfaces){var go=new GameObject("OutsideLandingSurface-"+surface.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=terrain.sprite;image.type=Image.Type.Tiled;image.color=new Color(.8f,.95f,1,.9f);image.raycastTarget=false;var rect=image.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.21f);rect.pivot=new Vector2(0,1);
@@ -110,12 +124,16 @@ namespace Olca.Presentation.Exploration
             float worldX=(float)(core.Position/unit),width=(float)(core.Definition.Width/unit);
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;
             float camera=presentation.Camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
-            var cards=presentation.Cards;
+            var cards=presentation.Cards;movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=cards==null?"":selectionGuide?.Invoke()??"";
             if(!ReferenceEquals(renderedCards,cards)||handHeading.text==""){
                 renderedCards=cards;handHeading.text=cards==null?"テフダ  /  デッキ ミトウロク":"テフダ 3  /  ヤマフダ "+cards.RemainingCount;
                 for(int slot=0;slot<3;slot++){
                     var card=cards?.Hand[slot];handNames[slot].text=card==null?"—":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name);handCosts[slot].text=card==null?"":"コスト "+card.GetFinalCost();handIcons[slot].sprite=card==null?null:cardIcon?.Invoke(card);handIcons[slot].enabled=handIcons[slot].sprite!=null;
                 }
+            }
+            for(int slot=0;slot<handButtons.Length;slot++){
+                handButtons[slot].gameObject.SetActive(cards!=null);handButtons[slot].interactable=cards!=null&&CanPlay;
+                handSelectionMarks[slot].gameObject.SetActive(cards!=null&&cards.SelectedIndex==slot);
             }
             var gauge=core.CardGauge;
             if(lastGaugeUnits!=gauge.CurrentUnits||lastGaugeMaximum!=gauge.MaximumUnits){lastGaugeUnits=gauge.CurrentUnits;lastGaugeMaximum=gauge.MaximumUnits;gaugeLabel.text=FormatCardGauge(gauge);gaugeFill.sizeDelta=new Vector2(396*(gauge.CurrentUnits/(float)gauge.MaximumUnits),6);}
@@ -142,10 +160,11 @@ namespace Olca.Presentation.Exploration
             terrain.rectTransform.offsetMin=new Vector2(-shift,0);terrain.rectTransform.offsetMax=new Vector2(tile-shift,0);
         }
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
+        private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;cardIcon=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;cardIcon=null;renderedCards=null;ClearHandIcons();}
+        private void OnDisable(){ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();back=null;pause=null;}
     }
 }

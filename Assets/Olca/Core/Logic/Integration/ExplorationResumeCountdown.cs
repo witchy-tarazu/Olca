@@ -48,6 +48,10 @@ namespace Olca.Core.Logic.Integration
     {
         private readonly Olca.Core.Domain.Deck deck;
         public System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> Hand {get;}
+        public int SelectedIndex {get;private set;}
+        public Olca.Core.Domain.Card SelectedCard=>Hand[SelectedIndex];
+        public bool TrySelect(int index)
+        {if(index<0||index>=Hand.Count)return false;SelectedIndex=index;return true;}
         public int RemainingCount=>deck.RemainingCount;
         public int TotalCount=>deck.TotalCount;
         private OutsideExplorationCards(Olca.Core.Domain.Deck deck,Olca.Core.Interfaces.IRandomProvider random)
@@ -218,6 +222,52 @@ namespace Olca.Core.Logic.Integration
             long next=Height+VerticalVelocity;
             if(VerticalVelocity<0&&Landing(previous,oldHeight,next,out var top,out var support)){Height=top;VerticalVelocity=0;SupportId=support;}
             else{Height=next;VerticalVelocity-=ValidationGravity;SupportId=null;}
+        }
+    }
+}
+
+namespace Olca.Core.Logic.Integration
+{
+    /// <summary>採用済み入力だけを受ける巡回選択。移動/ジャンプのneutral判定やゲーム時計は所有しない。</summary>
+    public sealed class OutsideSelectionRepeat
+    {
+        public const int DefaultInitialDelayFrames=24;
+        public const int DefaultRepeatFrames=9;
+        private struct Sample {public long Time,PreviousAt,NextAt;public bool Previous,Next,PreviousDown,NextDown,Snapshot,AnyKey;}
+        private readonly System.Collections.Generic.List<Sample> pending=new System.Collections.Generic.List<Sample>();
+        private bool neutral=true,resume,previous,next,blockedPrevious,blockedNext;
+        private int direction,remaining=DefaultInitialDelayFrames;
+        public void Reset(bool resumeHeld=false){pending.Clear();neutral=!resumeHeld;resume=resumeHeld;previous=next=blockedPrevious=blockedNext=false;direction=0;remaining=DefaultInitialDelayFrames;}
+        public void Queue(long time,bool prev,bool next,bool prevDown,bool nextDown,bool snapshot,bool anyKey,long previousAt,long nextAt)
+            =>pending.Add(new Sample{Time=time,Previous=prev,Next=next,PreviousDown=prevDown,NextDown=nextDown,Snapshot=snapshot,AnyKey=anyKey,PreviousAt=previousAt,NextAt=nextAt});
+        private static void Move(OutsideExplorationCards cards,int delta){if(cards!=null)cards.TrySelect((cards.SelectedIndex+delta+cards.Hand.Count)%cards.Hand.Count);}
+        private void Held(Sample s){
+            if(!s.Previous)blockedPrevious=false;if(!s.Next)blockedNext=false;
+            if(s.Snapshot&&!resume){if(s.Previous&&!previous)blockedPrevious=true;if(s.Next&&!next)blockedNext=true;}
+            if(s.PreviousDown)blockedPrevious=false;if(s.NextDown)blockedNext=false;
+            previous=s.Previous&&!blockedPrevious;next=s.Next&&!blockedNext;
+        }
+        public void AdvanceFrame(OutsideExplorationCards cards,bool allowActions=true)
+        {
+            bool changed=false;
+            for(int start=0;start<pending.Count;){
+                int end=start+1;while(end<pending.Count&&pending[end].Time==pending[start].Time)end++;
+                if(neutral){while(start<end){var s=pending[start++];if(!s.AnyKey){neutral=false;previous=next=false;break;}}if(neutral||start==end){start=end;continue;}}
+                if(resume&&start<end){var s=pending[start++];blockedPrevious=blockedNext=false;previous=s.Previous;next=s.Next;direction=previous&&next?(s.PreviousAt>s.NextAt?-1:1):next?1:previous?-1:0;remaining=DefaultInitialDelayFrames;resume=false;changed=true;if(start==end){start=end;continue;}}
+                bool pd=false,nd=false,both=false;for(int i=start;i<end;i++){pd|=pending[i].PreviousDown;nd|=pending[i].NextDown;both|=pending[i].Previous&&pending[i].Next;}
+                if(!resume&&pd&&nd&&both){
+                    for(int i=start;i<end;i++)Held(pending[i]);if(allowActions)Move(cards,1);direction=next?1:previous?-1:0;remaining=DefaultInitialDelayFrames;changed=true;start=end;continue;
+                }
+                for(int i=start;i<end;i++){
+                    var s=pending[i];
+                    Held(s);
+                    if(s.PreviousDown||s.NextDown){int press=s.NextDown?1:-1;if(allowActions)Move(cards,press);direction=press<0?(previous?-1:next?1:0):(next?1:previous?-1:0);remaining=DefaultInitialDelayFrames;changed=true;}
+                    else if(direction<0&&!previous||direction>0&&!next){direction=next?1:previous?-1:0;remaining=DefaultInitialDelayFrames;changed=true;}
+                }
+                start=end;
+            }
+            pending.Clear();
+            if(!neutral&&!resume&&!changed&&direction!=0&&--remaining<=0){if(allowActions)Move(cards,direction);remaining=DefaultRepeatFrames;}
         }
     }
 }

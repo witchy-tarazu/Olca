@@ -63,7 +63,9 @@ namespace Olca.Application.Management
         private readonly Olca.Core.Logic.Integration.OutsideExplorationSession session;
         private Olca.Unity.UnityLogicalLoop loop;
         private object driver;private Olca.Unity.UnityInputProvider input;
-        private bool disposed,active,armed,pumping;
+        private bool disposed,active,armed,pumping,covered,resumeSelection;
+        private readonly Olca.Core.Logic.Integration.OutsideSelectionRepeat selection=new Olca.Core.Logic.Integration.OutsideSelectionRepeat();
+        public void SetCovered(object owner,bool value){if(!ReferenceEquals(driver,owner)||covered==value)return;if(covered&&!value)resumeSelection=true;covered=value;}
         public long Frame=>loop?.Clock.Frame??0;
         public OutsideExplorationRuntime(Olca.Core.Logic.Integration.OutsideExplorationSession session){this.session=session??throw new System.ArgumentNullException(nameof(session));}
         public void Attach(object owner,Olca.Unity.UnityInputProvider provider)
@@ -71,19 +73,26 @@ namespace Olca.Application.Management
             if(disposed)throw new System.ObjectDisposedException(nameof(OutsideExplorationRuntime));
             if(owner==null||provider==null)throw new System.ArgumentNullException(nameof(owner));
             if(driver!=null&&!ReferenceEquals(driver,owner))throw new System.InvalidOperationException("外界driverが重複しています");
-            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded);driver=owner;input=provider;Reset();
+            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded);driver=owner;input=provider;covered=resumeSelection=false;selection.Reset();Reset();
         }
         private void Reset(){active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
-        public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();driver=null;input=null;}
+        public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();selection.Reset();covered=resumeSelection=false;driver=null;input=null;}
         public void Pump(object owner,bool canPlay)
         {
             if(disposed||!ReferenceEquals(driver,owner)||pumping)return;
             pumping=true;
             try{
                 if(!canPlay){if(active)Reset();loop.Observe(false);input.CaptureTimestamped();return;}
-                if(!active){Reset();active=true;}
+                if(!active){Reset();selection.Reset(resumeSelection);resumeSelection=false;active=true;}
                 // 時刻順/floor/未来保留は既存loopだけが判断する。未採用イベントでneutralを解除しない。
-                loop.PumpTimestamped(true,input.CaptureTimestamped(),(frame,ms,value)=>{
+                var samples=new System.Collections.Generic.List<Olca.Unity.TimestampedLogicalInput>();
+                foreach(var entry in input.CaptureTimestamped()){
+                    if(entry.Input==null){samples.Add(entry);continue;}var value=entry.Input.Copy();var filtered=value.Copy();if(filtered.HasSelectionSample)filtered.AnyKey=filtered.AnyKeyExceptSelection;
+                    samples.Add(new Olca.Unity.TimestampedLogicalInput(entry.Timestamp,filtered,entry.Command));long time=entry.Timestamp;
+                    samples.Add(new Olca.Unity.TimestampedLogicalInput(time,null,()=>selection.Queue(time,value.SelectionPreviousHeld,value.SelectionNextHeld,value.SelectionPreviousDown,value.SelectionNextDown,value.SelectionSnapshot,value.AnyKey,value.SelectionPreviousAt,value.SelectionNextAt)));
+                }
+                loop.PumpTimestamped(true,samples,(frame,ms,value)=>{
+                    selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked);
                     if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
                     session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton);

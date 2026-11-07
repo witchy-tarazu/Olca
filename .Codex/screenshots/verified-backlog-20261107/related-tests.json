@@ -1,0 +1,59 @@
+{
+  "status": "completed",
+  "duration": 26.03,
+  "summary": {
+    "total": 388,
+    "passed": 388,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "sourceHashes": {
+    "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "76ce41f1ad4f4a17f89a10763daea1830466d4307d74bcc951e72ad0b5552a58",
+    "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "33b18bde1b775f454c9cf3a75066fff902060ba7dfdeb5d5be3c3e120475b4d4",
+    "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9b053fc72655a5d8b0d1d44f9084abfda3f20974d118e2f7c3917c1ef521c5b7",
+    "Assets/Olca/Tests/SettingsWriteRefactorTests.cs": "5dfd101cb4c2e971834684432b62ddde665ae6a34a1c009805762d22c9c71d8d",
+    "Assets/Olca/Core/Interfaces/IInputProvider.cs": "2d986112e7b59de096b8af7bfc719fab3eb647f11205e1f8ce1c8b134223eb09",
+    "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "813ca426e880c5fbebbe1de88c9714c01750c3c8dff0a353399212c10f2477d3",
+    "Assets/Olca/Presentation/Field/GameFieldView.cs": "471f4fdd7dcd24b4bf7ac1636c855e4f3110258bfde0980880ff57601341a564",
+    "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "9a68d98cf296639f547e0caaa4636ed7948fb6b87ca09ce1568b1517a9e4936f",
+    "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "f66dc6ce3155edd558a005e2f3584e13186c47cb7c259f2daaecaa7eaa98503a",
+    "Assets/Olca/Unity/UnityInputProvider.cs": "655b95818b57b545c05eb12d452bacf6213f632609072735eb08e107d1588775",
+    "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "23150ecc5ae94c6a94f9b044b5de2a42f2c0f574f00b7a10d83507ad9149dba2",
+    "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b0a142e79bc78fd898619f56cbb95782320f3a1994d8ba386678581363730092",
+    "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "52e1c421da41e932928332b35d0880e9cc9652aade69581eecda2fa244459f34",
+    "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs": "82e7bab05546014e38dea7d8c4db5581c3def9dc99589da86ef6e25dc5224443",
+    "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "9397fc6e4454a2206be5ca86220b01b582bc4831c0fb9111a57d48a71c363044",
+    "Assets/Olca/Tests/ActionPoseRendererTests.cs": "257fea92c9f03faa93d02fc0fb97c46ee3d15d09106b6578332d96b9ca7d63a0",
+    "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "5a84f55436215ab4e8b11cc4d67d12bf9112012afc5610deedd981185f10ebdc",
+    "Assets/Olca/Presentation/Field/WorldEnemyView.cs": "90e6380bda17f4ef014a7b401c5f3ec3eb6ad66daa8eed4124faca397b4e13d0",
+    "Assets/Olca/Presentation/Effects/CardEffectView.cs": "c2e8c2ac761e420244cc713815d4569f51370a6dc26f7f9ebfc92576e9ede448",
+    "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs": "6c2b05799f15957cb161952ad1ec95d747afd8efae368a2297fc35cc8296676a"
+  },
+  "groundTruth": {
+    "sampledUtc": "2026-11-05T22:27:05.119601Z",
+    "ageMs": 105,
+    "compilationFailed": false,
+    "compiling": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 26,
+    "seeded": true
+  },
+  "consoleCounts": {
+    "error": 0,
+    "warn": 1,
+    "log": 26
+  },
+  "sourceContext": {
+    "log": "/workspace/olca-validation-20261024/evidence/editor-stage70-v2-20261105.log",
+    "offset": 362339008,
+    "args": {
+      "mode": "editor",
+      "async_tests": true,
+      "timeout": 600,
+      "filter": "Olca.Tests.CustomScreenCostViewTests"
+    }
+  },
+  "provenance": "Existing November5 Stage83 related run; not rerun on November7."
+}

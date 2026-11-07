@@ -6,6 +6,78 @@ namespace Olca.Tests
     {
         private static Olca.Core.Domain.Card[] CardFixture()=>System.Linq.Enumerable.ToArray(System.Linq.Enumerable.SelectMany(System.Linq.Enumerable.Range(0,5),id=>System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0,4),n=>new Olca.Core.Domain.Card("outside-fixture-"+id,"fixture",1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))));
         private static System.Collections.Generic.Dictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> Owned(Olca.Core.Domain.Card[] cards)=>System.Linq.Enumerable.ToDictionary(System.Linq.Enumerable.GroupBy(cards,c=>(c.Id,c.ExceedLevel)),g=>g.Key,g=>System.Linq.Enumerable.Count(g));
+        private static OutsideExplorationSession SelectionSession()
+        {
+            var source=CardFixture();var session=new OutsideExplorationSession();Assert.IsTrue(session.TryInitializeCards(source,Owned(source),new Olca.Tests.Mocks.MockRandomProvider(),out _));return session;
+        }
+        private static void SelectionSample(OutsideSelectionRepeat repeat,long time,bool previous=false,bool next=false,bool previousDown=false,bool nextDown=false,bool snapshot=false,long previousAt=0,long nextAt=0)
+            =>repeat.Queue(time,previous,next,previousDown,nextDown,snapshot,previous||next,previousAt,nextAt);
+        private static OutsideSelectionRepeat ReadySelection(OutsideExplorationCards cards)
+        {
+            var repeat=new OutsideSelectionRepeat();SelectionSample(repeat,0);repeat.AdvanceFrame(cards);return repeat;
+        }
+        [Test] public void 外界巡回は即時一回と二十四九フレームで端を循環する()
+        {
+            using(var session=SelectionSession()){
+                var cards=session.Cards;var repeat=ReadySelection(cards);SelectionSample(repeat,1,previous:true,previousDown:true);repeat.AdvanceFrame(cards);Assert.AreEqual(2,cards.SelectedIndex);
+                for(int i=0;i<23;i++)repeat.AdvanceFrame(cards);Assert.AreEqual(2,cards.SelectedIndex);repeat.AdvanceFrame(cards);Assert.AreEqual(1,cards.SelectedIndex);
+                for(int i=0;i<8;i++)repeat.AdvanceFrame(cards);Assert.AreEqual(1,cards.SelectedIndex);repeat.AdvanceFrame(cards);Assert.AreEqual(0,cards.SelectedIndex);
+                Assert.AreEqual(0,session.Core.Frame);Assert.AreEqual(6000,session.Core.CardGauge.CurrentUnits);Assert.AreEqual(17,cards.RemainingCount);
+            }
+        }
+        [TestCase(false)] [TestCase(true)] public void 外界巡回の同時刻両押下は列挙順によらず次を一回採用する(bool reverse)
+        {
+            using(var session=SelectionSession()){
+                var repeat=ReadySelection(session.Cards);
+                SelectionSample(repeat,10,previous:!reverse,next:reverse,previousDown:!reverse,nextDown:reverse);
+                SelectionSample(repeat,10,previous:true,next:true,previousDown:reverse,nextDown:!reverse);
+                repeat.AdvanceFrame(session.Cards);Assert.AreEqual(1,session.Cards.SelectedIndex);
+                for(int i=0;i<24;i++)repeat.AdvanceFrame(session.Cards);Assert.AreEqual(2,session.Cards.SelectedIndex);
+            }
+        }
+        [Test] public void 外界巡回は後押し優先と優先解除後の反対保持待機を守る()
+        {
+            using(var session=SelectionSession()){
+                var repeat=ReadySelection(session.Cards);SelectionSample(repeat,1,previous:true,previousDown:true);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(2,session.Cards.SelectedIndex);
+                SelectionSample(repeat,2,previous:true,next:true,nextDown:true);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(0,session.Cards.SelectedIndex);
+                SelectionSample(repeat,3,previous:true);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(0,session.Cards.SelectedIndex);
+                for(int i=0;i<23;i++)repeat.AdvanceFrame(session.Cards);Assert.AreEqual(0,session.Cards.SelectedIndex);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(2,session.Cards.SelectedIndex);
+            }
+        }
+        [Test] public void 外界巡回は同フレーム短押しを失わず初回保持を解除まで拒否する()
+        {
+            using(var session=SelectionSession()){
+                var repeat=new OutsideSelectionRepeat();SelectionSample(repeat,1,next:true,snapshot:true);repeat.AdvanceFrame(session.Cards);for(int i=0;i<60;i++)repeat.AdvanceFrame(session.Cards);Assert.AreEqual(0,session.Cards.SelectedIndex);
+                SelectionSample(repeat,2);SelectionSample(repeat,3,next:true,nextDown:true);SelectionSample(repeat,4);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(1,session.Cards.SelectedIndex);
+                for(int i=0;i<60;i++)repeat.AdvanceFrame(session.Cards);Assert.AreEqual(1,session.Cards.SelectedIndex);
+            }
+        }
+        [TestCase(20,10,2)] [TestCase(10,20,1)] [TestCase(20,20,1)]
+        public void 外界巡回の再開保持は新押下とせず時刻優先で二十四フレーム待つ(long previousAt,long nextAt,int expected)
+        {
+            using(var session=SelectionSession()){
+                var repeat=new OutsideSelectionRepeat();repeat.Reset(true);SelectionSample(repeat,30,previous:true,next:true,snapshot:true,previousAt:previousAt,nextAt:nextAt);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(0,session.Cards.SelectedIndex);
+                for(int i=0;i<23;i++)repeat.AdvanceFrame(session.Cards);Assert.AreEqual(0,session.Cards.SelectedIndex);repeat.AdvanceFrame(session.Cards);Assert.AreEqual(expected,session.Cards.SelectedIndex);
+            }
+        }
+        [Test] public void 外界巡回は入力禁止中の選択を進めず解除後の保持を継続する()
+        {
+            using(var session=SelectionSession()){
+                var repeat=ReadySelection(session.Cards);SelectionSample(repeat,1,next:true,nextDown:true);repeat.AdvanceFrame(session.Cards,false);Assert.AreEqual(0,session.Cards.SelectedIndex);
+                for(int i=0;i<24;i++)repeat.AdvanceFrame(session.Cards,false);Assert.AreEqual(0,session.Cards.SelectedIndex);
+                for(int i=0;i<9;i++)repeat.AdvanceFrame(session.Cards);Assert.AreEqual(1,session.Cards.SelectedIndex);
+            }
+        }
+        [TestCase(-1)] [TestCase(3)] [TestCase(int.MaxValue)]
+        public void 外界の直接選択は初期左端と範囲を守りカードと時計を変更しない(int invalid)
+        {
+            var source=CardFixture();using(var session=new OutsideExplorationSession()){
+                Assert.IsTrue(session.TryInitializeCards(source,Owned(source),new Olca.Tests.Mocks.MockRandomProvider(),out _));var cards=session.Cards;var hand=System.Linq.Enumerable.ToArray(cards.Hand);long gauge=session.Core.CardGauge.CurrentUnits;
+                Assert.AreEqual(0,cards.SelectedIndex);Assert.AreSame(hand[0],cards.SelectedCard);Assert.IsTrue(cards.TrySelect(2));Assert.AreSame(hand[2],cards.SelectedCard);
+                Assert.IsFalse(cards.TrySelect(invalid));Assert.AreEqual(2,cards.SelectedIndex);Assert.AreEqual(17,cards.RemainingCount);Assert.AreEqual(20,cards.TotalCount);CollectionAssert.AreEqual(hand,cards.Hand);Assert.AreEqual(gauge,session.Core.CardGauge.CurrentUnits);Assert.AreEqual(0,session.Core.Frame);
+                var first=session.AttachPresentation();first.Dispose();var next=session.AttachPresentation();Assert.AreSame(cards,next.Cards);Assert.AreEqual(2,next.Cards.SelectedIndex);next.Dispose();
+            }
+        }
         [Test] public void 外界初期手札は独立した二十枚から三枚を引き表示借用と時計で再抽選しない()
         {
             var source=CardFixture();var random=new Olca.Tests.Mocks.MockRandomProvider();using(var session=new OutsideExplorationSession()){
