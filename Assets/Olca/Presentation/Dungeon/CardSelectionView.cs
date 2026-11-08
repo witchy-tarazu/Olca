@@ -401,7 +401,7 @@ namespace Olca.Presentation.Dungeon
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
             Fit("ReturnSummary",270,110,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
+        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
         public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
@@ -896,10 +896,10 @@ namespace Olca.Presentation.Dungeon
             SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryStyleDeparture":"StyleChoice_"+selected,blocked);
         }
 
-        // 探索デッキだけの水鏡表示。共通の帰還/出撃画面や入力領域には波及させない。
-        private void ApplyExplorationDeckLook(bool valid)
+        // 通常・探索デッキ編成と保存一覧だけの水鏡表示。他画面や入力領域は維持する。
+        private void ApplyDeckReadingLook(bool valid)
         {
-            if(!explorationDeckLibrary)return;
+            if(!explorationDeckLibrary&&content.name!="SavedDeckContents"&&content.name!="DepartureContents")return;
             var surface=GetComponent<Image>();if(surface!=null)surface.color=new Color(.025f,.075f,.105f,.995f);
             var primary=new Color(.88f,.97f,1f,1f);
             var secondary=new Color(.65f,.82f,.88f,1f);
@@ -1023,7 +1023,7 @@ namespace Olca.Presentation.Dungeon
             string preferred=pending?"RetrySavedDeckSave":save!=null?"SaveNamedDeck":
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureDetails_",StringComparison.Ordinal)&&b.IsInteractable())?.name??
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureRow_",StringComparison.Ordinal)&&b.name.EndsWith("Details",StringComparison.Ordinal)&&b.IsInteractable())?.name??"CloseOwnedDeparture";
-            ApplyExplorationDeckLook(valid&&error==null);
+            ApplyDeckReadingLook(valid&&error==null);
             SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();
         }
 
@@ -1048,6 +1048,21 @@ namespace Olca.Presentation.Dungeon
                 var rect=label.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.5f);rect.pivot=new Vector2(0,.5f);
                 rect.anchoredPosition=new Vector2(140,rect.anchoredPosition.y);rect.sizeDelta=new Vector2(Mathf.Max(1,width-(details?180:0)),rect.sizeDelta.y);
             }
+        }
+
+        private void FitSavedDeckReadingSurface()
+        {
+            if(explorationDeckLibrary||content==null||content.name!="SavedDeckContents")return;
+            var reading=content.transform.Find("DeckLibraryListGlass") as RectTransform;
+            var page=content.transform.Find("SavedDeckPage") as RectTransform;
+            var area=(RectTransform)content.transform;
+            if(reading==null||page==null||area.rect.height<=0)return;
+            const float top=275;
+            float pageTop=area.rect.yMin+page.anchoredPosition.y+page.rect.yMax;
+            float bottom=Mathf.Max(-235,pageTop+8);
+            if(bottom>=top)return;
+            reading.anchoredPosition=new Vector2(0,(top+bottom)/2);
+            reading.sizeDelta=new Vector2(reading.sizeDelta.x,top-bottom);
         }
 
         public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
@@ -1114,7 +1129,7 @@ namespace Olca.Presentation.Dungeon
                 var child=content.transform.Find(name);if(child==null)continue;var control=(RectTransform)child;
                 control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
             }
-            ApplyExplorationDeckLook(error==null);FitExplorationSavedRows();
+            ApplyDeckReadingLook(error==null);FitExplorationSavedRows();FitSavedDeckReadingSurface();
             SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+(explorationDeckLibrary?decks[0].Id:profile.EquippedDeckId),force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
         }
 
@@ -1559,13 +1574,52 @@ namespace Olca.Presentation.Management
         public void RefreshLayout()=>RefreshContents();
         protected override void RefreshContents()
         {
-            if(inputScroll==null||inputScroll.viewport==null||inputScroll.content==null)return;var viewport=inputScroll.viewport;var text=inputScroll.content.GetComponent<Text>();var parent=((RectTransform)transform).rect.size;float ppu=text.pixelsPerUnit;
+            if(inputScroll==null||inputScroll.viewport==null||inputScroll.content==null)return;
+            var viewport=inputScroll.viewport;
+            var text=inputScroll.content.GetComponent<Text>();
+            var parent=((RectTransform)transform).rect.size;
+            float ppu=text.pixelsPerUnit;
             if(viewport.rect.size==viewportSize&&parent==parentSize&&text.text==bodyValue&&Mathf.Approximately(ppu,pixelsPerUnit)){
-                // 全文が収まる間の0/1は読取位置を表さない。再拡張まで直前の位置を保つ。
-                if(inputScroll.content.rect.height>viewport.rect.height+.1f)scrollPosition=inputScroll.verticalNormalizedPosition;
+                RememberScrollablePosition(viewport);
                 return;
             }
-            float position=viewportSize==Vector2.zero?1:scrollPosition;float maximum=Mathf.Max(1,parent.y*(viewport.anchorMax.y-viewport.anchorMin.y)+viewport.offsetMax.y);float needed=text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text,text.GetGenerationSettings(new Vector2(viewport.rect.width,0)))/ppu+20;float height=Mathf.Clamp(needed,Mathf.Min(120,maximum),maximum);viewport.offsetMin=new Vector2(viewport.offsetMin.x,maximum-height);viewportSize=viewport.rect.size;parentSize=parent;bodyValue=text.text;pixelsPerUnit=ppu;text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(viewportSize.y,needed));if(transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,viewportSize.y+40);if(transform.Find("ReadonlyReadingFace") is RectTransform plainReading){plainReading.anchorMin=viewport.anchorMin;plainReading.anchorMax=viewport.anchorMax;plainReading.offsetMin=viewport.offsetMin-new Vector2(20,20);plainReading.offsetMax=viewport.offsetMax+new Vector2(20,32);}inputScroll.verticalNormalizedPosition=Mathf.Clamp01(position);scrollPosition=Mathf.Clamp01(position);
+
+            float position=viewportSize==Vector2.zero?1:scrollPosition;
+            ResizeReadingContents(viewport,text,parent,ppu);
+            RefreshReadingFaces(viewport);
+            RestoreReadingPosition(position);
+        }
+        private void RememberScrollablePosition(RectTransform viewport)
+        {
+            // 全文が収まる間の0/1は読取位置を表さない。再拡張まで直前の位置を保つ。
+            if(inputScroll.content.rect.height>viewport.rect.height+.1f)scrollPosition=inputScroll.verticalNormalizedPosition;
+        }
+        private void ResizeReadingContents(RectTransform viewport,Text text,Vector2 parent,float ppu)
+        {
+            float maximum=Mathf.Max(1,parent.y*(viewport.anchorMax.y-viewport.anchorMin.y)+viewport.offsetMax.y);
+            float needed=text.cachedTextGeneratorForLayout.GetPreferredHeight(text.text,text.GetGenerationSettings(new Vector2(viewport.rect.width,0)))/ppu+20;
+            float height=Mathf.Clamp(needed,Mathf.Min(120,maximum),maximum);
+            viewport.offsetMin=new Vector2(viewport.offsetMin.x,maximum-height);
+            viewportSize=viewport.rect.size;
+            parentSize=parent;
+            bodyValue=text.text;
+            pixelsPerUnit=ppu;
+            text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(viewportSize.y,needed));
+        }
+        private void RefreshReadingFaces(RectTransform viewport)
+        {
+            if(transform.Find("CollectionReadonlyReading") is RectTransform reading)reading.sizeDelta=new Vector2(-160,viewportSize.y+40);
+            if(transform.Find("ReadonlyReadingFace") is RectTransform plainReading){
+                plainReading.anchorMin=viewport.anchorMin;
+                plainReading.anchorMax=viewport.anchorMax;
+                plainReading.offsetMin=viewport.offsetMin-new Vector2(20,20);
+                plainReading.offsetMax=viewport.offsetMax+new Vector2(20,32);
+            }
+        }
+        private void RestoreReadingPosition(float position)
+        {
+            inputScroll.verticalNormalizedPosition=Mathf.Clamp01(position);
+            scrollPosition=Mathf.Clamp01(position);
         }
         protected override bool Attempt()=>false;
         protected override void Deliver(DialogResult result){var callback=Closed;Closed=null;callback?.Invoke();}

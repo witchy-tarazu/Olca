@@ -35,6 +35,28 @@ namespace Olca.Presentation.Effects
         private RectTransform rectTransform;
         private bool isHighlighted = false;
         private CancellationTokenSource effectCts;
+        private int effectGeneration;
+
+        private CancellationTokenSource BeginEffect(CancellationToken ct, out CancellationToken token, out int generation)
+        {
+            var previous = effectCts;
+            var current = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            token = current.Token;
+            generation = ++effectGeneration;
+            effectCts = current;
+            previous?.Cancel();
+            previous?.Dispose();
+            return current;
+        }
+
+        private bool OwnsEffect(CancellationTokenSource source, int generation)
+            => generation == effectGeneration && ReferenceEquals(effectCts, source);
+
+        private void EndEffect(CancellationTokenSource source)
+        {
+            if (ReferenceEquals(effectCts, source)) effectCts = null;
+            source.Dispose();
+        }
 
         private void Awake()
         {
@@ -45,6 +67,12 @@ namespace Olca.Presentation.Effects
             {
                 glowImage.gameObject.SetActive(false);
             }
+        }
+
+        internal void InitializeTarget(Image image)
+        {
+            targetImage = image;
+            InitializeIfNeeded();
         }
 
         /// <summary>
@@ -78,21 +106,19 @@ namespace Olca.Presentation.Effects
         {
             if (targetImage == null) return;
             // 既にハイライト中でも色変更要求があれば再アニメーション（カスタマイズモード中の色切替に対応）
-            isHighlighted = true;
-
-            effectCts?.Cancel();
-            effectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var request = BeginEffect(ct, out var token, out var generation);
+            if (OwnsEffect(request, generation)) isHighlighted = true;
 
             try
             {
                 // ハイライト色に変更 + スケール拡大
                 await UniTask.WhenAll(
-                    AnimateColorAsync(targetColor, scaleDuration, effectCts.Token),
-                    AnimateScaleAsync(originalScale * selectedScale, scaleDuration, effectCts.Token)
+                    AnimateColorAsync(targetColor, scaleDuration, token, request, generation),
+                    AnimateScaleAsync(originalScale * selectedScale, scaleDuration, token, request, generation)
                 );
 
                 // グローエフェクト表示
-                if (useGlowEffect && glowImage != null)
+                if (OwnsEffect(request, generation) && !token.IsCancellationRequested && useGlowEffect && glowImage != null)
                 {
                     glowImage.gameObject.SetActive(true);
                 }
@@ -100,8 +126,9 @@ namespace Olca.Presentation.Effects
             catch (System.OperationCanceledException)
             {
                 // キャンセル時は元に戻す
-                ResetToOriginalState();
+                if (OwnsEffect(request, generation)) ResetToOriginalState();
             }
+            finally { EndEffect(request); }
         }
 
         /// <summary>
@@ -110,29 +137,28 @@ namespace Olca.Presentation.Effects
         public async UniTask HideHighlightAsync(CancellationToken ct)
         {
             if (!isHighlighted || targetImage == null) return;
-            isHighlighted = false;
-
-            effectCts?.Cancel();
-            effectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var request = BeginEffect(ct, out var token, out var generation);
+            if (OwnsEffect(request, generation)) isHighlighted = false;
 
             try
             {
                 // 元の色・スケールに戻す
                 await UniTask.WhenAll(
-                    AnimateColorAsync(originalColor, scaleDuration, effectCts.Token),
-                    AnimateScaleAsync(originalScale, scaleDuration, effectCts.Token)
+                    AnimateColorAsync(originalColor, scaleDuration, token, request, generation),
+                    AnimateScaleAsync(originalScale, scaleDuration, token, request, generation)
                 );
 
                 // グローエフェクト非表示
-                if (useGlowEffect && glowImage != null)
+                if (OwnsEffect(request, generation) && !token.IsCancellationRequested && useGlowEffect && glowImage != null)
                 {
                     glowImage.gameObject.SetActive(false);
                 }
             }
             catch (System.OperationCanceledException)
             {
-                ResetToOriginalState();
+                if (OwnsEffect(request, generation)) ResetToOriginalState();
             }
+            finally { EndEffect(request); }
         }
 
         /// <summary>
@@ -142,28 +168,32 @@ namespace Olca.Presentation.Effects
         {
             if (targetImage == null) return;
 
-            effectCts?.Cancel();
-            effectCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var request = BeginEffect(ct, out var token, out var generation);
 
             try
             {
                 // フラッシュ: 白色に変更 → 元の色に戻る
+                token.ThrowIfCancellationRequested();
+                if (!OwnsEffect(request, generation)) return;
                 targetImage.color = flashColor;
-                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: effectCts.Token);
+                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: token);
 
+                token.ThrowIfCancellationRequested();
+                if (!OwnsEffect(request, generation) || targetImage == null) return;
                 targetImage.color = originalColor;
-                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: effectCts.Token);
+                await Olca.Unity.GameplayPause.Delay(System.TimeSpan.FromSeconds(flashDuration / 2), cancellationToken: token);
             }
             catch (System.OperationCanceledException)
             {
-                targetImage.color = originalColor;
+                if (OwnsEffect(request, generation) && targetImage != null) targetImage.color = originalColor;
             }
+            finally { EndEffect(request); }
         }
 
         /// <summary>
         /// 色を補間アニメーション
         /// </summary>
-        private async UniTask AnimateColorAsync(Color targetColor, float duration, CancellationToken ct)
+        private async UniTask AnimateColorAsync(Color targetColor, float duration, CancellationToken ct, CancellationTokenSource request, int generation)
         {
             if (targetImage == null) return;
 
@@ -172,7 +202,8 @@ namespace Olca.Presentation.Effects
 
             while (elapsed < duration)
             {
-                if (ct.IsCancellationRequested) break;
+                ct.ThrowIfCancellationRequested();
+                if (!OwnsEffect(request, generation)) return;
 
                 elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / duration;
@@ -181,13 +212,14 @@ namespace Olca.Presentation.Effects
                 await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
-            targetImage.color = targetColor;
+            ct.ThrowIfCancellationRequested();
+            if (OwnsEffect(request, generation) && targetImage != null) targetImage.color = targetColor;
         }
 
         /// <summary>
         /// スケールを補間アニメーション
         /// </summary>
-        private async UniTask AnimateScaleAsync(Vector3 targetScale, float duration, CancellationToken ct)
+        private async UniTask AnimateScaleAsync(Vector3 targetScale, float duration, CancellationToken ct, CancellationTokenSource request, int generation)
         {
             if (rectTransform == null) return;
 
@@ -196,7 +228,8 @@ namespace Olca.Presentation.Effects
 
             while (elapsed < duration)
             {
-                if (ct.IsCancellationRequested) break;
+                ct.ThrowIfCancellationRequested();
+                if (!OwnsEffect(request, generation)) return;
 
                 elapsed += Olca.Unity.GameplayPause.DeltaTime;
                 float t = elapsed / duration;
@@ -205,7 +238,8 @@ namespace Olca.Presentation.Effects
                 await Olca.Unity.GameplayPause.NextFrame(ct);
             }
 
-            rectTransform.localScale = targetScale;
+            ct.ThrowIfCancellationRequested();
+            if (OwnsEffect(request, generation) && rectTransform != null) rectTransform.localScale = targetScale;
         }
 
         /// <summary>
@@ -233,8 +267,11 @@ namespace Olca.Presentation.Effects
 
         private void OnDestroy()
         {
-            effectCts?.Cancel();
-            effectCts?.Dispose();
+            ++effectGeneration;
+            var current = effectCts;
+            effectCts = null;
+            current?.Cancel();
+            current?.Dispose();
         }
 
         /// <summary>

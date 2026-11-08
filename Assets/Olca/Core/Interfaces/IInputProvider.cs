@@ -70,15 +70,22 @@ namespace Olca.Core.Domain
     {
         private readonly Dictionary<(string Device, string Context, string Action), string> bindings;
         private readonly HashSet<(string Device, string Context, string Action)> required;
+        private readonly (string Device,string FirstContext,string FirstAction,string SecondContext,string SecondAction)[] coUse;
+        public bool Conflicts((string Device,string Context,string Action) a,(string Device,string Context,string Action) b)
+            => a.Device==b.Device&&(a.Context==b.Context||coUse.Any(p=>p.Device==a.Device&&((p.FirstContext==a.Context&&p.FirstAction==a.Action&&p.SecondContext==b.Context&&p.SecondAction==b.Action)||(p.FirstContext==b.Context&&p.FirstAction==b.Action&&p.SecondContext==a.Context&&p.SecondAction==a.Action))));
+        public InputBindingProfile WithCoUse(IEnumerable<(string Device,string FirstContext,string FirstAction,string SecondContext,string SecondAction)> pairs)
+        {var copy=pairs?.ToArray()??Array.Empty<(string,string,string,string,string)>();return coUse.SequenceEqual(copy)?this:new InputBindingProfile(bindings,required,copy);}
         public IReadOnlyDictionary<(string Device, string Context, string Action), string> Bindings { get; }
 
         public InputBindingProfile(IReadOnlyDictionary<(string Device, string Context, string Action), string> bindings,
-            IEnumerable<(string Device, string Context, string Action)> requiredActions)
+            IEnumerable<(string Device, string Context, string Action)> requiredActions,
+            IEnumerable<(string Device,string FirstContext,string FirstAction,string SecondContext,string SecondAction)> coUsePairs=null)
         {
             if (bindings == null) throw new ArgumentNullException(nameof(bindings));
             if (requiredActions == null) throw new ArgumentNullException(nameof(requiredActions));
             this.bindings = bindings.ToDictionary(p => p.Key, p => p.Value);
             required = new HashSet<(string Device, string Context, string Action)>(requiredActions);
+            coUse=coUsePairs?.ToArray()??Array.Empty<(string,string,string,string,string)>();
             if (!Validate(this.bindings, out var error)) throw new ArgumentException(error);
             Bindings = new ReadOnlyDictionary<(string Device, string Context, string Action), string>(this.bindings);
         }
@@ -91,12 +98,12 @@ namespace Olca.Core.Domain
             { error = "割当の識別子が不正です"; return false; }
             if (required.Any(slot => !candidate.TryGetValue(slot, out var value) || value == null))
             { error = "必須操作を未割当にできません"; return false; }
-            if (candidate.Where(p => p.Value != null).GroupBy(p => (p.Key.Device, p.Key.Context, p.Value)).Any(g => g.Count() > 1))
+            if (candidate.Where(p => p.Value != null).GroupBy(p => (p.Key.Device,p.Value)).Any(g => g.Any(a=>g.Any(b=>a.Key!=b.Key&&Conflicts(a.Key,b.Key)))))
             { error = "同じデバイス・場面で割当が重複しています"; return false; }
             return true;
         }
         internal InputBindingProfile With(IReadOnlyDictionary<(string Device, string Context, string Action), string> candidate)
-            => new InputBindingProfile(candidate, required);
+            => new InputBindingProfile(candidate, required,coUse);
         public InputBindingEdit BeginEdit() => new InputBindingEdit(this);
     }
 
@@ -115,10 +122,11 @@ namespace Olca.Core.Domain
             error = null;
             if (!draft.TryGetValue(slot, out var previous)) { error = "未定義の操作です"; return false; }
             var candidate = draft.ToDictionary(p => p.Key, p => p.Value);
-            if (binding != null)
-                foreach (var other in draft.Keys)
-                    if (other != slot && other.Device == slot.Device && other.Context == slot.Context && draft[other] == binding)
-                        candidate[other] = previous;
+            if (binding != null) {
+                var conflicts=draft.Keys.Where(other=>other!=slot&&committed.Conflicts(other,slot)&&draft[other]==binding).ToArray();
+                if(conflicts.Length>1){error="複数の操作との交換はできません。割当は変更していません。";return false;}
+                foreach(var other in conflicts)candidate[other]=previous;
+            }
             candidate[slot] = binding;
             // 交換で相手の必須操作を未割当にする場合も、全体を変更せず拒否する。
             if (!committed.Validate(candidate, out error)) return false;

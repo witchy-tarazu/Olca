@@ -24,7 +24,7 @@ python .Codex/tools/verified_publish.py --repo . push --receipt /tmp/olca-publis
 
 証跡dirにはStage3で採用した以下の5ファイルが必要です。新しい検証結果は同じ構造で記録し、過去の成功値をコピーして補完しません。
 
-- `full-tests.json` / `related-tests.json`: 正数total=passed、failed/skipped/inconclusive=0、groundTruthのcompilationFailed/compiling=falseとconsoleErrors=0、consoleCounts.error=0、sourceHashes（任意のproductionSourceHashesを含む）。関連hashは全件hash集合と一致する必要があります。
+- `full-tests.json` / `related-tests.json`: 正数total=passed、failed/skipped/inconclusive=0、groundTruthのcompilationFailed/compiling=falseとconsoleErrors=0、consoleCounts.error=0、sourceHashes（任意のproductionSourceHashesを含む）。関連hashは全件hash集合に含まれ、同じパスのhashが一致する必要があります。
 - `final-source-hashes.json`: full-tests.sourceHashesと完全一致。
 - `cleanup.json`: originalClean/storageGuard/defaultStoreAbsent=true、differences=[]、consoleErrors=0、devices/actualRenderのscreenと全textureが640×360。双方のtempはworkspaceの兄弟`save/tmp`と一致。
 - `independent-review.json`: reviewerあり、staticReview.unresolvedConcreteFindingsとvisualReview.unresolvedRequiredFindingsが整数0。

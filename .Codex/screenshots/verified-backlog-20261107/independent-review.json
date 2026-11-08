@@ -1,0 +1,402 @@
+{
+  "reviewer": "root independent cumulative source/visual review; equipment_save_review restoration/dependency check",
+  "staticReview": {
+    "unresolvedConcreteFindings": 0,
+    "testedSourceCount": 20,
+    "currentSubmissionAndValidationMatch": true,
+    "scope": "Verified final composite snapshot; overlapping stage changes must stay together."
+  },
+  "visualReview": {
+    "unresolvedRequiredFindings": 0,
+    "basis": "Original stage native visual reviews; Stage83 fresh exploration/battle and movement guide before/after FHD review. No fresh November7 Editor run."
+  },
+  "scopeLimits": [
+    "Card use and S10 equipment source remain unimplemented; no speculative definitions.",
+    "Physical build/devices/listening/all HotReload unverified.",
+    "Prior v2 held-resume failure, historical UGUI/Pipeline/CLI/UnityAI/ServerDiscovery and unmanaged Sprite limits preserved.",
+    "Restored environment has no running Editor; live render/TMP not remeasured. Existing exact-source November5 evidence reused."
+  ],
+  "stage83Review": {
+    "stage": 83,
+    "reviewer": "root independent actual-play visual and source review",
+    "mandatory_findings": 0,
+    "source_sha256": {
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "76ce41f1ad4f4a17f89a10763daea1830466d4307d74bcc951e72ad0b5552a58",
+      "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "33b18bde1b775f454c9cf3a75066fff902060ba7dfdeb5d5be3c3e120475b4d4",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9b053fc72655a5d8b0d1d44f9084abfda3f20974d118e2f7c3917c1ef521c5b7"
+    },
+    "spec_remote": "68eea39b6094a05099ef17f28b130fd6441457b4",
+    "problem_evidence": [
+      "Independently viewed fresh standard empty outside FHD: no movement/jump guide, while card guide is hidden without registered cards. This is a discoverability issue in the existing entry, independent of S10/card use.",
+      "Independently viewed fresh battle FHD: damage10 is associated with player, enemy name/HP50 distinct, feet/touch HUD/foreground have no new clear interference. No battle change adopted."
+    ],
+    "assessment": [
+      "Only a non-raycast movement guide Text and readonly display delegate added; no input, runtime, clock, gameplay/save mutation. Existing hand/icon/selection-guide geometry retained.",
+      "Guide reads actual battle Left/Right primary/secondary slots used by current Outside horizontal input and exploration Jump slot; omits null aliases, preserves distinct bindings and existing pad stick operation.",
+      "Existing applied-profile/device cache is reused. GamepadBindingLabel and Katakana preserve established display policy. Unsupported Touch movement/jump is not advertised.",
+      "Hide/Disable return guide delegate references with the existing presentation lifetime. Optional Show parameter preserves prior callers.",
+      "Three meaningful UI cases exercise normal empty entry, keyboard/pad binding updates, Touch omission, reopen, state invariance and non-raycast guide; static device/profile/version restored in finally."
+    ],
+    "limits": [
+      "No new card use, S10 deck registration, dash, touch movement mapping or game data invented.",
+      "Virtual InputSystem/Editor validation only; physical devices/build/listening/all HotReload and historical issues remain separate.",
+      "Before/after are not whole-scene pixel matched;4K/4:3 render/glyph measurements and FHD visual critique are distinct.",
+      "Historical Pipeline/UGUI and preexisting ServerDiscovery warning are not product fixes in this change."
+    ],
+    "related_verification": {
+      "unique_filter_total": 483,
+      "actual_executions_with_initial_new3_duplicate": 486,
+      "management": 95,
+      "custom_ui": 388,
+      "same_editor_repeat_passed": 6,
+      "console_errors": 0
+    },
+    "native_review": {
+      "all_keyboard_characters_visible": true,
+      "all_pad_characters_visible": true,
+      "touch_movement_guide_empty": true,
+      "long_guide_all_visible": true,
+      "long_guide_lines": 3,
+      "long_guide_preferred_height": 60,
+      "guide_height": 66,
+      "render_ratio_geometry": [
+        {
+          "ratio": "4k",
+          "guideMaxX": 1440,
+          "handMinX": 2476,
+          "gap": 1036,
+          "allCharactersVisible": true
+        },
+        {
+          "ratio": "4by3",
+          "guideMaxX": 623.538269,
+          "handMinX": 849.370667,
+          "gap": 225.832398,
+          "allCharactersVisible": true
+        },
+        {
+          "ratio": "fhd",
+          "guideMaxX": 720,
+          "handMinX": 1238,
+          "gap": 518,
+          "allCharactersVisible": true
+        }
+      ],
+      "save3_bytes_equal": true,
+      "close_all_checks_true": true,
+      "hand_fixture_scope": "Layout/coexistence only; not S10 product registration. Normal empty route measured independently.",
+      "before_image": "system-stage83-outside-fhd.png",
+      "after_image": "system-stage83-outside-after-fhd.png",
+      "after_image_sha256": "e185cc7c12b41440cc843298618803e1409e540059dfc215324ae35f171b83f6",
+      "visual_assessment": "Independently viewed before and after FHD. Added left gauge-adjacent guide is readable without a new panel; movement and jump separated, hand and selection guide do not compete. Background/JikiTourai/actor ratio retained. World platform x/frame differ slightly, so no full-scene pixel equality claimed.4K/4:3 are measured render/glyph/bounds evidence, not additional screenshots."
+    },
+    "final_tests": {
+      "summary": {
+        "total": 3821,
+        "passed": 3821,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration_seconds": 255.85,
+      "console_errors": 0,
+      "source20_fixed": true,
+      "reviewed3_match_tested": true,
+      "test_resubmitted": false,
+      "same_run_recovered": true
+    },
+    "cleanup_review": {
+      "success": true,
+      "originalClean": true,
+      "trackedAssetComparison": 928,
+      "differences": [],
+      "actualRender": {
+        "screen": [
+          640,
+          360
+        ],
+        "textures": [
+          {
+            "name": "GameView.m_RenderTexture",
+            "width": 640,
+            "height": 360
+          },
+          {
+            "name": "PlayModeView.m_TargetTexture",
+            "width": 640,
+            "height": 360
+          }
+        ],
+        "temp": "/workspace/olca-validation-20261024/save/tmp/",
+        "playing": false
+      },
+      "storageGuard": true,
+      "storageConfigurationRestored": true,
+      "defaultStoreAbsent": true,
+      "generatedAssets": {
+        "generations": 0,
+        "roots": 0,
+        "borrowers": 0,
+        "entries": 0,
+        "pendingNativeDestroy": 0,
+        "caches": []
+      },
+      "eventRegistry": {
+        "playing": false,
+        "currentClrNull": true,
+        "currentUnityNull": true,
+        "registered": [],
+        "sceneEvents": []
+      }
+    },
+    "warning_review": {
+      "raw_known_test_warnings": 59,
+      "categories": 5,
+      "preexisting_server_discovery_warning": 1,
+      "native_cumulative": 60,
+      "retained_buffer": 43,
+      "raw_environment_message_preserved": true,
+      "not_suppressed": true
+    },
+    "final_read_checks": {
+      "remote_master": "68eea39b6094a05099ef17f28b130fd6441457b4",
+      "git_diff_check_passed": true,
+      "commit_push_performed": false
+    }
+  },
+  "restorationReview": {
+    "reviewer": "equipment_save_review / delegated independent read-only review",
+    "recordedUtc": "2026-11-07T12:38:30.818935+00:00",
+    "authorization": "Parent reports new explicit user approval for the specified preserved stages; Root alone handles integration/commit/push. This reviewer executed no publication action.",
+    "headObserved": "68eea39b6094a05099ef17f28b130fd6441457b4",
+    "codeFiles": [
+      "Assets/Olca/Application/Management/GameplayRuntimeSession.cs",
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs",
+      "Assets/Olca/Core/Interfaces/IInputProvider.cs",
+      "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs",
+      "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs",
+      "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs",
+      "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs",
+      "Assets/Olca/Presentation/Effects/CardEffectView.cs",
+      "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs",
+      "Assets/Olca/Presentation/Field/WorldEnemyView.cs",
+      "Assets/Olca/Presentation/Management/CheckpointPromptView.cs",
+      "Assets/Olca/Tests/ActionPoseRendererTests.cs",
+      "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs",
+      "Assets/Olca/Tests/CustomScreenCostViewTests.cs",
+      "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs",
+      "Assets/Olca/Tests/SettingsWriteRefactorTests.cs",
+      "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs",
+      "Assets/Olca/Unity/UnityInputProvider.cs"
+    ],
+    "sourceHashes": {
+      "Assets/Olca/Application/Management/WorldPresentationBinding.cs": "76ce41f1ad4f4a17f89a10763daea1830466d4307d74bcc951e72ad0b5552a58",
+      "Assets/Olca/Presentation/Management/CheckpointPromptView.cs": "33b18bde1b775f454c9cf3a75066fff902060ba7dfdeb5d5be3c3e120475b4d4",
+      "Assets/Olca/Tests/Application/GameSystemManagementTests.cs": "9b053fc72655a5d8b0d1d44f9084abfda3f20974d118e2f7c3917c1ef521c5b7",
+      "Assets/Olca/Tests/SettingsWriteRefactorTests.cs": "5dfd101cb4c2e971834684432b62ddde665ae6a34a1c009805762d22c9c71d8d",
+      "Assets/Olca/Core/Interfaces/IInputProvider.cs": "2d986112e7b59de096b8af7bfc719fab3eb647f11205e1f8ce1c8b134223eb09",
+      "Assets/Olca/Core/Logic/Integration/ExplorationResumeCountdown.cs": "813ca426e880c5fbebbe1de88c9714c01750c3c8dff0a353399212c10f2477d3",
+      "Assets/Olca/Presentation/Field/GameFieldView.cs": "471f4fdd7dcd24b4bf7ac1636c855e4f3110258bfde0980880ff57601341a564",
+      "Assets/Olca/Application/Management/GameplayRuntimeSession.cs": "9a68d98cf296639f547e0caaa4636ed7948fb6b87ca09ce1568b1517a9e4936f",
+      "Assets/Olca/Core/Logic/Integration/DungeonBattleManager.cs": "f66dc6ce3155edd558a005e2f3584e13186c47cb7c259f2daaecaa7eaa98503a",
+      "Assets/Olca/Unity/UnityInputProvider.cs": "655b95818b57b545c05eb12d452bacf6213f632609072735eb08e107d1588775",
+      "Assets/Olca/Tests/ExplorationResumeCountdownTests.cs": "23150ecc5ae94c6a94f9b044b5de2a42f2c0f574f00b7a10d83507ad9149dba2",
+      "Assets/Olca/Presentation/CustomScreen/CustomScreenView.cs": "b0a142e79bc78fd898619f56cbb95782320f3a1994d8ba386678581363730092",
+      "Assets/Olca/Tests/CustomScreenCostViewTests.cs": "52e1c421da41e932928332b35d0880e9cc9652aade69581eecda2fa244459f34",
+      "Assets/Olca/Tests/Application/BattlePresentationManagementTests.cs": "82e7bab05546014e38dea7d8c4db5581c3def9dc99589da86ef6e25dc5224443",
+      "Assets/Olca/Presentation/Dungeon/CardSelectionView.cs": "9397fc6e4454a2206be5ca86220b01b582bc4831c0fb9111a57d48a71c363044",
+      "Assets/Olca/Tests/ActionPoseRendererTests.cs": "257fea92c9f03faa93d02fc0fb97c46ee3d15d09106b6578332d96b9ca7d63a0",
+      "Assets/Olca/Tests/WorldDamageNumberPoolTests.cs": "5a84f55436215ab4e8b11cc4d67d12bf9112012afc5610deedd981185f10ebdc",
+      "Assets/Olca/Presentation/Field/WorldEnemyView.cs": "90e6380bda17f4ef014a7b401c5f3ec3eb6ad66daa8eed4124faca397b4e13d0",
+      "Assets/Olca/Presentation/Effects/CardEffectView.cs": "c2e8c2ac761e420244cc713815d4569f51370a6dc26f7f9ebfc92576e9ede448",
+      "Assets/Olca/Presentation/Effects/WorldDamageNumberView.cs": "6c2b05799f15957cb161952ad1ec95d747afd8efae368a2297fc35cc8296676a"
+    },
+    "packetHashes": {
+      "system-stage51-complete-review.zip": "9a332bc1d253889881b0cbd5922187d03b1217f7448c5ae16f5f121bec337a33",
+      "system-stage51-snapshot-review.zip": "aaa69551a1ff82987490c8d575117e6ec1114d2445ef17b875d1ee2c09431231",
+      "system-stage52-audio-background-review.zip": "fbbbd22472524e309e98c973c23517293994238bd9a47744afc3afa45cb3f275",
+      "system-stage53-keybinding-label-review.zip": "f4a1a3f1819b1767e0b1a208d3ed9aa12d468276bdc55a93bee3b66f57afa3b8",
+      "system-stage56-custom-flow-review.zip": "1facf9dd66062901471dc269258e20497f493d0f36a1cc9b43e8f1440159db59",
+      "system-stage57-processing-victory-review.zip": "3393ffd71ca258946c9816d1aca8f621b1023fd98b2c00c6ab8e73459fc49f8f",
+      "system-stage58-rewards-return-reload-review.zip": "2b9b237a0b0323136e84dfdeb8abb372119427c94368ce031f7afccbe7a9dd5b",
+      "system-stage59-normal-clear-return-review.zip": "b2894a9e71ed6e6fffc9c755978708321101d93e4b062b57c30075117292b2d3",
+      "system-stage55-main-flow-review.zip": "6f9b8710220b8d1f76fa6052818d7f5e545fab9769d9ba530ba93b55eebeea86",
+      "system-stage63-readonly-layout-refactor-review.zip": "c6efe64e0ae0233a117ad4fd24877d9a6517b2e6f95c8406c044e59bee6781a8",
+      "system-stage64-custom-cleanup-review.zip": "23d173458e63f5453f7b29d6617a9b713a94e5bed96a68d8b614ab74bf4c51c3",
+      "system-stage65-custom-reading-position-review.zip": "89467733caefb49dfc2ba7028faf7d5d4f088113b0a6d03b7fef7261a71c1500",
+      "system-stage66-inline-reading-position-review.zip": "5e2361c583f9d31553b40dfe71478b8e72c083e629b1a68a5e6a744557d0e8e8",
+      "system-stage67-katakana-fastpath-review.zip": "ec61cb87ba41ea7f3106f04cfbaefbedc3fc33cc8e3e6adcb34f9de2ef4df748",
+      "system-stage68-processing-error-investigation.zip": "e0e55af77c9c223262b029812e480e02ba20fc3a5d94f98249bd7385c8df66cf",
+      "system-stage70-camera-diagnostic-optin-review.zip": "98485f3135b61ac607f8d5c030f6e122943c8ccd03d6490d0495916a88bfcf69",
+      "system-stage71-fallback-asset-ownership-review.zip": "74f47048ea3ca5c4217b4903d07d7e79bb6c1da39439fba2d4da420cdb040846",
+      "system-stage72-exploration-editor-callback-review.zip": "dd099cbc7bf94902a1e90fe269ababd3a778bd4410d8292203fa05f3ba0a6cc3",
+      "system-stage73-world-enemy-white-ownership-review.zip": "1207e7cfe4e16644c1daa333d296cc8796e80bee85a9fadf9efdc31e08888c3c",
+      "system-stage74-card-effect-request-ownership-review.zip": "60986d5d81cb8801b85d1d156af89a2c74f17eb3d33e68d3a6f300fdb2a3f826",
+      "system-stage75-gameplay-guide-target-review.zip": "e69488168a27bdf40c8d3589fbcdc2835c4a7b29afcfed6da842e0ae8518174c",
+      "system-stage76-damage-top-offset-extraction-review.zip": "ea34d849906c80a08c010b0381e81dd42a581f19b90e9dd29ec372df4270819d",
+      "system-stage79-direct-hand-selection-review.zip": "bbf65c357f62abe27f0a187e6faf05f9710914ce3bbf42eeadd0680f68b848f2",
+      "system-stage80-hand-cycle-input-review.zip": "aa59c503527bcc36aad338bd49176169c6f97f9f83c2dd23ed0fbdb581141c3a",
+      "system-stage83-outside-control-guide-review.zip": "3659135221d16cb8e4700495b651f3de9208db4415482c044a8b7320f90304e9"
+    },
+    "staticReview": {
+      "unresolvedConcreteFindings": 0,
+      "validatedBytesMatch": true,
+      "sourceCount": 20,
+      "packetCount": 25,
+      "stageDependencies": [
+        "Custom63/65/66/67 scroll/cache/reentrancy/Katakana fast path ship as final CustomScreenView with matching tests.",
+        "GameField52/53/70/71/75 volume/keyboard fit/camera opt-in/fallback ownership/HUD target cache ship as final GameFieldView.",
+        "Outside79/80/83 Core selection/timing, LogicalInput fields, InputBindingProfile metadata, UnityInputProvider migration/raw state, Runtime timestamp/neutral, Binding/View guides and tests ship together.",
+        "CardEffect74 generation/local token/current-owner immediate CTS disposal and corresponding lifecycle regressions remain paired.",
+        "WorldEnemy73 owner-only generated white assets and WorldDamage76 exact helper extraction remain paired with final lifetime/projection regressions."
+      ],
+      "perStageFinalReviews": {
+        "64": {
+          "path": "system-stage64-parent-independent-review.json",
+          "sha256": "4c91aebefec688f944cd0f61bc3a9dcc5dfd04c6fd1254d2f1eeed3631f5e3cb",
+          "unresolvedRequiredFindings": 0
+        },
+        "65": {
+          "path": "system-stage65-parent-independent-review.json",
+          "sha256": "7b6d5ff2a409246c558dbad7084e5eb1e3ba7aae97a27fac4524654e66f04df8",
+          "unresolvedRequiredFindings": 0
+        },
+        "66": {
+          "path": "system-stage66-parent-independent-review.json",
+          "sha256": "7b67b377d0c2296789d7cd17b12f72901b9fe021de11b26d5cb16a7f1b316ccd",
+          "unresolvedRequiredFindings": 0
+        },
+        "67": {
+          "path": "system-stage67-parent-independent-review.json",
+          "sha256": "d3fb8c11a4476e7f2071f6f07200e74774578c77210ca96a7a1c373178f24edd",
+          "unresolvedRequiredFindings": 0
+        },
+        "70": {
+          "path": "system-stage70-parent-independent-review.json",
+          "sha256": "f9bebbdc79dac163feb0c13c2abe4045cb94da2e2028c222dbad060b50664a71",
+          "unresolvedRequiredFindings": 0
+        },
+        "71": {
+          "path": "system-stage71-parent-independent-review.json",
+          "sha256": "3b8083ad37c81be28dba50f74c9c7414fef56fa2879e50fb42e5b37459008635",
+          "unresolvedRequiredFindings": 0
+        },
+        "72": {
+          "path": "system-stage72-parent-independent-review.json",
+          "sha256": "8c04e998bdc0e660beeb9ce7c8f02db759d32fa822cb416797a2675a7b17a4b3",
+          "unresolvedRequiredFindings": 0
+        },
+        "73": {
+          "path": "system-stage73-parent-independent-review.json",
+          "sha256": "c670cf9bf54f1d2f2d12e751448b698e8910d4ac7a8dffe493a6ef11b5119ef6",
+          "unresolvedRequiredFindings": 0
+        },
+        "74": {
+          "path": "system-stage74-parent-independent-review.json",
+          "sha256": "2ffa7b75da7b7849e18a038594def6df0ef9c40df63ceacfbb16748694879c2d",
+          "unresolvedRequiredFindings": 0
+        },
+        "75": {
+          "path": "system-stage75-parent-independent-review.json",
+          "sha256": "9313f8a4372d57ba81dc1951d883fa54b503ac243fe1d8cb41190830559fc620",
+          "unresolvedRequiredFindings": 0
+        },
+        "76": {
+          "path": "system-stage76-parent-independent-review.json",
+          "sha256": "de96fb97a4f3e1105f7655fc4d6e8902fa5cac87764d2c50fb743a28d26d9189",
+          "unresolvedRequiredFindings": 0
+        },
+        "79": {
+          "path": "system-stage79-parent-independent-review.json",
+          "sha256": "af4477871c59f47386f8516bad077c300c9826f34616ff6175507138ce35f839",
+          "unresolvedRequiredFindings": 0
+        },
+        "80": {
+          "path": "system-stage80-parent-independent-review.json",
+          "sha256": "854b6465c09dd7a3da0d62539fb11efc3f090cd773385a3ca553435ee7cfeeb5",
+          "unresolvedRequiredFindings": 0
+        },
+        "83": {
+          "path": "system-stage83-parent-independent-review.json",
+          "sha256": "a2326f6b8b4334454b2161b620533c9ad3979e56a4562ce54770eee317ff2288",
+          "unresolvedRequiredFindings": 0
+        }
+      }
+    },
+    "runtimeResume": {
+      "cloudEnvironmentConnected": true,
+      "observationsCurrent": true,
+      "networkPolicyEnforced": true,
+      "editorProcesses": [],
+      "xvfbProcesses": [],
+      "livePlay": "No live Editor; not queried as a newly stopped Play.",
+      "liveCoordinatorsObserved": [],
+      "newEditorLaunch": false,
+      "newUnityCalls": false,
+      "liveRTTMPMeasured": false,
+      "priorCleanupReceipt": "system-stage83-cleanup.json",
+      "priorCleanupSuccess": true,
+      "storageManifestRestoredExact": true,
+      "defaultStoreAbsent": true
+    },
+    "isolatedSaves": {
+      "83000": {
+        "fileCount": 5,
+        "hashes": {
+          "progress/progress.json": "d24f7583df41aa9b4547886f009896a0d4c293792c15cb8d0e986eacc1851f56",
+          "progress/progress.backup.json": "7f15f42d8f1d1f3c8848f0b6696b0ec6613cd564ca1650330bbd646d42cdce4f",
+          "progress/new-game-backups/progress-1-2AB77F27103D60C5DF68B34C9F17CFC091A553925FDA53CE4D93DBEC811B66B8.json": "2ab77f27103d60c5df68b34c9f17cfc091a553925fda53ce4d93dbec811b66b8",
+          "checkpoints/profiles/b0f6710b817049d0a9a1357906ea25d0/runs/b9428e316c3647abac382345acde24a2/active.json": "b28c43da2336205b705423dc5d3d0a59c050477ef38b615590215498e2a35f0b",
+          "checkpoints/profiles/b0f6710b817049d0a9a1357906ea25d0/runs/b9428e316c3647abac382345acde24a2/active.backup.json": "49e711e4049cc1e47f43b4d3a54e1ec0c199358816b96d1929dd0729ad44df00"
+        },
+        "matchesFinalNativeReceipt": true
+      },
+      "83001": {
+        "fileCount": 3,
+        "hashes": {
+          "progress/progress.json": "aca7c09a3844f1a1647daf4c805ad9461963ff0aafd2b5ff4e9a998775a77b69",
+          "progress/progress.backup.json": "6f7f38f74e89e2b3ae171a2f3f20209a0b6cfdfc32dfdfde6efa713f733f5022",
+          "progress/new-game-backups/progress-1-6F7F38F74E89E2B3AE171A2F3F20209A0B6CFDFC32DFDFDE6EFA713F733F5022.json": "6f7f38f74e89e2b3ae171a2f3f20209a0b6cfdfc32dfdfde6efa713f733f5022"
+        },
+        "matchesFinalNativeReceipt": true
+      }
+    },
+    "validationReuse": {
+      "historicalOnly": true,
+      "source": "system-stage83-full-test-result.json",
+      "receiptSha256": "e89817758ca70b513d906dd931d4a02070e4b1dc2197b769b78f787d142bb46a",
+      "summary": {
+        "total": 3821,
+        "passed": 3821,
+        "failed": 0,
+        "skipped": 0,
+        "inconclusive": 0
+      },
+      "duration": 255.85,
+      "consoleErrors": 0,
+      "originalFreshRun": {
+        "log": "/workspace/olca-validation-20261024/evidence/editor-stage70-v2-20261105.log",
+        "offset": 362466015,
+        "bytes": 32644805,
+        "sha256": "66fcdc967e9091968a017b81301f94c56ab1a739e0b4212bdae77a3fbf7a2eca",
+        "started": true,
+        "finished": "[TestResultCollector] Run finished: 3821 total, 3821 passed, 0 failed",
+        "segmentCopied": false
+      },
+      "newRunPerformed": false,
+      "allTwentySourceHashesRetained": true,
+      "normalizeGuidance": "Schema/path normalization must preserve source-set, original execution provenance/offset/IDs/counts/time and original receipt hash; do not claim fresh resume-time execution."
+    },
+    "scopeLimits": [
+      "S10 switch/edit/delete policy, outside use binding and product action data remain excluded; no claim of complete outside card use/equipment.",
+      "Product outside remains empty until explicit registration; three-card Native fixture proofs are layout/input verification only.",
+      "Physical input/build/audio/listening not newly verified.",
+      "Stage80 candidate-v2 pause-held defect and old-red/final-green history retained; package Pipeline errors and preexisting ServerDiscovery warning remain distinct from zero final-suite console errors.",
+      "Documents fast-forwarded by Root do not alter validated C# bytes; this reviewer did not merge/edit/stage/commit/push."
+    ],
+    "remainingPublicationRequiredFindings": 0
+  },
+  "restorationReviewSha256": "7b5bdfaa341156f313739a6f6c4071d6b59d8dba8b2071d41bc9e1ec00b2b627"
+}

@@ -1165,14 +1165,14 @@ namespace Olca.Application.Dungeon
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
-        private bool CanStartNewGame => !progressStartupBlocked&&clearReturnSession!=null&&clearReturnSession.Ready&&
+        private bool CanStartNewGame => !styleSelectionOpen&&!progressStartupBlocked&&clearReturnSession!=null&&clearReturnSession.Ready&&
             (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
         private void RefreshProgressActions()
         {
             if(progressActionDialog!=null)progressActionDialog.RefreshLifetime();
             if(retreatDialog!=null)retreatDialog.RefreshLifetime();
             if(manualSaveButton==null)return;
-            bool allowProgressActions=!OutsideRouteBusy&&!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
+            bool allowProgressActions=!styleSelectionOpen&&!OutsideRouteBusy&&!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&(!clearReturnSession.HasPendingSave||CanResumeProgressAction);
             newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
@@ -1197,7 +1197,7 @@ namespace Olca.Application.Dungeon
         {
             EnsureProgressPanel();progressActionDialog.OpenNotice(message,confirm,canClose,gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
         }
-        private bool CanResumeProgressAction=>progressOperations!=null&&progressOperations.PendingAction!=Olca.Presentation.Management.ProgressPendingAction.None&&(IsProgressHub||awaitingCheckpointChoice);
+        private bool CanResumeProgressAction=>!styleSelectionOpen&&progressOperations!=null&&progressOperations.PendingAction!=Olca.Presentation.Management.ProgressPendingAction.None&&(IsProgressHub||awaitingCheckpointChoice);
         private bool CanResumeNewGame=>CanResumeProgressAction&&progressOperations.PendingAction==Olca.Presentation.Management.ProgressPendingAction.NewGame;
         private Olca.Application.Management.ProgressActionOperations ProgressOperations()
         {
@@ -1236,7 +1236,7 @@ namespace Olca.Application.Dungeon
         private UnityEngine.UI.Button cardCollectionButton;
         private bool cardCollectionOpen, collectionWasPaused;
         // UIの表示と受付をそろえる。融合履歴の保存失敗から開く内部経路は別に保つ。
-        private bool CardCollectionUiAvailable => explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && manager != null && clearReturnSession?.Ready == true &&
+        private bool CardCollectionUiAvailable => !styleSelectionOpen&&explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && manager != null && clearReturnSession?.Ready == true &&
             !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen &&
             !DialogueOpen && !AudioSettingsOpen && !(keyboardSettingsView != null && keyboardSettingsView.gameObject.activeInHierarchy) &&
             !(gamepadSettingsView != null && gamepadSettingsView.gameObject.activeInHierarchy) &&

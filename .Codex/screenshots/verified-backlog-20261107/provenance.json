@@ -1,0 +1,16 @@
+{
+  "originalEvidenceSha256": {
+    "system-stage83-full-test-result.json": "e89817758ca70b513d906dd931d4a02070e4b1dc2197b769b78f787d142bb46a",
+    "system-stage83-related-tests-once.json": "e13bb530b050e9b15713e54195cbcc6054056d54c5cc8181e170c72ac1b855e9",
+    "system-stage83-related-submitted-context.json": "9e894c8692c70ce3425f895c83e46889cb8ad6d72a4eb24ddcdc975c645fe175",
+    "system-stage83-related-post-console.json": "a8d4fe6c0cc6af798aa532554e081a016a2d9de019d675117b140e640442a2c7",
+    "system-stage83-cleanup.json": "3118b8c6352dececbfc9f422286ac0971a614389df04b6474a0be12d4a64b921",
+    "system-stage83-parent-independent-review.json": "a2326f6b8b4334454b2161b620533c9ad3979e56a4562ce54770eee317ff2288",
+    "system-stage80-parent-independent-review.json": "854b6465c09dd7a3da0d62539fb11efc3f090cd773385a3ca553435ee7cfeeb5",
+    "system-stage83-warnings.json": "0df82435cb7e7bf73c0e089e7f67082ed1c555bb2947abbf280bd7fd688c595a"
+  },
+  "restoredSourceVerificationDate": "2026-11-07",
+  "originalTestDate": "2026-11-05",
+  "remoteDocsIntegrated": "68eea39b6094a05099ef17f28b130fd6441457b4",
+  "testRerunOnRestoration": false
+}

@@ -146,3 +146,111 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class CameraDiagnosticOptInTests
+    {
+        private const System.Reflection.BindingFlags Flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        private GameObject root, cameraRoot, actor;
+        private GameFieldView view;
+        private Camera camera;
+        private readonly List<string> messages = new List<string>();
+        private void Logged(string message, string stack, LogType type) { if (type == LogType.Log && message.StartsWith("[Camera]")) messages.Add(message); }
+        private void Set(string name, object value) => typeof(GameFieldView).GetField(name, Flags).SetValue(view, value);
+        private void Follow() => typeof(GameFieldView).GetMethod("UpdateCamera", Flags).Invoke(view, null);
+        [SetUp] public void Setup()
+        {
+            root = new GameObject("camera-diagnostics-fixture"); view = root.AddComponent<GameFieldView>();
+            cameraRoot = new GameObject("camera-diagnostics-camera"); camera = cameraRoot.AddComponent<Camera>();
+            actor = new GameObject("camera-diagnostics-actor"); Set("fieldCamera", camera); Set("playerTransform", actor.transform);
+            UnityEngine.Application.logMessageReceived += Logged;
+        }
+        [TearDown] public void Cleanup()
+        {
+            UnityEngine.Application.logMessageReceived -= Logged;
+            UnityEngine.Object.DestroyImmediate(root); UnityEngine.Object.DestroyImmediate(cameraRoot); UnityEngine.Object.DestroyImmediate(actor);
+        }
+        [Test] public void 明示有効時だけ距離スナップを診断し位置と投影を変えない()
+        {
+            var projection = camera.projectionMatrix;
+            JsonUtility.FromJsonOverwrite("{}", view); // 旧serializedデータに設定がなくても既定OFF。
+            Assert.IsFalse((bool)typeof(GameFieldView).GetField("cameraDiagnostics", Flags).GetValue(view));
+            foreach (bool enabled in new[] { false, true })
+            {
+                Set("cameraDiagnostics", enabled); camera.transform.position = new Vector3(-100, 2, -10); messages.Clear();
+                if (enabled) UnityEngine.TestTools.LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex(@"^\[Camera\] SNAP:"));
+                if (enabled && Time.frameCount % 60 == 0) UnityEngine.TestTools.LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex(@"^\[Camera\] camX="));
+                Follow(); Assert.AreEqual(enabled ? 1 : 0, messages.FindAll(m => m.StartsWith("[Camera] SNAP:")).Count);
+                Assert.AreEqual(enabled && Time.frameCount % 60 == 0 ? 1 : 0, messages.FindAll(m => m.StartsWith("[Camera] camX=")).Count);
+                Assert.AreEqual(new Vector3(2.5f, 2, -10), camera.transform.position); Assert.AreEqual(projection, camera.projectionMatrix);
+            }
+        }
+        [Test] public void 定期診断は明示有効かつ従来の描画六十フレーム境界だけ()
+        {
+            foreach (bool enabled in new[] { false, true })
+            {
+                Set("cameraDiagnostics", enabled); camera.transform.position = new Vector3(2.5f, 0, -10); messages.Clear();
+                if (enabled && Time.frameCount % 60 == 0) UnityEngine.TestTools.LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex(@"^\[Camera\] camX="));
+                Follow(); Assert.AreEqual(enabled && Time.frameCount % 60 == 0 ? 1 : 0, messages.Count); Assert.AreEqual(new Vector3(2.5f, 0, -10), camera.transform.position);
+            }
+        }
+        [Test] public void 接敵診断も明示有効時だけで戦闘とカメラ位置を変えない()
+        {
+            var battle = new BattleSystem(new PlayerCharacter(100, 10), new List<Enemy>(), new Deck());
+            var before = camera.transform.position;
+            foreach (bool enabled in new[] { false, true })
+            {
+                Set("cameraDiagnostics", enabled); messages.Clear();
+                if (enabled) UnityEngine.TestTools.LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex(@"^\[Camera\] OnBattleStarted:"));
+                view.OnBattleStarted(battle, 5); Assert.AreEqual(enabled ? 1 : 0, messages.Count);
+                Assert.AreSame(battle, typeof(GameFieldView).GetField("currentBattle", Flags).GetValue(view)); Assert.AreEqual(before, camera.transform.position);
+            }
+        }
+    }
+}
+
+namespace Olca.Tests
+{
+    public sealed class GameplayInstructionTargetTests
+    {
+        [TestCase(Olca.Core.Logic.Integration.GamePhase.Dungeon)]
+        [TestCase(Olca.Core.Logic.Integration.GamePhase.Battle)]
+        public void 同じ入力とphaseでも再生成HUDの案内は初回適用し既存targetのcacheは保つ(Olca.Core.Logic.Integration.GamePhase phase)
+        {
+            var previous = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            try
+            {
+                var root = new GameObject("isolated-guide-owner"); root.SetActive(false);
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, scene);
+                var field = root.AddComponent<GameFieldView>();
+                var prefab = Resources.Load<GameObject>("OlcaSystem/DungeonHud"); Assert.IsNotNull(prefab);
+                var profile = Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
+                var device = Olca.Unity.InputGuideActivity.Current;
+                string expected = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(GameFieldView.FormatGameplayInstructionsForDevice(profile, phase, device));
+                UnityEngine.UI.Text Guide(GameObject hud) => System.Linq.Enumerable.Single(hud.GetComponentsInChildren<UnityEngine.UI.Text>(true), t => t.name == "InstructionText");
+                var oldHud = UnityEngine.Object.Instantiate(prefab, root.transform, false);
+                var first = Guide(oldHud); int oldId = first.GetInstanceID();
+                field.ConfigureDungeonHud(oldHud.GetComponent<Olca.Presentation.Dungeon.DungeonHudView>());
+                field.RefreshGameplayInstructions(profile, phase); Assert.AreEqual(expected, first.text);
+                first.text = "same target cache sentinel"; field.RefreshGameplayInstructions(profile, phase);
+                Assert.AreEqual("same target cache sentinel", first.text, "同じtargetと表示入力なら従来のcacheを維持する");
+                UnityEngine.Object.DestroyImmediate(oldHud); Assert.IsTrue(first == null);
+                var newHud = UnityEngine.Object.Instantiate(prefab, root.transform, false); var next = Guide(newHud);
+                Assert.AreNotEqual(oldId, next.GetInstanceID()); Assert.AreNotEqual(expected, next.text, "実Prefab初期文言は現案内とは異なる");
+                field.ConfigureDungeonHud(newHud.GetComponent<Olca.Presentation.Dungeon.DungeonHudView>());
+                field.RefreshGameplayInstructions(profile, phase);
+                Assert.AreEqual(expected, next.text, "新targetはprofile/phase/deviceが同じでも案内を初回適用する");
+                Assert.AreEqual(device, Olca.Unity.InputGuideActivity.Current);
+                var rect = next.rectTransform; Assert.AreEqual(new Vector2(.05f, 0), rect.anchorMin); Assert.AreEqual(new Vector2(.95f, 0), rect.anchorMax);
+                Assert.AreEqual(new Vector2(0, 52), rect.sizeDelta); Assert.AreEqual(new Vector2(0, 30), rect.anchoredPosition);
+            }
+            finally
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene);
+                if (previous.IsValid() && previous.isLoaded) UnityEngine.SceneManagement.SceneManager.SetActiveScene(previous);
+            }
+        }
+    }
+}

@@ -201,6 +201,7 @@ namespace Olca.Presentation.Field
         [SerializeField] private CanvasGroup dungeonHudCanvasGroup;
 
         [Header("デバッグ")]
+        [SerializeField] private bool cameraDiagnostics = false;
         [SerializeField] private UnityEngine.UI.Text debugText;
         [SerializeField] private UnityEngine.UI.Text debugPhaseText;
 
@@ -814,7 +815,9 @@ namespace Olca.Presentation.Field
                 var sr = go.AddComponent<SpriteRenderer>();
                 sr.color = defaultEnemyColor;
                 sr.sortingOrder = 2;
-                sr.sprite = CreateWhiteSprite();
+                // 白素材はFieldが所有し、兄弟敵や再生成では借用する。
+                if (obstacleWhiteSprite == null) obstacleWhiteSprite = CreateWhiteSprite();
+                sr.sprite = obstacleWhiteSprite;
                 go.AddComponent<Olca.Presentation.Battle.EnemyView>();
                 go.AddComponent<WorldEnemyView>();
             }
@@ -859,7 +862,7 @@ namespace Olca.Presentation.Field
             battleGridView?.Show(battle.Field, originX);
             battleGridView?.BindTelegraphs(battle);
 
-            Debug.Log($"[Camera] OnBattleStarted: playerPos={playerTransform?.position.x:F2}, gridColumn={battle.Player.GridPosition.X}, originX={originX:F2}, gridCenterX={battleGridView?.GridCenterWorldX:F2}, cameraX={fieldCamera?.transform.position.x:F2}, CameraOffsetX={CameraOffsetX:F2}");
+            if (cameraDiagnostics) Debug.Log($"[Camera] OnBattleStarted: playerPos={playerTransform?.position.x:F2}, gridColumn={battle.Player.GridPosition.X}, originX={originX:F2}, gridCenterX={battleGridView?.GridCenterWorldX:F2}, cameraX={fieldCamera?.transform.position.x:F2}, CameraOffsetX={CameraOffsetX:F2}");
 
             // カメラ追従を停止し、グリッド中央へのスムーズ移動を開始
             cameraFollowEnabled = false;
@@ -1140,7 +1143,7 @@ namespace Olca.Presentation.Field
             float distX = Mathf.Abs(fieldCamera.transform.position.x - targetPos.x);
             if (distX > cameraMaxLagDistance)
             {
-                Debug.Log($"[Camera] SNAP: camX={fieldCamera.transform.position.x:F2} → targetX={targetPos.x:F2} (distX={distX:F2}, maxLag={cameraMaxLagDistance:F2})");
+                if (cameraDiagnostics) Debug.Log($"[Camera] SNAP: camX={fieldCamera.transform.position.x:F2} → targetX={targetPos.x:F2} (distX={distX:F2}, maxLag={cameraMaxLagDistance:F2})");
                 Vector3 snapped = fieldCamera.transform.position;
                 snapped.x = targetPos.x;
                 fieldCamera.transform.position = snapped;
@@ -1175,7 +1178,7 @@ namespace Olca.Presentation.Field
             }
 
             // 定期ログ（60フレームに1回）
-            if (Time.frameCount % 60 == 0)
+            if (cameraDiagnostics && Time.frameCount % 60 == 0)
                 Debug.Log($"[Camera] camX={fieldCamera.transform.position.x:F2}, playerX={playerTransform.position.x:F2}, targetX={targetPos.x:F2}, offset={CameraOffsetX:F2}, distX={distX:F2}");
         }
 
@@ -1263,7 +1266,8 @@ namespace Olca.Presentation.Field
 
         public void RefreshGameplayInstructions(InputBindingProfile appliedProfile, GamePhase phase)
         {
-            if (instructionText == null)
+            bool targetChanged = instructionText == null;
+            if (targetChanged)
             {
                 // 既存シーンの説明欄を再利用し、他シーンの同名UIを変更しない。
                 foreach (var root in gameObject.scene.GetRootGameObjects())
@@ -1274,7 +1278,7 @@ namespace Olca.Presentation.Field
                 rect.anchorMin = new Vector2(.05f, 0); rect.anchorMax = new Vector2(.95f, 0);
                 rect.sizeDelta = new Vector2(0, 52); rect.anchoredPosition = new Vector2(0, 30);
             }
-            if (ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase && displayedInputDevice==Olca.Unity.InputGuideActivity.Current) return;
+            if (!targetChanged && ReferenceEquals(displayedKeyboardProfile, appliedProfile) && ReferenceEquals(displayedGamepadProfile,Olca.Unity.UnityInputProvider.ActiveGamepadProfile) && displayedInstructionPhase == phase && displayedInputDevice==Olca.Unity.InputGuideActivity.Current) return;
             displayedKeyboardProfile = appliedProfile;displayedGamepadProfile=Olca.Unity.UnityInputProvider.ActiveGamepadProfile; displayedInstructionPhase = phase;displayedInputDevice=Olca.Unity.InputGuideActivity.Current;
             instructionText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(FormatGameplayInstructionsForDevice(appliedProfile, phase,displayedInputDevice.Value));
         }
@@ -1337,6 +1341,7 @@ namespace Olca.Presentation.Field
         }
         private void TrackColumn(RectTransform rect,int column,float offset){settingsColumns.Add((rect,column,offset));}
         private string ActionLabel(string action){
+            if(action=="SelectionPrevious")return "カード マエ";if(action=="SelectionNext")return "カード ツギ";
             if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
             string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
         }
@@ -1407,7 +1412,10 @@ namespace Olca.Presentation.Field
                 var action=MakeText("Action_" + slot.Action, ActionLabel(slot.Action), transform, new Vector2(x - (gamepad?192:165), y), new Vector2(gamepad?145:180, gamepad?38:55), gamepad?22:24);
                 if(gamepad){action.rectTransform.anchoredPosition=new Vector2(x-119.5f,y);action.alignment=TextAnchor.MiddleLeft;action.resizeTextForBestFit=true;action.resizeTextMinSize=20;action.resizeTextMaxSize=22;}TrackColumn(action.rectTransform,column,gamepad?-119.5f:-165);
                 var button = MakeButton("Bind_" + slot.Context + "_" + slot.Action, "", transform, new Vector2(x + (gamepad?32.5f:15), y), new Vector2(gamepad?155:175, gamepad?38:54));
-                TrackColumn((RectTransform)button.transform,column,gamepad?32.5f:15);labels.Add(slot, button.GetComponentInChildren<UnityEngine.UI.Text>());
+                TrackColumn((RectTransform)button.transform,column,gamepad?32.5f:15);var bindingLabel=button.GetComponentInChildren<UnityEngine.UI.Text>();
+                // 長いキー名だけを枠の内側へ収め、短名と操作領域は元の大きさを保つ。
+                if(!gamepad){bindingLabel.rectTransform.sizeDelta-=new Vector2(24,0);bindingLabel.resizeTextMinSize=16;}
+                labels.Add(slot,bindingLabel);
                 button.onClick.AddListener(() => BeginCapture(slot));
                 var clear=MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + (gamepad?154.5f:195), y), new Vector2(gamepad?85:100, gamepad?38:54));TrackColumn((RectTransform)clear.transform,column,gamepad?154.5f:195);
                 clear.onClick.AddListener(() => { listening = null; Assign(slot, null); });
@@ -1539,7 +1547,8 @@ namespace Olca.Presentation.Field
         public void Initialize(Font font,System.Func<Olca.Unity.AudioVolumeSettings,string> save,System.Action close)
         {
             this.font=font;this.save=save;this.close=close;var rect=(RectTransform)transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
-            gameObject.AddComponent<Image>().color=Olca.Presentation.Dungeon.UiLook.Surface;
+            // 音量の操作中は背面HUDを透かさず、既存の面色を保つ。
+            var surface=Olca.Presentation.Dungeon.UiLook.Surface;surface.a=1f;gameObject.AddComponent<Image>().color=surface;
             Label("AudioTitle","音量設定",new Vector2(0,420),new Vector2(1600,80),38);
             status=Label("AudioStatus","",new Vector2(0,310),new Vector2(1600,110),26);
             string[] ids={"Master","Bgm","Effects","Voice"},names={"全体","BGM","効果音","ボイス"};

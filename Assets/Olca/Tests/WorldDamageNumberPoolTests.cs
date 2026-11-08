@@ -559,3 +559,156 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class FallbackEnemyAssetOwnershipTests
+    {
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        private sealed class Fixture : IDisposable
+        {
+            public readonly GameObject Root = new GameObject("fallback-enemy-assets");
+            public readonly Olca.Presentation.Field.GameFieldView View;
+            private readonly HashSet<Sprite> sprites = new HashSet<Sprite>();
+            private readonly HashSet<Texture2D> textures = new HashSet<Texture2D>();
+            public Fixture() { View = Root.AddComponent<Olca.Presentation.Field.GameFieldView>(); }
+            public Olca.Presentation.Field.WorldEnemyView Create(string id, float position = 3)
+            {
+                var enemy = new Olca.Core.Domain.Enemy(id, "テスト", 100, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(3, 0));
+                return (Olca.Presentation.Field.WorldEnemyView)typeof(Olca.Presentation.Field.GameFieldView).GetMethod("CreateEnemyView", Flags).Invoke(View, new object[] { enemy, position });
+            }
+            public Sprite Capture(Olca.Presentation.Field.WorldEnemyView enemy)
+            {
+                var sprite = enemy.GetComponent<SpriteRenderer>().sprite; sprites.Add(sprite); textures.Add(sprite.texture); return sprite;
+            }
+            public void EndOwner()
+            {
+                // EditModeのOnDestroy発火条件には依存しない。Play自然破棄は別途実証する。
+                typeof(Olca.Presentation.Field.GameFieldView).GetMethod("OnDestroy", Flags).Invoke(View, null);
+                UnityEngine.Object.DestroyImmediate(Root);
+            }
+            public void Dispose()
+            {
+                if (Root != null) EndOwner();
+                // 旧sourceでredでも、捕捉した生成物をfixtureが回収して残留させない。
+                foreach (var sprite in sprites) if (sprite != null) UnityEngine.Object.DestroyImmediate(sprite);
+                foreach (var texture in textures) if (texture != null) UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+        [Test] public void 互換fallback敵の白素材は所有View終了でSpriteとTextureを返す()
+        {
+            using (var f = new Fixture())
+            {
+                var enemy = f.Create("one"); var sprite = f.Capture(enemy); var texture = sprite.texture;
+                UnityEngine.Object.DestroyImmediate(enemy.gameObject);
+                Assert.IsTrue(sprite != null && texture != null, "敵単体の終了では所有者の素材を返さない");
+                f.EndOwner(); Assert.IsTrue(sprite == null, "所有View終了後に生成Spriteを残さない"); Assert.IsTrue(texture == null);
+            }
+        }
+        [Test] public void 互換fallbackの兄弟敵と再生成は白pixelと既存寸法を共有する()
+        {
+            using (var f = new Fixture())
+            {
+                var a = f.Create("a"); var b = f.Create("b"); var sprite = f.Capture(a); var other = f.Capture(b);
+                Assert.AreSame(sprite, other); Assert.AreEqual(Color.white, sprite.texture.GetPixel(0, 0));
+                Assert.AreEqual(1f, sprite.pixelsPerUnit); Assert.AreEqual(new Vector2(.5f, .5f), sprite.pivot);
+                Assert.AreEqual(new Rect(0, 0, 1, 1), sprite.rect); Assert.AreEqual(new Vector3(.8f, .8f, 1f), b.transform.localScale);
+                Assert.AreEqual(2, b.GetComponent<SpriteRenderer>().sortingOrder);
+                UnityEngine.Object.DestroyImmediate(a.gameObject); Assert.IsTrue(sprite != null); Assert.AreSame(sprite, b.GetComponent<SpriteRenderer>().sprite);
+                var next = f.Create("next"); Assert.AreSame(sprite, f.Capture(next));
+                f.Root.SetActive(false); f.Root.SetActive(true); Assert.IsTrue(sprite != null);
+            }
+        }
+        [Test] public void 明示Prefab経路はimport素材を借り既存の白素材を新設しない()
+        {
+            using (var f = new Fixture())
+            {
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyViewPrerfab.prefab");
+                Assert.IsNotNull(prefab); var original = prefab.GetComponent<SpriteRenderer>().sprite; Assert.IsNotNull(original); var texture = original.texture;
+                typeof(Olca.Presentation.Field.GameFieldView).GetField("enemyViewPrefab", Flags).SetValue(f.View, prefab);
+                var enemy = f.Create("grunt"); Assert.AreSame(original, enemy.GetComponent<SpriteRenderer>().sprite);
+                Assert.IsNull(typeof(Olca.Presentation.Field.GameFieldView).GetField("obstacleWhiteSprite", Flags).GetValue(f.View));
+                f.EndOwner(); Assert.IsTrue(original != null && texture != null); Assert.AreSame(original, prefab.GetComponent<SpriteRenderer>().sprite);
+            }
+        }
+    }
+}
+
+namespace Olca.Tests
+{
+    public sealed class WorldEnemyWhiteOwnershipTests
+    {
+        private const BindingFlags F = BindingFlags.Instance | BindingFlags.NonPublic;
+        private sealed class Fixture : IDisposable
+        {
+            private readonly GameObject parent = new GameObject("inactive-world-enemy-fixture");
+            public readonly GameObject Root;
+            public readonly Olca.Presentation.Field.WorldEnemyView View;
+            public SpriteRenderer Body => Root.GetComponent<SpriteRenderer>();
+            private readonly HashSet<Sprite> generated = new HashSet<Sprite>();
+            private readonly HashSet<Texture2D> textures = new HashSet<Texture2D>();
+            private bool ended;
+            public Fixture(bool prefab)
+            {
+                // Editorでは自然OnDestroyと重ねない。componentは最初からinactive親配下へ生成。
+                parent.SetActive(false);
+                if (prefab) Root = UnityEngine.Object.Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyViewPrerfab.prefab"), parent.transform, false);
+                else
+                {
+                    Root = new GameObject("body-null-owner", typeof(SpriteRenderer)); Root.SetActive(false); Root.transform.SetParent(parent.transform, false);
+                    var visual = Root.AddComponent<Olca.Presentation.Battle.EnemyView>(); typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage", F).SetValue(visual, Body);
+                    var world = Root.AddComponent<Olca.Presentation.Field.WorldEnemyView>(); typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView", F).SetValue(world, visual);
+                }
+                View = Root.GetComponent<Olca.Presentation.Field.WorldEnemyView>(); Initialize();
+            }
+            public void Initialize() => View.Initialize(new Olca.Core.Domain.Enemy("enemy_50", "スライム", 50, Olca.Core.Domain.ElementType.None, new Olca.Core.Domain.Vector2Int(50, 0)), 50);
+            public SpriteRenderer Marker => ((GameObject)typeof(Olca.Presentation.Field.WorldEnemyView).GetField("strongMarker", F).GetValue(View)).GetComponent<SpriteRenderer>();
+            public Sprite Capture(Sprite sprite)
+            {
+                Assert.IsNotNull(sprite); Assert.IsFalse(UnityEditor.AssetDatabase.Contains(sprite)); Assert.IsFalse(UnityEditor.AssetDatabase.Contains(sprite.texture));
+                generated.Add(sprite); textures.Add(sprite.texture); return sprite;
+            }
+            public void End()
+            {
+                if (ended) return; ended = true;
+                typeof(Olca.Presentation.Field.WorldEnemyView).GetMethod("OnDestroy", F).Invoke(View, null);
+            }
+            public void Dispose()
+            {
+                try { End(); }
+                finally { UnityEngine.Object.DestroyImmediate(parent); foreach (var s in generated) if (s != null) UnityEngine.Object.DestroyImmediate(s); foreach (var t in textures) if (t != null) UnityEngine.Object.DestroyImmediate(t); }
+            }
+        }
+        [Test] public void 強敵markerは再Toggle再初期化Disableで保持し所有者終端で素材を返す()
+        {
+            using (var f = new Fixture(true))
+            {
+                f.View.SetStrongEnemy(true); var sprite = f.Capture(f.Marker.sprite); var texture = sprite.texture;
+                Assert.AreEqual(new Vector3(0, 1.65f, 0), f.Marker.transform.localPosition); Assert.AreEqual(new Vector3(.22f, .22f, 1), f.Marker.transform.localScale);
+                Assert.AreEqual(45f, f.Marker.transform.localEulerAngles.z, .001f); Assert.AreEqual(5, f.Marker.sortingOrder); Assert.AreEqual(new Color(.35f, .95f, 1, .9f), f.Marker.color);
+                Assert.AreEqual(1f, sprite.pixelsPerUnit); Assert.AreEqual(new Vector2(.5f, .5f), sprite.pivot); Assert.AreEqual(Color.white, texture.GetPixel(0, 0));
+                f.View.SetStrongEnemy(false); f.View.SetStrongEnemy(true); Assert.AreSame(sprite, f.Marker.sprite);
+                f.Initialize(); f.View.SetStrongEnemy(true); Assert.AreSame(sprite, f.Marker.sprite);
+                typeof(Olca.Presentation.Field.WorldEnemyView).GetMethod("OnDisable", F).Invoke(f.View, null); f.Root.SetActive(false); f.Root.SetActive(true); Assert.IsTrue(sprite != null && texture != null);
+                f.End(); Assert.IsTrue(sprite == null, "所有者終端後にmarker Spriteを残さない"); Assert.IsTrue(texture == null);
+            }
+        }
+        [Test] public void Body未設定fallbackとmarkerは同じ所有白素材を借りimportへ差替えてもimportは壊さない()
+        {
+            using (var f = new Fixture(false))
+            {
+                var sprite = f.Capture(f.Body.sprite); var texture = sprite.texture; f.View.SetStrongEnemy(true); var marker = f.Capture(f.Marker.sprite); Assert.AreSame(sprite, marker);
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyViewPrerfab.prefab"); var imported = prefab.GetComponent<SpriteRenderer>().sprite; var importedTexture = imported.texture;
+                f.Body.sprite = imported; f.End(); Assert.IsTrue(sprite == null && texture == null); Assert.IsTrue(imported != null && importedTexture != null);
+            }
+        }
+        [Test] public void 明示Prefabのimport本文SpriteとTextureはmarker所有者終端後も生存する()
+        {
+            using (var f = new Fixture(true))
+            {
+                var imported = f.Body.sprite; Assert.IsTrue(UnityEditor.AssetDatabase.Contains(imported)); var texture = imported.texture;
+                f.View.SetStrongEnemy(true); f.Capture(f.Marker.sprite); f.End(); Assert.IsTrue(imported != null && texture != null);
+            }
+        }
+    }
+}

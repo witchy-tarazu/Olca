@@ -776,6 +776,39 @@ namespace Olca.Tests.Application
             Assert.IsFalse(model.IsPresented);
         }
 
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] public async Task 外界移動案内は未登録手札でも現在割当へ追従し未接続Touchを案内しない(int device)
+        {
+            var flags=BindingFlags.Static|BindingFlags.NonPublic;var activity=typeof(InputGuideActivity).GetField("<Current>k__BackingField",flags);var priorDevice=activity.GetValue(null);var active=typeof(UnityInputProvider).GetField("<ActiveGamepadProfile>k__BackingField",flags);var version=typeof(UnityInputProvider).GetField("<GamepadProfileVersion>k__BackingField",flags);var priorActive=active.GetValue(null);var priorVersion=version.GetValue(null);
+            using(var input=new UnityInputProvider())try{
+                activity.SetValue(null,(InputGuideDevice)device);var model=system.OutsideExploration;Assert.IsNull(model.Cards);
+                Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+                using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},input:input)){
+                    Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var guide=view.transform.Find("OutsideMovementGuide").GetComponent<Text>();Assert.IsFalse(guide.raycastTarget);Assert.IsFalse(view.transform.Find("OutsideHandButton0").gameObject.activeSelf);
+                    if(device==0){StringAssert.Contains("LeftArrow/A",guide.text);StringAssert.Contains("RightArrow/D",guide.text);StringAssert.Contains("Space",guide.text);}else if(device==1){StringAssert.Contains("スティック",guide.text);StringAssert.Contains("ジュウジヒダリ",guide.text);StringAssert.Contains("South",guide.text);}else Assert.IsEmpty(guide.text);
+                    var edit=(device==1?input.GamepadProfile:input.KeyboardProfile).BeginEdit();Assert.IsTrue(edit.TryAssign((device==1?"gamepad":"keyboard","battle","LeftPrimary"),device==1?"LeftShoulder":"F12",out _));Assert.IsTrue(edit.TryAssign((device==1?"gamepad":"keyboard","exploration","JumpPrimary"),device==1?"RightStick":"J",out _));
+                    if(device==1)Assert.IsTrue(input.TryRestoreGamepadProfile(edit.Preview(),out _));else Assert.IsTrue(input.TryRestoreKeyboardProfile(edit.Preview(),out _));view.Render();
+                    if(device==0){StringAssert.Contains("F12/A",guide.text);StringAssert.Contains("ジャンプ: J",guide.text);StringAssert.DoesNotContain("LeftArrow",guide.text);}else if(device==1){StringAssert.Contains("LB",guide.text);StringAssert.Contains("R3",guide.text);StringAssert.DoesNotContain("South",guide.text);}else Assert.IsEmpty(guide.text);
+                    views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);Assert.AreEqual(0,model.Core.Frame);Assert.AreEqual(6000,model.Core.CardGauge.CurrentUnits);Assert.IsNull(model.Cards);Assert.AreEqual(new Vector2(204,66),view.transform.Find("OutsideHandButton0").GetComponent<RectTransform>().sizeDelta);
+                }
+            }finally{activity.SetValue(null,priorDevice);active.SetValue(null,priorActive);version.SetValue(null,priorVersion);}
+        }
+
+        [Test] public async Task 外界の直接選択は閉鎖再生成で保持し旧操作と覆い中を拒否する()
+        {
+            var source=Enumerable.Range(0,5).SelectMany(id=>Enumerable.Range(0,4).Select(n=>new Olca.Core.Domain.Card("outside-select-"+id,"fixture",1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))).ToArray();var owned=source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var model=system.OutsideExploration;
+            Assert.IsTrue(model.TryInitializeCards(source,owned,new Olca.Tests.Mocks.MockRandomProvider(),out _));var cards=model.Cards;var hand=cards.Hand.ToArray();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;Button Pick(int slot)=>view.transform.Find("OutsideHandButton"+slot).GetComponent<Button>();
+                Assert.AreEqual(0,cards.SelectedIndex);Assert.IsTrue(view.transform.Find("OutsideHandButton0/OutsideHandSelected0").gameObject.activeSelf);
+                var old=Pick(0).onClick;Pick(2).onClick.Invoke();Assert.AreEqual(2,cards.SelectedIndex);Assert.IsTrue(view.transform.Find("OutsideHandButton2/OutsideHandSelected2").gameObject.activeSelf);
+                view.SetCovered(true);Pick(0).onClick.Invoke();Assert.AreEqual(2,cards.SelectedIndex);
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsFalse(model.IsPresented);UnityEngine.Object.DestroyImmediate(view.gameObject);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);view=binding.View;Assert.AreEqual(2,cards.SelectedIndex);old.Invoke();Assert.AreEqual(2,cards.SelectedIndex);Pick(0).onClick.Invoke();Assert.AreEqual(0,cards.SelectedIndex);
+                CollectionAssert.AreEqual(hand,cards.Hand);Assert.AreEqual(17,cards.RemainingCount);Assert.AreEqual(6000,model.Core.CardGauge.CurrentUnits);Assert.AreEqual(0,model.Core.Frame);
+                Assert.AreEqual(new Vector2(36,36),view.transform.Find("OutsideHandIcon0").GetComponent<RectTransform>().sizeDelta);
+            }
+        }
         [TestCase("攻撃", "コウゲキ")] [TestCase("ひらがな Latin", "ひらがな Latin")] public async Task 外界初期手札HUDはRootの三枚を表示し閉鎖と再表示で再抽選しない(string name,string shown)
         {
             var source=Enumerable.Range(0,5).SelectMany(id=>Enumerable.Range(0,4).Select(n=>new Olca.Core.Domain.Card("outside-hud-"+id,name,1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))).ToArray();var owned=source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var model=system.OutsideExploration;
@@ -881,6 +914,26 @@ namespace Olca.Tests.Application
             Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);var old=load.onClick;view.RestrictControls(new[]{"LoadCheckpointButton"});Assert.IsFalse(load.interactable);old.Invoke();Assert.AreEqual(0,loaded);
             layer.CloseCurrent();Assert.IsTrue(load.interactable);Assert.IsFalse(resume.interactable);old.Invoke();Assert.AreEqual(0,loaded);
             Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);load.onClick.Invoke();Assert.AreEqual(1,loaded);Assert.IsFalse(resume.interactable);
+        }
+
+        [Test] public void 外界巡回は採用済み時刻だけを使い選択保持が移動neutralを妨げない()
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();bool paused=Olca.Unity.GameplayPause.IsPaused;var pauseType=typeof(Olca.Unity.GameplayPause);var release=pauseType.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pauseType.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);
+            try{
+                var source=System.Linq.Enumerable.ToArray(System.Linq.Enumerable.SelectMany(System.Linq.Enumerable.Range(0,5),id=>System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0,4),n=>new Olca.Core.Domain.Card("cycle-"+id,"fixture",1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))));
+                var owned=System.Linq.Enumerable.ToDictionary(System.Linq.Enumerable.GroupBy(source,c=>(c.Id,c.ExceedLevel)),g=>g.Key,g=>System.Linq.Enumerable.Count(g));Assert.IsTrue(model.TryInitializeCards(source,owned,new Olca.Tests.Mocks.MockRandomProvider(),out _));
+                using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                    var driver=new object();runtime.Attach(driver,input);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);
+                    long frequency=System.Diagnostics.Stopwatch.Frequency,origin=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10,now=origin;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);
+                    var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",flags).GetValue(input);
+                    var neutral=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,HasSelectionSample=true};
+                    var selection=new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,HasSelectionSample=true,AnyKey=true,AnyKeyExceptSelection=false,SelectionNextHeld=true,SelectionNextDown=true,SelectionNextAt=origin+frequency/20};
+                    events.Add(new Olca.Unity.TimestampedLogicalInput(origin-frequency,selection));events.Add(new Olca.Unity.TimestampedLogicalInput(origin,neutral));events.Add(new Olca.Unity.TimestampedLogicalInput(origin+frequency*2,selection));
+                    now=origin+frequency/10;runtime.Pump(driver,true);Assert.AreEqual(0,model.Cards.SelectedIndex,"旧時刻と未来の押下は未採用");
+                    events.Add(new Olca.Unity.TimestampedLogicalInput(now,selection));now+=frequency/10;runtime.Pump(driver,true);Assert.AreEqual(1,model.Cards.SelectedIndex);
+                    var moving=selection.Copy();moving.SelectionNextDown=false;moving.AnyKeyExceptSelection=true;moving.Horizontal=1;events.Add(new Olca.Unity.TimestampedLogicalInput(now,moving));now+=frequency/10;runtime.Pump(driver,true);Assert.Greater(model.Core.Position,model.Core.Definition.Start,"選択キーだけ保持中にも移動neutralは成立済み");Assert.AreEqual(runtime.Frame,model.Core.Frame);
+                }
+            }finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);resume.SetValue(null,priorResume);model.Dispose();}
         }
 
         [Test] public void 外界入力epochは古い履歴を捨て未来neutralを採用前に評価しない()

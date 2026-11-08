@@ -139,19 +139,7 @@ namespace Olca.Presentation.Effects
             var views=new System.Collections.Generic.List<WorldDamageNumberView>();
             foreach(var view in group)if(view!=null&&view.gameObject.activeInHierarchy)views.Add(view);
             var camera=Camera.main;float offset=0f;
-            if(camera!=null&&camera.isActiveAndEnabled){
-                float limit=1f-8f/Mathf.Max(1,camera.pixelHeight);
-                foreach(var view in views){
-                    var renderer=view.textMesh!=null?view.textMesh.GetComponent<Renderer>():null;if(renderer==null)continue;
-                    var bounds=renderer.bounds;bounds.center-=view.viewportOffset;if(bounds.size.sqrMagnitude<=0)continue;
-                    for(int i=0;i<8;i++){
-                        var corner=bounds.center+Vector3.Scale(bounds.extents,new Vector3((i&1)==0?-1:1,(i&2)==0?-1:1,(i&4)==0?-1:1));
-                        var projected=camera.WorldToViewportPoint(corner);if(projected.z<=0||projected.y<=limit)continue;
-                        projected.y=limit;
-                        offset=Mathf.Min(offset,Vector3.Dot(camera.ViewportToWorldPoint(projected)-corner,camera.transform.up));
-                    }
-                }
-            }
+            offset=CalculateTopOffset(camera,views);
             var adjustment=camera!=null?camera.transform.up*offset:Vector3.zero;
             // 数値群が表示中の敵名を隠す場合だけ、画面内に収まる横側へ逃がす。
             if(camera!=null&&camera.isActiveAndEnabled&&labels!=null&&views.Count>0){
@@ -171,6 +159,25 @@ namespace Olca.Presentation.Effects
                 }
             }
             foreach(var view in views){view.transform.position+=adjustment-view.viewportOffset;view.viewportOffset=adjustment;}
+        }
+
+        private static float CalculateTopOffset(Camera camera,System.Collections.Generic.List<WorldDamageNumberView> views)
+        {
+            float offset=0f;
+            if(camera!=null&&camera.isActiveAndEnabled){
+                float limit=1f-8f/Mathf.Max(1,camera.pixelHeight);
+                foreach(var view in views){
+                    var renderer=view.textMesh!=null?view.textMesh.GetComponent<Renderer>():null;if(renderer==null)continue;
+                    var bounds=renderer.bounds;bounds.center-=view.viewportOffset;if(bounds.size.sqrMagnitude<=0)continue;
+                    for(int i=0;i<8;i++){
+                        var corner=bounds.center+Vector3.Scale(bounds.extents,new Vector3((i&1)==0?-1:1,(i&2)==0?-1:1,(i&4)==0?-1:1));
+                        var projected=camera.WorldToViewportPoint(corner);if(projected.z<=0||projected.y<=limit)continue;
+                        projected.y=limit;
+                        offset=Mathf.Min(offset,Vector3.Dot(camera.ViewportToWorldPoint(projected)-corner,camera.transform.up));
+                    }
+                }
+            }
+            return offset;
         }
 
         private static Rect ProjectBounds(Camera camera,Bounds bounds)

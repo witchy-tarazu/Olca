@@ -654,7 +654,10 @@ namespace Olca.Presentation.CustomScreen
 
         private ScrollRect cardDescriptionScroll;
         private string measuredCardDescription;
-        private float measuredCardWidth;
+        private Vector2 cardDescriptionViewport,cardDescriptionContent;
+        private float cardDescriptionPpu,cardDescriptionLineSpacing,cardDescriptionPosition=1;
+        private int cardDescriptionFontSize;
+        private bool cardDescriptionLayoutValid,refreshingCardDescription;
         private void EnsureCardDescriptionScroll()
         {
             if(selectedCardDescription==null||cardDescriptionScroll!=null)return;
@@ -676,23 +679,32 @@ namespace Olca.Presentation.CustomScreen
             // Canvas倍率の変更で同じ幅でも文字生成の丸めが変わる。毎描画で全行と余白を確保する。
             text.verticalOverflow=VerticalWrapMode.Overflow;
             float height=Mathf.Max(scroll.viewport.rect.height,Mathf.Ceil(text.preferredHeight)+text.fontSize*2);
-            if(!Mathf.Approximately(height,text.rectTransform.rect.height)){
-                float position=scroll.verticalNormalizedPosition;
-                text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,height);
-                scroll.verticalNormalizedPosition=position;
-            }
+            if(!Mathf.Approximately(height,text.rectTransform.rect.height))text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,height);
+        }
+        private void RefreshCardDescription()
+        {
+            if(refreshingCardDescription||cardDescriptionScroll==null||selectedCardDescription==null)return;
+            refreshingCardDescription=true;
+            try {
+                var text=selectedCardDescription;var scroll=cardDescriptionScroll;
+                bool contentChanged=measuredCardDescription!=text.text;
+                bool sameGeometry=cardDescriptionLayoutValid&&scroll.viewport.rect.size==cardDescriptionViewport&&text.rectTransform.rect.size==cardDescriptionContent&&Mathf.Approximately(text.pixelsPerUnit,cardDescriptionPpu)&&text.fontSize==cardDescriptionFontSize&&Mathf.Approximately(text.lineSpacing,cardDescriptionLineSpacing);
+                if(contentChanged){cardDescriptionPosition=1;scroll.StopMovement();}
+                // 全文fit中のgetterは読取位置を表さない。再overflowまで最後の操作位置を保持する。
+                else if(sameGeometry&&cardDescriptionContent.y>cardDescriptionViewport.y+.1f)cardDescriptionPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition);
+                float previousHeight=text.rectTransform.rect.height;
+                FitDetailContent(text,scroll);
+                bool changed=contentChanged||!sameGeometry||!Mathf.Approximately(previousHeight,text.rectTransform.rect.height);
+                // normalized setterはCanvas更新へ同期再入するため、今回の寸法を先に確定する。
+                measuredCardDescription=text.text;cardDescriptionViewport=scroll.viewport.rect.size;cardDescriptionContent=text.rectTransform.rect.size;cardDescriptionPpu=text.pixelsPerUnit;cardDescriptionFontSize=text.fontSize;cardDescriptionLineSpacing=text.lineSpacing;cardDescriptionLayoutValid=true;
+                if(changed)scroll.verticalNormalizedPosition=cardDescriptionPosition;
+            } finally {refreshingCardDescription=false;}
         }
         private void RefreshKana(){
             ApplyNarrowLayout(narrowLayoutAmount);
             UpdateProcessingControls();ProcessingLayout(narrowLayoutAmount);RefreshProcessingHint();
             foreach(var label in GetComponentsInChildren<Text>(true))if(detailsPanel==null||!label.transform.IsChildOf(detailsPanel.transform))label.text=CustomDisplay.Katakana(label.text);
-            if(cardDescriptionScroll!=null&&selectedCardDescription!=null){
-                float width=cardDescriptionScroll.viewport.rect.width;
-                bool changed=measuredCardDescription!=selectedCardDescription.text||!Mathf.Approximately(width,measuredCardWidth);
-                measuredCardDescription=selectedCardDescription.text;measuredCardWidth=width;
-                FitDetailContent(selectedCardDescription,cardDescriptionScroll);
-                if(changed){cardDescriptionScroll.StopMovement();cardDescriptionScroll.verticalNormalizedPosition=1;}
-            }
+            RefreshCardDescription();
             if(detailsDialog!=null)detailsDialog.ConfigureLayout(narrowLayoutAmount,!isScreenVisible);
         }
         private void OnDisable(){StopHandPresentation();Canvas.preWillRenderCanvases-=RefreshKana;ResetCustomPad();Olca.Unity.BattleVisualClock.SetPaused(this,false);}
@@ -1955,23 +1967,7 @@ namespace Olca.Presentation.CustomScreen
             ReleaseSessionPresentation();
             narrowLayout?.Dispose();
             SetScreenVisibility(true);
-            Olca.Unity.BattleVisualClock.SetPaused(this,false);
-            gamepadInput?.Dispose();
-
-
-            // 破棄中は購読だけを解除し、子UIの再生成や表示更新を行わない。
-            UnbindTransformations();
             if (undoCustomizationButton != null) undoCustomizationButton.onClick.RemoveListener(OnUndoClicked);
-            // アニメーション用CancellationTokenをキャンセル
-            StopHandPresentation();
-
-            UnbindCustomScreen();
-
-            if (customizeModeView != null)
-            {
-                customizeModeView.OnExecuteRequested -= OnCustomizeExecuteRequested;
-                customizeModeView.OnCancelled -= OnCustomizeModeCancelled;
-            }
         }
     }
 }
@@ -2071,6 +2067,15 @@ namespace Olca.Presentation.CustomScreen
         public static string Katakana(string text)
         {
             if(string.IsNullOrEmpty(text))return text;
+            // Replaceと同じ文字集合だけを判定する。対象なしは元の参照をそのまま返す。
+            for(int i=0;i<text.Length;i++){
+                char character=text[i];
+                if((character>='\u4e00'&&character<='\u9fff')||character=='\u3005')return KatakanaWithKanji(text);
+            }
+            return text;
+        }
+        private static string KatakanaWithKanji(string text)
+        {
             // 漢字の連続部分だけを読みへ置換し、元のひらがな/カタカナ/英数字/記号を維持する。
             text=System.Text.RegularExpressions.Regex.Replace(text,@"[一-鿿々]+",m=>{
                 var result=new System.Text.StringBuilder();
@@ -2112,6 +2117,7 @@ namespace Olca.Presentation.CustomScreen
         private enum DetailKind{Card,Transformation,Combatant}
         private DetailKind kind;private BattleSystem battle;private Card card;private int inspectionIndex=-1,contentVersion;private float narrowAmount;private bool allowCycle;
         private Text padDetailsText,detailsHeading;private ScrollRect padDetailsScroll;private string authored="";private System.Func<bool> inputAllowed;
+        private Vector2 readingViewport,readingContent;private float readingPpu,readingLineSpacing,readingPosition=1;private int readingFontSize;private string readingText;private bool readingLayoutValid,refreshingPresentation;
         public int InspectionIndex=>kind==DetailKind.Combatant?inspectionIndex:-1;
         public Text Body=>padDetailsText;public ScrollRect Scroll=>padDetailsScroll;
         public event System.Action Closed;
@@ -2159,8 +2165,10 @@ namespace Olca.Presentation.CustomScreen
         protected override void Redraw(){DrawContent(true);RefreshPresentation();Rendered();}
         private void DrawContent(bool reset)
         {
-            if(padDetailsText==null)return;RefreshDetailLayout();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=authored;Canvas.ForceUpdateCanvases();Fit(padDetailsText,padDetailsScroll);if(reset)padDetailsScroll.verticalNormalizedPosition=1;
-            if(card!=null){CardAttackPropertyIcons.Bind(padDetailsText,card,authored);Canvas.ForceUpdateCanvases();Fit(padDetailsText,padDetailsScroll);}
+            if(padDetailsText==null)return;
+            if(reset){ResetReadingPosition();padDetailsScroll.verticalNormalizedPosition=1;}else RememberReadingPosition();
+            RefreshDetailLayout();CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text=authored;Canvas.ForceUpdateCanvases();FitReadingContent();
+            if(card!=null){CardAttackPropertyIcons.Bind(padDetailsText,card,authored);Canvas.ForceUpdateCanvases();FitReadingContent();}
             int version=contentVersion;foreach(string name in new[]{"PreviousInspection","NextInspection"}){var button=transform.Find(name)?.GetComponent<Button>();if(button==null)continue;int direction=name=="NextInspection"?1:-1;button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{if(version==contentVersion)Cycle(direction);});}
         }
         private void Cycle(int direction){if(!CanOperatePopup||kind!=DetailKind.Combatant||battle==null||battle.IsGameOver||!allowCycle||inspectionIndex<=0)return;int count=Enemies().Length;if(count==0){Abort();return;}inspectionIndex=((inspectionIndex-1+direction)%count+count)%count+1;SetValue(CombatantText());}
@@ -2171,8 +2179,31 @@ namespace Olca.Presentation.CustomScreen
         private void LateUpdate()
         {RefreshLifetime();if(!IsOpen)return;if(kind==DetailKind.Combatant){if(battle==null||battle.IsGameOver||inspectionIndex>0&&Enemies().Length==0){Abort();return;}string value=CombatantText();if(value!=authored){authored=value;DrawContent(false);}}RefreshPresentation();}
         private void RefreshPresentation()
-        {if(!IsOpen||padDetailsText==null)return;RefreshDetailLayout();foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);Fit(padDetailsText,padDetailsScroll);var labelClose=cancel.GetComponentInChildren<Text>();var device=Olca.Unity.InputGuideActivity.Current;string Key(string action){string binding=null;Olca.Unity.UnityInputProvider.ActiveGamepadProfile?.Bindings.TryGetValue(("gamepad","custom",action),out binding);return Olca.Unity.UnityInputProvider.GamepadBindingLabel(binding);}labelClose.text=CustomDisplay.Katakana(device==Olca.Unity.InputGuideDevice.Gamepad?"閉じる / "+Key("Cancel")+"・"+Key("Details"):device==Olca.Unity.InputGuideDevice.Touch?"閉じる":"閉じる / Esc");}
-        private static void Fit(Text text,ScrollRect scroll){text.verticalOverflow=VerticalWrapMode.Overflow;float height=Mathf.Max(scroll.viewport.rect.height,Mathf.Ceil(text.preferredHeight)+text.fontSize*2);if(!Mathf.Approximately(height,text.rectTransform.rect.height)){float position=scroll.verticalNormalizedPosition;text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,height);scroll.verticalNormalizedPosition=position;}}
+        {
+            if(refreshingPresentation||!IsOpen||padDetailsText==null)return;
+            refreshingPresentation=true;
+            try {RememberReadingPosition();RefreshDetailLayout();foreach(var label in GetComponentsInChildren<Text>(true))label.text=CustomDisplay.Katakana(label.text);FitReadingContent();var labelClose=cancel.GetComponentInChildren<Text>();var device=Olca.Unity.InputGuideActivity.Current;string Key(string action){string binding=null;Olca.Unity.UnityInputProvider.ActiveGamepadProfile?.Bindings.TryGetValue(("gamepad","custom",action),out binding);return Olca.Unity.UnityInputProvider.GamepadBindingLabel(binding);}labelClose.text=CustomDisplay.Katakana(device==Olca.Unity.InputGuideDevice.Gamepad?"閉じる / "+Key("Cancel")+"・"+Key("Details"):device==Olca.Unity.InputGuideDevice.Touch?"閉じる":"閉じる / Esc");}
+            finally {refreshingPresentation=false;}
+        }
+        private void RememberReadingPosition()
+        {
+            // layout更新後のgetterは、同じoffsetを新しいviewportで読んだ別の位置になる。
+            // 前回と寸法が同じときの操作だけ採り、全文が収まる間の0/1は採用しない。
+            if(readingLayoutValid&&padDetailsScroll.viewport.rect.size==readingViewport&&padDetailsText.rectTransform.rect.size==readingContent&&Mathf.Approximately(padDetailsText.pixelsPerUnit,readingPpu)&&padDetailsText.fontSize==readingFontSize&&Mathf.Approximately(padDetailsText.lineSpacing,readingLineSpacing)&&padDetailsText.text==readingText&&readingContent.y>readingViewport.y+.1f)
+                readingPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition);
+        }
+        private void FitReadingContent()
+        {
+            var text=padDetailsText;var scroll=padDetailsScroll;text.verticalOverflow=VerticalWrapMode.Overflow;
+            float height=Mathf.Max(scroll.viewport.rect.height,Mathf.Ceil(text.preferredHeight)+text.fontSize*2);
+            bool changed=!readingLayoutValid||scroll.viewport.rect.size!=readingViewport||text.rectTransform.rect.size!=readingContent||!Mathf.Approximately(text.pixelsPerUnit,readingPpu)||text.fontSize!=readingFontSize||!Mathf.Approximately(text.lineSpacing,readingLineSpacing)||text.text!=readingText;
+            if(!Mathf.Approximately(height,text.rectTransform.rect.height)){text.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,height);changed=true;}
+            // setterはCanvas更新を同期要求するため、再入する前に今回の寸法を確定する。
+            readingViewport=scroll.viewport.rect.size;readingContent=text.rectTransform.rect.size;readingPpu=text.pixelsPerUnit;readingFontSize=text.fontSize;readingLineSpacing=text.lineSpacing;readingText=text.text;readingLayoutValid=true;
+            if(changed)scroll.verticalNormalizedPosition=readingPosition;
+        }
+        private void ResetReadingPosition(){readingPosition=1;readingLayoutValid=false;readingText=null;}
+
         private void RefreshDetailLayout()
         {
             float narrow=narrowAmount;
@@ -2192,7 +2223,7 @@ namespace Olca.Presentation.CustomScreen
         }
         protected override bool Attempt()=>false;
         protected override void OnResult(Olca.Presentation.Management.DialogResult result,string focus){ClearContent();inputAllowed=null;Closed?.Invoke();}
-        private void ClearContent(){contentVersion++;kind=DetailKind.Card;inspectionIndex=-1;battle=null;card=null;authored="";if(padDetailsText!=null){CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text="";}}
+        private void ClearContent(){ResetReadingPosition();contentVersion++;kind=DetailKind.Card;inspectionIndex=-1;battle=null;card=null;authored="";if(padDetailsText!=null){CardAttackPropertyIcons.Clear(padDetailsText);padDetailsText.text="";}}
         public void Release(){Abort();ClearContent();inputAllowed=null;Closed=null;foreach(var button in GetComponentsInChildren<Button>(true))button.onClick=new Button.ButtonClickedEvent();}
         protected override void OnDestroy(){Canvas.preWillRenderCanvases-=RefreshPresentation;base.OnDestroy();ClearContent();Closed=null;inputAllowed=null;padDetailsText=detailsHeading=null;padDetailsScroll=null;}
     }
