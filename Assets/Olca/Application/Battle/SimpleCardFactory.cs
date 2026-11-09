@@ -36,6 +36,7 @@ namespace Olca.Application.Battle
         private readonly Dictionary<string, Card> catalog;
         // 製品仮定義。既存カードの保存値は変えず、加工時だけ参照する。
         private readonly Dictionary<ExceedLevel, Card> swordUpgrades = new Dictionary<ExceedLevel, Card>();
+        private readonly Dictionary<ExceedLevel, Card> bombUpgrades = new Dictionary<ExceedLevel, Card>();
         private static readonly TuningGrantDefinition StandardTuning = new TuningGrantDefinition(
             "product/tuning/power-v1", new[] { new TuningEffectDefinition("power", 1,
                 new Dictionary<int, CardModifier> { [1] = new CardModifier { BonusDamage = 10 } }) });
@@ -43,9 +44,10 @@ namespace Olca.Application.Battle
         /// <summary>固定スターターの仮構成。通常5種を各4枚、予備なし。</summary>
         public IReadOnlyList<Card> CollectionCards => catalog.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone())
             .Concat(swordUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
+            .Concat(bombUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
             .Concat(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
 
-        public IReadOnlyList<Card> FusionCards => catalog.Values.Concat(swordUpgrades.Values).Select(c=>c.Clone()).ToArray();
+        public IReadOnlyList<Card> FusionCards => catalog.Values.Concat(swordUpgrades.Values).Concat(bombUpgrades.Values).Select(c=>c.Clone()).ToArray();
 
         public Deck CreateStarterDeck()
         {
@@ -60,8 +62,9 @@ namespace Olca.Application.Battle
                 CollectionDisplay.DefinitionHash(card)==CollectionDisplay.DefinitionHash(definition) ? StandardTuning : null;
 
         public bool HasExceededDefinition(Card card, ExceedLevel nextLevel)
-            => card != null && card.Id == Sword && card.Series?.Equals(CardSeries.Sword) == true &&
-                nextLevel == (ExceedLevel)((int)card.ExceedLevel + 1) && swordUpgrades.ContainsKey(nextLevel);
+            => card != null && nextLevel == (ExceedLevel)((int)card.ExceedLevel + 1) &&
+                ((card.Id == Sword && card.Series?.Equals(CardSeries.Sword) == true && swordUpgrades.ContainsKey(nextLevel)) ||
+                 (card.Id == Bomb && card.Series?.Equals(CardSeries.Bomb) == true && bombUpgrades.ContainsKey(nextLevel)));
 
         public SimpleCardFactory() : this(null, false) { }
 
@@ -106,6 +109,18 @@ namespace Olca.Application.Battle
                     extendRecoveryDuringDerivative: sword.ExtendRecoveryDuringDerivative, isInstantEffect: sword.IsInstantEffect,
                     startupFrames: sword.StartupFrames, recoveryFrames: sword.RecoveryFrames,
                     recoveryCancelAfterFrames: sword.RecoveryCancelAfterFrames));
+            // 仮データ bomb-upgrades-v1 の明示定義。素材の補正を引き継がない。
+            var bomb = catalog[Bomb];
+            foreach (var entry in new[] { (ExceedLevel.Lv1, 60, "ボム★（カリ）"),
+                (ExceedLevel.Lv2, 80, "ボム★★（カリ）"), (ExceedLevel.Lv3, 120, "ボム★★★（カリ）") })
+                bombUpgrades.Add(entry.Item1, new Card(Bomb, entry.Item3, bomb.Cost, bomb.Rarity,
+                    bomb.Category, bomb.Element, bomb.Series, entry.Item2, bomb.Description,
+                    exceedLevel: entry.Item1, subCategory: bomb.SubCategory, properties: bomb.Properties,
+                    poiseDamage: bomb.PoiseDamage, hitInvincibilityMs: bomb.HitInvincibilityMs,
+                    startupTime: bomb.StartupTime, recoveryTime: bomb.RecoveryTime,
+                    extendRecoveryDuringDerivative: bomb.ExtendRecoveryDuringDerivative, isInstantEffect: bomb.IsInstantEffect,
+                    startupFrames: bomb.StartupFrames, recoveryFrames: bomb.RecoveryFrames,
+                    recoveryCancelAfterFrames: bomb.RecoveryCancelAfterFrames));
         }
 
         /// <summary>
@@ -130,6 +145,8 @@ namespace Olca.Application.Battle
             if (baseCard == null) return null;
             if (baseCard.Id == Sword && swordUpgrades.TryGetValue(nextLevel, out var definition))
                 return definition.Clone();
+            if (baseCard.Id == Bomb && bombUpgrades.TryGetValue(nextLevel, out var bombDefinition))
+                return bombDefinition.Clone();
 
             // 超越後の威力倍率: Lv1→×1.5, Lv2→×2.0, Lv3→×3.0
             float powerMultiplier = nextLevel switch
