@@ -371,8 +371,114 @@ namespace Olca.Tests
             Assert.AreEqual(power,result.GetFinalPower()); Assert.AreNotEqual(a.Name,result.Name);
             Assert.AreEqual(a.Series,result.Series); Assert.AreEqual(after,result.ExceedLevel);
             Assert.AreEqual(0,result.Modifier.BonusDamage); Assert.AreEqual(0,result.TuningCount);
-            Assert.IsFalse(f.HasExceededDefinition(f.CreateById("bomb"),ExceedLevel.Lv1));
+            Assert.IsTrue(f.HasExceededDefinition(f.CreateById("bomb"),ExceedLevel.Lv1));
+            Assert.IsFalse(f.HasExceededDefinition(f.CreateById("heal"),ExceedLevel.Lv1));
             Assert.IsFalse(f.HasExceededDefinition(normal,ExceedLevel.Lv3));
+        }
+
+        [TestCase("sword",0,"1218C1F2DB25767F19997CB95FC15F3A97EEEBBCFFA7E0C2036D866E68B60E55")]
+        [TestCase("bomb",0,"948DDFF162CDF844C1E2B7E1B44E9B776100D14E9FD9D3C098D6B0160C7F2644")]
+        [TestCase("heal",0,"E666B3AE7FBA6907FA594A0B37FD3137EF68086A13E670D005ECA54978C92626")]
+        [TestCase("shield",0,"6730B35646456713B6C9C8BC84D3FB713691C3EBF9881C630F306DD8A981AC17")]
+        [TestCase("tuning",0,"57DA3BACEBD001C9ED0C8F7A9FD9B617CC96F6B21E45A95EDF035D7FD168942E")]
+        [TestCase("fire_sword",0,"592FA9E3C764DF64FAA94E41C21171F7DFA3EC214BBC3769D5AECCBC6E5498F5")]
+        [TestCase("sword",1,"1FC17C6DD1A12891D4E424446DBC484419BF84315F551CAA860EA16D80D4FA3F")]
+        [TestCase("sword",2,"32AC390531376B97233A72E81F610D49C32887CC884A40A74BDC7FFD73FA1088")]
+        [TestCase("sword",3,"B58BFD0036E88A28342E20FE7E19B5C25C24DB290821348F579F1071E737F9CE")]
+        public void 登録前の基本六種とソード上位三種の定義ハッシュを維持する(string id,int level,string expected)
+        {
+            var f=new SimpleCardFactory();var card=f.CreateById(id);
+            if(level!=0)card=f.CreateExceeded(card,(ExceedLevel)level);
+            Assert.AreEqual(expected,CollectionDisplay.DefinitionHash(card));
+        }
+
+        [TestCase(ExceedLevel.Normal,ExceedLevel.Lv1,60,"ボム★（カリ）")]
+        [TestCase(ExceedLevel.Lv1,ExceedLevel.Lv2,80,"ボム★★（カリ）")]
+        [TestCase(ExceedLevel.Lv2,ExceedLevel.Lv3,120,"ボム★★★（カリ）")]
+        public void ボム上位は明示された標準定義を生成し素材補正を持ち込まない(
+            ExceedLevel before,ExceedLevel after,int power,string name)
+        {
+            var f=new SimpleCardFactory(new CardPoiseSettings(bomb:37),cardTimings:
+                new Dictionary<string,PlayerAttackTiming>{{SimpleCardFactory.Bomb,new PlayerAttackTiming(3,11,6)}});
+            var normal=f.CreateById(SimpleCardFactory.Bomb);
+            var a=before==ExceedLevel.Normal?normal:f.CreateExceeded(normal,before);
+            a.Modifier.BonusDamage=999;
+            Assert.IsTrue(f.HasExceededDefinition(a,after));
+            var result=new ExceedSystem(f).Execute(a,a.Clone()).ResultCard;
+            Assert.AreEqual(power,result.Power);Assert.AreEqual(power,result.GetFinalPower());Assert.AreEqual(name,result.Name);
+            Assert.AreEqual(SimpleCardFactory.Bomb,result.Id);Assert.AreEqual(after,result.ExceedLevel);
+            Assert.AreEqual(0,result.Modifier.BonusDamage);Assert.AreEqual(0,result.TuningCount);
+            foreach(var property in new[]{"Cost","Rarity","Category","Element","Series","Description","SubCategory",
+                "Properties","PoiseDamage","HitInvincibilityMs","StartupTime","RecoveryTime","StartupFrames",
+                "RecoveryFrames","RecoveryCancelAfterFrames","IsInstantEffect","ExtendRecoveryDuringDerivative"})
+                Assert.AreEqual(typeof(Card).GetProperty(property).GetValue(normal),
+                    typeof(Card).GetProperty(property).GetValue(result),property);
+            var clone=f.CreateExceeded(normal,after);Assert.AreNotSame(result,clone);
+            result.Modifier.BonusDamage=123;Assert.AreEqual(power,clone.GetFinalPower());
+            Assert.IsFalse(f.HasExceededDefinition(normal,ExceedLevel.Lv2));
+            Assert.IsFalse(f.HasExceededDefinition(f.CreateExceeded(normal,ExceedLevel.Lv3),ExceedLevel.Lv3));
+            var wrongSeries=new Card("bomb","別シリーズ",2,CardRarity.Normal,CardCategory.Attack,
+                ElementType.None,CardSeries.Sword,40,"fixture");
+            Assert.IsFalse(f.HasExceededDefinition(wrongSeries,ExceedLevel.Lv1));
+        }
+
+        [Test]
+        public void ボム登録は加工入口と図鑑保存定義に届き未知カードは製品加工で拒否する()
+        {
+            var f=new SimpleCardFactory();var a=f.CreateById("bomb");var b=f.CreateById("bomb");
+            var cs=new CustomScreenSystem(new Deck(new List<Card>{a,b}),exceedSystem:new ExceedSystem(f));
+            cs.Open(new Card[0],new MockRandomProvider(0));Assert.IsTrue(cs.PreviewCustomization(new[]{a,b}).CanExecute);
+            Assert.IsTrue(cs.ExecuteExceed(a,b).IsSuccess);Assert.AreEqual(60,cs.CurrentHand.Single().Power);
+            Assert.IsTrue(cs.TryUndoCustomization());Assert.AreEqual(2,cs.CurrentHand.Count);
+            var unknown=new Card("unknown","未登録",1,CardRarity.Normal,CardCategory.Attack,
+                ElementType.None,CardSeries.Bomb,40,"fixture");
+            var other=unknown.Clone();var rejected=new CustomScreenSystem(new Deck(new List<Card>{unknown,other}),exceedSystem:new ExceedSystem(f));
+            rejected.Open(new Card[0],new MockRandomProvider(0));
+            Assert.IsFalse(f.HasExceededDefinition(unknown,ExceedLevel.Lv1));
+            Assert.IsFalse(rejected.PreviewCustomization(new[]{unknown,other}).CanExecute);
+            Assert.AreEqual(2,rejected.CurrentHand.Count);
+            var profile=new ClearReturnProfile {
+                DiscoveredCards=new[]{new DiscoveredCard {Id=a.Id,Name=a.Name,Level=a.ExceedLevel,
+                    Rarity=a.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(a)}},
+                Owned=new[]{new OwnedCardCount {Id=a.Id,Name=a.Name,Level=a.ExceedLevel,
+                    Rarity=a.Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(a),Count=2}} };
+            var profileBefore=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile);
+            Assert.IsTrue(CollectionDisplay.IsKnown(profile,a,f.CollectionCards));
+            var restore=typeof(Olca.Core.Logic.Dungeon.CheckpointDefinitions).GetMethod("RestoreCard",
+                BindingFlags.Instance|BindingFlags.NonPublic);
+            Assert.IsNotNull(restore);
+            var definitions=new Olca.Core.Logic.Dungeon.CheckpointDefinitions("bomb-registration-test",
+                DungeonConfig.CreateTestDungeon(20,30,3));
+            foreach(var registered in f.CollectionCards)
+                definitions.RegisterCard("test/"+CollectionDisplay.DefinitionHash(registered),registered);
+            var processing=Olca.Core.Logic.Dungeon.PortableProcessingCatalog.Capture("test/bomb","v1",
+                f.FusionCards,f,new FusionDefinitionCatalog(),f.GetTuningDefinition).Restore();
+            foreach(var level in new[]{ExceedLevel.Lv1,ExceedLevel.Lv2,ExceedLevel.Lv3})
+            {
+                var card=f.CreateExceeded(a,level);var hash=CollectionDisplay.DefinitionHash(card);
+                Assert.AreEqual(1,f.FusionCards.Count(c=>CollectionDisplay.DefinitionHash(c)==hash));
+                Assert.AreEqual(level==ExceedLevel.Lv3?0:1,f.CollectionCards.Count(c=>CollectionDisplay.DefinitionHash(c)==hash));
+                var portable=Olca.Core.Logic.Dungeon.PortableCardDefinition.Capture("bomb/"+level,card);
+                Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(portable.Restore()));
+                var prior=level==ExceedLevel.Lv1?a:f.CreateExceeded(a,(ExceedLevel)((int)level-1));
+                Assert.IsTrue(processing.HasExceededDefinition(prior,level));
+                Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(processing.CreateExceeded(prior,level)));
+                Assert.AreEqual(level!=ExceedLevel.Lv3,definitions.TryResolveOwnedCard(card.Id,level,card.Rarity,card.Name,out var owned,hash));
+                if(level!=ExceedLevel.Lv3)
+                {
+                    Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(owned));
+                    Assert.IsFalse(CollectionDisplay.IsKnown(profile,card,f.CollectionCards));
+                    Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(profile,card,f.CollectionCards));
+                    var dto=definitions.CaptureKnownCard("bomb-instance-"+level,owned);
+                    var restored=(Card)restore.Invoke(definitions,new object[]{dto});
+                    Assert.AreNotSame(owned,restored);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(restored));
+                    dto.ValueHash="invalid-definition-hash";
+                    var failure=Assert.Throws<TargetInvocationException>(()=>restore.Invoke(definitions,new object[]{dto}));
+                    Assert.IsInstanceOf<System.ArgumentException>(failure.InnerException);
+                }
+            }
+            Assert.AreEqual(2,profile.Owned.Single().Count);
+            Assert.AreEqual(profileBefore,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile));
         }
 
         [Test]

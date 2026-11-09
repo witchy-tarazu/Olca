@@ -58,7 +58,7 @@ namespace Olca.Tests.Application
             Assert.AreEqual(CollectionDisplay.DefinitionHash(expected.CreateExceeded(expected.CreateById(SimpleCardFactory.Sword),ExceedLevel.Lv1)),CollectionDisplay.DefinitionHash(upgraded.ResultCard));
             var tuned=tuning.Execute(sword,p.Cards.CreateById(SimpleCardFactory.Tuning));Assert.IsTrue(tuned.IsSuccess,tuned.ErrorMessage);Assert.AreEqual(40,tuned.ResultCard.GetFinalPower());Assert.AreEqual(source,CollectionDisplay.DefinitionHash(sword));
             var fused=fusion.Execute(new[]{sword,p.Cards.CreateById(SimpleCardFactory.Bomb)});Assert.IsTrue(fused.IsSuccess,fused.ErrorMessage);Assert.AreEqual(60,fused.ResultCard.GetFinalPower());Assert.AreEqual(CollectionDisplay.DefinitionHash(expected.CreateById(SimpleCardFactory.FireSword)),CollectionDisplay.DefinitionHash(fused.ResultCard));
-            Assert.IsFalse(exceed.HasResultDefinition(p.Cards.CreateById(SimpleCardFactory.Bomb)));Assert.IsFalse(fusion.Validate(new[]{p.Cards.CreateById(SimpleCardFactory.Bomb),p.Cards.CreateById(SimpleCardFactory.Shield)}).IsValid);
+            Assert.IsTrue(exceed.HasResultDefinition(p.Cards.CreateById(SimpleCardFactory.Bomb)));Assert.IsFalse(exceed.HasResultDefinition(p.Cards.CreateById(SimpleCardFactory.Heal)));Assert.IsFalse(fusion.Validate(new[]{p.Cards.CreateById(SimpleCardFactory.Bomb),p.Cards.CreateById(SimpleCardFactory.Shield)}).IsValid);
         }
         [TestCase(false)] [TestCase(true)] public void 復帰候補作成_現Coreと保存を変えず確定済み敗北は拒否する(bool ended)
         {

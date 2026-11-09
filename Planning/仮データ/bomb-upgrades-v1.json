@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "provisional-not-loaded",
+  "status": "provisional-explicitly-registered",
   "purpose": "既存ボムの上位加工定義候補。未実装のゲーム挙動や正式バランスを確定しない。",
   "baseCardId": "bomb",
   "baseDefinitionUnchanged": true,
@@ -47,6 +47,6 @@
     "旧定義hashと進行中checkpointを自動変換しない"
   ],
   "replacementBoundary": "正式値へ差替える際は新規定義の登録と旧保存定義の維持を別々に検証する。",
-  "runtimeRegistration": "未接続。このJSONを置くだけでは加工を実行可能にしない。",
+  "runtimeRegistration": "SimpleCardFactory の明示上位3定義へ登録。このJSONの動的読込ではない。正式バランスは未確定。",
   "reuseVisualCardId": "bomb"
 }

@@ -4900,14 +4900,21 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(session.PurchaseExchange(request,round,"fire"));Assert.AreEqual(7,session.Snapshot.Tokens);Assert.AreEqual(1,session.Snapshot.Owned.Single().Count);
         }
         [Test]
-        public void 図鑑統合は既存18定義を列挙し個体複製やショップ同一定義で枠を増やさない()
+        public void 図鑑統合は既存18定義と追加ボム2定義を列挙し個体複製で枠を増やさない()
         {
             var f=new Olca.Application.Battle.SimpleCardFactory();var defs=f.CollectionCards;
-            Assert.AreEqual(18,defs.Count);Assert.AreEqual(10,CardRewardSystem.FallbackDefinitions.Count);
-            Assert.AreEqual(18,defs.Select(CollectionDisplay.DefinitionHash).Distinct().Count());
+            Assert.AreEqual(20,defs.Count);Assert.AreEqual(10,CardRewardSystem.FallbackDefinitions.Count);
+            Assert.AreEqual(20,defs.Select(CollectionDisplay.DefinitionHash).Distinct().Count());
+            var added=defs.Where(c=>c.Id=="bomb"&&(c.ExceedLevel==ExceedLevel.Lv1||c.ExceedLevel==ExceedLevel.Lv2)).ToArray();
+            Assert.AreEqual(2,added.Length);
+            Assert.AreEqual(18,defs.Except(added).Select(CollectionDisplay.DefinitionHash).Distinct().Count());
             var session=new ClearReturnSession(Store(),new Olca.Application.Battle.SimpleFusionRecipeProvider(f).CollectionRecipes,defs);
             Assert.IsTrue(session.InitializeStarter(f.CreateStarterDeck().GetAllCards()));
-            Assert.AreEqual(18,CollectionDisplay.CardRows(session.Snapshot,defs.Concat(defs.Select(c=>c.Clone())).ToArray()).Length);
+            var before=PortableCheckpointJson.Encode(session.Snapshot);
+            Assert.AreEqual(20,CollectionDisplay.CardRows(session.Snapshot,defs.Concat(defs.Select(c=>c.Clone())).ToArray()).Length);
+            foreach(var upper in added){Assert.IsFalse(CollectionDisplay.IsKnown(session.Snapshot,upper,defs));Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(session.Snapshot,upper,defs));}
+            Assert.AreEqual(20,session.Snapshot.Owned.Sum(c=>c.Count));
+            CollectionAssert.AreEqual(before,PortableCheckpointJson.Encode(session.Snapshot));
             var normal=CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal);var limited=CardRewardSystem.CreateFallbackCard("sword",CardRarity.Limited);
             Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(session.Snapshot,normal,defs));
             Assert.AreEqual("？？？　未入手",CollectionDisplay.CardText(session.Snapshot,limited,defs));

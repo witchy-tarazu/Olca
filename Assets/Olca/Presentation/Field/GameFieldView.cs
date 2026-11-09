@@ -540,6 +540,9 @@ namespace Olca.Presentation.Field
         }
 
         private readonly Dictionary<DelayedEffect, GameObject> bombVisuals = new Dictionary<DelayedEffect, GameObject>();
+        // 勝利で論理時計が止まった後だけ、既存の着弾表示を描画時間で終える。
+        private readonly Dictionary<DelayedEffect, (float frames, int renderFrame)> outcomeBombFrames =
+            new Dictionary<DelayedEffect, (float frames, int renderFrame)>();
         private void ClearBombVisuals()
         {
             projectilePoseRenderer?.Clear();
@@ -549,13 +552,19 @@ namespace Olca.Presentation.Field
                 if (UnityEngine.Application.isPlaying) Destroy(root); else DestroyImmediate(root);
             }
             bombVisuals.Clear();
+            outcomeBombFrames.Clear();
         }
-        private void RefreshBombVisuals()
+        private void RefreshBombVisuals() => RefreshBombVisualsFrame(Olca.Unity.GameplayPause.DeltaTime, Time.frameCount);
+        private void RefreshBombVisualsFrame(float presentationDelta, int renderFrame)
         {
-            if (!isActiveAndEnabled || currentBattle == null || currentBattle.IsGameOver || battleGridView == null) { ClearBombVisuals(); return; }
-            projectilePoseRenderer?.Refresh(currentBattle, p => new Vector3(battleGridView.GridIndexToWorldX(p.X), battleGridView.GroundY, 0),
+            if (!isActiveAndEnabled || currentBattle == null ||
+                (currentBattle.IsGameOver && currentBattle.State != BattleState.Victory) || battleGridView == null) { ClearBombVisuals(); return; }
+            bool victory = currentBattle.State == BattleState.Victory;
+            if (victory) projectilePoseRenderer?.Clear();
+            else projectilePoseRenderer?.Refresh(currentBattle, p => new Vector3(battleGridView.GridIndexToWorldX(p.X), battleGridView.GroundY, 0),
                 LogicalToWorld, playerSprite != null ? playerSprite.sortingLayerID : 0, 6);
-            var active = currentBattle.DelayedEffects.GetActiveEffects();
+            // 勝利後は未着弾の弾を進めず、既に描画していた完了済み着弾だけを残す。
+            IReadOnlyList<DelayedEffect> active = victory ? System.Array.Empty<DelayedEffect>() : currentBattle.DelayedEffects.GetActiveEffects();
             foreach (var effect in active) {
                 if (effect.BlastRadius != 1 || !effect.SourcePosition.HasValue || bombVisuals.ContainsKey(effect)) continue;
                 if (obstacleWhiteSprite == null) obstacleWhiteSprite = CreateWhiteSprite();
@@ -571,10 +580,16 @@ namespace Olca.Presentation.Field
             }
             foreach (var pair in bombVisuals.ToArray()) {
                 var effect=pair.Key;var root=pair.Value;bool flying=active.Contains(effect);
-                long elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
+                float elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
+                if (victory && effect.WasExecuted && elapsed >= 0 && elapsed < 6) {
+                    if (!outcomeBombFrames.TryGetValue(effect, out var tail)) tail = (elapsed, renderFrame);
+                    else if (tail.renderFrame != renderFrame) tail = (tail.frames + Mathf.Max(0f, presentationDelta) * 60f, renderFrame);
+                    outcomeBombFrames[effect] = tail;
+                    elapsed = tail.frames;
+                }
                 bool blast=!flying&&effect.WasExecuted&&elapsed>=0&&elapsed<6;
                 if (!flying&&!blast) {
-                    root.SetActive(false);foreach(var image in root.GetComponentsInChildren<SpriteRenderer>(true))image.sprite=null; if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
+                    root.SetActive(false);foreach(var image in root.GetComponentsInChildren<SpriteRenderer>(true))image.sprite=null; if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);outcomeBombFrames.Remove(effect);continue;
                 }
                 var body=root.transform.GetChild(0);body.gameObject.SetActive(flying && projectilePoseRenderer?.Owns(effect) != true);
                 float targetX=battleGridView.GridIndexToWorldX(effect.TargetPosition.X);
@@ -1346,7 +1361,7 @@ namespace Olca.Presentation.Field
             if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
             string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
         }
-        private static string ContextLabel(string context)=>context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
+        private static string ContextLabel(string context)=>context=="outside"?"ガイカイ":context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
         private InputBindingProfile Defaults()=>gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
         private InputBindingProfile applied;
         private InputBindingEdit edit;
@@ -1399,7 +1414,7 @@ namespace Olca.Presentation.Field
             status = MakeText("Status", "", transform, new Vector2(0, 365), new Vector2(1740, 80), 26);statusRect=status.rectTransform;
             var defaults = Defaults();
             int[] rows = { 0, 0, 0, 0 };
-            if(gamepad){string[] names={"探索","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
+            if(gamepad){string[] names={"ダンジョン","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
             else {
             TrackColumn(MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
             TrackColumn(MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28).rectTransform,1,0);
@@ -1407,8 +1422,11 @@ namespace Olca.Presentation.Field
             }
             foreach (var slot in defaults.Bindings.Keys)
             {
-                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context):slot.Context == "exploration" ? 0 :
+                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context=="outside"?"exploration":slot.Context):slot.Context == "exploration" ? 0 :
                     (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
+                if(gamepad&&slot.Context=="outside"&&slot.Action=="JumpPrimary"){
+                    var group=MakeText("OutsideGroup","ガイカイ",transform,new Vector2(-675,215-rows[0]++*40),new Vector2(430,38),22);TrackColumn(group.rectTransform,0,0);
+                }
                 float x = gamepad?(column-1.5f)*450:(column-1)*560, y = 215 - rows[column]++ * (gamepad?40:70);
                 var action=MakeText("Action_" + slot.Action, ActionLabel(slot.Action), transform, new Vector2(x - (gamepad?192:165), y), new Vector2(gamepad?145:180, gamepad?38:55), gamepad?22:24);
                 if(gamepad){action.rectTransform.anchoredPosition=new Vector2(x-119.5f,y);action.alignment=TextAnchor.MiddleLeft;action.resizeTextForBestFit=true;action.resizeTextMinSize=20;action.resizeTextMaxSize=22;}TrackColumn(action.rectTransform,column,gamepad?-119.5f:-165);
