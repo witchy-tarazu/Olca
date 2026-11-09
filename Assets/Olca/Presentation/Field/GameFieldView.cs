@@ -43,6 +43,7 @@ namespace Olca.Presentation.Field
         [Header("プレイヤーモックスプライト")]
         [SerializeField] private Sprite idlePlayerSprite;
         public Sprite AuthoredIdlePlayerSprite=>idlePlayerSprite;
+        public Sprite AuthoredDashPlayerSprite=>dashPlayerSprite;
         public Sprite AuthoredJumpRiseSprite=>jumpRisePlayerSprite;
         public Sprite AuthoredJumpApexSprite=>jumpApexPlayerSprite;
         public Sprite AuthoredJumpFallSprite=>jumpFallPlayerSprite;
@@ -1485,7 +1486,7 @@ namespace Olca.Presentation.Field
                 string key=edit.Draft[pair.Key];bool changed=applied!=null&&applied.Bindings.TryGetValue(pair.Key,out var previous)&&previous!=key;pending|=changed;
                 bool waiting=listening.HasValue&&listening.Value==pair.Key;
                 pair.Value.text=gamepad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(key):key??"未割当";
-                pair.Value.color=key==null?new Color(.43f,.24f,.12f):Olca.Presentation.Dungeon.UiLook.Ink;
+                pair.Value.color=key==null?new Color(1f,.82f,.58f):new Color(.94f,.99f,1f,1f);
                 var image=pair.Value.transform.parent.GetComponent<Image>();image.color=waiting?Olca.Presentation.Dungeon.UiLook.Chosen:changed?new Color(.78f,.94f,.98f):Color.white;
                 var outline=image.GetComponent<Outline>();if(outline!=null){outline.enabled=waiting;outline.effectColor=Olca.Presentation.Dungeon.UiLook.Edge;outline.effectDistance=new Vector2(1,-1);}
             }
@@ -1521,7 +1522,7 @@ namespace Olca.Presentation.Field
             var rect = (RectTransform)obj.transform; rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f); rect.anchoredPosition = position; rect.sizeDelta = size;
             obj.GetComponent<UnityEngine.UI.Image>().color = new Color(0.12f, 0.2f, 0.36f, 1f);
             var button = obj.GetComponent<UnityEngine.UI.Button>(); button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
-            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); Olca.Presentation.Dungeon.UiLook.Button(button); return button;
+            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); Olca.Presentation.Dungeon.UiLook.MenuButton(button,name.StartsWith("Clear_",System.StringComparison.Ordinal)||name=="ResetKeyboardSettings"||name=="CloseKeyboardSettings"); return button;
         }
     }
 
@@ -1542,7 +1543,7 @@ namespace Olca.Presentation.Field
             text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;}
         private Button Button(string name,string value,Vector2 position){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);
             var rect=(RectTransform)obj.transform;rect.anchoredPosition=position;rect.sizeDelta=new Vector2(460,80);var button=obj.GetComponent<Button>();
-            var text=Label(name+"Label",value,Vector2.zero,new Vector2(440,70),30);text.transform.SetParent(obj.transform,false);Olca.Presentation.Dungeon.UiLook.Button(button);return button;}
+            var text=Label(name+"Label",value,Vector2.zero,new Vector2(440,70),30);text.transform.SetParent(obj.transform,false);Olca.Presentation.Dungeon.UiLook.MenuButton(button);return button;}
         private Image SliderImage(string name,Transform parent,Color color,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();image.color=color;image.rectTransform.sizeDelta=size;return image;}
         public void Initialize(Font font,System.Func<Olca.Unity.AudioVolumeSettings,string> save,System.Action close)
         {

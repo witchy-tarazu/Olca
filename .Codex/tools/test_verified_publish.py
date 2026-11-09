@@ -236,5 +236,248 @@ class PublishTests(unittest.TestCase):
         self.assertFalse(any(c.args[1] == 'push' for c in observed.call_args_list))
 
 
+    def metadata_fixture(self, folder=False, text_asset=False):
+        asset = 'Assets/Folder' if folder else 'Assets/StreamingAssets/note.txt' if text_asset else 'Assets/test.cs'
+        name = asset + '.meta'
+        text = 'fileFormatVersion: 2\nguid: ' + 'a' * 32 + '\n'
+        if folder:
+            text += 'folderAsset: yes\n'
+        text += ('DefaultImporter' if folder or text_asset else 'MonoImporter') + ':\n  userData: \n'
+        for root in (self.repo, self.workspace):
+            if folder:
+                (root / asset).mkdir()
+            if text_asset:
+                (root / asset).parent.mkdir(parents=True, exist_ok=True)
+                (root / asset).write_text('Text fixture\n')
+            (root / name).write_text(text)
+        self.run_git(self.repo, 'add', name)
+        if text_asset:self.run_git(self.repo, 'add', asset)
+        for filename in ('full-tests', 'related-tests'):
+            path = self.evidence / (filename + '.json')
+            d = vp.document(path)
+            d['sourceHashes'][name] = vp.sha(text.encode())
+            if text_asset:d['sourceHashes'][asset] = vp.sha((self.workspace / asset).read_bytes())
+            path.write_text(json.dumps(d))
+        (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
+        observed = {'assetPath': asset, 'guid': 'a' * 32, 'isFolder': folder,
+                    'metaSha256': vp.sha(text.encode()), 'importer': 'AssetImporter' if folder or text_asset else 'MonoImporter',
+                    'mainAssetType': 'DefaultAsset' if folder or text_asset else 'MonoScript'}
+        witness = self.root / 'editor-witness.json'
+        witness.write_text(json.dumps({'version': 1, 'provenance': 'UnityEditor.AssetDatabase',
+                                      'editorVersion': 'test fixture only', 'projectPath': str(self.workspace), 'assets': {name: observed}}))
+        files = vp.git(self.repo, 'diff', '--cached', '--name-only', '-z', self.base).decode().split('\0')[:-1]
+        approval = {'version': 1, 'approvalSource': 'isolated test fixture, not real approval',
+                    'approvedFiles': {f: vp.sha((self.repo / f).read_bytes()) for f in files},
+                    'metadata': {name: {'assetPath': asset, 'guid': 'a' * 32, 'isFolder': folder,
+                                        'sha256': vp.sha(text.encode())}},
+                    'editorEvidence': {'path': str(witness), 'sha256': vp.sha(witness.read_bytes())}}
+        self.metadata_approval = self.root / 'metadata-approval.json'
+        self.metadata_approval.write_text(json.dumps(approval))
+        return name, witness
+
+    def metadata_check(self):
+        return vp.check(self.repo, self.workspace, self.evidence, self.receipt, self.metadata_approval)
+
+    def test_explicit_editor_metadata_check_commit_push_revalidated(self):
+        name, _ = self.metadata_fixture()
+        result = self.metadata_check()
+        self.assertIn(name, result['metadataApproval']['metadata'])
+        head = vp.commit(self.repo, self.receipt, self.message)
+        self.assertEqual(vp.push(self.repo, self.receipt), head)
+
+    def test_explicit_editor_folder_metadata_allowed(self):
+        self.metadata_fixture(folder=True)
+        self.metadata_check()
+
+    def test_metadata_even_with_proof_requires_explicit_argument(self):
+        self.metadata_fixture()
+        self.assert_stops(self.check)
+
+    def test_metadata_changed_after_check_stops(self):
+        name, _ = self.metadata_fixture()
+        self.metadata_check()
+        for root in (self.repo, self.workspace):
+            (root / name).write_text((root / name).read_text() + 'extra: 1\n')
+        self.assert_stops(lambda: vp.commit(self.repo, self.receipt, self.message))
+
+    def test_metadata_approval_change_after_check_stops(self):
+        self.metadata_fixture()
+        self.metadata_check()
+        self.metadata_approval.write_text(self.metadata_approval.read_text() + ' ')
+        self.assert_stops(lambda: vp.commit(self.repo, self.receipt, self.message))
+
+    def test_editor_registration_evidence_tamper_stops(self):
+        _, witness = self.metadata_fixture()
+        self.metadata_check()
+        witness.write_text(witness.read_text() + ' ')
+        self.assert_stops(lambda: vp.commit(self.repo, self.receipt, self.message))
+
+    def test_duplicate_guid_in_other_asset_stops(self):
+        self.metadata_fixture()
+        (self.workspace / 'Assets/other.meta').write_text('fileFormatVersion: 2\nguid: ' + 'A' * 32 + '\n')
+        self.assert_stops(self.metadata_check)
+
+    def test_missing_paired_asset_stops(self):
+        self.metadata_fixture()
+        (self.workspace / 'Assets/test.cs').unlink()
+        self.assert_stops(self.metadata_check)
+
+    def test_editor_importer_mismatch_stops(self):
+        _, witness = self.metadata_fixture()
+        d = vp.document(witness)
+        next(iter(d['assets'].values()))['importer'] = 'TextureImporter'
+        witness.write_text(json.dumps(d))
+        approval = vp.document(self.metadata_approval)
+        approval['editorEvidence']['sha256'] = vp.sha(witness.read_bytes())
+        self.metadata_approval.write_text(json.dumps(approval))
+        self.assert_stops(self.metadata_check)
+
+    def test_metadata_path_does_not_bypass_credentials_guard(self):
+        self.metadata_fixture()
+        d = vp.document(self.metadata_approval)
+        d['approvedFiles']['.env.meta'] = '0' * 64
+        d['metadata']['.env.meta'] = next(iter(d['metadata'].values()))
+        self.metadata_approval.write_text(json.dumps(d))
+        self.assert_stops(self.metadata_check)
+
+    def test_staged_file_outside_explicit_scope_stops(self):
+        self.metadata_fixture()
+        (self.repo / 'extra.md').write_text('not approved\n')
+        self.run_git(self.repo, 'add', 'extra.md')
+        self.assert_stops(self.metadata_check)
+
+    def test_approved_metadata_not_in_tested_hashes_stops(self):
+        name, _ = self.metadata_fixture()
+        for file in ('full-tests', 'related-tests'):
+            path = self.evidence / (file + '.json')
+            d = vp.document(path)
+            del d['sourceHashes'][name]
+            path.write_text(json.dumps(d))
+        (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
+        self.assert_stops(self.metadata_check)
+
+
+
+    def test_partial_staged_scope_rejected(self):
+        self.metadata_fixture()
+        self.run_git(self.repo, 'reset', '--', 'Assets/test.cs')
+        self.assert_stops(self.metadata_check)
+
+    def test_minimal_script_meta_requires_editor_importer_proof(self):
+        name, witness = self.metadata_fixture()
+        text = 'fileFormatVersion: 2\nguid: ' + 'a' * 32
+        for root in (self.repo, self.workspace):
+            (root / name).write_text(text)
+        self.run_git(self.repo, 'add', name)
+        approval = vp.document(self.metadata_approval)
+        approval['metadata'][name]['sha256'] = approval['approvedFiles'][name] = vp.sha(text.encode())
+        observed = vp.document(witness)
+        observed['assets'][name]['metaSha256'] = vp.sha(text.encode())
+        witness.write_text(json.dumps(observed))
+        approval['editorEvidence']['sha256'] = vp.sha(witness.read_bytes())
+        self.metadata_approval.write_text(json.dumps(approval))
+        for filename in ('full-tests', 'related-tests'):
+            path = self.evidence / (filename + '.json')
+            d = vp.document(path);d['sourceHashes'][name] = vp.sha(text.encode());path.write_text(json.dumps(d))
+        (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
+        self.metadata_check()
+
+    def test_metadata_nonempty_unknown_or_tab_whitespace_rejected(self):
+        name, witness = self.metadata_fixture()
+        for ending in ('  userData: nonempty ', '  unknownField: ', '  userData: \t'):
+            with self.subTest(ending=ending):
+                text = 'fileFormatVersion: 2\nguid: ' + 'a' * 32 + '\nMonoImporter:\n' + ending + '\n'
+                for root in (self.repo, self.workspace):(root / name).write_text(text)
+                self.run_git(self.repo, 'add', name)
+                a = vp.document(self.metadata_approval);a['metadata'][name]['sha256'] = a['approvedFiles'][name] = vp.sha(text.encode())
+                w = vp.document(witness);w['assets'][name]['metaSha256'] = vp.sha(text.encode());witness.write_text(json.dumps(w));a['editorEvidence']['sha256'] = vp.sha(witness.read_bytes());self.metadata_approval.write_text(json.dumps(a))
+                for filename in ('full-tests', 'related-tests'):
+                    path = self.evidence / (filename + '.json');d = vp.document(path);d['sourceHashes'][name] = vp.sha(text.encode());path.write_text(json.dumps(d))
+                (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
+                self.assert_stops(self.metadata_check)
+
+
+
+    def test_other_editor_project_witness_rejected(self):
+        _, witness = self.metadata_fixture()
+        d = vp.document(witness);d['projectPath'] = str(self.root / 'other-project');witness.write_text(json.dumps(d))
+        a = vp.document(self.metadata_approval);a['editorEvidence']['sha256'] = vp.sha(witness.read_bytes());self.metadata_approval.write_text(json.dumps(a))
+        self.assert_stops(self.metadata_check)
+
+
+
+    def test_registered_text_importer_generic_runtime_mapping_allowed(self):
+        self.metadata_fixture(text_asset=True)
+        self.metadata_check()
+
+    def test_generic_runtime_importer_requires_known_main_type(self):
+        _, witness = self.metadata_fixture(folder=True)
+        d = vp.document(witness);next(iter(d['assets'].values()))['mainAssetType'] = 'TextAsset';witness.write_text(json.dumps(d))
+        a = vp.document(self.metadata_approval);a['editorEvidence']['sha256'] = vp.sha(witness.read_bytes());self.metadata_approval.write_text(json.dumps(a))
+        self.assert_stops(self.metadata_check)
+
+
+
+    def test_streaming_text_generic_importer_rejects_unproven_main_type(self):
+        _, witness = self.metadata_fixture(text_asset=True)
+        d = vp.document(witness);next(iter(d['assets'].values()))['mainAssetType'] = 'TextAsset';witness.write_text(json.dumps(d))
+        a = vp.document(self.metadata_approval);a['editorEvidence']['sha256'] = vp.sha(witness.read_bytes());self.metadata_approval.write_text(json.dumps(a))
+        self.assert_stops(self.metadata_check)
+
+
+
+    def test_unobserved_serialized_textscript_mapping_rejected(self):
+        name, witness = self.metadata_fixture(text_asset=True)
+        text = (self.repo / name).read_text().replace('DefaultImporter:', 'TextScriptImporter:')
+        for root in (self.repo, self.workspace):(root / name).write_text(text)
+        self.run_git(self.repo, 'add', name)
+        a = vp.document(self.metadata_approval);a['metadata'][name]['sha256'] = a['approvedFiles'][name] = vp.sha(text.encode())
+        w = vp.document(witness);w['assets'][name]['metaSha256'] = vp.sha(text.encode());witness.write_text(json.dumps(w));a['editorEvidence']['sha256'] = vp.sha(witness.read_bytes());self.metadata_approval.write_text(json.dumps(a))
+        for filename in ('full-tests', 'related-tests'):
+            path = self.evidence / (filename + '.json');d = vp.document(path);d['sourceHashes'][name] = vp.sha(text.encode());path.write_text(json.dumps(d))
+        (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
+        self.assert_stops(self.metadata_check)
+
+
+
+    def license_fixture(self, content='License fixture\r\nSecond line\r\n', allowed=None):
+        self.metadata_fixture()
+        name = 'Assets/StreamingAssets/ThirdPartyNotices/DotGothic16-OFL.txt'
+        for root in (self.repo, self.workspace):
+            path = root / name;path.parent.mkdir(parents=True, exist_ok=True);path.write_bytes(content.encode())
+        self.run_git(self.repo, 'add', name)
+        digest = vp.sha(content.encode())
+        a = vp.document(self.metadata_approval);a['approvedFiles'][name] = digest;self.metadata_approval.write_text(json.dumps(a))
+        for filename in ('full-tests', 'related-tests'):
+            path = self.evidence / (filename + '.json');d = vp.document(path);d['sourceHashes'][name] = digest;path.write_text(json.dumps(d))
+        (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
+        return {name: {'sha256': digest, 'source': 'isolated fixture only', 'trailingAsciiSpaceLines': allowed or {}}}
+
+    def test_pinned_verbatim_crlf_license_allowed_and_recorded(self):
+        originals = self.license_fixture()
+        with patch.object(vp, 'VERBATIM_LICENSES', originals):
+            result = self.metadata_check()
+        self.assertTrue(any('Pinned unmodified OFL' in row['reason'] for row in result['whitespaceExceptions']))
+
+    def test_pinned_original_ascii_space_line_preserved(self):
+        originals = self.license_fixture('License fixture\r\nOriginal space \r\n', {2: 'Original space '})
+        with patch.object(vp, 'VERBATIM_LICENSES', originals):
+            self.metadata_check()
+
+    def test_unpinned_or_changed_license_still_rejected(self):
+        self.license_fixture()
+        self.assert_stops(self.metadata_check)
+
+    def test_crlf_whitespace_does_not_allow_arbitrary_space_or_tab(self):
+        originals = self.license_fixture('License fixture \r\nSecond line\r\n')
+        with patch.object(vp, 'VERBATIM_LICENSES', originals):
+            self.assert_stops(self.metadata_check)
+
+    def test_verbatim_pin_does_not_accept_other_line_endings(self):
+        originals = self.license_fixture('License fixture\nSecond line \n', {2: 'Second line '})
+        with patch.object(vp, 'VERBATIM_LICENSES', originals):
+            self.assert_stops(self.metadata_check)
+
+
 if __name__ == '__main__':
     unittest.main()

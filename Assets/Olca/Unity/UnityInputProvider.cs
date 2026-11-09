@@ -266,6 +266,17 @@ namespace Olca.Unity
             if(Held(context,action))return true;
             return PadActionHeld(context,action);
         }
+        private ButtonControl ChargeHoldControl(InputDevice device)
+        {
+            if (device is Keyboard keyboard && KeyboardProfile.Bindings.TryGetValue(("keyboard", "battle", "AttackPrimary"), out var key) && key != null)
+                return keyboard[System.Enum.Parse<Key>(key)];
+            if (device is Gamepad pad && GamepadProfile.Bindings.TryGetValue(("gamepad", "battle", "AttackPrimary"), out var id) && id != null)
+                return pad[System.Enum.Parse<GamepadButton>(id)];
+            return null;
+        }
+        private bool RawChargeHold() => buttons.Any(pair => pair.Value && pair.Key.device.enabled && ReferenceEquals(pair.Key, ChargeHoldControl(pair.Key.device)));
+        private bool AnyExceptCharge() => physicalTouches.Count > 0 || buttons.Any(pair => pair.Value && pair.Key.device.enabled &&
+            (!(pair.Key.device is Keyboard) || pair.Key is KeyControl) && !ReferenceEquals(pair.Key, ChargeHoldControl(pair.Key.device)));
         private readonly Dictionary<ButtonControl,long> selectionPressedAt=new Dictionary<ButtonControl,long>();
         private ButtonControl SelectionControl(string action,InputDevice device)
         {
@@ -281,6 +292,15 @@ namespace Olca.Unity
         {var control=SelectionControl(action,device);return device.enabled&&control!=null&&buttons.TryGetValue(control,out var down)&&down;}
         private bool RawSelectionHeld(string action)=>InputSystem.devices.Any(device=>device.enabled&&RawSelectionForDevice(action,device));
         private bool PadNeutral(InputDevice device)=>!buttons.Any(p=>p.Key.device==device&&p.Value)&&(!sticks.TryGetValue(device,out var stick)||stick.sqrMagnitude<.19f*.19f);
+        // Battle復帰後、保持タメだけでneutral待ちを固定しない。入力edgeやsnapshotは生成しない。
+        public void AllowChargeHoldGamepads()
+        {
+            if (GamepadGameplayActive?.Invoke() != true || GamepadContext?.Invoke() != "battle") return;
+            blockedGamepads.RemoveWhere(device => device is Gamepad pad && pad.enabled &&
+                ChargeHoldControl(pad) is ButtonControl attack && buttons.TryGetValue(attack, out var held) && held &&
+                !buttons.Any(pair => pair.Key.device == pad && pair.Value && !ReferenceEquals(pair.Key, attack)) &&
+                (!sticks.TryGetValue(pad, out var stick) || stick.sqrMagnitude < .19f * .19f));
+        }
         public void StartEventCapture()
         {
             InputGuideActivity.EnsureInitialized();
@@ -354,6 +374,7 @@ namespace Olca.Unity
                 HasSelectionSample=true,AnyKeyExceptSelection=physicalTouches.Count>0||buttons.Any(p=>p.Value&&(!(p.Key.device is Keyboard)||p.Key is KeyControl)&&!ReferenceEquals(p.Key,SelectionControl("SelectionPrevious",p.Key.device))&&!ReferenceEquals(p.Key,SelectionControl("SelectionNext",p.Key.device))),
                 SelectionPreviousHeld=RawSelectionHeld("SelectionPrevious"),SelectionNextHeld=RawSelectionHeld("SelectionNext"),SelectionPreviousAt=RawSelectionPressedAt("SelectionPrevious"),SelectionNextAt=RawSelectionPressedAt("SelectionNext"),
                 HasInputSample = true, AnyKey = physicalTouches.Count>0 || buttons.Values.Any(pressed => pressed),
+                HasChargeHoldSample = true, ChargeHoldButton = RawChargeHold(), AnyKeyExceptCharge = AnyExceptCharge(),
                 Horizontal = touchMovement.Direction!=0 ? touchMovement.Direction : x, Vertical = y, BasicAttackButton = ActionHeld("battle", "AttackPrimary"),
                 JumpButton = ActionHeld("exploration", "JumpPrimary"),
                 DashButton = ActionHeld("exploration", "DashPrimary") || ActionHeld("exploration", "DashSecondary")
@@ -403,6 +424,8 @@ namespace Olca.Unity
             next.DashButtonDown = (!leftShift && ActionHeld("exploration", "DashPrimary")) || (!rightShift && ActionHeld("exploration", "DashSecondary"));
             next.CustomScreenButtonDown = (!leftAlt && ActionHeld("battle", "CustomPrimary")) || (!rightAlt && ActionHeld("battle", "CustomSecondary"));
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
+            next.CardUsePressedAt = next.CardUseButtonDown ? timestamp : 0;
+            next.BasicAttackPressedAt = next.BasicAttackButtonDown ? timestamp : 0;
             next.SelectionPreviousDown=!selectionPrevious&&RawSelectionForDevice("SelectionPrevious",device);next.SelectionNextDown=!selectionNext&&RawSelectionForDevice("SelectionNext",device);
             foreach(var control in selectionPresses)selectionPressedAt[control]=timestamp;
             next.SelectionPreviousAt=RawSelectionPressedAt("SelectionPrevious");next.SelectionNextAt=RawSelectionPressedAt("SelectionNext");

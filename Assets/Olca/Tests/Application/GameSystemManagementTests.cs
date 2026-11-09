@@ -776,6 +776,49 @@ namespace Olca.Tests.Application
             Assert.IsFalse(model.IsPresented);
         }
 
+        [Test] public async Task 外界の専用壁モーションは六frameごとの二コマを同尺度アンカーで表示し閉鎖で表示参照を返す()
+        {
+            var session=system.OutsideExploration;Assert.IsTrue(session.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true)));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var image=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var c=session.Core;
+                c.TickFrame(1,dashDown:true,dashHeld:true);view.Render();
+                var trails=view.GetComponentsInChildren<Image>(true).Where(i=>i.name.StartsWith("OutsideDashAfterimage",StringComparison.Ordinal)).ToArray();Assert.AreEqual(4,trails.Length);Assert.IsTrue(trails.Any(i=>i.enabled&&i.sprite!=null));
+                long dashFrame=c.Frame,dashX=c.Position;views.GetLayer("return-hub").CloseCurrent();foreach(var trail in trails){Assert.IsFalse(trail.enabled);Assert.IsNull(trail.sprite);Assert.IsFalse(trail.raycastTarget);}
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(dashFrame,c.Frame);Assert.AreEqual(dashX,c.Position);Assert.IsTrue(c.IsDashing);Assert.IsTrue(trails.Any(i=>i.enabled&&i.sprite!=null));
+                long wall=c.TraversalProfile.Walls[0].X-c.TraversalProfile.BodyHalfWidth;for(int i=0;i<300&&c.Position<wall;i++)c.TickFrame(1);Assert.AreEqual(wall,c.Position);
+                c.TickFrame(1,true,true);view.Render();var slide1=resources.GetShared<Sprite>("OlcaTraversal/WallSlide_01");Assert.AreSame(slide1,image.sprite);
+                Assert.AreEqual(new Vector2(128,14),image.sprite.pivot);Assert.AreEqual(100,image.sprite.pixelsPerUnit);Assert.AreEqual(new Vector2(256,256),image.sprite.rect.size);Assert.IsFalse(image.raycastTarget);
+                var size=image.rectTransform.sizeDelta;var pivot=image.rectTransform.pivot;
+                for(int i=0;i<6;i++)c.TickFrame(1,false,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallSlide_02"),image.sprite);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
+                c.TickFrame(1);c.TickFrame(1,true,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallKick_01"),image.sprite);Assert.AreEqual(c.Facing,image.rectTransform.localScale.x);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
+                for(int i=0;i<6;i++)c.TickFrame(1,false,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallKick_02"),image.sprite);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
+                long frame=c.Frame,y=c.Height;views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue(slide1!=null);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(y,c.Height);
+                foreach(var trail in view.GetComponentsInChildren<Image>(true).Where(i=>i.name.StartsWith("OutsideDashAfterimage",StringComparison.Ordinal))){Assert.IsFalse(trail.enabled);Assert.IsNull(trail.sprite);Assert.IsFalse(trail.raycastTarget);}
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(y,c.Height);Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallKick_02"),image.sprite);
+            }
+        }
+
+        [Test] public async Task 高い壁蹴りでも本体は固定ヘッダーより下に映り足場壁と再入位置を一致させる()
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(1920,1080);
+            var session=system.OutsideExploration;Assert.IsTrue(session.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true)));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var c=session.Core;long wall=c.TraversalProfile.Walls[0].X-c.TraversalProfile.BodyHalfWidth;
+                for(int i=0;i<300&&c.Position<wall;i++)c.TickFrame(1);
+                c.TickFrame(1,true,true);c.TickFrame(1);
+                for(int i=0;i<400&&c.Height<7*60000;i++){bool kick=!c.IsGrounded&&c.WallContactDirection==1&&!c.IsWallKicking;c.TickFrame(1,kick,kick);}
+                Assert.GreaterOrEqual(c.Height,7*60000);long frame=c.Frame,height=c.Height;view.Render();Assert.AreEqual(frame,c.Frame);Assert.AreEqual(height,c.Height);
+                var image=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var rect=(RectTransform)view.transform;
+                float top=rect.rect.height*.21f+image.rectTransform.anchoredPosition.y+(1-image.rectTransform.pivot.y)*image.rectTransform.sizeDelta.y;
+                Assert.LessOrEqual(top,rect.rect.height-144+.05f,"本体上端を固定HUDの下へ保つ");
+                Assert.IsFalse(view.transform.Find("OutsideEntryGround").GetComponent<Image>().enabled,"地表が画面下へ出た後に床を反転表示しない");
+                var wallImage=view.transform.Find("OutsideValidationWall-validation-wall").GetComponent<Image>();Assert.IsTrue(wallImage.enabled);Assert.Greater(wallImage.rectTransform.rect.height,0);Assert.LessOrEqual(wallImage.rectTransform.rect.height,rect.rect.height+wallImage.sprite.rect.height/(wallImage.pixelsPerUnit*wallImage.pixelsPerUnitMultiplier)+.1f);
+                var before=image.rectTransform.anchoredPosition;views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(before,image.rectTransform.anchoredPosition);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(height,c.Height);
+            }
+        }
+
         [TestCase(0)] [TestCase(1)] [TestCase(2)] public async Task 外界移動案内は未登録手札でも現在割当へ追従し未接続Touchを案内しない(int device)
         {
             var flags=BindingFlags.Static|BindingFlags.NonPublic;var activity=typeof(InputGuideActivity).GetField("<Current>k__BackingField",flags);var priorDevice=activity.GetValue(null);var active=typeof(UnityInputProvider).GetField("<ActiveGamepadProfile>k__BackingField",flags);var version=typeof(UnityInputProvider).GetField("<GamepadProfileVersion>k__BackingField",flags);var priorActive=active.GetValue(null);var priorVersion=version.GetValue(null);

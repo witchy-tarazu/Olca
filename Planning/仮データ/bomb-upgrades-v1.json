@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "status": "provisional-not-loaded",
+  "purpose": "既存ボムの上位加工定義候補。未実装のゲーム挙動や正式バランスを確定しない。",
+  "baseCardId": "bomb",
+  "baseDefinitionUnchanged": true,
+  "inheritFromBase": [
+    "description",
+    "cost",
+    "rarity",
+    "category",
+    "element",
+    "series",
+    "subCategory",
+    "properties",
+    "poiseDamage",
+    "hitInvincibilityMs",
+    "startupTime",
+    "recoveryTime",
+    "startupFrames",
+    "recoveryFrames",
+    "recoveryCancelAfterFrames",
+    "isInstantEffect",
+    "extendRecoveryDuringDerivative"
+  ],
+  "standardResultWithoutCarriedModifiers": true,
+  "definitions": [
+    {
+      "exceedLevel": 1,
+      "name": "ボム★（カリ）",
+      "power": 60
+    },
+    {
+      "exceedLevel": 2,
+      "name": "ボム★★（カリ）",
+      "power": 80
+    },
+    {
+      "exceedLevel": 3,
+      "name": "ボム★★★（カリ）",
+      "power": 120
+    }
+  ],
+  "unchangedBehavior": [
+    "既存のボムの軌道・速度・寿命・当たり範囲・攻撃タイミングを利用",
+    "カード所持・加工・消費・保存は既存契約を利用",
+    "旧定義hashと進行中checkpointを自動変換しない"
+  ],
+  "replacementBoundary": "正式値へ差替える際は新規定義の登録と旧保存定義の維持を別々に検証する。",
+  "runtimeRegistration": "未接続。このJSONを置くだけでは加工を実行可能にしない。",
+  "reuseVisualCardId": "bomb"
+}
