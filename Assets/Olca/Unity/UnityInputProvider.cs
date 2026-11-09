@@ -154,6 +154,7 @@ namespace Olca.Unity
             foreach(var selection in new[]{"SelectionPrevious","SelectionNext"})
                 foreach(var move in gamepad?new[]{"LeftPrimary","RightPrimary"}:new[]{"LeftPrimary","LeftSecondary","RightPrimary","RightSecondary"})
                     pairs.Add((gamepad?"gamepad":"keyboard","exploration",selection,"battle",move));
+            if(gamepad)pairs.Add(("gamepad","outside","WheelPrimary","menu","Decide"));
             return pairs;
         }
         public static Olca.Core.Domain.InputBindingProfile NormalizeSelectionProfile(Olca.Core.Domain.InputBindingProfile profile,bool gamepad)
@@ -165,7 +166,9 @@ namespace Olca.Unity
             bool Selection((string Device,string Context,string Action) k)=>k.Context=="exploration"&&(k.Action=="SelectionPrevious"||k.Action=="SelectionNext");
             var legacy=defaults.Bindings.Keys.Where(k=>!Selection(k)).ToArray();
             // Outside導入前の完全な既知形式だけを拡張する。読込では保存原本を書き換えない。
-            var outside=defaults.Bindings.Keys.Where(k=>k.Context=="outside").ToArray();
+            var outside=defaults.Bindings.Keys.Where(k=>k.Context=="outside"&&k.Action!="WheelPrimary").ToArray();
+            var wheel=(Device:"gamepad",Context:"outside",Action:"WheelPrimary");
+            var previousOutside=defaults.Bindings.Keys.Where(k=>k!=wheel).ToArray();
             var oldKeys=defaults.Bindings.Keys.Where(k=>k.Context!="outside").ToArray();
             var oldPreSelection=oldKeys.Where(k=>!Selection(k)).ToArray();
             if(gamepad&&((slots.Count==oldKeys.Length&&oldKeys.All(slots.ContainsKey))||
@@ -174,6 +177,11 @@ namespace Olca.Unity
                     string value=item.Value;if(slots.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,item.Key)))value=null;slots.Add(item.Key,value);
                 }
                 foreach(var k in outside)slots.Add(k,slots[(k.Device,"exploration",k.Action)]);
+            }
+            if(gamepad&&slots.Count==previousOutside.Length&&previousOutside.All(slots.ContainsKey)){
+                string value=defaults.Bindings[wheel];
+                if(slots.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,wheel)))value=null;
+                slots.Add(wheel,value);
             }
             if(!gamepad&&slots.Count==legacy.Length&&legacy.All(slots.ContainsKey)){
                 foreach(var item in defaults.Bindings.Where(p=>Selection(p.Key))){
@@ -199,7 +207,7 @@ namespace Olca.Unity
             Add("exploration","JumpPrimary",GamepadButton.South);Add("exploration","DashPrimary",GamepadButton.LeftStick);Add("exploration","Pause",GamepadButton.Start);
             Add("exploration","SelectionPrevious",GamepadButton.LeftTrigger);Add("exploration","SelectionNext",GamepadButton.RightTrigger);
             Add("outside","JumpPrimary",GamepadButton.South);Add("outside","DashPrimary",GamepadButton.RightShoulder);Add("outside","Pause",GamepadButton.Start);
-            Add("outside","SelectionPrevious",GamepadButton.LeftTrigger);Add("outside","SelectionNext",GamepadButton.RightTrigger);
+            Add("outside","SelectionPrevious",GamepadButton.LeftTrigger);Add("outside","SelectionNext",GamepadButton.RightTrigger);Add("outside","WheelPrimary",GamepadButton.LeftShoulder);
             Add("battle","LeftPrimary",GamepadButton.DpadLeft);Add("battle","RightPrimary",GamepadButton.DpadRight);Add("battle","UpPrimary",GamepadButton.DpadUp);Add("battle","DownPrimary",GamepadButton.DpadDown);
             Add("battle","AttackPrimary",GamepadButton.West);Add("battle","CardPrimary",GamepadButton.RightShoulder);Add("battle","CustomPrimary",GamepadButton.North);Add("battle","Pause",GamepadButton.Start);
             foreach(string context in new[]{"menu","custom"}) {
@@ -369,6 +377,18 @@ namespace Olca.Unity
                 OnGamepadDisconnected?.Invoke();
         }
         private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
+        // Wheelは時間停止中も読む。開始Padを固定し、切断/無効化は保持解除として扱う。
+        public bool ReadOutsideWheel(int deviceId,out int actualDevice,out bool held,out bool confirm,out Vector2 direction)
+        {
+            actualDevice=deviceId;held=confirm=false;direction=Vector2.zero;
+            if(!OutsideGamepad||!GamepadProfile.Bindings.TryGetValue(("gamepad","outside","WheelPrimary"),out var key)||key==null)return false;
+            var button=System.Enum.Parse<GamepadButton>(key);
+            var pad=InputSystem.devices.OfType<Gamepad>().FirstOrDefault(p=>p.enabled&&(deviceId>=0?p.deviceId==deviceId:!blockedGamepads.Contains(p)&&p[button].isPressed));
+            if(pad==null)return false;
+            actualDevice=pad.deviceId;held=pad[button].isPressed;direction=pad.leftStick.ReadValue();
+            if(GamepadProfile.Bindings.TryGetValue(("gamepad","menu","Decide"),out var decide)&&decide!=null)confirm=pad[System.Enum.Parse<GamepadButton>(decide)].isPressed;
+            return true;
+        }
         private bool OutsideGamepad => GamepadContext?.Invoke()=="outside";
         private bool TraversalHeld(string action)=>Held("exploration",action)||PadActionHeld(OutsideGamepad?"outside":"exploration",action);
         private Olca.Core.Logic.Integration.LogicalInput BuildState()
