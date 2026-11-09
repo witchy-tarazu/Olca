@@ -540,6 +540,9 @@ namespace Olca.Presentation.Field
         }
 
         private readonly Dictionary<DelayedEffect, GameObject> bombVisuals = new Dictionary<DelayedEffect, GameObject>();
+        // 勝利で論理時計が止まった後だけ、既存の着弾表示を描画時間で終える。
+        private readonly Dictionary<DelayedEffect, (float frames, int renderFrame)> outcomeBombFrames =
+            new Dictionary<DelayedEffect, (float frames, int renderFrame)>();
         private void ClearBombVisuals()
         {
             projectilePoseRenderer?.Clear();
@@ -549,13 +552,19 @@ namespace Olca.Presentation.Field
                 if (UnityEngine.Application.isPlaying) Destroy(root); else DestroyImmediate(root);
             }
             bombVisuals.Clear();
+            outcomeBombFrames.Clear();
         }
-        private void RefreshBombVisuals()
+        private void RefreshBombVisuals() => RefreshBombVisualsFrame(Olca.Unity.GameplayPause.DeltaTime, Time.frameCount);
+        private void RefreshBombVisualsFrame(float presentationDelta, int renderFrame)
         {
-            if (!isActiveAndEnabled || currentBattle == null || currentBattle.IsGameOver || battleGridView == null) { ClearBombVisuals(); return; }
-            projectilePoseRenderer?.Refresh(currentBattle, p => new Vector3(battleGridView.GridIndexToWorldX(p.X), battleGridView.GroundY, 0),
+            if (!isActiveAndEnabled || currentBattle == null ||
+                (currentBattle.IsGameOver && currentBattle.State != BattleState.Victory) || battleGridView == null) { ClearBombVisuals(); return; }
+            bool victory = currentBattle.State == BattleState.Victory;
+            if (victory) projectilePoseRenderer?.Clear();
+            else projectilePoseRenderer?.Refresh(currentBattle, p => new Vector3(battleGridView.GridIndexToWorldX(p.X), battleGridView.GroundY, 0),
                 LogicalToWorld, playerSprite != null ? playerSprite.sortingLayerID : 0, 6);
-            var active = currentBattle.DelayedEffects.GetActiveEffects();
+            // 勝利後は未着弾の弾を進めず、既に描画していた完了済み着弾だけを残す。
+            IReadOnlyList<DelayedEffect> active = victory ? System.Array.Empty<DelayedEffect>() : currentBattle.DelayedEffects.GetActiveEffects();
             foreach (var effect in active) {
                 if (effect.BlastRadius != 1 || !effect.SourcePosition.HasValue || bombVisuals.ContainsKey(effect)) continue;
                 if (obstacleWhiteSprite == null) obstacleWhiteSprite = CreateWhiteSprite();
@@ -571,10 +580,16 @@ namespace Olca.Presentation.Field
             }
             foreach (var pair in bombVisuals.ToArray()) {
                 var effect=pair.Key;var root=pair.Value;bool flying=active.Contains(effect);
-                long elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
+                float elapsed=currentBattle.LogicalFrame-effect.CompletedFrame;
+                if (victory && effect.WasExecuted && elapsed >= 0 && elapsed < 6) {
+                    if (!outcomeBombFrames.TryGetValue(effect, out var tail)) tail = (elapsed, renderFrame);
+                    else if (tail.renderFrame != renderFrame) tail = (tail.frames + Mathf.Max(0f, presentationDelta) * 60f, renderFrame);
+                    outcomeBombFrames[effect] = tail;
+                    elapsed = tail.frames;
+                }
                 bool blast=!flying&&effect.WasExecuted&&elapsed>=0&&elapsed<6;
                 if (!flying&&!blast) {
-                    root.SetActive(false);foreach(var image in root.GetComponentsInChildren<SpriteRenderer>(true))image.sprite=null; if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);continue;
+                    root.SetActive(false);foreach(var image in root.GetComponentsInChildren<SpriteRenderer>(true))image.sprite=null; if(UnityEngine.Application.isPlaying)Destroy(root);else DestroyImmediate(root);bombVisuals.Remove(effect);outcomeBombFrames.Remove(effect);continue;
                 }
                 var body=root.transform.GetChild(0);body.gameObject.SetActive(flying && projectilePoseRenderer?.Owns(effect) != true);
                 float targetX=battleGridView.GridIndexToWorldX(effect.TargetPosition.X);
