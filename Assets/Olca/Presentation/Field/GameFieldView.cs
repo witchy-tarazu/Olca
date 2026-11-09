@@ -117,8 +117,12 @@ namespace Olca.Presentation.Field
                 if (playerAnimator != null && playerAnimator.enabled && playerAnimator.runtimeAnimatorController != null) playerAnimator.Update(0f);
                 return;
             }
-            Sprite[] frames = phase==Olca.Presentation.Dungeon.ContactVisualPhase.Somersault?somersaultSprites:contactKnockbackSprites;
-            Sprite sprite = frames == null || frames.Length == 0 ? null : frames[SelectContactFrame(phase, progress, frames.Length)];
+            Sprite sprite;
+            if(phase==Olca.Presentation.Dungeon.ContactVisualPhase.DashRush) sprite=dashPlayerSprite;
+            else {
+                Sprite[] frames = phase==Olca.Presentation.Dungeon.ContactVisualPhase.Somersault?somersaultSprites:contactKnockbackSprites;
+                sprite = frames == null || frames.Length == 0 ? null : frames[SelectContactFrame(phase, progress, frames.Length)];
+            }
             if(sprite==null){if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f);return;} // 未登録は別モーションや回転で代替しない。
             if (!contactPoseActive) {
                 actionPoseRenderer?.Clear();
@@ -1140,7 +1144,9 @@ namespace Olca.Presentation.Field
             playerSprite.sprite = sprite;
         }
 
-        private void UpdateCamera()
+        private void UpdateCamera()=>UpdateCameraFrame(Olca.Unity.BattleVisualClock.DeltaTime);
+        // 接敵演出だけは描画時計で追従する。通常探索の60Hz追従計算はこの入口でも変更しない。
+        private void UpdateCameraFrame(float displayDelta)
         {
             if (fieldCamera == null || playerTransform == null) return;
             Vector3 targetPos = new Vector3(
@@ -1172,12 +1178,12 @@ namespace Olca.Presentation.Field
                 fieldCamera.transform.position = targetPos;
                 currentFollowSpeed = cameraFollowSpeed;  // ダッシュ開始時のLerp初期値としてリセット
             }
-            else if (currentBattle != null || !playerPositionUpdateEnabled)
+            else if (currentBattle != null || dungeonSystem?.IsInBattle == true || !playerPositionUpdateEnabled)
             {
                 // 接敵演出の外部位置補間は、探索の論理移動とは別の既存時計を維持する。
-                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, Olca.Unity.BattleVisualClock.DeltaTime * cameraFollowSpeedTransition);
+                currentFollowSpeed = Mathf.Lerp(currentFollowSpeed, cameraFollowSpeedDash, displayDelta * cameraFollowSpeedTransition);
                 fieldCamera.transform.position = Vector3.Lerp(fieldCamera.transform.position, targetPos,
-                    Olca.Unity.BattleVisualClock.DeltaTime * currentFollowSpeed);
+                    displayDelta * currentFollowSpeed);
             }
             else
             {

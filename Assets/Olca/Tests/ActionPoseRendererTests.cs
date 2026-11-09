@@ -89,6 +89,38 @@ namespace Olca.Tests
             Assert.AreSame(pose, binding.Body[0]); Assert.Throws<ArgumentException>(() => binding.Validate(Action("sword", null, 3).Visual)); renderer.Configure(new[] { binding }); renderer.Dispose(); Assert.IsTrue(pose != null); Assert.IsTrue(other != null);
         }
 
+        [Test] public void ダッシュ接敵の外部位置補間は探索時計停止中も追従しPause時計では進めない()
+        {
+            var fieldRoot=new GameObject("contact-camera-fixture");var cameraRoot=new GameObject("contact-camera");var actor=new GameObject("contact-actor");var pauseOwner=new object();
+            try{
+                var view=fieldRoot.AddComponent<GameFieldView>();var camera=cameraRoot.AddComponent<Camera>();var cells=new List<MapCell>();for(int i=0;i<100;i++)cells.Add(new MapCell(i));var enemy=new Enemy("enemy","テキ",100,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0));cells[30]=new MapCell(30,enemy);
+                var dungeon=new Olca.Core.Logic.Dungeon.DungeonSystem(new DungeonConfig("contact-camera","接敵",100,cells),new PlayerCharacter(100),new Deck(),new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger());
+                var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                void Set(string name,object value)=>typeof(GameFieldView).GetField(name,flags).SetValue(view,value);
+                Set("fieldCamera",camera);Set("playerTransform",actor.transform);Set("dungeonSystem",dungeon);
+                var position=typeof(GameFieldView).GetMethod("UpdatePlayerPosition",flags);var follow=typeof(GameFieldView).GetMethod("UpdateCamera",flags);var step=typeof(GameFieldView).GetMethod("UpdateCameraFrame",flags);
+                position.Invoke(view,null);follow.Invoke(view,null);dungeon.StartDash();for(int i=0;i<3;i++){dungeon.TickFrame();position.Invoke(view,null);follow.Invoke(view,null);}
+                dungeon.StartBattle(new Olca.Core.Logic.Dungeon.ContactInfo{Enemy=enemy,EnemyCellIndex=30,ContactPositionX=dungeon.PlayerPosition,IsDashContact=true});Assert.IsTrue(dungeon.IsInBattle&&dungeon.IsDashing);Assert.IsNull(typeof(GameFieldView).GetField("currentBattle",flags).GetValue(view),"接敵演出中はPresentation未接続");
+                long frame=dungeon.ObstacleVisualFrame;float modelX=dungeon.PlayerPosition;int hp=dungeon.Player.CurrentHp;var oldCamera=camera.transform.position;actor.transform.position+=Vector3.right;Assert.Less(Mathf.Abs(camera.transform.position.x-(actor.transform.position.x+2.5f)),5f,"既存の距離snapで期待前進を成立させない");
+                step.Invoke(view,new object[]{1f/60f});Assert.Greater(camera.transform.position.x,oldCamera.x,"探索時計差0でも外部演出の位置へ進む");Assert.Less(camera.transform.position.x,actor.transform.position.x+2.5f,"通常の追従係数を残す");
+                Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);var paused=camera.transform.position;actor.transform.position+=Vector3.right*.1f;follow.Invoke(view,null);Assert.AreEqual(paused,camera.transform.position,"Pauseはwrapperの既存Delta0を通る");Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);step.Invoke(view,new object[]{1f/60f});Assert.Greater(camera.transform.position.x,paused.x);
+                Assert.AreEqual(frame,dungeon.ObstacleVisualFrame);Assert.AreEqual(modelX,dungeon.PlayerPosition);Assert.AreEqual(hp,dungeon.Player.CurrentHp);
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);UnityEngine.Object.DestroyImmediate(fieldRoot);UnityEngine.Object.DestroyImmediate(cameraRoot);UnityEngine.Object.DestroyImmediate(actor);}
+        }
+        [TestCase(false)][TestCase(true)] public void 突進と衝撃停止は既存dash姿勢を保持し宙返り取消で元Animatorを返す(bool initiallyEnabled)
+        {
+            var fieldRoot=new GameObject("dash-contact-pose");var pauseOwner=new object();
+            try{
+                var view=fieldRoot.AddComponent<GameFieldView>();var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var idle=body.sprite;var dash=Sprite("dash");var roll=Sprite("roll");animator.enabled=initiallyEnabled;
+                void Set(string name,object value)=>typeof(GameFieldView).GetField(name,flags).SetValue(view,value);
+                Set("playerSprite",body);Set("playerAnimator",animator);Set("idlePlayerSprite",idle);Set("dashPlayerSprite",dash);Set("somersaultSprites",new[]{roll,roll});var position=body.transform.position;var rotation=body.transform.rotation;var scale=body.transform.localScale;
+                Assert.AreEqual(3,(int)Olca.Presentation.Dungeon.ContactVisualPhase.Somersault,"既存enum値を変えない");view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.DashRush,0);Assert.AreSame(dash,body.sprite);Assert.IsFalse(animator.enabled);
+                typeof(GameFieldView).GetMethod("UpdatePlayerSprite",flags).Invoke(view,null);Assert.AreSame(dash,body.sprite,"接敵中の通常UpdateでもIdleへ落とさない");view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.DashRush,1);Assert.AreSame(dash,body.sprite,"突進後の衝撃停止も同じ姿勢");
+                view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.Somersault,.5f);Assert.AreSame(roll,body.sprite);Assert.IsFalse(animator.enabled);Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);typeof(GameFieldView).GetMethod("UpdatePlayerSprite",flags).Invoke(view,null);Assert.AreSame(roll,body.sprite);view.SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0);Assert.AreSame(idle,body.sprite);Assert.AreEqual(initiallyEnabled,animator.enabled);
+                Assert.AreEqual(position,body.transform.position);Assert.AreEqual(rotation,body.transform.rotation);Assert.AreEqual(scale,body.transform.localScale);Assert.IsTrue(dash!=null&&roll!=null,"借用素材を破棄しない");
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);UnityEngine.Object.DestroyImmediate(fieldRoot);}
+        }
+
         [TestCase(2)][TestCase(4)]
         public void ダッシュ中の追加描画は論理位置とカメラの相対位置を逆方向へ動かさない(int drawsPerFrame)
         {
