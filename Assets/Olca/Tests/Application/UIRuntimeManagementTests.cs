@@ -118,3 +118,38 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class BootstrapTitleRouteTests
+    {
+        [Test] public void タイトルは開始中の二重決定と閉じた旧callbackを受けず管理所有を返す()
+        {
+            var root=new GameObject("TitleRouteFixture",typeof(RectTransform));var resources=new ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>1);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);var owner=new object();Olca.Presentation.Management.BootstrapTitleView title=null;int starts=0,cancelled=0;
+            try{
+                views.Register(owner,"title",ct=>System.Threading.Tasks.Task.FromResult(Olca.Presentation.Management.BootstrapTitleView.Create(root.transform,resources)),(panel,context)=>{title=panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>();title.Show(context,()=>{starts++;title.SetBusy(true,null);},()=>cancelled++);},panel=>panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>().Hide());
+                Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);var button=title.transform.Find("TitleStart").GetComponent<Button>();var old=button.onClick;old.Invoke();old.Invoke();Assert.AreEqual(1,starts);Assert.IsFalse(button.interactable);
+                title.SetBusy(false,"再試行");button.onClick.Invoke();Assert.AreEqual(2,starts);views.CloseCurrent();Assert.AreEqual(1,cancelled,"未完了loadを閉鎖で取消へ渡す");old.Invoke();Assert.AreEqual(2,starts);Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);old.Invoke();Assert.AreEqual(2,starts,"再表示でも旧callbackは開始しない");title.transform.Find("TitleStart").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(3,starts);views.CloseCurrent();Assert.AreEqual(2,cancelled);views.UnregisterOwner(owner);Assert.IsTrue(title==null);Assert.AreEqual(0,resources.OwnedInstanceCount);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public void 外界決定は初回中立sample後の最初の新押下を採用し文脈再入の既保持を捨てる()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            try{using(var input=new UnityInputProvider()){
+                input.GamepadContext=()=>"outside";input.GamepadGameplayActive=()=>true;input.StartEventCapture();
+                void State(UnityEngine.InputSystem.LowLevel.GamepadState value){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,value);UnityEngine.InputSystem.InputSystem.Update();}
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState());var a=new object();Assert.IsFalse(input.OutsideInteractionPressed(a));
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.OutsideInteractionPressed(a),"近接前にsample済みなら最初の決定を捨てない");Assert.IsFalse(input.OutsideInteractionPressed(a),"同edgeは一回だけ消費");
+                var b=new object();Assert.IsFalse(input.OutsideInteractionPressed(b),"再入時の既保持は新決定にしない");State(new UnityEngine.InputSystem.LowLevel.GamepadState());Assert.IsFalse(input.OutsideInteractionPressed(b));
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
+            }}finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        [Test] public void 近接入口は通常移動の範囲だけで接地を要求し空中ではJump入力を奪わない()
+        {
+            var core=new Olca.Core.Logic.Integration.OutsideExplorationCore(Olca.Core.Logic.Integration.OutsideMovementDefinition.ValidationTerrain,Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationDash);
+            Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));
+            for(int i=0;i<120;i++)core.TickFrame(1,false,false,false,false);
+            Assert.IsTrue(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));core.TickFrame(0,true,true,false,false);Assert.IsFalse(core.IsGrounded);Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));
+        }
+    }
+}

@@ -34,7 +34,7 @@ namespace Olca.Presentation.Exploration
         private Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease presentation;
         private Olca.Unity.MenuPadScope menu;
         private Button back,pause;private bool covered;private int uncoveredFrame=-1;
-        private Action returned;
+        private Action returned,entered;private Func<bool> canEnter;private Func<string> interactionHint;private Func<bool> trialRoute;private Button entrance;private Text trialRouteHint;private Image trialDoor;
         private Func<Olca.Core.Domain.Card,Sprite> cardIcon;
         private Olca.Core.Logic.Integration.OutsideExplorationCards renderedCards;
         private Text handHeading,selectionGuideText,movementGuideText;private Func<string> selectionGuide,movementGuide;
@@ -87,10 +87,12 @@ namespace Olca.Presentation.Exploration
             rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-45),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
             pause=factory.Button("PauseOutsideExploration","ポーズ",transform,Vector2.one,new Vector2(-430,-62));Olca.Presentation.Dungeon.UiLook.Button(pause);
             back=factory.Button("CloseOutsideExploration","戻る",transform,Vector2.one,new Vector2(-160,-62));Olca.Presentation.Dungeon.UiLook.Button(back);
+            var doorObject=new GameObject("OutsideTrialDungeonMarker",typeof(RectTransform),typeof(Image));doorObject.transform.SetParent(transform,false);trialDoor=doorObject.GetComponent<Image>();trialDoor.sprite=resources.GetShared<Sprite>("OlcaUI/window");trialDoor.type=Image.Type.Sliced;trialDoor.color=new Color(.15f,.45f,.55f,.92f);trialDoor.raycastTarget=false;var doorRect=trialDoor.rectTransform;doorRect.anchorMin=doorRect.anchorMax=new Vector2(0,.21f);doorRect.pivot=new Vector2(.5f,0);doorRect.sizeDelta=new Vector2(140,200);doorObject.transform.SetSiblingIndex(player.transform.GetSiblingIndex());
+            entrance=factory.Button("OutsideDungeonEntrance","ダンジョン イリグチ",transform,new Vector2(0,.21f),new Vector2(0,340));entrance.GetComponent<RectTransform>().sizeDelta=new Vector2(340,100);entrance.navigation=new Navigation{mode=Navigation.Mode.None};trialRouteHint=factory.Label("OutsideTrialRouteHint",transform,new Vector2(.5f,0),new Vector2(0,75),new Vector2(1100,60));trialRouteHint.fontSize=22;trialRouteHint.color=Color.white;trialRouteHint.resizeTextForBestFit=true;trialRouteHint.resizeTextMinSize=18;trialRouteHint.resizeTextMaxSize=22;
         }
-        public void Show(Olca.Presentation.Management.ManagedScreenContext owner,Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Action onBack,Action onPause=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Func<string> selectionGuide=null,Func<string> movementGuide=null)
+        public void Show(Olca.Presentation.Management.ManagedScreenContext owner,Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Action onBack,Action onPause=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Func<string> selectionGuide=null,Func<string> movementGuide=null,Action onEntrance=null,Func<bool> canEnter=null,Func<string> interactionHint=null,Func<bool> trialRoute=null)
         {
-            Hide();this.selectionGuide=selectionGuide;this.movementGuide=movementGuide;cardIcon=icon;renderedCards=null;handHeading.text="";covered=false;uncoveredFrame=-1;context=owner;presentation=lease;returned=onBack;gameObject.SetActive(true);transform.SetAsLastSibling();
+            Hide();this.trialRoute=trialRoute;this.entered=onEntrance;this.canEnter=canEnter;this.interactionHint=interactionHint;this.selectionGuide=selectionGuide;this.movementGuide=movementGuide;cardIcon=icon;renderedCards=null;handHeading.text="";covered=false;uncoveredFrame=-1;context=owner;presentation=lease;returned=onBack;gameObject.SetActive(true);transform.SetAsLastSibling();
             var captured=owner;var capturedLease=lease;var capturedCards=lease.Cards;
             for(int slot=0;slot<handButtons.Length;slot++){
                 int index=slot;var button=handButtons[slot];button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{
@@ -98,6 +100,7 @@ namespace Olca.Presentation.Exploration
                     if(capturedCards.TrySelect(index))Render();
                 });
             }
+            entrance.onClick=new Button.ButtonClickedEvent();entrance.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&CanPlay&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(capturedLease.Core)&&(this.canEnter?.Invoke()??false))entered?.Invoke();});
             back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&!covered&&Time.frameCount!=uncoveredFrame&&!captured.DialogBlocksInput)returned?.Invoke();});
             if(pause!=null){pause.gameObject.SetActive(onPause!=null);pause.onClick=new Button.ButtonClickedEvent();pause.onClick.AddListener(()=>{if(this!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&capturedLease.IsCurrent&&CanPlay)onPause?.Invoke();});}
             if(landingViews.Count==0){var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,back.GetComponentInChildren<Text>().font,null);
@@ -141,6 +144,9 @@ namespace Olca.Presentation.Exploration
             if(lastGaugeUnits!=gauge.CurrentUnits||lastGaugeMaximum!=gauge.MaximumUnits){lastGaugeUnits=gauge.CurrentUnits;lastGaugeMaximum=gauge.MaximumUnits;gaugeLabel.text=FormatCardGauge(gauge);gaugeFill.sizeDelta=new Vector2(396*(gauge.CurrentUnits/(float)gauge.MaximumUnits),6);}
 
             float Origin(float x)=>(x-camera+viewport*.5f)*pixelsPerWorldUnit;
+            trialDoor.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true);trialDoor.rectTransform.anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),-verticalOffset*pixelsPerWorldUnit);trialRouteHint.gameObject.SetActive(trialRoute?.Invoke()==true);trialRouteHint.text=core.TraversalProfile?.WallActionsUnlocked==true?"シヨウチケイ / ミギ: ダンジョン イリグチ・カベアクション (カリカイホウ)":"シヨウチケイ / ミギ: ダンジョン イリグチ / カベハ ミカイホウ";
+            if(entrance!=null){entrance.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true&&core.IsGrounded);entrance.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),340-verticalOffset*pixelsPerWorldUnit);entrance.interactable=CanPlay&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core)&&(canEnter?.Invoke()??false);var label=entrance.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("ダンジョン イリグチ"+(entrance.interactable?"\n"+(interactionHint?.Invoke()??"")+" デ シラベル":"\nチカヅイテ シラベル"));label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
+
             Sprite sprite=TraversalSprite(core);
             if(sprite==null){sprite=idleSprite;
             if(!core.IsGrounded)sprite=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apexSprite:core.VerticalVelocity>0?riseSprite:fallSprite;
@@ -168,9 +174,30 @@ namespace Olca.Presentation.Exploration
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
         private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();}
+        private void OnDisable(){ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;}
+    }
+}
+
+namespace Olca.Presentation.Management
+{
+    /// <summary>起動の表示だけ。保存判断やhost生成は注入された開始要求へ委譲する。</summary>
+    public sealed class BootstrapTitleView:MonoBehaviour
+    {
+        private ManagedScreenContext context;private Action hidden;private Button start;private Text status;private Olca.Unity.MenuPadScope menu;
+        public static GameObject Create(Transform parent,Olca.Unity.ResourceManager resources){
+            var root=new GameObject("BootstrapTitle",typeof(RectTransform),typeof(Image));root.SetActive(false);root.transform.SetParent(parent,false);var rect=(RectTransform)root.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;root.GetComponent<Image>().color=new Color(.015f,.04f,.06f,1);
+            try{var view=root.AddComponent<BootstrapTitleView>();var source=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation");Sprite background=null;foreach(var sr in source.GetComponentsInChildren<SpriteRenderer>(true))if(sr.name=="DungeonBackground")background=sr.sprite;if(background==null)throw new InvalidOperationException("タイトルの共有背景がありません");
+                var bg=new GameObject("TitleOriginalBackground",typeof(RectTransform),typeof(Image),typeof(AspectRatioFitter));bg.transform.SetParent(root.transform,false);var image=bg.GetComponent<Image>();image.sprite=background;image.raycastTarget=false;var br=image.rectTransform;br.anchorMin=Vector2.zero;br.anchorMax=Vector2.one;br.offsetMin=br.offsetMax=Vector2.zero;var fit=bg.GetComponent<AspectRatioFitter>();fit.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;fit.aspectRatio=background.rect.width/background.rect.height;
+                var factory=new GameplayPanelFactory(root.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null);var title=factory.Label("TitleHeading",root.transform,new Vector2(.5f,.5f),new Vector2(0,160),new Vector2(1000,130));title.text="OLCA";title.fontSize=80;title.color=Color.white;
+                view.start=factory.Button("TitleStart","ハジメル",root.transform,new Vector2(.5f,.5f),new Vector2(0,-20));view.start.GetComponent<RectTransform>().sizeDelta=new Vector2(460,90);view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-150),new Vector2(1050,120));view.status.color=Color.white;view.status.fontSize=24;return root;
+            }catch{if(Application.isPlaying)Destroy(root);else DestroyImmediate(root);throw;}
+        }
+        public void Show(ManagedScreenContext value,Action begin,Action hidden=null){Hide();context=value;this.hidden=hidden;start.onClick=new Button.ButtonClickedEvent();start.onClick.AddListener(()=>{if(this!=null&&context==value&&value.IsCurrent&&!value.DialogBlocksInput&&start.IsInteractable())begin?.Invoke();});SetBusy(false,null);gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>context?.IsCurrent==true&&start.IsInteractable());menu.Bind(transform,start.name,null);UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(start.gameObject);}
+        public void SetBusy(bool busy,string error){start.interactable=!busy;status.text=busy?"ヨミコミチュウ":error==null?"ツヅキノ セーブガ アル バアイハ ソノ シンコウカラ サイカイ":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error);}
+        public void Hide(){var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context=null;if(start!=null)start.onClick=new Button.ButtonClickedEvent();if(this!=null)gameObject.SetActive(false);}
+        private void LateUpdate(){menu?.Tick();}private void OnDisable(){var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();}
     }
 }

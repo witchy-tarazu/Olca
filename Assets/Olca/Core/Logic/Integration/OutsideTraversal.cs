@@ -47,6 +47,13 @@ namespace Olca.Core.Logic.Integration
         public static OutsideTraversalProfile ValidationDash=>new OutsideTraversalProfile("validation-traversal-v1",720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12);
         public static OutsideTraversalProfile ValidationWall(bool unlocked,bool slide=true,bool kick=true)=>new OutsideTraversalProfile("validation-wall-actions-v1",720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12,unlocked,new OutsideValidationWall("validation-wall",24*60000,0,1000*60000,slide,kick));
     }
+    /// <summary>導線確認専用の仮配置。製品Map/能力解放/永続座標とは区別する。</summary>
+    public static class OutsideTrialRoute
+    {
+        public const long EntranceX=20*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public const long EntranceRadius=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanInspect(OutsideExplorationCore core)=>core!=null&&core.IsGrounded&&Math.Abs(core.Position-EntranceX)<=EntranceRadius;
+    }
     public enum OutsideAfterimagePose {Dash,JumpRise,JumpApex,JumpFall}
     public readonly struct OutsideAfterimage
     {

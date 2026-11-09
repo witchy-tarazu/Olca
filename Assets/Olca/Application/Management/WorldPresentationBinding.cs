@@ -88,13 +88,13 @@ namespace Olca.Application.Management
         private string MovementGuide(){SelectionGuide();return movementGuide??"";}
         public bool IsOpen=>!disposed&&View!=null&&View.IsOpen;
         public bool HasLostView=>!disposed&&!ReferenceEquals(View,null)&&View==null;
-        public OutsideExplorationPresentationBinding(ViewManager views,Olca.Core.Logic.Integration.OutsideExplorationSession session,Func<CancellationToken,Task<GameObject>> factory,Func<bool> allowed,Action returned,OutsideExplorationRuntime runtime=null,UnityInputProvider input=null,Action paused=null,Func<Olca.Core.Domain.Card,Sprite> icon=null)
+        public OutsideExplorationPresentationBinding(ViewManager views,Olca.Core.Logic.Integration.OutsideExplorationSession session,Func<CancellationToken,Task<GameObject>> factory,Func<bool> allowed,Action returned,OutsideExplorationRuntime runtime=null,UnityInputProvider input=null,Action paused=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Action entered=null,Func<bool> canEnter=null,Func<bool> trialRoute=null)
         {
             this.runtime=runtime;this.input=input;this.paused=paused;this.icon=icon;this.session=session??throw new ArgumentNullException(nameof(session));this.allowed=allowed??throw new ArgumentNullException(nameof(allowed));this.returned=returned;layer=views.GetLayer("return-hub");
             layer.Register(registrationOwner,ScreenKey,factory,(panel,context)=>{
                 if(disposed||!this.allowed())throw new OperationCanceledException();
                 View=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()??throw new InvalidOperationException("外界Viewがありません");
-                Context=context;var lease=session.AttachPresentation();try{runtime?.Attach(this,input);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide);}catch{runtime?.Detach(this);lease.Dispose();throw;}
+                Context=context;var lease=session.AttachPresentation();try{runtime?.Attach(this,input);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide,entered,canEnter,()=>input?.OutsideInteractionLabel??"Enter / Space",trialRoute);}catch{runtime?.Detach(this);lease.Dispose();throw;}
             },panel=>{
                 runtime?.Detach(this);
                 // 管理側の閉鎖は復旧対象から外す。表示中の外部破棄ではこの経路を通らない。
@@ -104,6 +104,7 @@ namespace Olca.Application.Management
         }
         public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
         {if(disposed||!allowed())return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
+        public bool ReturnToHub(){if(disposed||!allowed()||!IsOpen)return false;layer.CloseCurrent();returned?.Invoke();return true;}
         public void SetCovered(bool covered){runtime?.SetCovered(this,covered);if(View!=null)View.SetCovered(covered);}
         public void Pump(bool active){runtime?.Pump(this,active&&IsOpen&&View.CanPlay);if(View!=null)View.Render();}
         public void Dispose(){if(disposed)return;disposed=true;runtime?.Detach(this);layer.UnregisterOwner(registrationOwner);Context=null;View=null;allowed=null;returned=null;paused=null;icon=null;}
