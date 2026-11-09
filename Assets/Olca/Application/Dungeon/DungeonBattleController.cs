@@ -1887,9 +1887,9 @@ namespace Olca.Application.Dungeon
             gamepadVibration=new GamepadVibrationAdapter();
             vibrationSettings=new GamepadVibrationSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             vibrationSettings.TryRead(out gamepadVibrationEnabled,out vibrationSettingsError);gamepadVibration.Enabled=gamepadVibrationEnabled;
-            inputProvider.GamepadGameplayActive=()=>manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
-                (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused);
-            inputProvider.GamepadContext=()=>OutsideRouteBusy||manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
+            inputProvider.GamepadGameplayActive=()=>(outsideExploration?.IsOpen==true&&CustomizationUiLive&&!IsUserPaused&&!GameplayPause.InputBlocked&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0)||(manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
+                (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused));
+            inputProvider.GamepadContext=()=>OutsideRouteBusy?"outside":manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
             inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&((outsideExploration?.IsOpen==true&&gameSystem.Dialogs.ActiveCount==0)||(!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen)));
             gamepadSettings=gameSystemSession?.Storage.Gamepad ?? new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             inputProvider.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _);

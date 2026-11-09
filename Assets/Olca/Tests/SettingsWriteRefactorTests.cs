@@ -12,7 +12,7 @@ namespace Olca.Tests
         {
             var original=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();
             var slots=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();
-            foreach(var pair in original.Bindings)if(pair.Key.Action!="SelectionPrevious"&&pair.Key.Action!="SelectionNext")slots.Add(pair.Key,pair.Value);
+            foreach(var pair in original.Bindings)if(pair.Key.Context!="outside"&&pair.Key.Action!="SelectionPrevious"&&pair.Key.Action!="SelectionNext")slots.Add(pair.Key,pair.Value);
             string device=gamepad?"gamepad":"keyboard";slots[(device,"exploration","JumpPrimary")]=gamepad?"LeftTrigger":"Q";
             var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(slots);
             var upgraded=UnityInputProvider.DecodeSelectionSlots(slots,gamepad);
@@ -34,7 +34,7 @@ namespace Olca.Tests
             string directory=Path.Combine(Path.GetTempPath(),"olca-selection-migration-"+Guid.NewGuid().ToString("N"));
             try{
                 Directory.CreateDirectory(directory);var store=gamepad?(GameplayBindingFileStore)new GamepadBindingFileStore(directory):new KeyboardBindingFileStore(directory);var original=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();string device=gamepad?"gamepad":"keyboard";
-                var rows=new System.Collections.Generic.List<string>();foreach(var pair in original.Bindings)if(pair.Key.Action!="SelectionPrevious"&&pair.Key.Action!="SelectionNext")rows.Add("{\"Context\":\""+pair.Key.Context+"\",\"Action\":\""+pair.Key.Action+"\",\"Key\":"+(pair.Value==null?"null":"\""+pair.Value+"\"")+"}");
+                var rows=new System.Collections.Generic.List<string>();foreach(var pair in original.Bindings)if(pair.Key.Context!="outside"&&pair.Key.Action!="SelectionPrevious"&&pair.Key.Action!="SelectionNext")rows.Add("{\"Context\":\""+pair.Key.Context+"\",\"Action\":\""+pair.Key.Action+"\",\"Key\":"+(pair.Value==null?"null":"\""+pair.Value+"\"")+"}");
                 File.WriteAllText(store.ActivePath,"{\"Version\":1,\"Device\":\""+device+"\",\"Slots\":["+string.Join(",",rows)+"]}");var before=File.ReadAllBytes(store.ActivePath);
                 Assert.IsTrue(store.TryRead(out var upgraded,out var error),error);CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));Assert.IsFalse(File.Exists(Path.Combine(directory,device+"-gameplay.backup.json")));
                 Assert.IsTrue(store.TrySave(upgraded,out error),error);CollectionAssert.AreEqual(before,File.ReadAllBytes(Path.Combine(directory,device+"-gameplay.backup.json")));Assert.IsTrue(store.TryRead(out var roundtrip,out error),error);CollectionAssert.AreEquivalent(upgraded.Bindings,roundtrip.Bindings);
@@ -48,6 +48,54 @@ namespace Olca.Tests
                 var edit=provider.KeyboardProfile.BeginEdit();Assert.IsTrue(edit.TryAssign(("keyboard","exploration","SelectionNext"),binding,out _));Assert.IsTrue(provider.TryRestoreKeyboardProfile(edit.Preview(),out _));provider.StartEventCapture();var key=System.Enum.Parse<UnityEngine.InputSystem.Key>(binding);var other=binding=="LeftShift"?UnityEngine.InputSystem.Key.RightShift:UnityEngine.InputSystem.Key.F12;UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(otherKey?new[]{key,other}:new[]{key}));UnityEngine.InputSystem.InputSystem.Update();
                 provider.QueueSnapshot();var samples=provider.CaptureTimestamped();var value=samples[samples.Length-1].Input;Assert.IsTrue(value.AnyKey,"従来globalAnyKeyは保持");Assert.IsTrue(value.SelectionNextHeld);Assert.AreEqual(otherKey,value.AnyKeyExceptSelection,"外界専用neutralだけ合成anyKeyを除外");
             }finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
+        [TestCase("LeftStick")][TestCase("RightShoulder")][TestCase(null)]
+        public void 外界Pad新文脈は旧設定の明示割当と未割当をコピーし旧場面を交換しない(string savedDash)
+        {
+            var current=UnityInputProvider.CreateDefaultGamepadProfile();
+            Assert.AreEqual("RightShoulder",current.Bindings[("gamepad","outside","DashPrimary")]);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();
+            foreach(var p in current.Bindings)if(p.Key.Context!="outside")old.Add(p.Key,p.Value);
+            old[("gamepad","exploration","DashPrimary")]=savedDash;
+            var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);
+            var migrated=UnityInputProvider.DecodeSelectionSlots(old,true);
+            CollectionAssert.AreEquivalent(before,old);
+            foreach(var p in before)Assert.AreEqual(p.Value,migrated.Bindings[p.Key]);
+            Assert.AreEqual(savedDash,migrated.Bindings[("gamepad","outside","DashPrimary")]);
+            string directory=Path.Combine(Path.GetTempPath(),"olca-outside-context-"+Guid.NewGuid().ToString("N"));
+            try{
+                Directory.CreateDirectory(directory);var store=new GamepadBindingFileStore(directory);var rows=new System.Collections.Generic.List<string>();
+                foreach(var p in old)rows.Add("{\"Context\":\""+p.Key.Context+"\",\"Action\":\""+p.Key.Action+"\",\"Key\":"+(p.Value==null?"null":"\""+p.Value+"\"")+"}");
+                File.WriteAllText(store.ActivePath,"{\"Version\":1,\"Device\":\"gamepad\",\"Slots\":["+string.Join(",",rows)+"]}");var bytes=File.ReadAllBytes(store.ActivePath);
+                Assert.IsTrue(store.TryRead(out var loaded,out var storeError),storeError);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));CollectionAssert.AreEquivalent(migrated.Bindings,loaded.Bindings);
+                Assert.IsTrue(store.TrySave(loaded,out storeError),storeError);Assert.IsTrue(store.TryRead(out var reloaded,out storeError),storeError);CollectionAssert.AreEquivalent(loaded.Bindings,reloaded.Bindings);
+                CollectionAssert.AreEqual(bytes,File.ReadAllBytes(Path.Combine(directory,"gamepad-gameplay.backup.json")));
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+            var edit=migrated.BeginEdit();Assert.IsTrue(edit.TryAssign(("gamepad","outside","DashPrimary"),"South",out var error),error);
+            Assert.AreEqual(savedDash,edit.Draft[("gamepad","outside","JumpPrimary")]);
+            Assert.AreEqual("South",edit.Draft[("gamepad","exploration","JumpPrimary")]);
+            Assert.AreEqual(savedDash,edit.Draft[("gamepad","exploration","DashPrimary")]);
+            Assert.AreEqual("RightShoulder",edit.Draft[("gamepad","battle","CardPrimary")]);
+            var partial=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(migrated.Bindings);partial.Remove(("gamepad","outside","Pause"));
+            Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,true));
+            partial=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(migrated.Bindings);partial.Remove(("gamepad","exploration","SelectionPrevious"));partial.Remove(("gamepad","exploration","SelectionNext"));
+            Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,true));
+        }
+        [Test] public void 外界PadはRBダッシュと左stick移動だけを使い旧DungeonのL3と十字移動を保持する()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            using(var provider=new UnityInputProvider())try{
+                string context="outside";provider.GamepadContext=()=>context;provider.StartEventCapture();provider.CaptureTimestamped();
+                void State(UnityEngine.InputSystem.LowLevel.GamepadState state){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.RightShoulder));
+                var samples=provider.CaptureTimestamped();var input=samples[samples.Length-1].Input;Assert.IsTrue(input.DashButton&&input.DashButtonDown);Assert.AreEqual(0,input.Horizontal);
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState());provider.CaptureTimestamped();
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight).WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftStick));
+                samples=provider.CaptureTimestamped();input=samples[samples.Length-1].Input;Assert.AreEqual(0,input.Horizontal);Assert.IsFalse(input.DashButton||input.DashButtonDown);
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=UnityEngine.Vector2.right});samples=provider.CaptureTimestamped();Assert.AreEqual(1,samples[samples.Length-1].Input.Horizontal);
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState());provider.CaptureTimestamped();context="exploration";
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight).WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftStick));samples=provider.CaptureTimestamped();input=samples[samples.Length-1].Input;Assert.AreEqual(1,input.Horizontal);Assert.IsTrue(input.DashButtonDown);
+            }finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
         private sealed class ReplaceFault : CheckpointFileIo
         {

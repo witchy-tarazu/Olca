@@ -76,10 +76,11 @@ namespace Olca.Application.Management
             if(selectionGuide==null||!ReferenceEquals(guideKeyboard,input.KeyboardProfile)||!ReferenceEquals(guideGamepad,input.GamepadProfile)||guideDevice!=device){
                 guideKeyboard=input.KeyboardProfile;guideGamepad=input.GamepadProfile;guideDevice=device;
                 var profile=device==InputGuideDevice.Gamepad?guideGamepad:guideKeyboard;string kind=device==InputGuideDevice.Gamepad?"gamepad":"keyboard";
+                string traversal=device==InputGuideDevice.Gamepad?"outside":"exploration";
                 string Label(string context,string action)=>profile.Bindings.TryGetValue((kind,context,action),out var key)&&key!=null?(device==InputGuideDevice.Gamepad?UnityInputProvider.GamepadBindingLabel(key):key):"ミワリアテ";
                 string Group(params string[] actions){var keys=actions.Select(action=>profile.Bindings.TryGetValue((kind,"battle",action),out var key)?key:null).Where(key=>key!=null).Distinct().Select(key=>device==InputGuideDevice.Gamepad?UnityInputProvider.GamepadBindingLabel(key):key);return keys.Any()?string.Join("/",keys):"ミワリアテ";}
-                movementGuide=device==InputGuideDevice.Touch?"":Olca.Presentation.CustomScreen.CustomDisplay.Katakana("イドウ  ヒダリ: "+Group("LeftPrimary","LeftSecondary")+"  ミギ: "+Group("RightPrimary","RightSecondary")+(device==InputGuideDevice.Gamepad?" / ヒダリ スティック":"")+"\nジャンプ: "+Label("exploration","JumpPrimary")+"  /  ダッシュ: "+Label("exploration","DashPrimary")+(device==InputGuideDevice.Gamepad?"":"/"+Label("exploration","DashSecondary")));
-                selectionGuide=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(device==InputGuideDevice.Touch?"カード タップ: センタク":"カード センタク  マエ: "+Label("exploration","SelectionPrevious")+"  /  ツギ: "+Label("exploration","SelectionNext"));
+                movementGuide=device==InputGuideDevice.Touch?"":Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Gamepad?"イドウ: ヒダリ スティック":"イドウ  ヒダリ: "+Group("LeftPrimary","LeftSecondary")+"  ミギ: "+Group("RightPrimary","RightSecondary"))+"\nジャンプ: "+Label(traversal,"JumpPrimary")+"  /  ダッシュ: "+Label(traversal,"DashPrimary")+(device==InputGuideDevice.Gamepad?"":"/"+Label(traversal,"DashSecondary")));
+                selectionGuide=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(device==InputGuideDevice.Touch?"カード タップ: センタク":"カード センタク  マエ: "+Label(traversal,"SelectionPrevious")+"  /  ツギ: "+Label(traversal,"SelectionNext"));
             }
             return selectionGuide;
         }

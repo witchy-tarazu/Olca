@@ -1361,7 +1361,7 @@ namespace Olca.Presentation.Field
             if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
             string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
         }
-        private static string ContextLabel(string context)=>context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
+        private static string ContextLabel(string context)=>context=="outside"?"ガイカイ":context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
         private InputBindingProfile Defaults()=>gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
         private InputBindingProfile applied;
         private InputBindingEdit edit;
@@ -1414,7 +1414,7 @@ namespace Olca.Presentation.Field
             status = MakeText("Status", "", transform, new Vector2(0, 365), new Vector2(1740, 80), 26);statusRect=status.rectTransform;
             var defaults = Defaults();
             int[] rows = { 0, 0, 0, 0 };
-            if(gamepad){string[] names={"探索","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
+            if(gamepad){string[] names={"ダンジョン","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
             else {
             TrackColumn(MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
             TrackColumn(MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28).rectTransform,1,0);
@@ -1422,8 +1422,11 @@ namespace Olca.Presentation.Field
             }
             foreach (var slot in defaults.Bindings.Keys)
             {
-                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context):slot.Context == "exploration" ? 0 :
+                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context=="outside"?"exploration":slot.Context):slot.Context == "exploration" ? 0 :
                     (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
+                if(gamepad&&slot.Context=="outside"&&slot.Action=="JumpPrimary"){
+                    var group=MakeText("OutsideGroup","ガイカイ",transform,new Vector2(-675,215-rows[0]++*40),new Vector2(430,38),22);TrackColumn(group.rectTransform,0,0);
+                }
                 float x = gamepad?(column-1.5f)*450:(column-1)*560, y = 215 - rows[column]++ * (gamepad?40:70);
                 var action=MakeText("Action_" + slot.Action, ActionLabel(slot.Action), transform, new Vector2(x - (gamepad?192:165), y), new Vector2(gamepad?145:180, gamepad?38:55), gamepad?22:24);
                 if(gamepad){action.rectTransform.anchoredPosition=new Vector2(x-119.5f,y);action.alignment=TextAnchor.MiddleLeft;action.resizeTextForBestFit=true;action.resizeTextMinSize=20;action.resizeTextMaxSize=22;}TrackColumn(action.rectTransform,column,gamepad?-119.5f:-165);

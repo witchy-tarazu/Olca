@@ -164,7 +164,18 @@ namespace Olca.Unity
             var defaults=gamepad?CreateDefaultGamepadProfile():CreateDefaultKeyboardProfile();
             bool Selection((string Device,string Context,string Action) k)=>k.Context=="exploration"&&(k.Action=="SelectionPrevious"||k.Action=="SelectionNext");
             var legacy=defaults.Bindings.Keys.Where(k=>!Selection(k)).ToArray();
-            if(slots.Count==legacy.Length&&legacy.All(slots.ContainsKey)){
+            // Outside導入前の完全な既知形式だけを拡張する。読込では保存原本を書き換えない。
+            var outside=defaults.Bindings.Keys.Where(k=>k.Context=="outside").ToArray();
+            var oldKeys=defaults.Bindings.Keys.Where(k=>k.Context!="outside").ToArray();
+            var oldPreSelection=oldKeys.Where(k=>!Selection(k)).ToArray();
+            if(gamepad&&((slots.Count==oldKeys.Length&&oldKeys.All(slots.ContainsKey))||
+                (slots.Count==oldPreSelection.Length&&oldPreSelection.All(slots.ContainsKey)))){
+                foreach(var item in defaults.Bindings.Where(p=>Selection(p.Key)))if(!slots.ContainsKey(item.Key)){
+                    string value=item.Value;if(slots.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,item.Key)))value=null;slots.Add(item.Key,value);
+                }
+                foreach(var k in outside)slots.Add(k,slots[(k.Device,"exploration",k.Action)]);
+            }
+            if(!gamepad&&slots.Count==legacy.Length&&legacy.All(slots.ContainsKey)){
                 foreach(var item in defaults.Bindings.Where(p=>Selection(p.Key))){
                     string value=item.Value;
                     if(slots.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,item.Key)))value=null;
@@ -187,6 +198,8 @@ namespace Olca.Unity
             void Add(string context,string action,GamepadButton key)=>slots.Add(("gamepad",context,action),GamepadButtonId(key));
             Add("exploration","JumpPrimary",GamepadButton.South);Add("exploration","DashPrimary",GamepadButton.LeftStick);Add("exploration","Pause",GamepadButton.Start);
             Add("exploration","SelectionPrevious",GamepadButton.LeftTrigger);Add("exploration","SelectionNext",GamepadButton.RightTrigger);
+            Add("outside","JumpPrimary",GamepadButton.South);Add("outside","DashPrimary",GamepadButton.RightShoulder);Add("outside","Pause",GamepadButton.Start);
+            Add("outside","SelectionPrevious",GamepadButton.LeftTrigger);Add("outside","SelectionNext",GamepadButton.RightTrigger);
             Add("battle","LeftPrimary",GamepadButton.DpadLeft);Add("battle","RightPrimary",GamepadButton.DpadRight);Add("battle","UpPrimary",GamepadButton.DpadUp);Add("battle","DownPrimary",GamepadButton.DpadDown);
             Add("battle","AttackPrimary",GamepadButton.West);Add("battle","CardPrimary",GamepadButton.RightShoulder);Add("battle","CustomPrimary",GamepadButton.North);Add("battle","Pause",GamepadButton.Start);
             foreach(string context in new[]{"menu","custom"}) {
@@ -281,7 +294,7 @@ namespace Olca.Unity
         private ButtonControl SelectionControl(string action,InputDevice device)
         {
             if(device is Keyboard keyboard&&KeyboardProfile.Bindings.TryGetValue(("keyboard","exploration",action),out var key)&&key!=null)return keyboard[System.Enum.Parse<Key>(key)];
-            if(device is Gamepad pad&&pad.enabled&&GamepadProfile.Bindings.TryGetValue(("gamepad","exploration",action),out var button)&&button!=null)return pad[System.Enum.Parse<GamepadButton>(button)];
+            if(device is Gamepad pad&&pad.enabled&&GamepadProfile.Bindings.TryGetValue(("gamepad",OutsideGamepad ? "outside" : "exploration",action),out var button)&&button!=null)return pad[System.Enum.Parse<GamepadButton>(button)];
             return null;
         }
         private long RawSelectionPressedAt(string action)
@@ -356,12 +369,14 @@ namespace Olca.Unity
                 OnGamepadDisconnected?.Invoke();
         }
         private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
+        private bool OutsideGamepad => GamepadContext?.Invoke()=="outside";
+        private bool TraversalHeld(string action)=>Held("exploration",action)||PadActionHeld(OutsideGamepad?"outside":"exploration",action);
         private Olca.Core.Logic.Integration.LogicalInput BuildState()
         {
             float x = (Held("battle", "RightPrimary") || Held("battle", "RightSecondary") ? 1 : 0) - (Held("battle", "LeftPrimary") || Held("battle", "LeftSecondary") ? 1 : 0);
             float y = (Held("battle", "UpPrimary") || Held("battle", "UpSecondary") ? 1 : 0) - (Held("battle", "DownPrimary") || Held("battle", "DownSecondary") ? 1 : 0);
-            x += (PadActionHeld("battle","RightPrimary")?1:0)-(PadActionHeld("battle","LeftPrimary")?1:0);
-            y += (PadActionHeld("battle","UpPrimary")?1:0)-(PadActionHeld("battle","DownPrimary")?1:0);
+            if(!OutsideGamepad)x += (PadActionHeld("battle","RightPrimary")?1:0)-(PadActionHeld("battle","LeftPrimary")?1:0);
+            if(!OutsideGamepad)y += (PadActionHeld("battle","UpPrimary")?1:0)-(PadActionHeld("battle","DownPrimary")?1:0);
             x=Mathf.Clamp(x,-1,1);y=Mathf.Clamp(y,-1,1);
             foreach (var sample in sticks.Where(p=>p.Key.enabled&&!blockedGamepads.Contains(p.Key)))
             {
@@ -376,8 +391,8 @@ namespace Olca.Unity
                 HasInputSample = true, AnyKey = physicalTouches.Count>0 || buttons.Values.Any(pressed => pressed),
                 HasChargeHoldSample = true, ChargeHoldButton = RawChargeHold(), AnyKeyExceptCharge = AnyExceptCharge(),
                 Horizontal = touchMovement.Direction!=0 ? touchMovement.Direction : x, Vertical = y, BasicAttackButton = ActionHeld("battle", "AttackPrimary"),
-                JumpButton = ActionHeld("exploration", "JumpPrimary"),
-                DashButton = ActionHeld("exploration", "DashPrimary") || ActionHeld("exploration", "DashSecondary")
+                JumpButton = TraversalHeld("JumpPrimary"),
+                DashButton = TraversalHeld("DashPrimary") || TraversalHeld("DashSecondary")
             };
         }
         private void CaptureEvent(InputEventPtr evt, InputDevice device)
@@ -392,7 +407,7 @@ namespace Olca.Unity
             var pointer = device as Pointer;
             bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
             bool basic = ActionHeld("battle", "AttackPrimary");
-            bool jump = ActionHeld("exploration", "JumpPrimary"), card = ActionHeld("battle", "CardPrimary"), leftShift = ActionHeld("exploration", "DashPrimary"), rightShift = ActionHeld("exploration", "DashSecondary");
+            bool jump = TraversalHeld("JumpPrimary"), card = ActionHeld("battle", "CardPrimary"), leftShift = TraversalHeld("DashPrimary"), rightShift = TraversalHeld("DashSecondary");
             bool leftAlt = ActionHeld("battle", "CustomPrimary"), rightAlt = ActionHeld("battle", "CustomSecondary");
             var selectionPresses=new List<ButtonControl>();
             foreach (var button in Buttons(device))
@@ -417,11 +432,11 @@ namespace Olca.Unity
             // タッチの短い押下/取消はキーボードの立ち上がりと独立に併合する。
             next.TouchHorizontalDown=touchDown; next.CancelTouchTap=touchCanceled;
             next.HorizontalDown = device is Touchscreen ? 0 : eventState.Horizontal == 0 ? next.Horizontal : 0;
-            next.JumpButtonDown = !jump && ActionHeld("exploration", "JumpPrimary");
+            next.JumpButtonDown = !jump && TraversalHeld("JumpPrimary");
             next.CardUseButtonDown = !card && ActionHeld("battle", "CardPrimary");
             next.BasicAttackButtonDown = !basic && ActionHeld("battle", "AttackPrimary");
             next.BasicAttackButtonUp = basic && !ActionHeld("battle", "AttackPrimary");
-            next.DashButtonDown = (!leftShift && ActionHeld("exploration", "DashPrimary")) || (!rightShift && ActionHeld("exploration", "DashSecondary"));
+            next.DashButtonDown = (!leftShift && TraversalHeld("DashPrimary")) || (!rightShift && TraversalHeld("DashSecondary"));
             next.CustomScreenButtonDown = (!leftAlt && ActionHeld("battle", "CustomPrimary")) || (!rightAlt && ActionHeld("battle", "CustomSecondary"));
             long timestamp = (long)System.Math.Round((evt.time + eventClockOffset) * System.Diagnostics.Stopwatch.Frequency);
             next.CardUsePressedAt = next.CardUseButtonDown ? timestamp : 0;
