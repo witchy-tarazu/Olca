@@ -2851,6 +2851,34 @@ namespace Olca.Tests.Integration
             long revision=c.PersistentProgress.Revision;Call(c,"ConfirmRetreat");Assert.AreEqual(revision,c.PersistentProgress.Revision);
         }
 
+        [Test] public void 外界導線は新規拠点だけを対象にし既存攻略再開を上書きしない()
+        {
+            var active=Start();Assert.IsFalse((bool)Get(active,"OutsideHubEligible"));var bytes=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));
+            Call(active,"ResumeClearReturnIfNeeded");Assert.IsFalse((bool)Get(active,"OutsideHubEligible"));foreach(var pair in bytes)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));
+            Assert.Throws<System.InvalidOperationException>(()=>active.ConfigureOutsideLandingRoute());
+        }
+        [Test] public void 帰還完了の外界適格性は残存攻略ファイルの再開案内より優先し未完帰還を除く()
+        {
+            var c=Start();ToBattle(c);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");Assert.AreEqual(ClearReturnStage.Returned,c.PersistentProgress.Flow.Stage);
+            Assert.IsTrue((bool)Get(c,"OutsideHubEligible"));Set(c,"awaitingCheckpointChoice",true);Assert.IsTrue((bool)Get(c,"OutsideHubEligible"),"帰還済み境界は既存Resume分岐も優先する");
+            var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));Call(c,"ResumeClearReturnIfNeeded");foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));
+        }
+        [Test] public void 実出撃から撤退した古い親markerは外界復帰を妨げず同親の次出撃と保存失敗は妨げる()
+        {
+            var c=Start(production:true,configure:value=>value.ConfigureOutsideLandingRoute());Assert.IsTrue((bool)Get(c,"OutsideHubEligible"));KeyboardButton(c,"ConfirmDungeonSelection");Assert.IsFalse((bool)Get(c,"OutsideHubEligible"));
+            var plan=c.PersistentProgress.NextDeparture;Assert.NotNull(plan);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");Assert.AreEqual(ClearReturnStage.Returned,c.PersistentProgress.Flow.Stage);Assert.AreNotEqual(c.PersistentProgress.Flow.RunId,c.PersistentProgress.NextDeparture.ParentRunId);Assert.IsTrue((bool)Get(c,"OutsideHubEligible"),"Nativeで拒否していた正常な古い親marker");
+            var bytes=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));var model=Model(c);Call(c,"ResumeClearReturnIfNeeded");Assert.AreSame(model,Model(c),"完了markerの旧攻略を再起動しない");foreach(var pair in bytes)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));
+            var original=(ClearReturnSession)Get(c,"clearReturnSession");try{
+                var fault=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(System.IO.Path.GetDirectoryName(((Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore")).ActivePath),new FaultIo{Fail=true}));Set(c,"clearReturnSession",fault);Assert.IsFalse(fault.ManualSave());Assert.IsTrue(fault.HasPendingSave);Assert.IsFalse((bool)Get(c,"OutsideHubEligible"),"未保存を外界表示で隠さない");
+            }finally{Set(c,"clearReturnSession",original);}
+            var next=plan.Start.Copy();next.RunId=System.Guid.NewGuid().ToString("N");Assert.IsTrue(original.PrepareNextDeparture(next,plan.DefinitionKey),original.Error);Assert.AreEqual(c.PersistentProgress.Flow.RunId,c.PersistentProgress.NextDeparture.ParentRunId);Assert.IsTrue((bool)Get(c,"HasPreparedOutsideDeparture"));Assert.IsFalse((bool)Get(c,"OutsideHubEligible"),"現在の帰還から準備済みの出撃を優先");
+        }
+        [Test] public void 旧外界導線の近接決定は不可視入口にならず通常Jumpを奪わない()
+        {
+            var c=Start();var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationTerrain,OutsideTraversalProfile.ValidationDash);for(int n=0;n<120;n++)core.TickFrame(1,false,false,false,false);Assert.IsTrue(OutsideTrialRoute.CanInspect(core));
+            var candidate=c.GetType().GetMethod("IsOutsideEntranceCandidate",Hidden);Assert.IsFalse((bool)candidate.Invoke(c,new object[]{core}),"通常Bootstrap以外の既存導線には入口を追加しない");Set(c,"outsideLandingRoute",true);Assert.IsTrue((bool)candidate.Invoke(c,new object[]{core}));Set(c,"outsideLandingRoute",false);
+            core.TickFrame(0,true,true,false,false);Assert.Greater(core.Height,0,"legacyでは同じ決定割当のJumpを維持");
+        }
         [Test] public void 会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない(){var c=Start();var m=Model(c);var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));int ended=0;var script=new DialogueScript("external",new[]{new DialogueLine("検証")});Assert.IsTrue(c.TryStartDialogue(script,r=>ended++));Assert.IsFalse(c.TryStartDialogue(script));float x=m.Dungeon.PlayerPosition;for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,DashButtonDown=true});Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.SetUserPaused(true);c.CurrentDialogue.AdvanceFrame();Assert.AreEqual(0,c.CurrentDialogue.VisibleElements);c.SetUserPaused(false);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));}
         [Test] public void ホイール音停止の合成は会話中の旧BGM継続を変えずゲーム時計だけ停止する()
         {

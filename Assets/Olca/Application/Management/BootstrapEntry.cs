@@ -23,8 +23,35 @@ namespace Olca.Application.Management
         private static async void Launch()
         {
             observed=true;
-            try {var result=await GameSystemRoot.Ensure().StartGameplayHostAsync();if(!result.Succeeded&&!result.Cancelled)Debug.LogWarning("[Bootstrap] "+result.Error);}
+            try {await ShowTitleAsync(GameSystemRoot.Ensure());}
             catch(Exception error){Debug.LogException(error);}
+        }
+        public static async System.Threading.Tasks.Task ShowTitleAsync(GameSystemRoot root)
+        {
+            var services=root.Services;
+            // Bootstrap再読込で既存攻略をTitleの背面へ走らせない。既存hostの再使用/失効判定はHostManagerへ委譲する。
+            if(services.CurrentSession!=null){await root.StartGameplayHostAsync();return;}
+            var storage=ValidationStorageGuard.ExplicitEditorBootstrap();
+            using(var input=new UnityInputProvider()){
+                input.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _);
+                var settings=new GamepadBindingFileStore(storage?.BootstrapSettings??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
+                if(settings.TryRead(out var profile,out _))input.TryRestoreGamepadProfile(profile,out _);
+            }
+            var layer=services.Views.GetLayer("title");const string key="title";
+            if(layer.RegisteredCount!=0){await layer.ShowAsync(key);return;}
+            var owner=new object();
+            layer.Register(owner,key,ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Management.BootstrapTitleView.Create(services.UI.ViewParent,services.Resources));},(panel,context)=>{
+                bool starting=false,closed=false;var lifetime=new System.Threading.CancellationTokenSource();
+                void End(){if(closed)return;closed=true;lifetime.Cancel();if(!starting)lifetime.Dispose();}
+                var view=panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>();
+                view.Show(context,async()=>{
+                    if(starting||!context.IsCurrent)return;starting=true;view.SetBusy(true,null);
+                    try{var result=await root.StartGameplayHostAsync(lifetime.Token);if(!context.IsCurrent||view==null)return;if(result.Succeeded){layer.UnregisterOwner(owner);return;}view.SetBusy(false,result.Error??"開始を取り消しました");}
+                    catch(Exception error){if(context.IsCurrent&&view!=null)view.SetBusy(false,error.Message);}
+                    finally{starting=false;if(closed)lifetime.Dispose();}
+                },End);
+            },panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>().Hide();});
+            var opened=await layer.ShowAsync(key);if(!opened.Succeeded){layer.UnregisterOwner(owner);if(!opened.Cancelled)throw new InvalidOperationException(opened.Error);}
         }
         public const string GameplayHostPrefabPath="OlcaSystem/DungeonHost";
         public static HostOpenRequest CreateGameplayRequest(GameSystem services)
@@ -37,7 +64,7 @@ namespace Olca.Application.Management
                 if(values.Length!=1)throw new InvalidOperationException("hostのControllerは1つ必要です");return values[0];
             }
             return HostOpenRequest.Prefab(GameplayHostPrefabPath,ct=>GameplayPrefabHostLease.LoadAsync(services.Resources,GameplayHostPrefabPath,scene,ct),root=>{
-                var controller=Controller(root);controller.ConfigureGameSystem(services);controller.PrepareWorldPresentation(services);controller.ConfigureManagedCamera(services,null);
+                var controller=Controller(root);controller.ConfigureGameSystem(services);controller.ConfigureOutsideLandingRoute();controller.PrepareWorldPresentation(services);controller.ConfigureManagedCamera(services,null);
                 if(storage!=null){controller.ConfigureGameplaySettingsDirectory(storage.BootstrapSettings);controller.ConfigureCheckpointDirectory(storage.BootstrapCheckpoint);controller.ConfigureProgressDirectory(storage.BootstrapProgress);controller.RequireValidationStorageGuard();}
             },root=>Controller(root).StartManagedHost(services));
         }

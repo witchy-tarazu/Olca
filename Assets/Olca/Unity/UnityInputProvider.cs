@@ -335,6 +335,7 @@ namespace Olca.Unity
         }
         public void Dispose()
         {
+            outsideInteractionPending=false;outsideInteractionContext=null;
             if (!capturing) return;
             InputSystem.onEvent -= CaptureEvent; InputSystem.onDeviceChange -= DeviceChanged;
 #if UNITY_EDITOR
@@ -354,7 +355,7 @@ namespace Olca.Unity
         private static StickControl Stick(InputDevice device) => device is Gamepad pad ? pad.leftStick : (device as Joystick)?.stick;
         public void QueueSnapshot()
         {
-            gamepadPausePending=false;
+            gamepadPausePending=false;outsideInteractionPending=false;
             SnapshotTouches(); blockedGamepads.RemoveWhere(d=>!InputSystem.devices.Contains(d));buttons.Clear(); sticks.Clear();
             foreach (var device in InputSystem.devices.Where(d=>d.enabled))
             {
@@ -375,6 +376,19 @@ namespace Olca.Unity
             // Disabledはフォーカス喪失でも届くため、物理切断の通知と区別する。
             if (device is Gamepad && (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected))
                 OnGamepadDisconnected?.Invoke();
+        }
+        public string OutsideInteractionLabel => InputGuideActivity.Current==InputGuideDevice.Gamepad&&GamepadProfile.Bindings.TryGetValue(("gamepad","menu","Decide"),out var key)&&key!=null?GamepadBindingLabel(key):"Enter / Space";
+        private object outsideInteractionContext;private bool outsideInteractionPending;
+        public bool OutsideInteractionPressed(object context)
+        {
+            bool pending=outsideInteractionPending;outsideInteractionPending=false;
+            if(!ReferenceEquals(outsideInteractionContext,context)){outsideInteractionContext=context;return false;}
+            return context!=null&&OutsideGamepad&&!GameplayPause.InputBlocked&&pending;
+        }
+        private bool IsOutsideInteractionControl(ButtonControl control)
+        {
+            if(control.device is Keyboard&&control is KeyControl key)return key.keyCode==Key.Enter||key.keyCode==Key.NumpadEnter||key.keyCode==Key.Space;
+            return control.device is Gamepad pad&&pad.enabled&&!blockedGamepads.Contains(pad)&&GamepadProfile.Bindings.TryGetValue(("gamepad","menu","Decide"),out var value)&&value!=null&&ReferenceEquals(control,pad[System.Enum.Parse<GamepadButton>(value)]);
         }
         private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
         // Wheelは時間停止中も読む。開始Padを固定し、切断/無効化は保持解除として扱う。
@@ -448,6 +462,7 @@ namespace Olca.Unity
             float touchDown=0; bool touchCanceled=false;
             if(device is Touchscreen screen) CaptureTouches(evt,screen,out touchDown,out touchCanceled);
             if(device is Gamepad&&!pauseBefore&&PadActionHeld(padContext,"Pause")&&GamepadPauseAvailable?.Invoke()==true)gamepadPausePending=true;
+            if(OutsideGamepad&&!GameplayPause.InputBlocked&&GamepadGameplayActive?.Invoke()==true&&selectionPresses.Any(IsOutsideInteractionControl))outsideInteractionPending=true;
             var next = BuildState();
             // タッチの短い押下/取消はキーボードの立ち上がりと独立に併合する。
             next.TouchHorizontalDown=touchDown; next.CancelTouchTap=touchCanceled;
