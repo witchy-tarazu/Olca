@@ -1428,10 +1428,13 @@ namespace Olca.Presentation.Field
             }
             foreach (var slot in defaults.Bindings.Keys)
             {
-                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context=="outside"?"exploration":slot.Context):slot.Context == "exploration" ? 0 :
+                int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context=="outside"?"exploration":slot.Context):(slot.Context == "exploration"||slot.Context=="outside") ? 0 :
                     (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
                 if(gamepad&&slot.Context=="outside"&&slot.Action=="JumpPrimary"){
                     var group=MakeText("OutsideGroup","ガイカイ",transform,new Vector2(-675,215-rows[0]++*40),new Vector2(430,38),22);TrackColumn(group.rectTransform,0,0);
+                }
+                if(!gamepad&&slot.Context=="outside"&&slot.Action=="WheelPrimary"){
+                    var group=MakeText("OutsideGroup","ガイカイ",transform,new Vector2(-560,215-rows[0]++*70),new Vector2(520,55),24);TrackColumn(group.rectTransform,0,0);
                 }
                 float x = gamepad?(column-1.5f)*450:(column-1)*560, y = 215 - rows[column]++ * (gamepad?40:70);
                 var action=MakeText("Action_" + slot.Action, ActionLabel(slot.Action), transform, new Vector2(x - (gamepad?192:165), y), new Vector2(gamepad?145:180, gamepad?38:55), gamepad?22:24);
@@ -1484,7 +1487,9 @@ namespace Olca.Presentation.Field
         private void Assign((string Device, string Context, string Action) slot, string key)
         {
             if(!CanOperate)return;
-            var before=edit.Draft.ToDictionary(p=>p.Key,p=>p.Value);bool accepted=edit.TryAssign(slot,key,out var error);
+            var before=edit.Draft.ToDictionary(p=>p.Key,p=>p.Value);var attempt=gamepad?edit:edit.Preview().BeginEdit();bool accepted=attempt.TryAssign(slot,key,out var error);
+            if(accepted&&!gamepad)accepted=Olca.Unity.UnityInputProvider.ValidateKeyboardProfile(attempt.Preview(),out error);
+            if(accepted)edit=attempt;
             bool exchanged=accepted&&edit.Draft.Count(p=>before[p.Key]!=p.Value)>1;
             Refresh(accepted?(exchanged?"割当を交換しました。保存・適用で確定します。":"変更しました。保存・適用で確定します。"):error,!accepted);
         }

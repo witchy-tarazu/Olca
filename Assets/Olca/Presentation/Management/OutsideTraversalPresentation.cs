@@ -144,6 +144,31 @@ namespace Olca.Presentation.Management
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             if(edge&&confirm.interactable)confirm.onClick.Invoke();
         }
+        /// <summary>PCはトグル開閉。表示/所有/PauseはPadと同じDialogへ集め、入力方式だけを分ける。</summary>
+        public bool OpenPc(DialogManager manager,IDialogOwner current,System.Func<bool> alive,System.Func<bool> allowed,System.Action<bool> paused,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input,string openLabel="Tab")
+        {
+            bool result=Open(manager,current,alive,allowed,paused,input.EnterHeld||input.ClickHeld,UnityEngine.Vector2.zero,openLabel,"Enter");if(!result)return false;
+            hint.text="マウス / WASD: センタク\nEnter / ヒダリクリック: カクテイ  /  "+openLabel+": トジル";
+            SelectMouse(input.Pointer,input.PointerAvailable);
+            // 開く前から方向を保持していた入力も初回sampleとして表示する。以後は実イベント順だけで切り替える。
+            if(input.Direction!=UnityEngine.Vector2.zero)Select(input.Direction);
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);return true;
+        }
+        private void SelectMouse(UnityEngine.Vector2 pointer,bool available)
+        {bool hit=available&&UnityEngine.RectTransformUtility.RectangleContainsScreenPoint((UnityEngine.RectTransform)confirm.transform,pointer,null);Select(hit?UnityEngine.Vector2.up:UnityEngine.Vector2.zero);}
+        public void TickPc(Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)
+        {
+            if(!open)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true||!input.KeyboardAvailable){Abort();return;}
+            if(input.ToggleDown){cancel.onClick.Invoke();return;}
+            if(input.KeyboardChanged&&(!input.PointerChanged||input.KeyboardOrder>=input.PointerOrder))Select(input.Direction);
+            else if(input.PointerChanged)SelectMouse(input.Pointer,input.PointerAvailable);
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            // クリックは新しいマウス操作。静止hoverとは区別し、その位置の項目を選んで確定する。
+            if(input.ClickDown)SelectMouse(input.Pointer,input.PointerAvailable);
+            // 選択入力が静止していても、現在の切替可否を確定直前に読み直す。
+            confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);
+            if((input.EnterDown||input.ClickDown)&&confirm.interactable)confirm.onClick.Invoke();
+        }
         private void Finish(long ticket,DialogResult result)
         {
             if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;HasSelection=false;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);

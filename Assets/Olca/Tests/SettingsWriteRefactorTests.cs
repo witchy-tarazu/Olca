@@ -8,6 +8,45 @@ namespace Olca.Tests
 {
     public class SettingsWriteRefactorTests
     {
+        [TestCase(false)][TestCase(true)] public void PCホイールの旧設定補完は旧割当と原本を守りTab競合時だけ新slotを空にする(bool collision)
+        {
+            var current=UnityInputProvider.CreateDefaultKeyboardProfile();var wheel=("keyboard","outside","WheelPrimary");Assert.AreEqual("Tab",current.Bindings[wheel]);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel)old.Add(p.Key,p.Value);
+            if(collision)old[("keyboard","exploration","DashSecondary")]="Tab";
+            var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);var loaded=UnityInputProvider.DecodeSelectionSlots(old,false);
+            CollectionAssert.AreEquivalent(before,old);foreach(var p in before)Assert.AreEqual(p.Value,loaded.Bindings[p.Key]);Assert.AreEqual(collision?null:"Tab",loaded.Bindings[wheel]);
+            string directory=Path.Combine(Path.GetTempPath(),"olca-pc-wheel-"+Guid.NewGuid().ToString("N"));
+            try{
+                Directory.CreateDirectory(directory);var store=new KeyboardBindingFileStore(directory);var rows=new System.Collections.Generic.List<string>();foreach(var p in old)rows.Add("{\"Context\":\""+p.Key.Context+"\",\"Action\":\""+p.Key.Action+"\",\"Key\":"+(p.Value==null?"null":"\""+p.Value+"\"")+"}");
+                File.WriteAllText(store.ActivePath,"{\"Version\":1,\"Device\":\"keyboard\",\"Slots\":["+string.Join(",",rows)+"]}");var bytes=File.ReadAllBytes(store.ActivePath);
+                Assert.IsTrue(store.TryRead(out var read,out var error),error);CollectionAssert.AreEquivalent(loaded.Bindings,read.Bindings);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));
+                Assert.IsTrue(store.TrySave(read,out error),error);Assert.IsTrue(store.TryRead(out var again,out error),error);CollectionAssert.AreEquivalent(read.Bindings,again.Bindings);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(Path.Combine(directory,"keyboard-gameplay.backup.json")));
+            }finally{if(Directory.Exists(directory))Directory.Delete(directory,true);}
+            var partial=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(loaded.Bindings);partial.Remove(("keyboard","exploration","SelectionNext"));Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,false));
+            partial=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);partial.Add(("keyboard","outside","Unknown"),null);Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,false));
+        }
+        [TestCase("W")][TestCase("A")][TestCase("S")][TestCase("D")][TestCase("Enter")][TestCase("NumpadEnter")][TestCase("Escape")][TestCase("Space")]
+        public void PCホイールだけ固定modalキーを拒否し既存割当へ制限を遡及しない(string key)
+        {
+            var current=UnityInputProvider.CreateDefaultKeyboardProfile();var slots=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(current.Bindings);var wheel=("keyboard","outside","WheelPrimary");slots[wheel]=key;
+            var candidate=new InputBindingProfile(slots,new (string,string,string)[0]);Assert.IsFalse(UnityInputProvider.ValidateKeyboardProfile(candidate,out _));
+            slots[wheel]=null;slots[("keyboard","exploration","JumpPrimary")]=key;candidate=new InputBindingProfile(slots,new (string,string,string)[0]);Assert.IsTrue(UnityInputProvider.ValidateKeyboardProfile(candidate,out var error),error);
+        }
+        [Test] public void PCホイールrawは文脈初期保持を捨てTab再押下と方向解放とpointer操作順を一度ずつ読む()
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>("PcWheelRaw");var mouse=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>("PcWheelMouse");
+            using(var provider=new UnityInputProvider())try{
+                provider.GamepadContext=()=>"outside";provider.GamepadGameplayActive=()=>true;provider.StartEventCapture();var context=new object();
+                void Keys(params UnityEngine.InputSystem.Key[] keys){UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(keys));UnityEngine.InputSystem.InputSystem.Update();}
+                void Pointer(float x,float y,bool click=false){var state=new UnityEngine.InputSystem.LowLevel.MouseState{position=new UnityEngine.Vector2(x,y)};if(click)state=state.WithButton(UnityEngine.InputSystem.LowLevel.MouseButton.Left);UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,state);UnityEngine.InputSystem.InputSystem.Update();}
+                Keys(UnityEngine.InputSystem.Key.Tab);Assert.IsFalse(provider.ReadOutsidePcWheel(context,-1,out _).ToggleDown);Keys();Assert.IsFalse(provider.ReadOutsidePcWheel(context,-1,out _).ToggleDown);
+                Keys(UnityEngine.InputSystem.Key.Tab,UnityEngine.InputSystem.Key.W);var value=provider.ReadOutsidePcWheel(context,-1,out var owner);Assert.IsTrue(value.ToggleDown);Assert.AreEqual(keyboard.deviceId,owner);Assert.AreEqual(UnityEngine.Vector2.up,value.Direction);Assert.IsFalse(provider.ReadOutsidePcWheel(context,owner,out _).ToggleDown);
+                Keys(UnityEngine.InputSystem.Key.W);value=provider.ReadOutsidePcWheel(context,owner,out _);Assert.IsFalse(value.ToggleDown,"Tab解放は閉じる入力でない");
+                Pointer(80,90);Keys();value=provider.ReadOutsidePcWheel(context,owner,out _);Assert.IsTrue(value.KeyboardChanged&&value.PointerChanged);Assert.Greater(value.KeyboardOrder,value.PointerOrder);Assert.AreEqual(UnityEngine.Vector2.zero,value.Direction);
+                Keys(UnityEngine.InputSystem.Key.D);Pointer(90,90,true);value=provider.ReadOutsidePcWheel(context,owner,out _);Assert.IsTrue(value.ClickDown);Assert.Greater(value.PointerOrder,value.KeyboardOrder);Assert.IsFalse(provider.ReadOutsidePcWheel(context,owner,out _).ClickDown);
+                Keys(UnityEngine.InputSystem.Key.Enter);provider.QueueSnapshot();value=provider.ReadOutsidePcWheel(context,owner,out _);Assert.IsFalse(value.EnterDown||value.ToggleDown||value.ClickDown);Assert.IsTrue(value.EnterHeld);
+            }finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
         [TestCase(false)] [TestCase(true)] public void 外界選択slotの旧設定補完は既存割当を守り衝突時だけ新規を未割当にする(bool gamepad)
         {
             var original=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();

@@ -469,6 +469,8 @@ namespace Olca.Application.Dungeon
         private bool OutsideRouteBusy=>outsideExplorationOpening||outsideExploration?.IsOpen==true;
         private Olca.Presentation.Management.OutsideKamuiWheelDialog outsideWheel;
         private bool outsideWheelPaused,outsideWheelHeld;private object outsideWheelInputContext;
+        private enum OutsideWheelInputOwner{None,Pad,Pc}
+        private OutsideWheelInputOwner outsideWheelInputOwner;private int outsideWheelKeyboard=-1;
         private int outsideWheelPad=-1;
         private long outsideWheelEpoch;
         private void SetOutsideWheelPaused(long epoch,bool value)
@@ -484,7 +486,7 @@ namespace Olca.Application.Dungeon
             if(outsideWheel!=null)outsideWheel.Abort();
             if(outsideWheelPaused)SetOutsideWheelPaused(outsideWheelEpoch,false);
             if(release){outsideWheelInputContext=null;outsideWheelHeld=false;outsideWheelEpoch++;if(outsideWheel!=null){if(UnityEngine.Application.isPlaying)Destroy(outsideWheel.gameObject);else DestroyImmediate(outsideWheel.gameObject);}outsideWheel=null;}
-            outsideWheelPad=-1;
+            outsideWheelPad=outsideWheelKeyboard=-1;outsideWheelInputOwner=OutsideWheelInputOwner.None;
         }
         private bool SampleOutsideWheelOpen(object context,bool held)
         {
@@ -498,16 +500,25 @@ namespace Olca.Application.Dungeon
             if(inputProvider==null)return;
             var context=outsideExploration?.IsOpen==true?outsideExploration.Context:null;
             bool same=ReferenceEquals(outsideWheelInputContext,context);
-            bool found=inputProvider.ReadOutsideWheel(same&&outsideWheel?.IsOpen==true?outsideWheelPad:-1,out var pad,out var held,out var decide,out var stick);
+            bool found=inputProvider.ReadOutsideWheel(same&&outsideWheel?.IsOpen==true&&outsideWheelInputOwner==OutsideWheelInputOwner.Pad?outsideWheelPad:-1,out var pad,out var held,out var decide,out var stick);
             bool edge=SampleOutsideWheelOpen(context,held);
-            if(outsideWheel?.IsOpen==true){outsideWheel.Tick(found&&held,decide,stick);return;}
-            if(!edge||outsideExploration?.IsOpen!=true||!CustomizationUiLive||IsUserPaused||DialogueOpen||GameplayPause.InputBlocked||Time.timeScale<=0||gameSystem.Dialogs.ActiveCount!=0||context.DialogBlocksInput)return;
+            var pc=inputProvider.ReadOutsidePcWheel(context,outsideWheel?.IsOpen==true&&outsideWheelInputOwner==OutsideWheelInputOwner.Pc?outsideWheelKeyboard:-1,out var keyboard);
+            if(outsideWheel?.IsOpen==true){if(outsideWheelInputOwner==OutsideWheelInputOwner.Pc)outsideWheel.TickPc(pc);else outsideWheel.Tick(found&&held,decide,stick);return;}
+            bool pcOpen=pc.ToggleDown&&pc.KeyboardAvailable;
+            // 同時開始も既存の最後に使った入力機器に従う。表示中は開始した入力方式を固定する。
+            if(edge&&pcOpen&&InputGuideActivity.Current==InputGuideDevice.Gamepad)pcOpen=false;
+            if((!edge&&!pcOpen)||outsideExploration?.IsOpen!=true||!CustomizationUiLive||IsUserPaused||DialogueOpen||GameplayPause.InputBlocked||Time.timeScale<=0||gameSystem.Dialogs.ActiveCount!=0||context.DialogBlocksInput)return;
             if(outsideWheel==null)outsideWheel=panelFactory.Component<Olca.Presentation.Management.OutsideKamuiWheelDialog>("OutsideKamuiWheelDialog",v=>v.Initialize(panelFactory.Font));
-            var owner=context;long epoch=++outsideWheelEpoch;outsideWheelPad=pad;
-            string ButtonLabel(string key)=>inputProvider.GamepadProfile.Bindings.TryGetValue(("gamepad",key=="WheelPrimary"?"outside":"menu",key),out var value)&&value!=null?UnityInputProvider.GamepadBindingLabel(value):"ミワリアテ";
-            // 現在は通常状態のみ。未接続の攻撃/麻痺モデルや神依性能をここで仮定しない。
-            outsideWheel.Open(gameSystem.Dialogs,owner,()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner),
-                ()=>!IsUserPaused&&!DialogueOpen,value=>SetOutsideWheelPaused(epoch,value),decide,stick,ButtonLabel("WheelPrimary"),ButtonLabel("Decide"));
+            var owner=context;long epoch=++outsideWheelEpoch;
+            System.Func<bool> alive=()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner);
+            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen;
+            if(pcOpen){outsideWheelInputOwner=OutsideWheelInputOwner.Pc;outsideWheelKeyboard=keyboard;
+                string label=inputProvider.KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null?key:"ミワリアテ";
+                outsideWheel.OpenPc(gameSystem.Dialogs,owner,alive,allowed,value=>SetOutsideWheelPaused(epoch,value),pc,label);
+            }else{outsideWheelInputOwner=OutsideWheelInputOwner.Pad;outsideWheelPad=pad;
+                string ButtonLabel(string key)=>inputProvider.GamepadProfile.Bindings.TryGetValue(("gamepad",key=="WheelPrimary"?"outside":"menu",key),out var value)&&value!=null?UnityInputProvider.GamepadBindingLabel(value):"ミワリアテ";
+                outsideWheel.Open(gameSystem.Dialogs,owner,alive,allowed,value=>SetOutsideWheelPaused(epoch,value),decide,stick,ButtonLabel("WheelPrimary"),ButtonLabel("Decide"));
+            }
         }
         private void ResetOutsideRouteInput(){logicalLoop?.ReleaseInput();inputProvider?.QueueSnapshot();ResetTouchInput();}
         private async UniTaskVoid OpenOutsideExplorationAsync()
@@ -521,7 +532,7 @@ namespace Olca.Application.Dungeon
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources));},
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
-                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute);
+                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true);
                 }
                 var result=await outsideExploration.OpenAsync();
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
@@ -1952,6 +1963,7 @@ namespace Olca.Application.Dungeon
             vibrationSettings.TryRead(out gamepadVibrationEnabled,out vibrationSettingsError);gamepadVibration.Enabled=gamepadVibrationEnabled;
             inputProvider.GamepadGameplayActive=()=>(outsideExploration?.IsOpen==true&&CustomizationUiLive&&!IsUserPaused&&!GameplayPause.InputBlocked&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0)||(manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
                 (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused));
+            inputProvider.OutsidePcWheelInputOwned=()=>outsideWheelInputOwner==OutsideWheelInputOwner.Pc&&outsideWheel?.IsOpen==true&&outsideExploration?.IsOpen==true;
             inputProvider.GamepadContext=()=>OutsideRouteBusy?"outside":manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
             inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&((outsideExploration?.IsOpen==true&&gameSystem.Dialogs.ActiveCount==0)||(!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen)));
             gamepadSettings=gameSystemSession?.Storage.Gamepad ?? new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));

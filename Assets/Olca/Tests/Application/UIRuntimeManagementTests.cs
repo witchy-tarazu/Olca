@@ -68,6 +68,43 @@ namespace Olca.Tests.Application
             public bool Open(bool confirm=false,Vector2 direction=default)=>View.Open(Dialogs,Parent,()=>Parent.Alive,()=>Allowed,value=>{Paused=value;PauseTransitions++;},confirm,direction);
             public void Dispose(){try{if(View!=null)View.Abort();Dialogs.Dispose();}finally{UnityEngine.Object.DestroyImmediate(Root);}}
         }
+        private static Olca.Unity.UnityInputProvider.OutsidePcWheelInput Pc(Vector2 direction=default,bool keyChanged=false,bool pointerChanged=false,long keyOrder=0,long pointerOrder=0,bool enter=false,bool click=false,bool toggle=false,bool available=true,Vector2 pointer=default)
+            =>new Olca.Unity.UnityInputProvider.OutsidePcWheelInput(available,toggle,enter,click,direction,pointer,true,keyChanged,pointerChanged,keyOrder,pointerOrder);
+        private static bool OpenPc(Fixture f,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)=>f.View.OpenPc(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,value=>{f.Paused=value;f.PauseTransitions++;},input);
+        [Test] public void PCホイールは初期hoverと既保持方向を表示しTab解放では閉じず二度目だけ取消す()
+        {
+            using(var f=new Fixture()){
+                Assert.IsTrue(OpenPc(f,Pc()));Assert.IsTrue(f.View.HasSelection,"項目上の初期pointerを読む");f.View.TickPc(Pc());Assert.IsTrue(f.View.IsOpen,"トグルキーの解放は閉じない");
+                f.View.TickPc(Pc(toggle:true));Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Cancelled,f.View.LastResult);
+            }
+            using(var f=new Fixture()){Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.up,pointer:new Vector2(10000,10000))));Assert.IsTrue(f.View.HasSelection,"既保持WASDは初期hoverより優先");}
+        }
+        [Test] public void PCホイールは方向全解放で未選択を維持しEnterを拒否して新たな項目クリックで確定する()
+        {
+            using(var f=new Fixture()){
+                Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.up)));f.View.TickPc(Pc(keyChanged:true,keyOrder:2));Assert.IsFalse(f.View.HasSelection);
+                f.View.TickPc(Pc(enter:true));Assert.IsTrue(f.View.IsOpen);Assert.IsFalse(f.View.HasSelection,"静止hoverでは復帰しない");
+                f.View.TickPc(Pc(click:true,pointer:new Vector2(10000,10000)));Assert.IsTrue(f.View.IsOpen,"未選択領域のクリックは無効");
+                f.View.TickPc(Pc(click:true));Assert.IsFalse(f.View.IsOpen);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Confirmed,f.View.LastResult);Assert.IsTrue(f.Dialogs.Blocks(f.Parent));Assert.AreEqual(2,f.PauseTransitions);
+            }
+        }
+        [Test] public void PCホイールは最後の操作側だけ選択し不許可では開いたまま所有keyboard消失で返す()
+        {
+            using(var f=new Fixture()){
+                f.Allowed=false;Assert.IsTrue(OpenPc(f,Pc()));f.View.TickPc(Pc(direction:Vector2.zero,keyChanged:true,pointerChanged:true,keyOrder:4,pointerOrder:3));Assert.IsFalse(f.View.HasSelection);
+                f.View.TickPc(Pc(direction:Vector2.zero,keyChanged:true,pointerChanged:true,keyOrder:5,pointerOrder:6));Assert.IsTrue(f.View.HasSelection);f.View.TickPc(Pc(enter:true));Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);
+                f.View.TickPc(Pc(available:false));Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(0,f.Dialogs.ActiveCount);int transitions=f.PauseTransitions;f.View.Abort();Assert.AreEqual(transitions,f.PauseTransitions);
+            }
+        }
+        [TestCase(true)][TestCase(false)] public void PCホイールは静止選択でも最新の切替可否を確定時に再判定する(bool initiallyAllowed)
+        {
+            using(var f=new Fixture()){
+                f.Allowed=initiallyAllowed;Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.up)));f.Allowed=!initiallyAllowed;
+                f.View.TickPc(Pc(enter:true));
+                if(initiallyAllowed){Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);f.Allowed=true;f.View.TickPc(Pc());f.View.TickPc(Pc(enter:true));}
+                Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Confirmed,f.View.LastResult);
+            }
+        }
         [Test] public void ホイールは中央未選択と開く前A保持を守り初期stickを即選択して新Aだけで同状態を閉じる()
         {
             using(var f=new Fixture()){
