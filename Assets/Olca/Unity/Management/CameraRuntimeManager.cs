@@ -15,6 +15,14 @@ namespace Olca.Unity
             internal void Detach(){owner=null;Camera=null;Borrower=null;}
             public void Dispose(){owner?.Return(this);}
         }
+        public sealed class DisplayLease : IDisposable
+        {
+            private CameraRuntimeManager owner;
+            internal DisplayLease(CameraRuntimeManager value){owner=value;}
+            internal void Detach(){owner=null;}
+            public void Dispose(){owner?.ReleaseDisplay(this);}
+        }
+        private readonly System.Collections.Generic.HashSet<DisplayLease> displays=new System.Collections.Generic.HashSet<DisplayLease>();
         private readonly ResourceManager resources;
         private readonly Transform parent;
         private ResourceManager.InstanceLease instance;
@@ -29,9 +37,29 @@ namespace Olca.Unity
             if(disposed)throw new ObjectDisposedException(nameof(CameraRuntimeManager));
             if(borrower==null)throw new ArgumentNullException(nameof(borrower));
             if(active!=null)throw new InvalidOperationException("カメラは既に借用中です");
-            if(UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Any(x=>x.isActiveAndEnabled)||UnityEngine.Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None).Any(x=>x.isActiveAndEnabled))throw new InvalidOperationException("既存カメラ/Listenerとの二重起動を拒否します");
-            if(instance==null||instance.Instance==null){instance?.Dispose();prefab=resources.GetShared<GameObject>("OlcaSystem/GameplayCamera");instance=resources.InstantiatePrefab("OlcaSystem/GameplayCamera",parent);instance.Instance.SetActive(false);}
+            RejectForeignRendering();EnsureInstance();
             Reset();var camera=instance.Instance.GetComponent<Camera>();active=new Rental(this,camera,borrower);instance.Instance.SetActive(true);return active;
+        }
+        /// <summary>タイトルの表示期間だけ同じRootCameraを保持。host借用とは排他的な別Cameraを作らない。</summary>
+        public DisplayLease HoldDisplay()
+        {
+            if(disposed)throw new ObjectDisposedException(nameof(CameraRuntimeManager));
+            RejectForeignRendering();EnsureInstance();if(active==null&&displays.Count==0)Reset();
+            var lease=new DisplayLease(this);displays.Add(lease);instance.Instance.SetActive(true);return lease;
+        }
+        private void EnsureInstance()
+        {
+            if(instance!=null&&instance.Instance!=null)return;
+            instance?.Dispose();prefab=resources.GetShared<GameObject>("OlcaSystem/GameplayCamera");instance=resources.InstantiatePrefab("OlcaSystem/GameplayCamera",parent);instance.Instance.SetActive(false);
+        }
+        private void RejectForeignRendering()
+        {
+            var own=instance?.Instance;var camera=own!=null?own.GetComponent<Camera>():null;var listener=own!=null?own.GetComponent<AudioListener>():null;
+            if(UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None).Any(x=>x!=camera&&x.isActiveAndEnabled)||UnityEngine.Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None).Any(x=>x!=listener&&x.isActiveAndEnabled))throw new InvalidOperationException("既存カメラ/Listenerとの二重起動を拒否します");
+        }
+        private void ReleaseDisplay(DisplayLease value)
+        {
+            if(!displays.Remove(value))return;value.Detach();if(active==null&&displays.Count==0&&instance?.Instance!=null)instance.Instance.SetActive(false);
         }
         private void Reset()
         {
@@ -49,14 +77,14 @@ namespace Olca.Unity
         {
             if(!ReferenceEquals(active,value))return;
             // リセット失敗時は所有を保持してRetryReturnで再試行する。
-            Reset();active=null;value.Detach();
+            Reset();active=null;value.Detach();if(displays.Count!=0)instance.Instance.SetActive(true);
         }
         public void RetryReturn(){if(active!=null)Return(active);}
         public void Dispose()
         {
             if(disposed)return;disposed=true;
             try{active?.Dispose();}catch(Exception error){Debug.LogException(error);}
-            finally{active?.Detach();active=null;instance?.Dispose();instance=null;prefab=null;}
+            finally{foreach(var lease in displays)lease.Detach();displays.Clear();active?.Detach();active=null;instance?.Dispose();instance=null;prefab=null;}
         }
     }
 }

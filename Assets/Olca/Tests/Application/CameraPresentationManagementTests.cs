@@ -35,6 +35,21 @@ namespace Olca.Tests.Application
                 var next=cameras.Borrow(new object());Assert.AreEqual(id,next.Camera.GetInstanceID());Assert.AreNotEqual(Matrix4x4.identity,next.Camera.projectionMatrix);CollectionAssert.AreEqual(extra,next.Camera.GetComponents<MonoBehaviour>().Select(x=>JsonUtility.ToJson(x)).ToArray());rental.Dispose();Assert.IsTrue(cameras.IsBorrowed);next.Dispose();next.Dispose();Assert.IsFalse(cameras.IsBorrowed);Assert.AreEqual(1,resources.OwnedInstanceCount);
             } finally {UnityEngine.Object.DestroyImmediate(texture);}
         }
+        [Test] public void TitleDisplay_同じカメラを表示保持からHostへ渡し返却時だけ残存leaseへ戻す()
+        {
+            var display=cameras.HoldDisplay();var camera=Camera.main;Assert.NotNull(camera);Assert.AreEqual(0,camera.targetDisplay);Assert.IsTrue(camera.isActiveAndEnabled);Assert.IsFalse(cameras.IsBorrowed);
+            var second=cameras.HoldDisplay();Assert.AreSame(camera,Camera.main);Assert.AreEqual(1,resources.OwnedInstanceCount);
+            var host=cameras.Borrow(new object());Assert.AreSame(camera,host.Camera);display.Dispose();display.Dispose();Assert.IsTrue(camera.isActiveAndEnabled);
+            host.Dispose();Assert.IsTrue(camera.isActiveAndEnabled);Assert.IsFalse(cameras.IsBorrowed);second.Dispose();Assert.IsFalse(camera.gameObject.activeSelf);
+            using(var again=cameras.HoldDisplay()){Assert.AreSame(camera,Camera.main);var next=cameras.Borrow(new object());again.Dispose();Assert.IsTrue(camera.isActiveAndEnabled);next.Dispose();Assert.IsFalse(camera.gameObject.activeSelf);}
+        }
+        [Test] public void TitleDisplay_表示保持中も外部CameraListenerを拒否しManager終了後旧leaseは無害にする()
+        {
+            var display=cameras.HoldDisplay();var camera=Camera.main;var foreign=new GameObject("ForeignTitleCamera",typeof(Camera),typeof(AudioListener));
+            try{Assert.Throws<InvalidOperationException>(()=>cameras.HoldDisplay());Assert.Throws<InvalidOperationException>(()=>cameras.Borrow(new object()));foreign.GetComponent<Camera>().enabled=false;Assert.Throws<InvalidOperationException>(()=>cameras.Borrow(new object()));Assert.AreSame(camera,Camera.main);}
+            finally{UnityEngine.Object.DestroyImmediate(foreign);}
+            cameras.Dispose();display.Dispose();Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.Throws<ObjectDisposedException>(()=>cameras.HoldDisplay());
+        }
         [Test] public void Rental_外部カメラやListenerを重複生成しない()
         {
             var foreign=new GameObject("ForeignCamera",typeof(Camera),typeof(AudioListener));

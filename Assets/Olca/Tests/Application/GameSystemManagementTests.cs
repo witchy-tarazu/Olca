@@ -776,26 +776,40 @@ namespace Olca.Tests.Application
             Assert.IsFalse(model.IsPresented);
         }
 
-        [Test] public async Task 外界の専用壁モーションは六frameごとの二コマを同尺度アンカーで表示し閉鎖で表示参照を返す()
+        [TestCase(-1)][TestCase(1)] public async Task 外界壁ずりは下降二コマで壁蹴りは通常上昇姿勢を同尺度アンカーで表示し閉鎖で参照を返す(int side)
+        {
+            var session=system.OutsideExploration;var p=Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true);
+            if(side<0)p=new Olca.Core.Logic.Integration.OutsideTraversalProfile(p.Id,p.DashSpeedPerSecond,p.DashFrames,p.DashCooldownFrames,p.DashResetFrames,p.DashJumpSpeedPerSecond,p.BodyHalfWidth,p.BodyHeight,p.WallSlidePerFrame,p.WallKickVelocity,p.WallKickSpeedPerSecond,p.WallKickPushFrames,p.WallKickMotionFrames,true,new Olca.Core.Logic.Integration.OutsideValidationWall("left-wall",4*60000,0,1000*60000));Assert.IsTrue(session.TryConfigureTraversal(p));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var image=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var c=session.Core;
+                c.TickFrame(side,dashDown:true,dashHeld:true);view.Render();
+                var trails=view.GetComponentsInChildren<Image>(true).Where(i=>i.name.StartsWith("OutsideDashAfterimage",StringComparison.Ordinal)).ToArray();Assert.AreEqual(4,trails.Length);Assert.IsTrue(trails.Any(i=>i.enabled&&i.sprite!=null));
+                long dashFrame=c.Frame,dashX=c.Position;views.GetLayer("return-hub").CloseCurrent();foreach(var trail in trails){Assert.IsFalse(trail.enabled);Assert.IsNull(trail.sprite);Assert.IsFalse(trail.raycastTarget);}
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(dashFrame,c.Frame);Assert.AreEqual(dashX,c.Position);Assert.IsTrue(c.IsDashing);Assert.IsTrue(trails.Any(i=>i.enabled&&i.sprite!=null));
+                long wall=c.TraversalProfile.Walls[0].X-side*c.TraversalProfile.BodyHalfWidth;for(int i=0;i<300&&c.Position!=wall;i++)c.TickFrame(side);Assert.AreEqual(wall,c.Position);
+                c.TickFrame(side,true,true);view.Render();Assert.IsFalse(c.IsWallSliding);while(c.VerticalVelocity>=0)c.TickFrame(side,false,true);c.TickFrame(side,false,true);view.Render();var slide1=resources.GetShared<Sprite>("OlcaTraversal/WallSlide_01");Assert.AreSame(slide1,image.sprite);
+                Assert.AreEqual(new Vector2(128,14),image.sprite.pivot);Assert.AreEqual(100,image.sprite.pixelsPerUnit);Assert.AreEqual(new Vector2(256,256),image.sprite.rect.size);Assert.IsFalse(image.raycastTarget);
+                var size=image.rectTransform.sizeDelta;var pivot=image.rectTransform.pivot;
+                for(int i=0;i<6;i++)c.TickFrame(side,false,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallSlide_02"),image.sprite);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
+                c.TickFrame(side);long kickStartX=c.Position,kickStartY=c.Height;c.TickFrame(side,true,true);Assert.AreEqual(0,c.WallKickFrame);Assert.AreEqual(kickStartX-side*8000,c.Position);Assert.AreEqual(kickStartY+12000,c.Height);view.Render();var rise=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite;Assert.AreSame(rise,image.sprite);Assert.AreEqual(-c.Facing,image.rectTransform.localScale.x);Assert.AreEqual(rise.pivot/rise.rect.size,image.rectTransform.pivot);size=image.rectTransform.sizeDelta;pivot=image.rectTransform.pivot;
+                for(int i=0;i<6;i++)c.TickFrame(side,false,true);view.Render();Assert.AreSame(resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite,image.sprite);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
+                long frame=c.Frame,y=c.Height;views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue(slide1!=null);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(y,c.Height);
+                foreach(var trail in view.GetComponentsInChildren<Image>(true).Where(i=>i.name.StartsWith("OutsideDashAfterimage",StringComparison.Ordinal))){Assert.IsFalse(trail.enabled);Assert.IsNull(trail.sprite);Assert.IsFalse(trail.raycastTarget);}
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(y,c.Height);Assert.AreSame(resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite,image.sprite);
+                for(int i=0;i<12&&c.IsWallKicking;i++)c.TickFrame(0,false,true);Assert.IsFalse(c.IsWallKicking);view.Render();var source=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>();var expected=Math.Abs(c.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?source.AuthoredJumpApexSprite:c.VerticalVelocity>0?source.AuthoredJumpRiseSprite:source.AuthoredJumpFallSprite;Assert.AreSame(expected,image.sprite);Assert.AreEqual(-c.Facing,image.rectTransform.localScale.x);
+            }
+        }
+
+        [Test] public async Task 接地壁のShift中も実IdleClipの同じ位相を表示し固定立ち絵へ切り替えない()
         {
             var session=system.OutsideExploration;Assert.IsTrue(session.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true)));
             Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
             using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{})){
-                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var image=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var c=session.Core;
-                c.TickFrame(1,dashDown:true,dashHeld:true);view.Render();
-                var trails=view.GetComponentsInChildren<Image>(true).Where(i=>i.name.StartsWith("OutsideDashAfterimage",StringComparison.Ordinal)).ToArray();Assert.AreEqual(4,trails.Length);Assert.IsTrue(trails.Any(i=>i.enabled&&i.sprite!=null));
-                long dashFrame=c.Frame,dashX=c.Position;views.GetLayer("return-hub").CloseCurrent();foreach(var trail in trails){Assert.IsFalse(trail.enabled);Assert.IsNull(trail.sprite);Assert.IsFalse(trail.raycastTarget);}
-                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(dashFrame,c.Frame);Assert.AreEqual(dashX,c.Position);Assert.IsTrue(c.IsDashing);Assert.IsTrue(trails.Any(i=>i.enabled&&i.sprite!=null));
-                long wall=c.TraversalProfile.Walls[0].X-c.TraversalProfile.BodyHalfWidth;for(int i=0;i<300&&c.Position<wall;i++)c.TickFrame(1);Assert.AreEqual(wall,c.Position);
-                c.TickFrame(1,true,true);view.Render();var slide1=resources.GetShared<Sprite>("OlcaTraversal/WallSlide_01");Assert.AreSame(slide1,image.sprite);
-                Assert.AreEqual(new Vector2(128,14),image.sprite.pivot);Assert.AreEqual(100,image.sprite.pixelsPerUnit);Assert.AreEqual(new Vector2(256,256),image.sprite.rect.size);Assert.IsFalse(image.raycastTarget);
-                var size=image.rectTransform.sizeDelta;var pivot=image.rectTransform.pivot;
-                for(int i=0;i<6;i++)c.TickFrame(1,false,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallSlide_02"),image.sprite);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
-                c.TickFrame(1);c.TickFrame(1,true,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallKick_01"),image.sprite);Assert.AreEqual(c.Facing,image.rectTransform.localScale.x);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
-                for(int i=0;i<6;i++)c.TickFrame(1,false,true);view.Render();Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallKick_02"),image.sprite);Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreEqual(pivot,image.rectTransform.pivot);
-                long frame=c.Frame,y=c.Height;views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue(slide1!=null);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(y,c.Height);
-                foreach(var trail in view.GetComponentsInChildren<Image>(true).Where(i=>i.name.StartsWith("OutsideDashAfterimage",StringComparison.Ordinal))){Assert.IsFalse(trail.enabled);Assert.IsNull(trail.sprite);Assert.IsFalse(trail.raycastTarget);}
-                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(frame,c.Frame);Assert.AreEqual(y,c.Height);Assert.AreSame(resources.GetShared<Sprite>("OlcaTraversal/WallKick_02"),image.sprite);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var image=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var c=session.Core;long wall=c.TraversalProfile.Walls[0].X-c.TraversalProfile.BodyHalfWidth;for(int i=0;i<300&&c.Position<wall;i++)c.TickFrame(1);for(int i=0;i<8;i++)c.TickFrame(1);long idle=c.IdleFrame;
+                var sample=new GameObject("ExpectedIdle",typeof(SpriteRenderer),typeof(Animator));try{var renderer=sample.GetComponent<SpriteRenderer>();renderer.enabled=false;var animator=sample.GetComponent<Animator>();animator.enabled=false;animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;var clip=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredIdleClip;
+                    for(int i=0;i<12;i++){c.TickFrame(1,dashDown:i==0,dashHeld:true);view.Render();Assert.IsTrue(c.IsDashing);Assert.IsFalse(c.IsMoving);Assert.AreEqual(idle+i+1,c.IdleFrame);clip.SampleAnimation(sample,(float)((c.IdleFrame/60d)%clip.length));Assert.AreSame(renderer.sprite,image.sprite);Assert.AreEqual(-c.Facing,image.rectTransform.localScale.x);}
+                }finally{UnityEngine.Object.DestroyImmediate(sample);}
             }
         }
 

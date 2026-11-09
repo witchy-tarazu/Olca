@@ -63,7 +63,7 @@ namespace Olca.Core.Logic.Integration
     public sealed partial class OutsideExplorationCore
     {
         public OutsideTraversalProfile TraversalProfile {get;private set;}
-        private bool IsIdleMotion=>IsGrounded&&!IsMoving&&!IsDashing&&!IsWallKicking;
+        private bool IsIdleMotion=>IsGrounded&&!IsMoving&&!IsWallKicking;
         private long dashStartedAt=-1,dashEndsAt=-1,cooldownUntil=-1,lastDashAt=-1,wallKickAt=-1;
         private int consecutiveDashes,kickAway;private bool dashWasHeld;
         public bool IsDashing=>dashEndsAt>Frame;
@@ -130,7 +130,7 @@ namespace Olca.Core.Logic.Integration
         private void UpdateWallSlide(int horizontal)
         {
             bool prior=IsWallSliding;var p=TraversalProfile;var wall=ContactWall(horizontal,out int side);WallContactDirection=side;
-            IsWallSliding=!IsGrounded&&p!=null&&p.WallActionsUnlocked&&wall!=null&&wall.AllowsSlide&&horizontal==side&&horizontal!=0;
+            IsWallSliding=!IsGrounded&&VerticalVelocity<0&&p!=null&&p.WallActionsUnlocked&&wall!=null&&wall.AllowsSlide&&horizontal==side&&horizontal!=0;
             WallSlideFrame=IsWallSliding?prior?WallSlideFrame+1:0:0;
             if(IsWallSliding){IsDashJumping=false;VerticalVelocity=Math.Max(VerticalVelocity,-p.WallSlidePerFrame);}
         }

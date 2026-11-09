@@ -9,7 +9,7 @@ namespace Olca.Presentation.Exploration
     public sealed partial class OutsideExplorationView
     {
         private Sprite traversalDashSprite;
-        private Sprite[] wallSlideFrames,wallKickFrames;
+        private Sprite[] wallSlideFrames;
         private Olca.Unity.ResourceManager traversalResources;
         private OutsideTraversalProfile renderedTraversal;
         private readonly List<Image> wallImages=new List<Image>();
@@ -29,12 +29,10 @@ namespace Olca.Presentation.Exploration
                 if(wallSlideFrames==null)wallSlideFrames=new[]{traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_01"),traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_02")};
                 return wallSlideFrames[(int)(core.WallSlideFrame/6%wallSlideFrames.Length)];
             }
-            if(core.IsWallKicking){
-                if(wallKickFrames==null)wallKickFrames=new[]{traversalResources.GetShared<Sprite>("OlcaTraversal/WallKick_01"),traversalResources.GetShared<Sprite>("OlcaTraversal/WallKick_02")};
-                return wallKickFrames[Math.Min(wallKickFrames.Length-1,core.WallKickFrame/6)];
-            }
+            // 壁蹴り中も通常ジャンプの上昇姿勢を使う。専用PNGは保持するが表示には接続しない。
+            if(core.IsWallKicking)return riseSprite;
             // 地形で実際に停止している間は立ち姿。ダッシュの残時間や再開条件は変えない。
-            return core.IsDashing?core.IsMoving?traversalDashSprite:idleSprite:null;
+            return core.IsDashing&&core.IsMoving?traversalDashSprite:null;
         }
         private float ResolveVerticalViewOffset(OutsideExplorationCore core)
         {
@@ -85,7 +83,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){ClearTraversalDisplay();wallSlideFrames=wallKickFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){ClearTraversalDisplay();wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
