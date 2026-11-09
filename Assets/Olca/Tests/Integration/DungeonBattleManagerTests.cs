@@ -2576,6 +2576,7 @@ namespace Olca.Tests.Integration
         private readonly List<UnityEngine.GameObject> objects = new List<UnityEngine.GameObject>();
         private string directory;
         private FloorSequenceDefinitions definitions;
+        private float originalTimeScale;
         private sealed class FaultIo : Olca.Unity.CheckpointFileIo
         {
             public bool Fail;
@@ -2594,22 +2595,32 @@ namespace Olca.Tests.Integration
         private static Olca.Unity.FloorSequenceFileStore Store(Olca.Application.Dungeon.DungeonBattleController controller) => (Olca.Unity.FloorSequenceFileStore)Get(controller, "floorStore");
         private static DungeonConfig Empty(int cells) => new DungeonConfig("empty-" + cells, "終端fixture", cells,
             Enumerable.Range(0, cells).Select(i => new MapCell(i)).ToList());
-        [SetUp] public void Setup() { definitions = null; directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floor-controller-" + System.Guid.NewGuid().ToString("N")); }
+        [SetUp] public void Setup() { originalTimeScale = UnityEngine.Time.timeScale; definitions = null; directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "olca-floor-controller-" + System.Guid.NewGuid().ToString("N")); }
         [TearDown] public void Cleanup()
         {
-            foreach (var host in objects) if (host != null) {
-                // 非アクティブなfixtureのStartを手動実行したため、Unity任せではOnDestroyが届かない。
-                var controller=host.GetComponent<Olca.Application.Dungeon.DungeonBattleController>();
-                if(controller!=null) {
-                    ((Olca.Unity.UnityInputProvider)Get(controller,"inputProvider"))?.Dispose();
-                    Call(controller,"CancelExplorationResume");
-                    Call(controller,"ApplyUserPauseImmediate",false);
-                    ((Olca.Unity.UnityLogicalLoop)Get(controller,"explorationResumeLoop")).Dispose();
+            try
+            {
+                foreach (var host in objects) if (host != null) {
+                    // 非アクティブなfixtureのStartを手動実行したため、Unity任せではOnDestroyが届かない。
+                    var controller=host.GetComponent<Olca.Application.Dungeon.DungeonBattleController>();
+                    if(controller!=null) {
+                        ((Olca.Unity.UnityInputProvider)Get(controller,"inputProvider"))?.Dispose();
+                        Call(controller,"CancelExplorationResume");
+                        Call(controller,"ApplyUserPauseImmediate",false);
+                        ((Olca.Unity.UnityLogicalLoop)Get(controller,"explorationResumeLoop")).Dispose();
+                    }
+                    UnityEngine.Object.DestroyImmediate(host);
                 }
-                UnityEngine.Object.DestroyImmediate(host);
+                objects.Clear();
+                if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
             }
-            objects.Clear();
-            if (System.IO.Directory.Exists(directory)) System.IO.Directory.Delete(directory, true);
+            finally
+            {
+                // assert途中で退出しても、次fixtureへUserPauseのneutral待ちを残さない。
+                Olca.Unity.GameplayPause.SetPaused(false);Olca.Unity.GameplayPause.UpdateInputBarrier(false);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
+                UnityEngine.Time.timeScale=originalTimeScale;
+            }
         }
         private Olca.Application.Dungeon.DungeonBattleController Start(DungeonConfig[] maps = null, int? recoveryFrames = null, System.Action<Olca.Application.Dungeon.DungeonBattleController> configure = null, bool production = false, int simulationSeed = 7)
         {
@@ -3150,6 +3161,26 @@ namespace Olca.Tests.Integration
             Assert.IsTrue(SelectionButton(c,"CancelStyleSelection").gameObject.activeInHierarchy);
             KeyboardButton(c,"CancelStyleSelection");Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
             Assert.IsFalse((bool)Get(c,"styleSelectionOpen"));Assert.IsTrue(newGame.gameObject.activeSelf);Assert.IsTrue(collection.gameObject.activeSelf);
+            Assert.AreEqual(revision,c.PersistentProgress.Revision);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+        }
+        [Test]
+        public void 交換所表示中は残るcheckpointフラグで共通補助操作を出さず旧操作を拒否し戻れば復帰する()
+        {
+            var c=StartStyles(true);Set(c,"awaitingCheckpointChoice",true);
+            Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
+            var newGame=(UnityEngine.UI.Button)Get(c,"newGameButton");var collection=(UnityEngine.UI.Button)Get(c,"cardCollectionButton");
+            Assert.IsTrue(newGame.gameObject.activeSelf);Assert.IsTrue(collection.gameObject.activeSelf);
+            var oldNewGame=newGame.onClick;var oldCollection=collection.onClick;
+            KeyboardButton(c,"OpenTokenExchange");Assert.IsTrue((bool)Get(c,"exchangeOpen"));
+            // 初回在庫生成は既存の保存境界。その後の閲覧/取消の非書込を比較する。
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(store.ActivePath);long revision=c.PersistentProgress.Revision;
+            Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
+            Assert.IsFalse(newGame.gameObject.activeSelf,"交換所の見出しを共通NewGameで覆わない");
+            Assert.IsFalse(collection.gameObject.activeSelf,"交換所上へ共通図鑑を重ねない");
+            oldNewGame.Invoke();oldCollection.Invoke();
+            Assert.IsFalse((bool)Get(c,"progressDialogOpen"));Assert.IsFalse((bool)Get(c,"cardCollectionOpen"));Assert.IsTrue((bool)Get(c,"exchangeOpen"));
+            KeyboardButton(c,"CloseTokenExchange");Call(c,"RefreshProgressActions");Call(c,"UpdateViews");
+            Assert.IsFalse((bool)Get(c,"exchangeOpen"));Assert.IsTrue(newGame.gameObject.activeSelf);Assert.IsTrue(collection.gameObject.activeSelf);
             Assert.AreEqual(revision,c.PersistentProgress.Revision);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
         }
         [TestCase(false)][TestCase(true)]
@@ -3839,7 +3870,7 @@ namespace Olca.Tests.Integration
         }
 
         [Test]
-        public void 固有攻撃HUDは実タメ完了と保持再開を区別し補助案内に主操作を重複しない()
+        public void 固有攻撃HUDは実タメ完了とUserPause後ゼロ再開を区別し補助案内に主操作を重複しない()
         {
             var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
             battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
@@ -3850,11 +3881,81 @@ namespace Olca.Tests.Integration
             for(int f=1;f<60;f++)Tick(c,new LogicalInput { BasicAttackButton=true });
             Call(c,"RefreshBasicAttackHud");StringAssert.Contains("タメ完了",Text("BasicAttackState"));
             StringAssert.Contains("[Z]",Text("BasicAttackLabel"));Assert.IsFalse(Text("BasicAttackKey").Contains("[Z]"));
-            c.SetUserPaused(true);Call(c,"RefreshBasicAttackHud");StringAssert.Contains("60/60",Text("BasicAttackState"));
+            c.SetUserPaused(true);Call(c,"RefreshBasicAttackHud");StringAssert.Contains("ポーズ中",Text("BasicAttackState"));
+            var state=(Olca.Core.Logic.Battle.BasicAttackInputState)Get(c,"basicAttackInput");Assert.AreEqual(0,state.ChargeFrames,"12d: UserPauseはゼロに戻す");
             Assert.IsFalse(Text("BasicAttackState").Contains("離して攻撃"));c.SetUserPaused(false);
-            Olca.Unity.GameplayPause.UpdateInputBarrier(false);Olca.Unity.GameplayPause.AdvanceLogicalFrame();Olca.Unity.GameplayPause.AdvanceLogicalFrame();
-            Call(c,"RefreshBasicAttackHud");StringAssert.Contains("再押下",Text("BasicAttackState"));
-            Assert.AreEqual(60,((Olca.Core.Logic.Battle.BasicAttackInputState)Get(c,"basicAttackInput")).ChargeFrames);
+            Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});
+            Call(c,"RefreshBasicAttackHud");StringAssert.Contains("1/60",Text("BasicAttackState"));Assert.IsFalse(Text("BasicAttackState").Contains("再押下"));
+            Assert.AreEqual(1,state.ChargeFrames);
+        }
+        [Test]
+        public void 保持Basicだけneutral待ちから除き他key解放待ちと二frame保護の後にタメ中移動できる()
+        {
+            var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
+            battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
+            c.SetUserPaused(true);c.SetUserPaused(false);var original=battle.Player.GridPosition;
+            for(int i=0;i<3;i++){
+                Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true,AnyKeyExceptCharge=true,Horizontal=-1});
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);Assert.AreEqual(original,battle.Player.GridPosition);
+            }
+            Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true,AnyKeyExceptCharge=false});Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);
+            Olca.Unity.GameplayPause.AdvanceLogicalFrame();Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);
+            Olca.Unity.GameplayPause.AdvanceLogicalFrame();Assert.IsFalse(Olca.Unity.GameplayPause.InputBlocked);
+            Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true,Horizontal=-1,HorizontalDown=-1});
+            for(int i=0;i<8;i++)Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});
+            Assert.Less(battle.Player.GridPosition.X,original.X);Assert.IsTrue(((Olca.Core.Logic.Battle.BasicAttackInputState)Get(c,"basicAttackInput")).IsCharging);
+        }
+        [Test]
+        public void neutral待ち中にtouchcontextを準備し解除後の保持パッド新移動とカードをsnapshotで失わない()
+        {
+            var originalActive=Olca.Unity.UnityInputProvider.ActiveGamepadProfile;
+            var c=StartCombatDefaults(18,180);ToBattle(c);var battle=Model(c).CurrentBattle;
+            Assert.IsTrue(battle.CustomScreen.IsOpen);
+            var selected=battle.CustomScreen.CurrentHand.OrderBy(x=>x.GetFinalCost()).First();
+            Assert.IsTrue(battle.CustomScreen.TrySelectCard(selected));battle.CustomScreen.Confirm();
+            battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);battle.Player.SetInvincible(60000);
+            Assert.GreaterOrEqual(battle.CardUsage.RemainingCount,1,"自然handを確定した既存queueで新Card消費を検証する");
+            // 既存Session試験のview stubsを再利用し、通常製品で存在するsession配線を明示する。
+            var fixture=typeof(Olca.Tests.Application.BattleSessionControllerTests);
+            var session=new Olca.Application.Battle.BattleSessionController(
+                (Olca.Core.Interfaces.IBattleView)System.Activator.CreateInstance(fixture.GetNestedType("MockBattleView",System.Reflection.BindingFlags.NonPublic),true),
+                (Olca.Core.Interfaces.ICustomScreenView)System.Activator.CreateInstance(fixture.GetNestedType("MockCustomScreenView",System.Reflection.BindingFlags.NonPublic),true),new MockRandomProvider(0),new MockLogger());
+            session.Attach(battle);Set(c,"battleSession",session);
+            Assert.AreSame(battle,session.GetType().GetField("currentBattle",Hidden).GetValue(session));
+            Set(c,"battleFieldReady",true);Call(c,"RefreshTouchContext");
+            var provider=(Olca.Unity.UnityInputProvider)Get(c,"inputProvider");
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            var queue=new LogicalInputQueue();
+            void State(params UnityEngine.InputSystem.LowLevel.GamepadButton[] keys){var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in keys)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+            LogicalInput Read(){foreach(var value in provider.CaptureTimestamped())queue.Enqueue(1,value.Input);return queue.Take(1);}
+            try {
+                provider.CaptureTimestamped();State(UnityEngine.InputSystem.LowLevel.GamepadButton.West);Tick(c,Read());
+                c.SetUserPaused(true);Call(c,"RefreshTouchContext");c.SetUserPaused(false);
+                Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);Call(c,"RefreshTouchContext");
+                Assert.IsTrue((bool)provider.GetType().GetField("touchMovementEnabled",Hidden).GetValue(provider),"neutral待ちの間にcontextを安定させる");
+                Assert.IsFalse((bool)c.GetType().GetProperty("TouchCardAvailable",Hidden).GetValue(c));
+                Assert.IsFalse((bool)c.GetType().GetProperty("BasicAttackInputAvailable",Hidden).GetValue(c));
+                int remaining=battle.CardUsage.RemainingCount;long serial=battle.AttackActionSerial;var position=battle.Player.GridPosition;
+                Tick(c,Read());Assert.AreEqual(remaining,battle.CardUsage.RemainingCount);Assert.AreEqual(serial,battle.AttackActionSerial);Assert.AreEqual(position,battle.Player.GridPosition);
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);Call(c,"RefreshTouchContext");
+                Olca.Unity.GameplayPause.AdvanceLogicalFrame();Assert.IsFalse(Olca.Unity.GameplayPause.InputBlocked);Call(c,"RefreshTouchContext");
+                Assert.IsEmpty(provider.CaptureTimestamped(),"解除後にsnapshotを再発行しない");
+                State(UnityEngine.InputSystem.LowLevel.GamepadButton.West,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft);var movement=Read();
+                Assert.AreEqual(-1,movement.Horizontal);Assert.IsFalse(movement.BasicAttackButtonDown);Tick(c,movement);
+                for(int i=0;i<8;i++)Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});
+                Assert.Less(battle.Player.GridPosition.X,position.X);
+                for(int i=0;i<40&&battle.PlayerMovement.IsNormalMoving;i++)Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});
+                Assert.IsFalse(battle.PlayerMovement.IsNormalMoving,"位置確定と移動完了は別境界");
+                Assert.IsTrue(battle.CardUsage.CanUseCurrentCard,"カード入力前に通常使用条件を満たす");
+                Assert.AreSame(battle,session.GetType().GetField("currentBattle",Hidden).GetValue(session));
+                State(UnityEngine.InputSystem.LowLevel.GamepadButton.West,UnityEngine.InputSystem.LowLevel.GamepadButton.RightShoulder);var card=Read();
+                Assert.IsTrue(card.CardUseButtonDown);Assert.IsFalse(card.BasicAttackButtonDown);Tick(c,card);
+                for(int i=0;i<40;i++)Tick(c,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});
+                Assert.AreEqual(remaining-1,battle.CardUsage.RemainingCount,"freshCardは一度だけ実行し、context変更で捨てない");
+            } finally {
+                session.Detach();Set(c,"battleSession",null);UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);c.SetUserPaused(false);
+                var restore=new Olca.Unity.UnityInputProvider();try{Assert.IsTrue(restore.TryRestoreGamepadProfile(originalActive,out var error),error);}finally{restore.Dispose();}
+            }
         }
         [Test]
         public void 固有攻撃HUDは硬直取消可能なら再使用待ちと誤表示せずボタンと一致する()
@@ -5646,7 +5747,42 @@ namespace Olca.Tests.Integration
     public class GamepadGameplayInputTests
     {
         private static void State(UnityEngine.InputSystem.Gamepad pad,params UnityEngine.InputSystem.LowLevel.GamepadButton[] held)
-        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in held)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        {var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in held){if(key==UnityEngine.InputSystem.LowLevel.GamepadButton.RightTrigger)state.rightTrigger=1f;else if(key==UnityEngine.InputSystem.LowLevel.GamepadButton.LeftTrigger)state.leftTrigger=1f;else state=state.WithButton(key);}UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();}
+        [TestCase(false)][TestCase(true)]
+        public void 戦闘復帰の攻撃保持だけ中立待ちから除き新移動とカードを許可して偽押下を作らない(bool rebound)
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            var originalActive=Olca.Unity.UnityInputProvider.ActiveGamepadProfile;var provider=new Olca.Unity.UnityInputProvider();bool active=false;string context="battle";
+            var attack=rebound?UnityEngine.InputSystem.LowLevel.GamepadButton.RightTrigger:UnityEngine.InputSystem.LowLevel.GamepadButton.West;
+            try {
+                if(rebound){var edit=provider.GamepadProfile.BeginEdit();Assert.IsTrue(edit.TryAssign(("gamepad","battle","AttackPrimary"),"RightTrigger",out var error),error);Assert.IsTrue(provider.TryRestoreGamepadProfile(edit.Apply(),out error),error);}
+                provider.GamepadGameplayActive=()=>active;provider.GamepadContext=()=>context;
+                provider.StartEventCapture();provider.CaptureTimestamped();State(pad,attack);provider.CaptureTimestamped();provider.QueueSnapshot();
+                Assert.IsFalse(provider.CaptureTimestamped().Last().Input.BasicAttackButton);
+                provider.AllowChargeHoldGamepads();Assert.IsEmpty(provider.CaptureTimestamped());
+                State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);Assert.AreEqual(0,provider.CaptureTimestamped().Last().Input.Horizontal,"非gameplayは解除しない");
+                State(pad,attack);provider.CaptureTimestamped();active=true;context="exploration";provider.AllowChargeHoldGamepads();
+                State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);Assert.AreEqual(0,provider.CaptureTimestamped().Last().Input.Horizontal,"外界は従来neutral契約");
+                State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.South);provider.CaptureTimestamped();context="battle";provider.AllowChargeHoldGamepads();
+                State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.South,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);Assert.AreEqual(0,provider.CaptureTimestamped().Last().Input.Horizontal,"他button保持は解除しない");
+                var stickState=new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=UnityEngine.Vector2.right};
+                if(attack==UnityEngine.InputSystem.LowLevel.GamepadButton.RightTrigger)stickState.rightTrigger=1f;else stickState=stickState.WithButton(attack);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,stickState);UnityEngine.InputSystem.InputSystem.Update();provider.CaptureTimestamped();provider.AllowChargeHoldGamepads();
+                Assert.IsEmpty(provider.CaptureTimestamped());State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);Assert.AreEqual(0,provider.CaptureTimestamped().Last().Input.Horizontal,"stickが非neutralなら解除しない");
+                State(pad,attack);provider.CaptureTimestamped();provider.AllowChargeHoldGamepads();Assert.IsEmpty(provider.CaptureTimestamped(),"解除APIはeventを発行しない");
+                State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight);var move=provider.CaptureTimestamped().Last().Input;
+                Assert.AreEqual(1,move.Horizontal);Assert.IsTrue(move.BasicAttackButton);Assert.IsFalse(move.BasicAttackButtonDown||move.BasicAttackButtonUp,"filterの解除を新pressへ変えない");
+                State(pad,attack,UnityEngine.InputSystem.LowLevel.GamepadButton.RightShoulder);var card=provider.CaptureTimestamped().Last().Input;
+                Assert.IsTrue(card.CardUseButtonDown);Assert.IsFalse(card.BasicAttackButtonDown);
+                State(pad);var release=provider.CaptureTimestamped().Last().Input;Assert.IsTrue(release.BasicAttackButtonUp);Assert.IsFalse(release.BasicAttackButton);
+                State(pad);Assert.IsFalse(provider.CaptureTimestamped().Last().Input.BasicAttackButtonUp);
+            } finally {
+                provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);
+                var restore=new Olca.Unity.UnityInputProvider();
+                try{Assert.IsTrue(restore.TryRestoreGamepadProfile(originalActive,out var error),error);CollectionAssert.AreEquivalent(originalActive.Bindings,Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings);}
+                finally{restore.Dispose();}
+            }
+        }
         [Test]
         public void 仮想パッドのゲームボタンは既存の論理入力へ一度だけ立上り保持解放を送る()
         {
@@ -6052,6 +6188,312 @@ namespace Olca.Tests.Integration
         {
             var context=new Olca.Unity.SaveManager().OpenContext(directory,directory,System.IO.Path.Combine(directory,"progress"));var old=context.ExplorationDecks(null);var next=context.ExplorationDecks(System.Guid.NewGuid().ToString("N"));
             using(var session=new ExplorationDeckSession(old))Assert.IsTrue(session.Save(null,"旧",cards,owned));using(var session=new ExplorationDeckSession(next))Assert.IsEmpty(session.Snapshot.Decks);Assert.IsFalse(System.IO.Directory.Exists(next.DirectoryPath));Assert.Throws<System.ArgumentException>(()=>context.ExplorationDecks("../legacy"));
+        }
+    }
+}
+
+namespace Olca.Tests.Integration
+{
+    [TestFixture]
+    public class AttackReservationTests
+    {
+        private BattleSystem battle;
+        private Olca.Core.Logic.Battle.BasicAttackInputState input;
+        private Enemy target;
+        private int cardsStarted;
+        private LogicalInput held = new LogicalInput();
+        private sealed class ReservationCards : Olca.Core.Logic.CardEffects.ICardDatabase
+        { public Card Child; public Card GetCardById(string id) => Child != null && Child.Id == id ? Child : null; }
+        private ReservationCards database;
+        [SetUp] public void Setup()
+        {
+            target = new Enemy("reservation-target", "検証", 10000, ElementType.None, new Vector2Int(2,0));
+            target.ApplyStun(600000);
+            database = new ReservationCards();
+            battle = new BattleSystem(new PlayerCharacter(500,new Vector2Int(1,0),attackPower:10,staggerDurationFrames:3),
+                new List<Enemy>{target},new Deck(),cardDatabase:database);
+            input = new Olca.Core.Logic.Battle.BasicAttackInputState(); cardsStarted=0; held=new LogicalInput();
+            foreach(var id in new[]{"reservation-a","reservation-b"})battle.ConfigureCardAttackTiming(id,new PlayerAttackTiming(0,0));
+            battle.CardUsage.EnqueueCards(new List<Card>{Card("reservation-a"),Card("reservation-b")});
+        }
+        [TearDown] public void Cleanup() { input.Reset(); typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(battle,null); }
+        private static Card Card(string id) => new Card(id,"検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,20,"検証",Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single);
+        private void UseCard() { cardsStarted++; battle.CardUsage.TryUseCurrentCardAsync().Forget(); }
+        private void Step(LogicalInput value=null)
+        {
+            var next=value??held.Copy(); held=next.Copy();held.ClearEdges();
+            battle.RunLogicalFrame(()=>{input.ProcessInput(battle,next,3,1,2,UseCard);battle.TickFrame(17,next);});
+        }
+        private void StartRecovery(int cancel, int duration=20)
+        { battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(0,duration,cancel));Assert.IsTrue(battle.TryStartPlayerBasicAttack(false)); }
+        [Test]
+        public void 共通枠は第六境界で失効し保持解放でも元の期限を更新しない()
+        {
+            var slot=new AttackInputReservation();slot.Request(AttackReservationKind.Card,100);slot.Observe(105);Assert.AreEqual(AttackReservationKind.Card,slot.Kind);
+            slot.Observe(106);Assert.AreEqual(AttackReservationKind.None,slot.Kind);
+            slot.Request(AttackReservationKind.Basic,100);slot.Observe(120);Assert.AreEqual(AttackReservationKind.None,slot.Kind,"12d: 保持は予約期限の例外ではない");slot.Observe(120);Assert.AreEqual(AttackReservationKind.None,slot.Kind);
+            slot.Request(AttackReservationKind.Basic,100);slot.Observe(104);Assert.AreEqual(AttackReservationKind.Basic,slot.Kind);Assert.AreEqual(100,slot.RequestedFrame);slot.Observe(106);Assert.AreEqual(AttackReservationKind.None,slot.Kind);
+            slot.Request(AttackReservationKind.Card,200);slot.Observe(199);Assert.AreEqual(AttackReservationKind.None,slot.Kind);
+        }
+        [TestCase(5,1)][TestCase(6,0)]
+        public void 使用可能になる同じ更新の最速窓で一度だけ実行し第六境界なら失効する(int cancel,int expected)
+        {
+            StartRecovery(cancel);var first=battle.CardUsage.CurrentCard;Step(new LogicalInput{CardUseButtonDown=true});
+            Assert.AreEqual(2,battle.CardUsage.RemainingCount);Assert.AreSame(first,battle.CardUsage.CurrentCard,"予約時は消費しない");
+            for(int i=1;i<8;i++)Step();Assert.AreEqual(expected,cardsStarted);Assert.AreEqual(2-expected,battle.CardUsage.RemainingCount);
+        }
+        [Test]
+        public void 押し直しだけ期限を更新してキャンセル可能窓へつなぐ()
+        {
+            StartRecovery(6);Step(new LogicalInput{CardUseButtonDown=true});for(int i=0;i<3;i++)Step();
+            Step(new LogicalInput{CardUseButtonDown=true});Step();Assert.AreEqual(1,cardsStarted);Assert.AreEqual(1,battle.CardUsage.RemainingCount);
+            for(int i=0;i<20;i++)Step();Assert.AreEqual(1,cardsStarted);
+        }
+        [TestCase(100,200,AttackReservationKind.Basic)][TestCase(200,100,AttackReservationKind.Card)]
+        [TestCase(100,100,AttackReservationKind.Card)][TestCase(0,200,AttackReservationKind.Card)][TestCase(200,0,AttackReservationKind.Card)]
+        public void 同じframe内も既知時刻の後押しを優先し不明同値だけカードを優先する(long card,long basic,AttackReservationKind expected)
+        {
+            StartRecovery(10);Step(new LogicalInput{CardUseButtonDown=true,BasicAttackButtonDown=true,BasicAttackButton=true,CardUsePressedAt=card,BasicAttackPressedAt=basic});
+            Assert.AreEqual(expected,input.PendingAttack);Assert.AreEqual(0,cardsStarted);Assert.AreEqual(0,input.ChargeFrames);
+        }
+        [Test]
+        public void 共通一枠は後入力で上書きし保持タメはカード後に量ゼロから再開する()
+        {
+            StartRecovery(5);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Assert.IsTrue(input.IsChargeStartPending);
+            Step(new LogicalInput{CardUseButtonDown=true,BasicAttackButton=true});Assert.AreEqual(AttackReservationKind.Card,input.PendingAttack);Assert.IsTrue(input.IsChargeStartPending,"12d: 物理保持はCard予約と独立");
+            for(int i=0;i<3;i++)Step();Assert.AreEqual(1,cardsStarted);Assert.AreEqual(1,input.ChargeFrames);
+        }
+        [Test]
+        public void タメ待ちは期限超過でも蓄積せず後隙を打ち切らず終了境界で初めて蓄積する()
+        {
+            StartRecovery(2,12);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            for(int i=1;i<11;i++){Step();Assert.AreEqual(0,input.ChargeFrames);Assert.IsTrue(battle.HasPlayerAction);Assert.AreEqual(1,battle.AttackActionSerial);}
+            Step();Assert.IsFalse(battle.HasPlayerAction);Assert.IsTrue(input.IsCharging);Assert.AreEqual(1,input.ChargeFrames);
+            Step();Step();Assert.AreEqual(3,input.ChargeFrames);Step(new LogicalInput{BasicAttackButtonUp=true});Assert.AreEqual(9970,target.CurrentHp);
+        }
+        [Test]
+        public void 期限内に離せば元の期限の通常攻撃として最速窓で発動する()
+        {
+            StartRecovery(4,12);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step(new LogicalInput{BasicAttackButtonUp=true});
+            Assert.AreEqual(0,input.ChargeFrames);Step();Step();Assert.AreEqual(2,battle.AttackActionSerial);Assert.AreEqual(9980,target.CurrentHp);
+        }
+        [Test]
+        public void 期限外でタメ開始前に離すと通常攻撃へ転用しない()
+        {
+            StartRecovery(2,15);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});for(int i=0;i<7;i++)Step();
+            Step(new LogicalInput{BasicAttackButtonUp=true});for(int i=0;i<20;i++)Step();Assert.AreEqual(1,battle.AttackActionSerial);Assert.AreEqual(9990,target.CurrentHp);Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);
+        }
+        [TestCase("pause")][TestCase("custom")][TestCase("stagger")][TestCase("paralysis")]
+        public void 状態変化は間に入力処理がなくても古い予約を取消す(string reason)
+        {
+            StartRecovery(4);Step(new LogicalInput{CardUseButtonDown=true});
+            if(reason=="pause"){battle.Pause(BattlePauseReason.User);battle.Resume(BattlePauseReason.User);}
+            if(reason=="custom"){battle.Pause(BattlePauseReason.CustomScreen);battle.Resume(BattlePauseReason.CustomScreen);}
+            if(reason=="stagger")battle.Player.TakeDamage(1,poiseDamage:30);
+            if(reason=="paralysis"){battle.Player.ApplyParalysis(3);battle.TickFrame(17);}
+            for(int i=0;i<25;i++)Step();Assert.AreEqual(0,cardsStarted);Assert.AreEqual(2,battle.CardUsage.RemainingCount);
+        }
+        [Test]
+        public void のけぞりや通常移動や単なる再使用待ちでは先行入力を受け付けない()
+        {
+            battle.Player.TakeDamage(1,poiseDamage:30);Step(new LogicalInput{CardUseButtonDown=true,BasicAttackButtonDown=true,BasicAttackButton=true});
+            Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);for(int i=0;i<10;i++)Step(new LogicalInput());Assert.AreEqual(0,cardsStarted);
+            battle.TickFrame(17,new LogicalInput{Horizontal=-1});Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true});Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);
+        }
+        [Test]
+        public void キューを破棄し別カードを登録しても古い予約を新キューへ適用しない()
+        {
+            StartRecovery(4);Step(new LogicalInput{CardUseButtonDown=true});battle.CardUsage.Clear();
+            var next=Card("replacement");battle.CardUsage.EnqueueCards(new List<Card>{next});
+            for(int i=0;i<8;i++)Step();Assert.AreEqual(0,cardsStarted);Assert.AreSame(next,battle.CardUsage.CurrentCard);
+        }
+        [Test]
+        public void 先行カードと後押し固有攻撃が同frameでも旧タメ量を引き継がない()
+        {
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step();Assert.AreEqual(2,input.ChargeFrames);
+            Step(new LogicalInput{CardUseButtonDown=true,CardUsePressedAt=100,BasicAttackButtonDown=true,BasicAttackButton=true,BasicAttackPressedAt=200});
+            Assert.AreEqual(1,input.ChargeFrames);Assert.AreEqual(0,cardsStarted);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 神憑変更で旧前隙を取消してから新しい入力を判定する(bool card)
+        {
+            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(12,20,4));Assert.IsTrue(battle.TryStartPlayerBasicAttack(false));Step();
+            battle.Transformations.Configure(new[]{new TransformationDefenseDefinition("reservation-form",ElementResistances.Neutral,ElementType.Water,
+                attack:new TransformationAttackDefinition(ElementType.Fire,timing:new PlayerAttackTiming(3,8,4)))});
+            battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);battle.OpenCustomScreen(new MockRandomProvider());
+            Assert.IsTrue(battle.Transformations.TryPreview("reservation-form"));battle.CustomScreen.Confirm();battle.CustomScreen.Close();
+            Step(card?new LogicalInput{CardUseButtonDown=true}:new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true});
+            Assert.AreEqual(2,battle.AttackActionSerial);Assert.AreEqual(card?1:0,cardsStarted);Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);
+        }
+        [Test]
+        public void 後隙なし攻撃の前隙でも予約でき終了した同じframeで発動する()
+        {
+            battle.ConfigureBasicAttackTiming(new PlayerAttackTiming(4,0));Assert.IsTrue(battle.TryStartPlayerBasicAttack(false));
+            Assert.AreEqual(PlayerAttackPhase.Startup,battle.PlayerActionPhase);Step(new LogicalInput{CardUseButtonDown=true});
+            Step();Step();Assert.AreEqual(0,cardsStarted);Step();Assert.AreEqual(1,cardsStarted);Assert.AreEqual(9970,target.CurrentHp);
+        }
+        [Test]
+        public void 同期派生待ちの動作中も予約でき遅延効果更新で終了した同じframeに発動する()
+        {
+            // 独立飛翔物は待機対象ではない。既存の同期ChainCardの前隙を追跡する。
+            database.Child=new Card("reservation-child","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,0,"検証",startupFrames:3,recoveryFrames:0);
+            var modifier=new CardModifier();modifier.AdditionalEffects.Add(new AdditionalEffect{EffectType=AdditionalEffectType.ChainCard,
+                Trigger=DerivativeTrigger.Immediate,ChainCardId=database.Child.Id,Power=100});
+            var executing=new Card("reservation-executing","検証",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Canon,20,"検証",
+                Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single,modifier:modifier,extendRecoveryDuringDerivative:true,startupFrames:0,recoveryFrames:0);
+            battle.CardUsage.EnqueueCards(new List<Card>{executing,Card("reservation-a")});battle.CardUsage.TryUseCurrentCardAsync().Forget();
+            Assert.AreEqual(PlayerAttackPhase.Executing,battle.PlayerActionPhase);Step(new LogicalInput{CardUseButtonDown=true});
+            Assert.AreEqual(0,cardsStarted);Step();Assert.AreEqual(0,cardsStarted);Step();Assert.AreEqual(1,cardsStarted);Assert.AreEqual(0,battle.CardUsage.RemainingCount);
+        }
+        [Test]
+        public void Reset後の旧戦闘更新から予約を実行せず新しい戦闘に購読を重複させない()
+        {
+            StartRecovery(4);Step(new LogicalInput{CardUseButtonDown=true});input.Reset();for(int i=0;i<10;i++)battle.TickFrame(17);
+            Assert.AreEqual(0,cardsStarted);Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButtonUp=true});Assert.AreEqual(2,battle.AttackActionSerial);
+        }
+        [Test]
+        public void 入力予約とタメ待ちの結果は三十六十百二十描画と追いつきで一致する()
+        {
+            List<string> Trace(int fps)
+            {
+                input.Reset();typeof(BattleSystem).GetMethod("AbandonForCheckpoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(battle,null);Setup();
+                StartRecovery(4,12);var clock=new LogicalFrameClock();var result=new List<string>();long wall=0;
+                void Run(long frame,int ms)
+                {
+                    var value=new LogicalInput{BasicAttackButton=frame>=1&&frame<18,BasicAttackButtonDown=frame==1,BasicAttackButtonUp=frame==18,
+                        CardUseButtonDown=frame==24||frame==27};
+                    Step(value);result.Add(battle.LogicalFrame+":"+battle.AttackActionSerial+":"+input.PendingAttack+":"+input.ChargeFrames+":"+target.CurrentHp+":"+battle.CardUsage.RemainingCount);
+                }
+                if(fps==0){clock.Accumulate(LogicalFrameClock.WallTicksPerSecond);clock.Drain(Run);}
+                else for(int i=1;clock.Frame<60;i++){long next=(long)i*LogicalFrameClock.WallTicksPerSecond/fps;clock.Accumulate(next-wall);wall=next;clock.Drain(Run);}
+                return result.Take(60).ToList();
+            }
+            var expected=Trace(60);CollectionAssert.AreEqual(expected,Trace(30));CollectionAssert.AreEqual(expected,Trace(120));CollectionAssert.AreEqual(expected,Trace(0));
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Basic局所取消はBasic待機だけ取消し後押しCardの予約を壊さない(bool card)
+        {
+            StartRecovery(4);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            if(card)Step(new LogicalInput{CardUseButtonDown=true,BasicAttackButton=true});
+            input.CancelBasicInput();Assert.AreEqual(card?AttackReservationKind.Card:AttackReservationKind.None,input.PendingAttack);
+            for(int i=0;i<5;i++)Step(new LogicalInput());Assert.AreEqual(card?1:0,cardsStarted);Assert.AreEqual(0,input.ChargeFrames);
+        }
+        [Test]
+        public void 生成時刻不明のUI併合をqueue時刻や併合順で既知へ読み替えない()
+        {
+            Assert.AreEqual(0,LogicalInputQueue.MergeAttackTimestamp(true,100,true,0));
+            Assert.AreEqual(0,LogicalInputQueue.MergeAttackTimestamp(true,0,true,200));
+            Assert.AreEqual(200,LogicalInputQueue.MergeAttackTimestamp(false,0,true,200));
+            Assert.AreEqual(200,LogicalInputQueue.MergeAttackTimestamp(true,200,false,0));
+        }
+        [TestCase(false)][TestCase(true)]
+        public void ゲージ不足でCustomを開けなかった入力だけでは予約を取り消さない(bool basic)
+        {
+            StartRecovery(4);Step(basic?new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true}:new LogicalInput{CardUseButtonDown=true});
+            Assert.IsFalse(battle.CustomGauge.IsFull);battle.OpenCustomScreen(new MockRandomProvider());Assert.IsFalse(battle.CustomScreen.IsOpen);
+            Step(new LogicalInput{CustomScreenButtonDown=true,BasicAttackButton=basic});
+            Assert.AreEqual(basic?AttackReservationKind.Basic:AttackReservationKind.Card,input.PendingAttack);
+            if(basic){for(int i=0;i<18;i++)Step();Assert.IsTrue(input.IsCharging);Assert.AreEqual(1,input.ChargeFrames);Assert.AreEqual(0,cardsStarted);}
+            else {Step();Step();Assert.AreEqual(1,cardsStarted);Assert.AreEqual(1,battle.CardUsage.RemainingCount);}
+        }
+        [Test]
+        public void 保持中も通常予約は第六境界で失効するが後隙終了まで独立して待つ()
+        {
+            StartRecovery(1,12);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});
+            for(int i=0;i<6;i++)Step();Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);
+            Assert.IsTrue(input.IsChargeStartPending);Assert.AreEqual(0,input.ChargeFrames);Assert.AreEqual(1,battle.AttackActionSerial);
+            for(int i=0;i<5;i++)Step();Assert.IsFalse(battle.HasPlayerAction);Assert.AreEqual(1,input.ChargeFrames);
+            Step();Assert.AreEqual(2,input.ChargeFrames,"複数のframe hookで二重加算しない");
+        }
+        [Test]
+        public void カード後も物理保持があれば新押下なしで攻撃全体終了からタメを開始する()
+        {
+            battle.ConfigureCardAttackTiming("reservation-a",new PlayerAttackTiming(0,10,1));
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step();Assert.AreEqual(2,input.ChargeFrames);
+            Step(new LogicalInput{CardUseButtonDown=true,BasicAttackButton=true});Assert.AreEqual(0,input.ChargeFrames);
+            long cardAction=battle.AttackActionSerial;
+            for(int i=0;i<12&&battle.HasPlayerAction;i++){Step();Assert.AreEqual(cardAction,battle.AttackActionSerial);if(battle.HasPlayerAction)Assert.AreEqual(0,input.ChargeFrames);}
+            Assert.IsFalse(battle.HasPlayerAction);
+            Assert.AreEqual(1,input.ChargeFrames);Step();Assert.AreEqual(2,input.ChargeFrames);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 被弾や麻痺の終了した同frameに保持からゼロ再開し旧量を引継がない(bool paralysis)
+        {
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step();Assert.AreEqual(2,input.ChargeFrames);
+            if(paralysis)battle.Player.ApplyParalysis(3);else battle.Player.TakeDamage(1,poiseDamage:30);
+            for(int i=0;i<12;i++)
+            {
+                Step();
+                if(input.IsCharging){Assert.IsFalse(battle.Player.IsActionPrevented);Assert.AreEqual(1,input.ChargeFrames);Step();Assert.AreEqual(2,input.ChargeFrames);return;}
+                Assert.AreEqual(0,input.ChargeFrames);
+            }
+            Assert.Fail("有限frame内に自然状態回復と保持再開が必要");
+        }
+        [Test]
+        public void UserPauseは量をゼロにし保持sampleで新押下なしに再開する()
+        {
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step();
+            battle.Pause(BattlePauseReason.User);Assert.AreEqual(0,input.ChargeFrames);Assert.AreEqual(AttackReservationKind.None,input.PendingAttack);
+            battle.Resume(BattlePauseReason.User);
+            Step(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});Assert.AreEqual(1,input.ChargeFrames);
+            Step(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});Assert.AreEqual(2,input.ChargeFrames);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Customは従来量を保持し閉鎖後保持なら再開し解放だけでは発射しない(bool release)
+        {
+            Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step();Assert.AreEqual(2,input.ChargeFrames);
+            battle.Pause(BattlePauseReason.CustomScreen);Assert.AreEqual(2,input.ChargeFrames);
+            // 開閉中のheld sampleもCoreへ渡る。解放をDownに読み替えない。
+            Step(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=!release});
+            battle.Resume(BattlePauseReason.CustomScreen);
+            Step(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=!release,BasicAttackButtonUp=release});
+            Assert.AreEqual(release?0:3,input.ChargeFrames);Assert.AreEqual(0,battle.AttackActionSerial);Assert.AreEqual(10000,target.CurrentHp);
+        }
+        [Test]
+        public void raw保持だけの変化も通常replayへ入りqueue複製とedge消去で落ちない()
+        {
+            var q=new LogicalInputQueue();q.Enqueue(1,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});
+            Assert.IsTrue(q.Take(1).ChargeHoldButton);Assert.IsTrue(q.Take(2).ChargeHoldButton);
+            q.Enqueue(3,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=false});Assert.IsFalse(q.Take(3).ChargeHoldButton);
+            using(var loop=new Olca.Unity.UnityLogicalLoop())
+            {
+                var seen=new List<LogicalInput>();
+                loop.Advance(0,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},(f,ms,v)=>seen.Add(v.Copy()));
+                loop.Advance(LogicalFrameClock.WallTicksPerSecond,null,(f,ms,v)=>seen.Add(v.Copy()));
+                Assert.IsTrue(seen.Last().ChargeHoldButton);seen.Clear();
+                loop.Advance(0,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true,AnyKeyExceptCharge=true},(f,ms,v)=>seen.Add(v.Copy()));
+                loop.Advance(LogicalFrameClock.WallTicksPerSecond,null,(f,ms,v)=>seen.Add(v.Copy()));Assert.IsTrue(seen.Last().AnyKeyExceptCharge);seen.Clear();
+                loop.Advance(0,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true,AnyKeyExceptCharge=false},(f,ms,v)=>seen.Add(v.Copy()));
+                loop.Advance(LogicalFrameClock.WallTicksPerSecond,null,(f,ms,v)=>seen.Add(v.Copy()));Assert.IsFalse(seen.Last().AnyKeyExceptCharge);seen.Clear();
+                loop.Advance(0,new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=false},(f,ms,v)=>seen.Add(v.Copy()));
+                loop.Advance(LogicalFrameClock.WallTicksPerSecond,null,(f,ms,v)=>seen.Add(v.Copy()));
+                Assert.IsTrue(seen.Last().HasChargeHoldSample);Assert.IsFalse(seen.Last().ChargeHoldButton);seen.Clear();
+                loop.Advance(0,new LogicalInput(),(f,ms,v)=>seen.Add(v.Copy()));
+                loop.Advance(LogicalFrameClock.WallTicksPerSecond,null,(f,ms,v)=>seen.Add(v.Copy()));Assert.IsFalse(seen.Last().HasChargeHoldSample);
+            }
+        }
+        [Test]
+        public void raw保持再開後の実解放は通常edgeなしでも一度だけ発射する()
+        {
+            for(int i=0;i<3;i++)Step(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true});Assert.AreEqual(3,input.ChargeFrames);
+            Step(new LogicalInput{HasChargeHoldSample=true});Assert.AreEqual(9980,target.CurrentHp);long serial=battle.AttackActionSerial;
+            for(int i=0;i<5;i++)Step(new LogicalInput{HasChargeHoldSample=true});Assert.AreEqual(serial,battle.AttackActionSerial);
+        }
+        [Test]
+        public void 論理frameを進めない集計wrapperだけでは保持タメを開始しない()
+        {
+            StartRecovery(1,2);Step(new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true});Step();Assert.IsTrue(input.IsCharging);
+            input.CancelCharge();long frame=battle.LogicalFrame;battle.RunLogicalFrame(()=>{});
+            Assert.AreEqual(frame,battle.LogicalFrame);Assert.AreEqual(0,input.ChargeFrames);Assert.IsFalse(input.IsCharging);
+            Step();Assert.AreEqual(1,input.ChargeFrames);
+        }
+        [Test]
+        public void キューは同frameの両操作の時刻を保存し解放後へedge時刻を残さない()
+        {
+            var q=new LogicalInputQueue();q.Enqueue(1,new LogicalInput{CardUseButtonDown=true,CardUsePressedAt=100});q.Enqueue(1,new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true,BasicAttackPressedAt=200});
+            var merged=q.Take(1);Assert.AreEqual(100,merged.CardUsePressedAt);Assert.AreEqual(200,merged.BasicAttackPressedAt);StartRecovery(10);Step(merged);Assert.AreEqual(AttackReservationKind.Basic,input.PendingAttack);
+            var next=q.Take(2);Assert.AreEqual(0,next.CardUsePressedAt);Assert.AreEqual(0,next.BasicAttackPressedAt);Assert.IsFalse(next.CardUseButtonDown);Assert.IsFalse(next.BasicAttackButtonDown);
         }
     }
 }

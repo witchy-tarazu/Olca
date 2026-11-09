@@ -399,7 +399,13 @@ namespace Olca.Presentation.Dungeon
                 label.rectTransform.anchoredPosition=new Vector2((left+right)/2,label.rectTransform.anchoredPosition.y);label.rectTransform.sizeDelta=new Vector2(right-left-inset,label.rectTransform.sizeDelta.y);
             }
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
-            Fit("ReturnSummary",270,110,stats,140);
+            // 書体による行高の差を吸収し、保存済み案内の3行目も一覧の上端までに収める。
+            float summaryHeight=Mathf.Clamp(Mathf.Ceil(stats.preferredHeight)+24,110,140);
+            float summaryY=325-summaryHeight/2;
+            stats.resizeTextForBestFit=true;stats.resizeTextMinSize=22;stats.resizeTextMaxSize=26;
+            stats.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,summaryHeight-20);
+            stats.rectTransform.anchoredPosition=new Vector2(stats.rectTransform.anchoredPosition.x,summaryY);
+            Fit("ReturnSummary",summaryY,summaryHeight,stats,140);
         }
         private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
@@ -572,7 +578,7 @@ namespace Olca.Presentation.Dungeon
                 CommerceFace("ReturnSummary",0,270,1760,110);
                 var homeStats=Text("HomeStats", collectionOnly ? $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\n所持カードは攻略中に消費・減少しません。" : $"Lv {profile.Level}　総経験値 {profile.Experience}　トークン {profile.Tokens}\nHP {profile.ReturnedHp}/{flow.ReturnedMaxHp}　攻撃 {flow.ReturnedAttack}{(flow.Outcome == RunReturnOutcome.Cleared ? "\nカード・経験値は保存済みです。" : "")}", 0, 270, 1620, 90, 26);homeStats.alignment=TextAnchor.MiddleLeft;
                 int pages = Math.Max(1, (profile.Owned.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
-                Text("OwnedTitle","永続所持カード",-135,155,1150,32,24).alignment=TextAnchor.MiddleLeft;Text("OwnedQuantityHeading","マイスウ",565,155,170,32,22);
+                Text("OwnedTitle","永続所持カード",-135,155,1150,40,24).alignment=TextAnchor.MiddleLeft;Text("OwnedQuantityHeading","マイスウ",565,155,170,32,22);
                 for (int row = 0; row < PageSize && page * PageSize + row < profile.Owned.Length; row++) {
                     var card = profile.Owned[page * PageSize + row];
                     float y=120-row*56;int index=page*PageSize+row;var detail=resolveOwned?.Invoke(card);
@@ -732,7 +738,7 @@ namespace Olca.Presentation.Dungeon
                 int firstChild=content.transform.childCount;int slot=i;float y=286-rowHeight/2-i*rowHeight;var option=details!=null&&i<details.Count?details[i]:null;
                 var button=Button("VisitOption_"+i,option==null?(selected==i?"［選択中］ ":"")+names[i]:"",0,y,1660,rowHeight-16,()=>choose(slot));button.interactable=!blocked&&enabled[i];
                 if(option!=null){
-                    var card=option.Card;bool descriptionVisible=card!=null;float nameHeight=descriptionVisible?Mathf.Min(64,Mathf.Max(44,rowHeight*.38f)):Mathf.Max(40,rowHeight-32);float descriptionHeight=Mathf.Min(52,Mathf.Max(26,rowHeight-40-nameHeight-6));float labelY=descriptionVisible?rowHeight/2-20-nameHeight/2:0;float descriptionY=-rowHeight/2+20+descriptionHeight/2;
+                    var card=option.Card;bool descriptionVisible=card!=null;float nameHeight=descriptionVisible?Mathf.Min(64,Mathf.Max(44,rowHeight*.38f)):Mathf.Max(40,rowHeight-32);float descriptionHeight=Mathf.Min(52,Mathf.Max(32,rowHeight-40-nameHeight-6));float labelY=descriptionVisible?rowHeight/2-20-nameHeight/2:0;float descriptionY=-rowHeight/2+20+descriptionHeight/2;
                     var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(option.Label);label.alignment=TextAnchor.MiddleLeft;label.fontSize=30;label.resizeTextMaxSize=30;label.rectTransform.sizeDelta=new Vector2(980,nameHeight);label.rectTransform.anchoredPosition=new Vector2(-150,labelY);
                     var price=Text("VisitPrice_"+i,$"{option.Price} 通貨",590,y+labelY,400,nameHeight,30);price.alignment=TextAnchor.MiddleRight;price.resizeTextForBestFit=true;price.resizeTextMinSize=20;price.resizeTextMaxSize=30;
                     string state=purchased!=null&&i<purchased.Count&&purchased[i]?"購入済み":selected==i?"選択中":"";var stateLabel=Text("VisitState_"+i,state,590,y+descriptionY,400,32,22);stateLabel.alignment=TextAnchor.MiddleRight;
@@ -783,8 +789,8 @@ namespace Olca.Presentation.Dungeon
                 int index=removalPage*rows+row;float y=254-row*96;var card=cards!=null&&index<cards.Count?cards[index]:null;
                 var button=Button("RemovalCard_"+index,card==null?(selected[index]?"［削除対象］ ":"")+names[index]:"",0,y,1660,88,()=>choose(index));button.interactable=!blocked;
                 if(card!=null){var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name+new string('★',(int)card.ExceedLevel));label.alignment=TextAnchor.MiddleLeft;label.fontSize=28;label.resizeTextMaxSize=28;label.rectTransform.anchoredPosition=new Vector2(-120,14);label.rectTransform.sizeDelta=new Vector2(980,40);
-                    var provenance=Text("RemovalOrigin_"+index,obtained!=null&&index<obtained.Count&&obtained[index]?"攻略中取得・持帰り履歴は保持":"持込・永続所持は保持",-120,y-22,980,24,20);provenance.alignment=TextAnchor.MiddleLeft;
-                    Text("RemovalCost_"+index,$"コスト {card.GetFinalCost()}",620,y+14,330,28,22).alignment=TextAnchor.MiddleRight;Text("RemovalPower_"+index,$"威力 {card.GetFinalPower()}",620,y-14,330,28,22).alignment=TextAnchor.MiddleRight;
+                    var provenance=Text("RemovalOrigin_"+index,obtained!=null&&index<obtained.Count&&obtained[index]?"攻略中取得・持帰り履歴は保持":"持込・永続所持は保持",-120,y-22,980,32,20);provenance.alignment=TextAnchor.MiddleLeft;
+                    Text("RemovalCost_"+index,$"コスト {card.GetFinalCost()}",620,y+14,330,36,22).alignment=TextAnchor.MiddleRight;Text("RemovalPower_"+index,$"威力 {card.GetFinalPower()}",620,y-14,330,36,22).alignment=TextAnchor.MiddleRight;
                     var sprite=icon?.Invoke(card);if(sprite!=null)CollectionIcon("RemovalCardIcon_"+index,card,-790,y,56,_=>sprite);
                     var state=Text("RemovalState_"+index,selected[index]?"削除対象":"",-690,y,132,40,21);state.color=new Color(.50f,.19f,.10f,1);
                 }
@@ -812,7 +818,7 @@ namespace Olca.Presentation.Dungeon
             var explanation=Text("ExchangeBalance",error??"永続所持へ交換 / ランダム商品は帰還時に更新。任意の再抽選はできません。",0,345,1750,65,24);explanation.color=Color.white;AddOverflowTextDetails(explanation,error==null?"コウカンのセツメイ":"ホゾンエラー");
             var offers=profile.ExchangeStock?.Offers??Array.Empty<ExchangeOfferData>();const int rows=5;int pages=Math.Max(1,(offers.Length+rows-1)/rows);exchangePage=Math.Min(exchangePage,pages-1);
             int shown=Math.Min(rows,Math.Max(0,offers.Length-exchangePage*rows));float bottom=shown>0?205-(shown-1)*90-70:50;CommerceFace("ExchangeBody",0,(310+bottom)/2,1760,310-bottom);
-            Text("ExchangeCardColumn","カード",-290,280,850,30,22).alignment=TextAnchor.MiddleLeft;Text("ExchangePriceColumn","カカク",330,280,260,30,22).alignment=TextAnchor.MiddleRight;Text("ExchangeStateColumn","ショジ / セイゲン",650,280,350,30,22).alignment=TextAnchor.MiddleRight;
+            Text("ExchangeCardColumn","カード",-290,280,850,36,22).alignment=TextAnchor.MiddleLeft;Text("ExchangePriceColumn","カカク",330,280,260,36,22).alignment=TextAnchor.MiddleRight;Text("ExchangeStateColumn","ショジ / セイゲン",650,280,350,36,22).alignment=TextAnchor.MiddleRight;
             for(int row=0;row<rows&&exchangePage*rows+row<offers.Length;row++){
                 var item=offers[exchangePage*rows+row];var ownedMatches=profile.Owned.Where(c=>c.Id==item.CardId&&c.Level==item.Level&&c.Name==item.Name&&c.Rarity==item.Rarity&&(item.CardDefinitionHash==null||c.DefinitionHash==item.CardDefinitionHash)).ToArray();int owned=ownedMatches.Length==1?ownedMatches[0].Count:0;
                 long total=(profile.ExchangeTotals??Array.Empty<ExchangePurchaseTotal>()).SingleOrDefault(t=>t.ProductId==item.Id)?.Count??0;
@@ -822,8 +828,8 @@ namespace Olca.Presentation.Dungeon
                 var b=Button("ExchangeOffer_"+item.Id,state+CustomizationMenuElements.ShortName(item.Name,36)+new string('★',(int)item.Level),0,y,1730,76,()=>choose(item.Id));
                 var name=b.GetComponentInChildren<UnityEngine.UI.Text>();name.supportRichText=false;name.alignment=TextAnchor.MiddleLeft;name.rectTransform.anchoredPosition=new Vector2(-290,0);name.rectTransform.sizeDelta=new Vector2(850,64);name.fontSize=28;name.resizeTextMaxSize=28;
                 string digits=item.Price.ToString();bool widePrice=digits.Length>12;var price=Text("ExchangeOfferPrice_"+item.Id,widePrice?digits+"\nトークン":digits+" トークン",widePrice?310:330,y,widePrice?300:260,52,30);price.alignment=TextAnchor.MiddleRight;price.resizeTextForBestFit=true;price.resizeTextMinSize=20;price.resizeTextMaxSize=30;
-                Text("ExchangeOfferOwned_"+item.Id,(item.Random?"ランダム":"固定")+" / 所持 "+owned+"/4",650,y+14,350,24,22).alignment=TextAnchor.MiddleRight;
-                Text("ExchangeOfferLimit_"+item.Id,limit,650,y-14,350,24,22).alignment=TextAnchor.MiddleRight;
+                Text("ExchangeOfferOwned_"+item.Id,(item.Random?"ランダム":"固定")+" / 所持 "+owned+"/4",650,y+14,350,34,22).alignment=TextAnchor.MiddleRight;
+                Text("ExchangeOfferLimit_"+item.Id,limit,650,y-14,350,34,22).alignment=TextAnchor.MiddleRight;
                 // 保存済みの識別子/定義hashを既存の定義解決へ渡す。別の同名カードへ代替しない。
                 var card=resolveOwned?.Invoke(new OwnedCardCount{Id=item.CardId,Name=item.Name,Rarity=item.Rarity,Level=item.Level,DefinitionHash=item.CardDefinitionHash,Count=1});var sprite=card==null?null:resolveReturnIcon?.Invoke(card);if(sprite!=null)CollectionIcon("ExchangeCardIcon_"+item.Id,card,-790,y,60,_=>sprite);
                 b.interactable=!blocked&&!sold;if(selected==item.Id){b.GetComponent<Image>().color=UiLook.Chosen;CustomizationMenuElements.SelectionMarker(b.transform,-850,56);}
@@ -882,9 +888,9 @@ namespace Olca.Presentation.Dungeon
                 float y=(bottom-26-215)/2,top=y+comparisonHeight/2,low=y-comparisonHeight/2;
                 for(int role=0;role<2;role++){
                     float x=role==0?-440:440;bool candidate=role==1;CommerceFace(candidate?"StyleCandidatePanel":"StyleCurrentPanel",x,y,800,comparisonHeight,candidate);
-                    var label=Text(candidate?"StyleCandidateRole":"StyleCurrentRole",candidate?"コウホ / "+(!hasCandidate?"なし":!unlocked[selected]?"未解放":same?"現在と同じ":"ミホゾン"):"現在 / "+(hasCurrent?"保存済み":"未登録"),x,top-(comparisonHeight>=130?26:18),740,30,comparisonHeight>=130?26:22);if(candidate)label.color=Color.white;
-                    string valueText=candidate&&same?"変更なし":CustomizationMenuElements.ShortName(candidate?candidateName:currentName,shortLimit);var value=Text(candidate?"StyleCandidateValue":"StyleCurrentValue",valueText,x,comparisonHeight>=130?y:low+24,740,comparisonHeight>=130?70:30,comparisonHeight>=130?28:23);value.supportRichText=false;if(candidate)value.color=Color.white;
-                    if(comparisonHeight>=160){var note=Text(candidate?"StyleCandidateNote":"StyleCurrentNote",candidate?(!hasCandidate?"変更せず戻れます":!unlocked[selected]?"解放条件を確認してください":"確定するまで変更しません"):(hasCurrent?"保存された出撃スタイル":"登録情報を確認してください"),x,low+26,740,28,22);if(candidate)note.color=Color.white;}
+                    var label=Text(candidate?"StyleCandidateRole":"StyleCurrentRole",candidate?"コウホ / "+(!hasCandidate?"なし":!unlocked[selected]?"未解放":same?"現在と同じ":"ミホゾン"):"現在 / "+(hasCurrent?"保存済み":"未登録"),x,top-(comparisonHeight>=130?26:22),740,44,comparisonHeight>=130?26:22);if(candidate)label.color=Color.white;
+                    string valueText=candidate&&same?"変更なし":CustomizationMenuElements.ShortName(candidate?candidateName:currentName,shortLimit);var value=Text(candidate?"StyleCandidateValue":"StyleCurrentValue",valueText,x,comparisonHeight>=130?y:low+24,740,comparisonHeight>=130?70:38,comparisonHeight>=130?28:23);value.supportRichText=false;if(candidate)value.color=Color.white;
+                    if(comparisonHeight>=160){var note=Text(candidate?"StyleCandidateNote":"StyleCurrentNote",candidate?(!hasCandidate?"変更せず戻れます":!unlocked[selected]?"解放条件を確認してください":"確定するまで変更しません"):(hasCurrent?"保存された出撃スタイル":"登録情報を確認してください"),x,low+26,740,36,22);if(candidate)note.color=Color.white;}
                 }
             }
             Button("PreviousStylePage","前へ",-380,-285,260,60,()=>{stylePage--;RenderStyleSelection(names,unlocked,selected,choose,confirmDeparture,cancelSelection,blocked,error,retrySave,current);}).interactable=!blocked&&stylePage>0;
@@ -976,9 +982,9 @@ namespace Olca.Presentation.Dungeon
             Text("DepartureDraftCount",$"編成 {draft.Count} / 20枚",-650,325,410,74,34);
             Text("DepartureRules", "所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 220, 325, 1270, 84, 23);
             CommerceFace("DepartureCandidates",0,-35,1760,500);
-            Text("DepartureCandidateHeading","所持カード",-650,190,410,26,22);
-            Text("DepartureCountHeading","編成",515,190,140,26,22);
-            Text("DepartureOwnedHeading","所持",775,190,140,26,22);
+            Text("DepartureCandidateHeading","所持カード",-650,190,410,36,22);
+            Text("DepartureCountHeading","編成",515,190,140,36,22);
+            Text("DepartureOwnedHeading","所持",775,190,140,36,22);
             // 共通の構築判定は保ち、探索画面の案内だけ用途へ揃える。
             string conditionText=explorationDeckLibrary?error?.Replace("出撃デッキ","探索デッキ"):error;
             AddOverflowTextDetails(Text("DepartureValidation", conditionText ?? (explorationDeckLibrary?"この20枚を探索用に保存できます。":"この20枚で出撃できます。"), 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
@@ -989,13 +995,13 @@ namespace Olca.Presentation.Dungeon
                 var fullRow=OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : "");
                 var sprite=option==null?null:resolveReturnIcon?.Invoke(option);
                 if(sprite!=null)CollectionIcon("DepartureCardIcon_"+index,option,-815,y,54,_=>sprite);
-                var rowText=Text("DepartureCard_" + index,OwnedDefinition.DisplayName(owned),-320,y+13,880,34,27);
+                var rowText=Text("DepartureCard_" + index,OwnedDefinition.DisplayName(owned),-320,y+13,880,44,27);
                 rowText.alignment=TextAnchor.MiddleLeft;
                 if(NeedsTextDetails(rowText)){
                     rowText.rectTransform.sizeDelta-=new Vector2(180,0);rowText.rectTransform.anchoredPosition-=new Vector2(90,0);
                     TextDetailsButton("DepartureRow_"+index+"Details",Olca.Presentation.CustomScreen.CustomDisplay.Katakana(fullRow),"ヘンセイのジョウホウ",35,y,140,50);
                 }
-                var metrics=Text("DeparturePerformance_"+index,option==null?"定義未解決":$"威力 {option.GetFinalPower()}",-410,y-22,700,26,22);metrics.alignment=TextAnchor.MiddleLeft;
+                var metrics=Text("DeparturePerformance_"+index,option==null?"定義未解決":$"威力 {option.GetFinalPower()}",-410,y-22,700,36,22);metrics.alignment=TextAnchor.MiddleLeft;
                 var quantity=Text("DepartureDraftQuantity_"+index,count.ToString(),515,y,64,50,28);quantity.resizeTextForBestFit=true;quantity.resizeTextMinSize=18;quantity.resizeTextMaxSize=28;
                 Text("DepartureOwnedQuantity_"+index,owned.Count.ToString(),775,y,140,50,27);
                 Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;
@@ -1152,7 +1158,12 @@ namespace Olca.Presentation.Dungeon
             var r = (RectTransform)o.transform; r.anchorMin = r.anchorMax = new Vector2(.5f, .5f); r.anchoredPosition = new Vector2(x, y); r.sizeDelta = new Vector2(width, height);
             o.GetComponent<Image>().color = UiLook.ButtonFace;
             var edge = o.AddComponent<Outline>(); edge.effectColor = new Color(.5f,.9f,.93f,.6f); edge.effectDistance = new Vector2(1,-1); var b = o.GetComponent<Button>(); b.navigation = new Navigation { mode = Navigation.Mode.None }; var owner=content;b.onClick.AddListener(()=>{if(b!=null&&b.gameObject.activeInHierarchy&&b.IsInteractable()&&OwnsContent(owner))action?.Invoke();});
-            var text = Text(name + "Label", label, x, y, width, height, 25); text.transform.SetParent(o.transform, false); text.rectTransform.anchoredPosition = Vector2.zero; UiLook.Button(b); return b;
+            var text = Text(name + "Label", label, x, y, width, height, 25); text.transform.SetParent(o.transform, false); text.rectTransform.anchoredPosition = Vector2.zero;
+            bool auxiliary=name.Contains("Details")||name.StartsWith("Previous",StringComparison.Ordinal)||name.StartsWith("Next",StringComparison.Ordinal)&&name!="NextDeparture"||
+                name=="EditOwnedDeparture"||name=="SavedDeckMenu"||name=="SelectDepartureStyle"||name=="OpenTokenExchange"||name=="SelectDungeon";
+            // 値段・説明など別Textが重なる行は明面を保ち、暗い文字のコントラストを維持する。
+            bool readingRow=name.StartsWith("VisitOption_",StringComparison.Ordinal)||name.StartsWith("RemovalCard_",StringComparison.Ordinal)||name.StartsWith("ExchangeOffer_",StringComparison.Ordinal);
+            UiLook.MenuButton(b,auxiliary||readingRow||name=="ConfirmVisitRemoval"); return b;
         }
     }
 }
@@ -1322,12 +1333,35 @@ namespace Olca.Presentation.Dungeon
         public static readonly Color Chosen = new Color(.34f,.75f,.81f,1f);
         public static readonly Color Ink = new Color(.055f,.17f,.22f,1f);
         public static readonly Color Edge = new Color(.17f,.63f,.71f,.75f);
+        // メニューの本文だけを読取り向け書体へ切り替える。カード本体や戦闘表示の指定は保持する。
+        public static Font MenuFont(Font fallback) => Resources.Load<Font>("OlcaUI/MenuText") ?? fallback;
+        /// <summary>既存の操作領域を保ち、密集する装飾枠を控えたメニュー専用ボタン。</summary>
+        public static void MenuButton(Button button, bool quiet = false)
+        {
+            Button(button);
+            if(button==null)return;
+            var image=button.targetGraphic as Image;
+            if(image!=null){image.sprite=null;image.type=Image.Type.Simple;image.color=Color.white;}
+            button.transition=Selectable.Transition.ColorTint;
+            var colors=button.colors;
+            colors.normalColor=quiet?new Color(.84f,.94f,.96f,1f):new Color(.045f,.25f,.31f,1f);
+            colors.highlightedColor=quiet?new Color(.68f,.88f,.92f,1f):new Color(.06f,.34f,.41f,1f);
+            colors.selectedColor=quiet?new Color(.62f,.84f,.90f,1f):new Color(.065f,.37f,.43f,1f);
+            colors.pressedColor=quiet?new Color(.60f,.82f,.88f,1f):new Color(.025f,.15f,.20f,1f);
+            colors.disabledColor=quiet?new Color(.72f,.83f,.87f,1f):new Color(.20f,.29f,.32f,1f);
+            button.colors=colors;
+            var edge=image!=null?image.GetComponent<Outline>():null;
+            if(edge!=null){edge.enabled=!quiet;edge.effectColor=new Color(.31f,.73f,.80f,.55f);edge.effectDistance=new Vector2(1,-1);}
+            foreach(var label in button.GetComponentsInChildren<Text>(true)){label.color=quiet?Ink:new Color(.94f,.99f,1f,1f);}
+        }
         public static void Label(UnityEngine.UI.Text label)
         {
             if(label==null)return;
             if(label.GetComponent<UiKanaLabel>()==null)label.gameObject.AddComponent<UiKanaLabel>();
             // 共通の色や枠の適用で、Scene/Prefab/呼出元の指定フォントを置き換えない。
             if(label.font==null)label.font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            // 新書体の複数行の間隔を整える。単行の高さは各表示領域で確保する。
+            if(label.font==Resources.Load<Font>("OlcaUI/MenuText"))label.lineSpacing=.8f;
             label.color=Ink; label.raycastTarget=false;
             label.horizontalOverflow=HorizontalWrapMode.Wrap;
         }

@@ -172,6 +172,9 @@ namespace Olca.Core.Logic.Battle
         private int? recoveryCancelFrames;
         public PlayerAttackPhase PlayerActionPhase { get; private set; }
         public bool HasPlayerAction => playerActionOwner != null;
+        public long AttackActionSerial { get; private set; }
+        public long AttackInputEpoch { get; private set; }
+        internal event Action<bool> AttackInputBoundary;
         public bool CanCancelPlayerRecovery => PlayerActionPhase == PlayerAttackPhase.Recovery &&
             recoveryCancelFrames.HasValue && actionTimeUnits - recoveryStarted >= recoveryCancelFrames.Value * 50L;
         public int RecoveryElapsedFrames => PlayerActionPhase == PlayerAttackPhase.Recovery ? (int)((actionTimeUnits - recoveryStarted) / 50) : 0;
@@ -185,7 +188,8 @@ namespace Olca.Core.Logic.Battle
         internal object BeginPlayerAction(bool basic, Action cancel)
         {
             if (HasPlayerAction) throw new InvalidOperationException("行動は同時に開始できません");
-            playerActionOwner = new object(); basicAction = basic; cancelPlayerAction = cancel;
+            AttackActionSerial++;
+            playerActionOwner = new object(); basicAction = basic; cancelPlayerAction = () => { AttackInputEpoch++; AttackInputBoundary?.Invoke(false); cancel(); };
             PlayerActionPhase = PlayerAttackPhase.Startup; return playerActionOwner;
         }
         internal void SetPlayerActionPhase(object owner, PlayerAttackPhase phase, int? cancelAfter = null)
@@ -239,6 +243,7 @@ namespace Olca.Core.Logic.Battle
         public BattleState State => state;
 
         /// <summary>一時停止中か</summary>
+        internal bool IsCustomPaused => (pauseReasons & BattlePauseReason.CustomScreen) != 0;
         public bool IsUserPaused => (pauseReasons & BattlePauseReason.User) != 0;
         public bool IsPaused => pauseReasons != BattlePauseReason.None || IsDarkening || IsHitStopped;
 
@@ -455,6 +460,7 @@ namespace Olca.Core.Logic.Battle
             if(statusFrameParticipants==null&&!Transformations.IsActivating&&(pauseReasons&BattlePauseReason.Transformation)!=0)
                 Resume(BattlePauseReason.Transformation);
             if (statusFrameParticipants != null || IsGameOver) { action(); return; }
+            long inputFrameAtStart = actionFrame;
             var participants = new List<Enemy>(enemies);
             statusFrameParticipants = participants;
             BeginResolution();
@@ -462,7 +468,7 @@ namespace Olca.Core.Logic.Battle
             foreach (var enemy in participants) { enemy.BeginStatusFrame(!IsPaused); enemy.BeginHpFrame(); }
             try
             {
-                if (player.BeginParalysisFrame(!IsPaused)) { cardUsage.InterruptCurrentCard(); InterruptBasicAction(); playerMovement.InterruptNormalMove(); }
+                if (player.BeginParalysisFrame(!IsPaused)) { AttackInputEpoch++; cardUsage.InterruptCurrentCard(); InterruptBasicAction(); playerMovement.InterruptNormalMove(); }
                 player.BeginConfusionFrame(!IsPaused);
                 player.BeginBlindnessFrame(!IsPaused);
                 action();
@@ -488,6 +494,8 @@ namespace Olca.Core.Logic.Battle
                     foreach (var enemy in committed) enemy.PublishHpFrame();
                 }
                 finally { EndResolution(); }
+                // Begin/EndStatusFrame中のsnapshotを閉じてから、状態回復境界を通知する。
+                if (actionFrame != inputFrameAtStart) AttackInputBoundary?.Invoke(true);
             }
         }
         public void TickFrame(int compatibleMilliseconds, IInputProvider input = null)
@@ -522,8 +530,9 @@ namespace Olca.Core.Logic.Battle
             try
             {
                 actionTimeUnits += logicalFrameTick ? 50 : deltaTimeMs * 3L;
-                if (logicalFrameTick) actionFrame++;
+                if (logicalFrameTick) { actionFrame++; AttackInputBoundary?.Invoke(false); }
                 AdvanceActionWaits();
+                if (logicalFrameTick) AttackInputBoundary?.Invoke(true);
                 if (IsGameOver || IsPaused) return;
                 // カスタムゲージを更新
                 if (logicalFrameTick) customGauge.UpdateFrame(); else customGauge.Update(deltaTimeMs);
@@ -534,6 +543,8 @@ namespace Olca.Core.Logic.Battle
 
                 // 遅延効果を更新（投擲物の着弾など）
                 delayedEffects.Update(deltaTimeMs, logicalFrameTick);
+                // 派生待ちの完了も同じframe内で再判定する。wait解決時に実行済みなら枠は空。
+                if (logicalFrameTick) AttackInputBoundary?.Invoke(true);
 
                 // プレイヤーの無敵時間ティック処理
                 if (logicalFrameTick) player.TickInvincibleFrame(); else player.TickInvincible(deltaTimeMs);
@@ -544,6 +555,8 @@ namespace Olca.Core.Logic.Battle
                 player.TickPoisons(deltaTimeMs, logicalFrameTick);
                 player.TickProtection(deltaTimeMs, logicalFrameTick);
                 player.TickPoiseRecovery(deltaTimeMs, logicalFrameTick);
+                // 状態異常の終了境界でも保持タメを最速で開始する（量の加算は一度のみ）。
+                if (logicalFrameTick) AttackInputBoundary?.Invoke(true);
 
                 // 敵の状態異常ティック処理（毒ダメージ等）
                 foreach (var enemy in tickParticipants)
@@ -570,6 +583,7 @@ namespace Olca.Core.Logic.Battle
         public void Pause(BattlePauseReason reason = BattlePauseReason.CustomScreen)
         {
             pauseReasons |= reason;
+            if ((reason & (BattlePauseReason.User | BattlePauseReason.CustomScreen)) != 0) { AttackInputEpoch++; AttackInputBoundary?.Invoke(false); }
             logger?.LogInfo("バトル一時停止");
         }
 
@@ -758,7 +772,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         private void OnPlayerStaggered()
         {
-            PlayerStaggerCount++;
+            PlayerStaggerCount++; AttackInputEpoch++;
             cardUsage.InterruptCurrentCard();
             InterruptBasicAction();
             playerMovement.InterruptNormalMove();
@@ -839,6 +853,7 @@ namespace Olca.Core.Logic.Battle
 
         private void ReleaseBattleParticipants()
         {
+            AttackInputEpoch++; AttackInputBoundary?.Invoke(false); AttackInputBoundary = null;
             enemyAttackTelegraphs.Clear();
             simultaneousKills.Finish();
             hitStopRemainingFrames=pendingHitStopFrames=0;

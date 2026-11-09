@@ -149,6 +149,33 @@ namespace Olca.Tests
             var left=new OutsideExplorationCore(new OutsideMovementDefinition("slow",100,0,1));for(int i=0;i<60;i++)left.TickFrame(1);Assert.AreEqual(1,left.Position);
         }
 
+        [Test] public void 外界Idleは移動から停止するたびゼロで開始し停止中だけ進む()
+        {
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationTerrain);
+            Assert.AreEqual(0,core.IdleFrame);
+            for(int cycle=0;cycle<4;cycle++){
+                for(int i=0;i<17;i++)core.TickFrame(1);
+                Assert.AreEqual(0,core.IdleFrame);core.TickFrame(0);
+                Assert.AreEqual(0,core.IdleFrame);Assert.AreEqual(0,core.MovementFrame);
+                for(int i=1;i<=13;i++){core.TickFrame(0);Assert.AreEqual(i,core.IdleFrame);}
+            }
+        }
+        [Test] public void 外界Idleは着地と境界停止でもゼロから始まり表示再入で時計を変えない()
+        {
+            using(var session=new OutsideExplorationSession()){
+                var core=session.Core;for(int i=0;i<19;i++)core.TickFrame(0);
+                core.TickFrame(0,true,true);Assert.AreEqual(0,core.IdleFrame);
+                for(int i=0;i<120&&!core.IsGrounded;i++)core.TickFrame(0,false,true);
+                Assert.IsTrue(core.IsGrounded);Assert.AreEqual(0,core.IdleFrame);
+                core.TickFrame(0);Assert.AreEqual(1,core.IdleFrame);
+                var first=session.AttachPresentation();long frame=core.Frame;first.Dispose();
+                var second=session.AttachPresentation();Assert.AreEqual(1,core.IdleFrame);Assert.AreEqual(frame,core.Frame);second.Dispose();
+                while(core.Position>0)core.TickFrame(-1);
+                core.TickFrame(-1);Assert.AreEqual(0,core.IdleFrame);
+                core.TickFrame(-1);Assert.AreEqual(1,core.IdleFrame);
+            }
+        }
+
         [TestCase(1)] [TestCase(7)] [TestCase(60)]
         public void 外界ジャンプは保持で高くなり描画分割で軌道が変わらない(int parts)
         {

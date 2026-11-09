@@ -29,7 +29,7 @@ python .Codex/tools/verified_publish.py --repo . push --receipt /tmp/olca-publis
 - `cleanup.json`: originalClean/storageGuard/defaultStoreAbsent=true、differences=[]、consoleErrors=0、devices/actualRenderのscreenと全textureが640×360。双方のtempはworkspaceの兄弟`save/tmp`と一致。
 - `independent-review.json`: reviewerあり、staticReview.unresolvedConcreteFindingsとvisualReview.unresolvedRequiredFindingsが整数0。
 
-全tested hashの現在のsubmissionと検証workspaceの実ファイル、全stagedファイルとindex blobを照合します。staged Assetsはすべて全件tested hash集合に必要です。追加のドキュメント/Pythonもindexとworktreeが一致する必要があります。未stageのtracked変更、競合、merge、master以外、Asset検証漏れ、削除/symlink/submodule、`.meta`・`.env*`・既知の資格情報パス/鍵拡張子を拒否します。資格情報の網羅的検出器ではないため、差分の人手確認も必要です。
+全tested hashの現在のsubmissionと検証workspaceの実ファイル、全stagedファイルとindex blobを照合します。staged Assetsはすべて全件tested hash集合に必要です。追加のドキュメント/Pythonもindexとworktreeが一致する必要があります。未stageのtracked変更、競合、merge、master以外、Asset検証漏れ、削除/symlink/submodule、未承認`.meta`・`.env*`・既知の資格情報パス/鍵拡張子を拒否します。明示承認済metadataの限定手順は下記を参照してください。資格情報の網羅的検出器ではないため、差分の人手確認も必要です。
 
 `git diff --cached --check <baseHEAD>` は実行し、エラーを丸ごと無効化しません。core.whitespaceの標準3検査を明示し、stagedファイルのwhitespace属性上書きは拒否します。通常の許容例外はAssets下の`.prefab`/`.unity`で、先頭が厳密に次の2行の場合の、追加/変更行 `^  m_(?:Name|EditorClassIdentifier): +$` です。空のUnity scalarの末尾**ASCII space**だけを許容します。非空値、タブ、別フィールド、異なるヘッダ、その他のcheck診断は停止します。
 
@@ -61,3 +61,43 @@ PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s .Codex/tools -p 'test_v
 ## 既存Sceneブロックの差分誤対応
 
 大量の類似YAMLブロック削除では、Gitが不変Materialを追加行として対応させることがあります。追加の限定判定は、診断行が厳密に`  m_LockedProperties: `（末尾ASCII space1個）であり、HEAD/indexがLFのUnity YAML、全headerが対応する`--- !u!数字 &数字`形式で各fileIDが両側一意、同type/fileIDのheaderから次header/EOFまでの全byteが一致する場合だけです。未対応header（stripped等）、CR、重複ID、新規/変更block/他fieldは拒否します。receiptへindex行/base対応行/header/block SHAと不変理由を記録し、資産のテスト済みbyteを維持します。diff --checkは実行し続け、他の診断を無効化しません。
+
+## 明示承認済みEditor登録metadataの限定手順
+
+既定では`.meta`を拒否する。ユーザーが対象pathを明示承認し、検証済みのEditor登録原本を含める場合だけ、`check`へ`--metadata-approval /absolute/path/metadata-approval.json`を指定する。全体の検査を無効化するオプションではない。承認manifestは公開範囲の全staged path/hashを列挙し、集合の一部だけをstageしても拒否する。metadataを証跡hashから外したり、receiptを書換えたり、失敗後に手動commit/pushへ進まない。
+
+manifestの形式は次のとおり（値は例であり、実公開には実測値と実際の承認を記録する）。
+
+```json
+{
+  "version": 1,
+  "approvalSource": "実際のユーザー承認と具体的な対象範囲の参照",
+  "approvedFiles": {"Assets/Example.cs": "64桁SHA256", "Assets/Example.cs.meta": "64桁SHA256"},
+  "editorEvidence": {"path": "/absolute/path/editor-readback.json", "sha256": "64桁SHA256"},
+  "metadata": {
+    "Assets/Example.cs.meta": {
+      "assetPath": "Assets/Example.cs", "sha256": "64桁SHA256",
+      "guid": "32桁小文字GUID", "isFolder": false
+    }
+  }
+}
+```
+
+Editor証跡は同じ検証projectでAssetDatabaseをread-only照合した結果を使う。`version:1`、`provenance:"UnityEditor.AssetDatabase"`、`editorVersion`、検証workspaceと一致する`projectPath`、`assets[metaPath]`の`assetPath/guid/isFolder/metaSha256/importer/mainAssetType`を持つ。GUIDの正逆引きも主担当が照合する。CLIは登録証跡のhash、実metaのGUID／Importer／対応assetまたはfolder、repoとworkspaceの一致、両treeのGUID重複、全件tested hashへのmetaと対応fileの収載を検査する。folderは実directoryの存在を検査する。Editor生成物をAIが書換え・正規化して合わせない。
+
+既存の最小script metadataは、`.cs.meta`かつ内容が厳密に`fileFormatVersion: 2`と`guid: lower32`の2行だけの場合（末尾LFの有無だけ許容）、同じEditorの`MonoImporter`登録証跡との一致に限り扱う。他のImporter欠損・不正GUID・重複GUIDは拒否する。資格情報／unsafe pathはmanifestに書いても許可しない。
+
+Importerの空scalarに対する`git diff --check`例外も、承認metadata・検証済みbytesに限る。今回の実Editor原本に存在する次の完全一致行だけをreceiptへpath／行番号／原文／理由付きで記録する（末尾ASCII spaceは1個）。非空値、未知field、tab、別の字下げは拒否する。
+
+- 2space字下げ: `userData`、`assetBundleName`、`assetBundleVariant`、`mipmapLimitGroupName`、`customCharacters`
+- 4または6space字下げ: `customData`、`indices`
+
+manifest全体のhashとEditor証跡hashをreceiptに束縛し、commit前・push前・fetch後にも同じ条件を再検証する。承認範囲・登録証跡・GUID・metadata・対応asset・index・worktreeの変更は停止条件。既存の資格情報拒否、Scene/Prefabの限定空白検査、remote進展、clean worktree、通常push/refetch照合は維持する。ゲート更新前のreceiptは流用せず新しいcheckを行う。
+
+この承認manifestは実際のユーザー承認とEditor原本を主担当／独立reviewが確認するためのローカル記録であり、外部署名や権限付与機構ではない。CLI更新自体もコードレビューと一時repoの回帰検証を済ませてから適用する。
+
+Unity APIのruntime型が汎用`AssetImporter`になる既知形式は、serialized `DefaultImporter`＋実folder＋main type `DefaultAsset`、またはserialized `DefaultImporter`＋実`Assets/StreamingAssets/`配下`.txt`file＋main type `DefaultAsset`の場合だけ照合する。他の汎用Importerやmain type不一致は拒否する。記録をserialized型へ偽装しない。
+
+### 同梱OFL原文の固定バイト照合
+
+`Assets/StreamingAssets/ThirdPartyNotices/DotGothic16-OFL.txt`だけは、公式から取得した原文SHA256 `b6630c61ea078cacd7fabe37d14ffe557a0b45b06683374a9aa9e24262993e33`・承認manifest・全件tested hash・repo/workspaceの完全一致に限り、原本の93行CRLFと21行目末尾のASCII space1個を変更せず扱う。対象path/hashはCLIの固定表に置き、`git diff --check`の各診断を原文行番号/hash/source/理由付きでreceiptへ記録する。一般TXTや別hash、未知の末尾space/tab、改行変換を許す機能ではない。ライセンスや資産を正規化して検査を通さない。

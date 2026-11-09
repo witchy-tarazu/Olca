@@ -67,10 +67,11 @@ namespace Olca.Presentation.Management
     public sealed class GameplayPanelFactory
     {
         public Font Font { get; }
+        public Font GameplayFont { get; }
         public void Feedback(string name)=>sound?.Invoke(name);
         private readonly Transform parent;
         private readonly Action<string> sound;
-        public GameplayPanelFactory(Transform parent,Font font,Action<string> sound){this.parent=parent;Font=font;this.sound=sound;}
+        public GameplayPanelFactory(Transform parent,Font font,Action<string> sound){this.parent=parent;GameplayFont=font;Font=UiLook.MenuFont(font);this.sound=sound;}
         public sealed class ChromeBinding
         {
             public Button Pause,Save,NewGame,Collection,Loadout,Unlock,Acquisition;
@@ -103,7 +104,7 @@ namespace Olca.Presentation.Management
         {
             var chrome=new ChromeBinding();
             chrome.Pause=Button("PauseButton","ポーズ",parent,Vector2.one,new Vector2(-132,-64));
-            chrome.Currency=Label("CurrencyBalance",parent,Vector2.one,new Vector2(-182,-125),new Vector2(300,45));chrome.Currency.alignment=TextAnchor.MiddleRight;chrome.Currency.fontSize=26;chrome.Currency.color=Color.white;
+            chrome.Currency=Label("CurrencyBalance",parent,Vector2.one,new Vector2(-182,-125),new Vector2(300,45));chrome.Currency.alignment=TextAnchor.MiddleRight;chrome.Currency.font=GameplayFont;chrome.Currency.lineSpacing=1f;chrome.Currency.fontSize=26;chrome.Currency.color=Color.white;
             chrome.Save=Button("ManualSaveButton","保存（スロット1）",parent,new Vector2(0,1),new Vector2(260,-85));
             chrome.NewGame=Button("NewGameButton","はじめから",parent,new Vector2(0,1),new Vector2(580,-85));
             foreach(var button in new[]{chrome.Save,chrome.NewGame})((RectTransform)button.transform).sizeDelta=new Vector2(280,60);
@@ -139,7 +140,7 @@ namespace Olca.Presentation.Management
                 var textObj = new GameObject("Label", typeof(RectTransform), typeof(Text)); textObj.transform.SetParent(obj.transform, false);
                 var text = textObj.GetComponent<Text>(); text.font = Font; text.text = label; text.fontSize = 30; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
                 var tr = text.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
-                UiLook.Button(button);
+                UiLook.MenuButton(button);
                 // 常設の補助操作は出撃などの主操作と同じ強さにしない。位置と入力範囲は維持する。
                 if(name=="ManualSaveButton"||name=="NewGameButton"||name=="CardCollectionButton"){
                     obj.GetComponent<Image>().color=new Color(.35f,.55f,.65f,.75f);

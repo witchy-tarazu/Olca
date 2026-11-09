@@ -475,7 +475,13 @@ namespace Olca.Core.Logic.Integration
         public bool DashButton { get; set; }
         public bool DashButtonDown { get; set; }
         public bool CardUseButtonDown { get; set; }
+        public long CardUsePressedAt { get; set; }
+        public long BasicAttackPressedAt { get; set; }
         public bool BasicAttackButton { get; set; }
+        // タメ専用の保持事実。通常操作のneutral/edge受付とは分ける。
+        public bool HasChargeHoldSample { get; set; }
+        public bool ChargeHoldButton { get; set; }
+        public bool AnyKeyExceptCharge { get; set; }
         public bool BasicAttackButtonDown { get; set; }
         public bool BasicAttackButtonUp { get; set; }
         public float BasicAttackButtonHoldTime { get; set; }
@@ -484,7 +490,7 @@ namespace Olca.Core.Logic.Integration
         public bool MenuDecideButtonDown { get; set; }
         public bool MenuCancelButtonDown { get; set; }
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+        public void ClearEdges() { CardUsePressedAt = BasicAttackPressedAt = 0; SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
     }
 
     /// <summary>指ごとの押下順だけを所有する。UI除外・座標・時計はUnity側で決める。</summary>
@@ -527,6 +533,8 @@ namespace Olca.Core.Logic.Integration
                 next.SelectionPreviousDown|=held.SelectionPreviousDown;next.SelectionNextDown|=held.SelectionNextDown;
                 next.JumpButtonDown |= held.JumpButtonDown;
                 next.DashButtonDown |= held.DashButtonDown;
+                next.CardUsePressedAt = MergeAttackTimestamp(held.CardUseButtonDown, held.CardUsePressedAt, next.CardUseButtonDown, next.CardUsePressedAt);
+                next.BasicAttackPressedAt = MergeAttackTimestamp(held.BasicAttackButtonDown, held.BasicAttackPressedAt, next.BasicAttackButtonDown, next.BasicAttackPressedAt);
                 next.CardUseButtonDown |= held.CardUseButtonDown;
                 next.BasicAttackButtonDown |= held.BasicAttackButtonDown;
                 next.BasicAttackButtonUp |= held.BasicAttackButtonUp;
@@ -544,6 +552,13 @@ namespace Olca.Core.Logic.Integration
             var result=held.Copy();
             if(result.TouchHorizontalDown!=0) result.HorizontalDown=result.TouchHorizontalDown;
             return result;
+        }
+        // 時刻不明の入力を、たまたま併合された順番で前後確定しない。
+        public static long MergeAttackTimestamp(bool firstEdge, long first, bool secondEdge, long second)
+        {
+            if (!firstEdge) return secondEdge ? second : 0;
+            if (!secondEdge) return first;
+            return first > 0 && second > 0 ? Math.Max(first, second) : 0;
         }
         public void Release()
         {

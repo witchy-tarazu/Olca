@@ -72,6 +72,15 @@ namespace Olca.Core.Logic.Integration
         public static OutsideCameraPolicy Follow {get;}=new OutsideCameraPolicy(null);
         public static OutsideCameraPolicy FixedAt(long center)
         {if(center<0)throw new System.ArgumentOutOfRangeException(nameof(center));return new OutsideCameraPolicy(center);}
+        /// <summary>追従表示で本体上端を固定HUDより下へ保つ。ゲーム座標や投影倍率は変えない。</summary>
+        public float ResolveVerticalOffset(long height,float viewport,float floorInset,float topInset,float actorTop)
+        {
+            bool Finite(float value)=>!float.IsNaN(value)&&!float.IsInfinity(value);
+            if(height<0||!Finite(viewport)||viewport<=0||!Finite(floorInset)||floorInset<0||!Finite(topInset)||topInset<0||!Finite(actorTop)||actorTop<=0)throw new System.ArgumentOutOfRangeException(nameof(viewport));
+            if(FixedCenter.HasValue)return 0;
+            double maximumFoot=System.Math.Max(0,(double)viewport-floorInset-topInset-actorTop);
+            return (float)System.Math.Max(0,height/(double)OutsideMovementDefinition.UnitsPerWorldUnit-maximumFoot);
+        }
         public float ResolveHorizontalCenter(long position,long mapWidth,float viewport)
         {
             if(mapWidth<=0||position<0||position>mapWidth||float.IsNaN(viewport)||float.IsInfinity(viewport)||viewport<=0||FixedCenter>mapWidth)throw new System.ArgumentOutOfRangeException(nameof(viewport));
@@ -95,7 +104,7 @@ namespace Olca.Core.Logic.Integration
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
         }
         private PresentationLease current;
-        public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain);
+        public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
         public OutsideExplorationCards Cards {get;private set;}
         // 入場前の初回登録だけ。再表示で再抽選せず、製品デッキの保存/切替は別接続とする。
@@ -114,6 +123,13 @@ namespace Olca.Core.Logic.Integration
             if(policy==null)throw new System.ArgumentNullException(nameof(policy));
             if(policy.FixedCenter.HasValue&&policy.FixedCenter.Value>Core.Definition.Width)throw new System.ArgumentOutOfRangeException(nameof(policy));
             if(IsPresented)return false;Camera=policy;return true;
+        }
+        // 試走設定は初回表示前だけ。製品の能力解放や保存には接続しない。
+        public bool TryConfigureTraversal(OutsideTraversalProfile profile)
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            if(profile==null)throw new System.ArgumentNullException(nameof(profile));
+            if(IsPresented||Core.Frame!=0)return false;Core.ConfigureTraversal(profile);return true;
         }
         public bool IsEnded{get;private set;}
         public bool IsPresented=>current!=null;
@@ -160,7 +176,7 @@ namespace Olca.Core.Logic.Integration
         public static OutsideMovementDefinition ValidationLandingTerrain=>new OutsideMovementDefinition("validation-landing-32",32*UnitsPerWorldUnit,8*UnitsPerWorldUnit,6*UnitsPerWorldUnit,new OutsideLandingSurface("validation-top",12*UnitsPerWorldUnit,16*UnitsPerWorldUnit,UnitsPerWorldUnit));
     }
     /// <summary>連続地形の横移動。描画時間・既存ダンジョン座標を参照しない。</summary>
-    public sealed class OutsideExplorationCore
+    public sealed partial class OutsideExplorationCore
     {
         public OutsideMovementDefinition Definition {get;}
         public OutsideCardGauge CardGauge {get;}=OutsideCardGauge.ValidationDefault;
@@ -173,14 +189,16 @@ namespace Olca.Core.Logic.Integration
         public bool IsGrounded=>SupportId!=null;
         public bool IsMoving {get;private set;}
         public long MovementFrame {get;private set;}
+        // 全体時計と分け、停止へ切り替わった論理frameを必ず0として表示する。
+        public long IdleFrame {get;private set;}
         private bool jumpWasHeld;
         private long remainder;
         // 検証用: 初速12単位/秒、重力24単位/秒²、解放時の上昇上限4単位/秒。
         // 60000固定小数点/60Hzのため、毎frameの値は12000/400/4000。製品値ではない。
         public const long ValidationJumpVelocity=12000,ValidationGravity=400,ValidationReleasedRise=4000;
         public const long ValidationMaximumRise=ValidationJumpVelocity*(ValidationJumpVelocity/ValidationGravity+1)/2;
-        public OutsideExplorationCore(OutsideMovementDefinition definition)
-        {Definition=definition??throw new System.ArgumentNullException(nameof(definition));Position=definition.Start;}
+        public OutsideExplorationCore(OutsideMovementDefinition definition,OutsideTraversalProfile traversal=null)
+        {Definition=definition??throw new System.ArgumentNullException(nameof(definition));Position=definition.Start;ConfigureTraversal(traversal);}
         private string SupportAt(long x,long y)
         {
             if(y==0)return "floor";string id=null;
@@ -199,30 +217,40 @@ namespace Olca.Core.Logic.Integration
             }
             return id!=null;
         }
-        public void TickFrame(float horizontal,bool jumpDown=false,bool jumpHeld=false)
+        public void TickFrame(float horizontal,bool jumpDown=false,bool jumpHeld=false,bool dashDown=false,bool dashHeld=false)
         {
             if(float.IsNaN(horizontal)||float.IsInfinity(horizontal))throw new System.ArgumentOutOfRangeException(nameof(horizontal));
-            Frame++;CardGauge.AdvanceFrame();bool launch=jumpDown&&!jumpWasHeld&&IsGrounded;jumpWasHeld=jumpHeld;
+            bool wasIdle=IsIdleMotion;
+            Frame++;CardGauge.AdvanceFrame();bool jumpEdge=jumpDown&&!jumpWasHeld;jumpWasHeld=jumpHeld;
+            BeginTraversalFrame(dashDown,dashHeld);
+            bool launch=jumpEdge&&IsGrounded;
+            int horizontalDirection=horizontal>0?1:horizontal<0?-1:0;
+            bool wallLaunch=TryWallKick(jumpEdge,horizontalDirection);
+            if(launch){IsDashJumping=IsDashing;if(IsDashing)EndDash();SupportId=null;VerticalVelocity=ValidationJumpVelocity;}
+            if(!jumpHeld&&VerticalVelocity>ValidationReleasedRise)VerticalVelocity=ValidationReleasedRise;
             long previous=Position,oldHeight=Height;
-            int direction=horizontal>0?1:horizontal<0?-1:0;
+            int direction=TraversalDirection(horizontalDirection);long speed=TraversalSpeed;
             if(direction==0)remainder=0;
             else{
                 Facing=direction;
-                long tail=Definition.SpeedPerSecond%LogicalFrameClock.FramesPerSecond*direction+remainder;
-                long step=Definition.SpeedPerSecond/LogicalFrameClock.FramesPerSecond*direction+tail/LogicalFrameClock.FramesPerSecond;
+                long tail=speed%LogicalFrameClock.FramesPerSecond*direction+remainder;
+                long step=speed/LogicalFrameClock.FramesPerSecond*direction+tail/LogicalFrameClock.FramesPerSecond;
                 remainder=tail%LogicalFrameClock.FramesPerSecond;
                 if(direction>0&&step>=Definition.Width-Position){Position=Definition.Width;remainder=0;}
                 else if(direction<0&&step<=-Position){Position=0;remainder=0;}
                 else Position+=step;
             }
+            ClampValidationWalls(previous,Height+VerticalVelocity);
             IsMoving=Position!=previous;MovementFrame=IsMoving?MovementFrame+1:0;
-            if(launch){SupportId=null;VerticalVelocity=ValidationJumpVelocity;}
-            else if(IsGrounded){SupportId=SupportAt(Position,Height);if(IsGrounded)return;VerticalVelocity=0;}
-            if(!jumpHeld&&VerticalVelocity>ValidationReleasedRise)VerticalVelocity=ValidationReleasedRise;
+            if(!launch&&!wallLaunch&&IsGrounded){SupportId=SupportAt(Position,Height);if(IsGrounded){UpdateWallSlide(horizontalDirection);CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);return;}VerticalVelocity=0;}
+            UpdateWallSlide(horizontalDirection);
             long next=Height+VerticalVelocity;
             if(VerticalVelocity<0&&Landing(previous,oldHeight,next,out var top,out var support)){Height=top;VerticalVelocity=0;SupportId=support;}
-            else{Height=next;VerticalVelocity-=ValidationGravity;SupportId=null;}
+            else{Height=next;VerticalVelocity-=ValidationGravity;if(IsWallSliding)VerticalVelocity=System.Math.Max(VerticalVelocity,-TraversalProfile.WallSlidePerFrame);SupportId=null;}
+            CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);
         }
+        private void AdvanceIdleFrame(bool wasIdle)
+        {IdleFrame=IsIdleMotion?wasIdle?IdleFrame+1:0:0;}
     }
 }
 

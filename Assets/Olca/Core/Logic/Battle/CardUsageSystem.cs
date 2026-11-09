@@ -25,6 +25,7 @@ namespace Olca.Core.Logic.Battle
         public Card InFlightCard => inFlightCard;
         private bool interruptedByReaction;
         private int queueVersion;
+        public long SelectionGeneration { get; private set; }
         private CancellationTokenSource currentCardCts; // 現在実行中のカード効果のCancellationTokenSource
 
         /// <summary>使用待ちカードのリスト</summary>
@@ -64,6 +65,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (selectedCards == null) throw new ArgumentNullException(nameof(selectedCards));
 
+            SelectionGeneration++;
             // 既存のキューをクリアして新しいカードを追加
             queuedCards.Clear();
             queuedCards.AddRange(selectedCards);
@@ -254,7 +256,7 @@ namespace Olca.Core.Logic.Battle
         /// </summary>
         public void Clear()
         {
-            queueVersion++;
+            queueVersion++; SelectionGeneration++;
             queuedCards.Clear();
             currentCardIndex = 0;
             currentCardCts?.Cancel();

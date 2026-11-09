@@ -16,6 +16,95 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [Test]
+        public void メニュー書体を使っても常設通貨の数字とゲームプレイ用書体を変更しない()
+        {
+            var root=new GameObject("MenuFontBoundary",typeof(RectTransform));
+            try{
+                var original=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");Assert.IsNotNull(original);
+                var factory=new Olca.Presentation.Management.GameplayPanelFactory(root.transform,original,null);var chrome=factory.Chrome();
+                Assert.AreSame(original,factory.GameplayFont);Assert.AreSame(original,chrome.Currency.font);
+                Assert.AreEqual(1f,chrome.Currency.lineSpacing);Assert.AreEqual(26,chrome.Currency.fontSize);
+                Assert.AreSame(Resources.Load<Font>("OlcaUI/MenuText"),chrome.Pause.GetComponentInChildren<Text>().font);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)]
+        public void メニュー書体の所持見出しと取引注記は単行を欠けず表示する(int screen)
+        {
+            var root=new GameObject("MenuFontAnnotations",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("MenuFontView",typeof(RectTransform));host.transform.SetParent(root.transform,false);
+                var view=host.AddComponent<ClearReturnView>();var font=Resources.Load<Font>("OlcaUI/MenuText");Assert.IsNotNull(font);
+                view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
+                var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+                var profile=new ClearReturnProfile{Owned=new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Count=4}}};
+                System.Action no=()=>{};string[] names;
+                void Readable(Text label){using(var generated=new TextGenerator()){
+                    Assert.IsTrue(generated.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)),label.name);
+                    Assert.GreaterOrEqual(generated.characterCountVisible,label.text.Length,label.name);
+                }}
+                if(screen==4){
+                    foreach(int count in new[]{3,4}){
+                        var styles=Enumerable.Range(0,count).Select(i=>"スタイル"+i).ToArray();
+                        view.RenderStyleSelection(styles,Enumerable.Repeat(true,count).ToArray(),1,_=>{},no,no,false,null,no,current:0);
+                        foreach(var label in host.GetComponentsInChildren<Text>().Where(t=>t.name.StartsWith("StyleCurrent")||t.name.StartsWith("StyleCandidate")))Readable(label);
+                    }
+                    Assert.AreEqual(4,profile.Owned[0].Count);return;
+                }
+                if(screen==0){
+                    view.Render(profile,new ClearReturnData{Stage=ClearReturnStage.Returned,Outcome=RunReturnOutcome.Cleared},false,null);
+                    names=new[]{"OwnedTitle"};
+                }else if(screen==1){
+                    view.RenderVisitRemoval("カードのサクジョ",new[]{card.Name},new[]{false},1,0,false,true,_=>{},no,no,no,new[]{card},new[]{false});
+                    names=new[]{"RemovalOrigin_0","RemovalCost_0","RemovalPower_0","ConfirmVisitRemovalLabel"};
+                }else if(screen==3){
+                    var options=Enumerable.Range(0,5).Select(i=>new DungeonVisitOption("probe"+i,1,card)).ToArray();
+                    view.RenderDungeonVisit("ショップ",options.Select(o=>o.Label).ToArray(),Enumerable.Repeat(true,5).ToArray(),0,false,true,_=>{},no,no,no,no,details:options,purchased:new bool[5],balance:100);
+                    names=new[]{"VisitPrice_0","VisitState_0","VisitDescription_0"};
+                }else{
+                    profile.ExchangeStock=new ExchangeStockData{RoundId="probe",Offers=new[]{new ExchangeOfferData{Id="probe",CardId=card.Id,Name=card.Name,Price=1,Limit=ExchangeLimit.Unlimited}}};
+                    view.RenderTokenExchange(profile,"probe",false,null,_=>{},no,no,no,no);
+                    names=new[]{"ExchangeCardColumn","ExchangePriceColumn","ExchangeStateColumn","ExchangeOfferOwned_probe","ExchangeOfferLimit_probe"};
+                }
+                foreach(var name in names){
+                    var label=host.GetComponentsInChildren<Text>().Single(t=>t.name==name);
+                    Readable(label);
+                    if(screen>=1&&screen<=3){
+                        string buttonName=screen==1?(name=="ConfirmVisitRemovalLabel"?"ConfirmVisitRemoval":"RemovalCard_0"):screen==2?"ExchangeOffer_probe":"VisitOption_0";
+                        var row=host.GetComponentsInChildren<Button>().Single(b=>b.name==buttonName);
+                        var tint=row.GetComponent<Image>().color;
+                        float Luma(Color c){float Linear(float x)=>x<=.04045f?x/12.92f:Mathf.Pow((x+.055f)/1.055f,2.4f);return .2126f*Linear(c.r)+.7152f*Linear(c.g)+.0722f*Linear(c.b);}
+                        foreach(var state in new[]{row.colors.normalColor,row.colors.selectedColor,row.colors.pressedColor,row.colors.disabledColor}){
+                            float text=Luma(label.color),background=Luma(tint*state);
+                            Assert.GreaterOrEqual((Mathf.Max(text,background)+.05f)/(Mathf.Min(text,background)+.05f),4.5f,name);
+                        }
+                    }
+                }
+                Assert.AreEqual(4,profile.Owned[0].Count);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void メニュー書体の短い編成行はカード名と性能を全文表示し不要な全文入口を作らない()
+        {
+            var root=new GameObject("MenuFontRows",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            try{
+                var host=new GameObject("MenuFontView",typeof(RectTransform));host.transform.SetParent(root.transform,false);
+                var view=host.AddComponent<ClearReturnView>();var font=Resources.Load<Font>("OlcaUI/MenuText");Assert.IsNotNull(font);
+                view.Initialize(font,_=>{},()=>{},()=>{},()=>{});
+                var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
+                var profile=new ClearReturnProfile{Owned=new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Count=4}}};
+                view.RenderOwnedDeparture(profile,new[]{card},new[]{card},null,true,(_,__)=>{},()=>{},_=>{},()=>{},false);
+                foreach(var name in new[]{"DepartureCard_0","DeparturePerformance_0","DepartureCandidateHeading","DepartureCountHeading","DepartureOwnedHeading"}){
+                    var label=host.GetComponentsInChildren<Text>().Single(t=>t.name==name);
+                    using(var generated=new TextGenerator()){
+                        Assert.IsTrue(generated.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)),name);
+                        Assert.GreaterOrEqual(generated.characterCountVisible,label.text.Length,name);
+                    }
+                }
+                Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="DepartureRow_0Details"));
+                Assert.AreEqual(4,profile.Owned[0].Count);
+            }finally{Object.DestroyImmediate(root);}
+        }
         [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)]
         public void 詳細の短文と空説明は上端を保ち長文へ再拡張して末尾まで読める(float width,float height)
         {
