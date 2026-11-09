@@ -335,7 +335,7 @@ namespace Olca.Application.Dungeon
             if(managedCardRewardPresentation!=null){managedCardRewardPresentation.Dispose();managedCardRewardPresentation=null;cardSelectionView=null;}
             if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
-            hostPanels?.Dispose();hostPanels=null;panelFactory=null;
+            AbortOutsideWheel(release:true);hostPanels?.Dispose();hostPanels=null;panelFactory=null;
             managedCameraBinding?.Dispose();managedCameraBinding=null;
             if(managedWorldPresentation!=null){managedWorldPresentation.Dispose();managedWorldPresentation=null;gameFieldView=null;}
         }
@@ -454,6 +454,48 @@ namespace Olca.Application.Dungeon
         private Olca.Presentation.Management.GameplayPanelFactory.ChromeBinding gameplayChrome;
         private int outsideClosedFrame=-1;
         private bool OutsideRouteBusy=>outsideExplorationOpening||outsideExploration?.IsOpen==true;
+        private Olca.Presentation.Management.OutsideKamuiWheelDialog outsideWheel;
+        private bool outsideWheelPaused,outsideWheelHeld;private object outsideWheelInputContext;
+        private int outsideWheelPad=-1;
+        private long outsideWheelEpoch;
+        private void SetOutsideWheelPaused(long epoch,bool value)
+        {
+            if(epoch!=outsideWheelEpoch)return;
+            outsideWheelPaused=value;
+            GameplayPause.SetPaused(value||IsUserPaused||DialogueOpen);
+            gameplayAudio?.SetPaused(value||IsUserPaused||!isActiveAndEnabled);
+            ResetOutsideRouteInput();
+        }
+        private void AbortOutsideWheel(bool release=false)
+        {
+            if(outsideWheel!=null)outsideWheel.Abort();
+            if(outsideWheelPaused)SetOutsideWheelPaused(outsideWheelEpoch,false);
+            if(release){outsideWheelInputContext=null;outsideWheelHeld=false;outsideWheelEpoch++;if(outsideWheel!=null){if(UnityEngine.Application.isPlaying)Destroy(outsideWheel.gameObject);else DestroyImmediate(outsideWheel.gameObject);}outsideWheel=null;}
+            outsideWheelPad=-1;
+        }
+        private bool SampleOutsideWheelOpen(object context,bool held)
+        {
+            if(!ReferenceEquals(outsideWheelInputContext,context)){
+                AbortOutsideWheel();outsideWheelInputContext=context;outsideWheelHeld=held;return false;
+            }
+            bool edge=held&&!outsideWheelHeld;outsideWheelHeld=held;return context!=null&&edge;
+        }
+        private void UpdateOutsideWheel()
+        {
+            if(inputProvider==null)return;
+            var context=outsideExploration?.IsOpen==true?outsideExploration.Context:null;
+            bool same=ReferenceEquals(outsideWheelInputContext,context);
+            bool found=inputProvider.ReadOutsideWheel(same&&outsideWheel?.IsOpen==true?outsideWheelPad:-1,out var pad,out var held,out var decide,out var stick);
+            bool edge=SampleOutsideWheelOpen(context,held);
+            if(outsideWheel?.IsOpen==true){outsideWheel.Tick(found&&held,decide,stick);return;}
+            if(!edge||outsideExploration?.IsOpen!=true||!CustomizationUiLive||IsUserPaused||DialogueOpen||GameplayPause.InputBlocked||Time.timeScale<=0||gameSystem.Dialogs.ActiveCount!=0||context.DialogBlocksInput)return;
+            if(outsideWheel==null)outsideWheel=panelFactory.Component<Olca.Presentation.Management.OutsideKamuiWheelDialog>("OutsideKamuiWheelDialog",v=>v.Initialize(panelFactory.Font));
+            var owner=context;long epoch=++outsideWheelEpoch;outsideWheelPad=pad;
+            string ButtonLabel(string key)=>inputProvider.GamepadProfile.Bindings.TryGetValue(("gamepad",key=="WheelPrimary"?"outside":"menu",key),out var value)&&value!=null?UnityInputProvider.GamepadBindingLabel(value):"ミワリアテ";
+            // 現在は通常状態のみ。未接続の攻撃/麻痺モデルや神依性能をここで仮定しない。
+            outsideWheel.Open(gameSystem.Dialogs,owner,()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner),
+                ()=>!IsUserPaused&&!DialogueOpen,value=>SetOutsideWheelPaused(epoch,value),decide,stick,ButtonLabel("WheelPrimary"),ButtonLabel("Decide"));
+        }
         private void ResetOutsideRouteInput(){logicalLoop?.ReleaseInput();inputProvider?.QueueSnapshot();ResetTouchInput();}
         private async UniTaskVoid OpenOutsideExplorationAsync()
         {
@@ -549,6 +591,7 @@ namespace Olca.Application.Dungeon
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
+            AbortOutsideWheel();
             gameplayAudio?.SetPaused(true);
             combatFeedbackAudio?.Bind(null);
             CancelExplorationResume();
@@ -565,7 +608,7 @@ namespace Olca.Application.Dungeon
         }
         private void OnEnable()
         {
-            gameplayAudio?.SetPaused(IsUserPaused);
+            gameplayAudio?.SetPaused(IsUserPaused||outsideWheelPaused);
             if(pauseViewRegistered&&IsUserPaused)SetPausePanelVisible(true);
             if(hostPanels?.IsAlive==true)ShowCheckpointStatus(checkpointStatusOverride);
             if(progressActionDialog!=null)progressActionDialog.Resume(gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
@@ -831,7 +874,7 @@ namespace Olca.Application.Dungeon
         private void FinishDialogue(bool interrupt=false)
         {
             if(dialogue==null)return;var current=dialogue;if(interrupt)current.Interrupt();if(current.IsOpen)return;
-            dialogue=null;if(dialogueViews!=null)dialogueViews.CloseCurrent();else if(dialogueView!=null)dialogueView.Bind(null);var callback=dialogueFinished;dialogueFinished=null;logicalLoop.Observe(false);ResetTouchInput();GameplayPause.SetPaused(IsUserPaused);inputProvider?.QueueSnapshot();
+            dialogue=null;if(dialogueViews!=null)dialogueViews.CloseCurrent();else if(dialogueView!=null)dialogueView.Bind(null);var callback=dialogueFinished;dialogueFinished=null;logicalLoop.Observe(false);ResetTouchInput();GameplayPause.SetPaused(IsUserPaused||outsideWheelPaused);inputProvider?.QueueSnapshot();
             finishingDialogue=true;try{callback?.Invoke(current.EndReason);}finally{finishingDialogue=false;}
         }
         private void UpdateDialogue()
@@ -980,6 +1023,7 @@ namespace Olca.Application.Dungeon
 
         public void SetUserPaused(bool paused)
         {
+            if(paused)AbortOutsideWheel();
             bool cancelledCountdown = paused && explorationResume.IsRunning;
             if (paused) CancelExplorationResume();
             else if (explorationResume.IsRunning) return;
@@ -1019,8 +1063,8 @@ namespace Olca.Application.Dungeon
             if(dialogue!=null)dialogue.IsPaused=paused;
             if(dialogueViews!=null&&dialogueView!=null&&DialogueOpen)dialogueView.SetPresentationPaused(paused);
             dialogueLoop.Observe(false);
-            gameplayAudio?.SetPaused(paused||!isActiveAndEnabled);
-            GameplayPause.SetPaused(paused||DialogueOpen);
+            gameplayAudio?.SetPaused(paused||outsideWheelPaused||!isActiveAndEnabled);
+            GameplayPause.SetPaused(paused||DialogueOpen||outsideWheelPaused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
             else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();if(audioSettingsView!=null)audioSettingsView.DiscardAndClose();if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose(); }
             // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
@@ -1231,7 +1275,7 @@ namespace Olca.Application.Dungeon
             // 保存成功の同じ通知を再受信しても、現世代の表示や入力を再度破棄しない。
             var generation=clearReturnSession.Snapshot.CheckpointGeneration;
             if(gameSystem!=null&&gameSystem.OutsideProgressGeneration!=generation){
-                outsideExploration?.Dispose();outsideExploration=null;
+                AbortOutsideWheel(release:true);outsideExploration?.Dispose();outsideExploration=null;
                 gameSystem.ResetOutsideForNewProgress(generation);
                 outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();
             }
@@ -2052,13 +2096,14 @@ namespace Olca.Application.Dungeon
         {
             gamepadVibration?.Tick();
             if (manager == null) return;
+            UpdateOutsideWheel();
             if(outsideExploration?.HasLostView==true)OpenOutsideExplorationAsync().Forget();
             gameplayChrome?.SetCovered(OutsideRouteBusy);
             if(OutsideRouteBusy){
                 logicalLoop.Observe(false);
                 if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
-                outsideExploration?.SetCovered(IsUserPaused);
-                outsideExploration?.Pump(!IsUserPaused&&Time.timeScale>0);
+                outsideExploration?.SetCovered(IsUserPaused||outsideWheelPaused);
+                outsideExploration?.Pump(!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0);
                 if(IsUserPaused)RefreshSystemMenu();else{systemMenu?.Suspend();systemMenuRoot=null;}
                 return;
             }
@@ -2725,6 +2770,7 @@ namespace Olca.Application.Dungeon
             if(runtimeReleased||runtimeReleasing)return;
             runtimeReleasing=true;
             try {
+            AbortOutsideWheel(release:true);
             // UnityのDestroy完了を待たずに、host終了時点で未移行親のDialog寿命も切る。
             if(progressActionDialog!=null)progressActionDialog.Abort();if(retreatDialog!=null)retreatDialog.Abort();
             transitionCts?.Cancel();transitionCts?.Dispose();transitionCts=null;

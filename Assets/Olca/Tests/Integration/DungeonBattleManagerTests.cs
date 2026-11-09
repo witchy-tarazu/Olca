@@ -2852,6 +2852,24 @@ namespace Olca.Tests.Integration
         }
 
         [Test] public void 会話は多重起動とゲーム入力を遮断し閉鎖通知は一回だけで保存しない(){var c=Start();var m=Model(c);var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));int ended=0;var script=new DialogueScript("external",new[]{new DialogueLine("検証")});Assert.IsTrue(c.TryStartDialogue(script,r=>ended++));Assert.IsFalse(c.TryStartDialogue(script));float x=m.Dungeon.PlayerPosition;for(int n=0;n<30;n++)Tick(c,new LogicalInput{Horizontal=1,DashButtonDown=true});Assert.AreEqual(x,m.Dungeon.PlayerPosition);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.SetUserPaused(true);c.CurrentDialogue.AdvanceFrame();Assert.AreEqual(0,c.CurrentDialogue.VisibleElements);c.SetUserPaused(false);Assert.IsTrue(Olca.Unity.GameplayPause.InputBlocked);c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));}
+        [Test] public void ホイール音停止の合成は会話中の旧BGM継続を変えずゲーム時計だけ停止する()
+        {
+            var c=Start();try{c.gameObject.SetActive(true);Call(c,"OnEnable");var audio=(Olca.Unity.GameplayAudioRouter)Get(c,"gameplayAudio");Assert.IsFalse(audio.IsPaused);
+            var before=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(p=>p,p=>System.IO.File.ReadAllBytes(p));
+            Assert.IsTrue(c.TryStartDialogue(new DialogueScript("wheel-audio-compat",new[]{new DialogueLine("会話の音声契約") })));Assert.IsTrue(Olca.Unity.GameplayPause.IsPaused);Assert.IsFalse(audio.IsPaused,"会話だけで既存BGMを停止しない");
+            Call(c,"OnEnable");Assert.IsFalse(audio.IsPaused,"会話中の再有効化も旧音声継続");Assert.IsTrue(Olca.Unity.GameplayPause.IsPaused);
+            long epoch=(long)Get(c,"outsideWheelEpoch");Call(c,"SetOutsideWheelPaused",epoch,true);Assert.IsTrue(audio.IsPaused);Assert.IsTrue(Olca.Unity.GameplayPause.IsPaused);
+            Call(c,"SetOutsideWheelPaused",epoch,false);Assert.IsFalse(audio.IsPaused,"Wheel終了で会話の旧BGM継続へ戻る");Assert.IsTrue(Olca.Unity.GameplayPause.IsPaused,"会話のゲーム時計停止を解かない");
+            c.SetUserPaused(true);Assert.IsTrue(audio.IsPaused);c.SetUserPaused(false);Assert.IsFalse(audio.IsPaused,"会話中のUserPause解除も旧BGM継続");Assert.IsTrue(Olca.Unity.GameplayPause.IsPaused);
+            c.CurrentDialogue.Decide();c.CurrentDialogue.Decide();Call(c,"UpdateDialogue");Assert.IsNull(c.CurrentDialogue);Assert.IsFalse(audio.IsPaused);
+            foreach(var pair in before)CollectionAssert.AreEqual(pair.Value,System.IO.File.ReadAllBytes(pair.Key));
+            }finally{
+                var ownedCanvas=(UnityEngine.GameObject)Get(c,"pauseCanvas");
+                try{if(ownedCanvas!=null)UnityEngine.Object.DestroyImmediate(ownedCanvas);Set(c,"pauseCanvas",null);c.StopManagedHost();}
+                finally{Cleanup();}
+                Assert.IsTrue(ownedCanvas==null,"新fixtureの独立Canvasも返却する");
+            }
+        }
         [Test] public void 会話中のチェックポイント再開は会話とバックログを復元せず既存保存を保持する(){var c=Start();int ended=0;DialogueEndReason reason=DialogueEndReason.Completed;Assert.IsTrue(c.TryStartDialogue(new DialogueScript("external",new[]{new DialogueLine("復元しない文章")}),r=>{ended++;reason=r;}));var old=c.CurrentDialogue;old.Decide();c.SetUserPaused(true);Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.IsNull(c.CurrentDialogue);Assert.AreEqual(1,ended);Assert.AreEqual(DialogueEndReason.Interrupted,reason);Assert.IsEmpty(old.Backlog);}
         private static void ToBattle(Olca.Application.Dungeon.DungeonBattleController controller)
         {

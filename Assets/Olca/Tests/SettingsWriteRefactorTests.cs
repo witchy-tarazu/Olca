@@ -97,6 +97,36 @@ namespace Olca.Tests
                 State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight).WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftStick));samples=provider.CaptureTimestamped();input=samples[samples.Length-1].Input;Assert.AreEqual(1,input.Horizontal);Assert.IsTrue(input.DashButtonDown);
             }finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
+        [TestCase(false)][TestCase(true)] public void 外界ホイールslot追加は既存LB割当を奪わず完全な旧形式だけ補完する(bool collision)
+        {
+            var current=UnityInputProvider.CreateDefaultGamepadProfile();var wheel=("gamepad","outside","WheelPrimary");Assert.AreEqual("LeftShoulder",current.Bindings[wheel]);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel)old.Add(p.Key,p.Value);
+            if(collision)old[("gamepad","outside","DashPrimary")]="LeftShoulder";
+            var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);var loaded=UnityInputProvider.DecodeSelectionSlots(old,true);
+            foreach(var p in before)Assert.AreEqual(p.Value,loaded.Bindings[p.Key]);CollectionAssert.AreEquivalent(before,old);Assert.AreEqual(collision?null:"LeftShoulder",loaded.Bindings[wheel]);
+            var partial=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(loaded.Bindings);partial.Remove(("gamepad","outside","JumpPrimary"));Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,true));
+            var edit=current.BeginEdit();Assert.IsFalse(edit.TryAssign(wheel,"South",out _),"JumpとDecideの複数競合を原子的に拒否");CollectionAssert.AreEquivalent(current.Bindings,edit.Draft);
+            Assert.IsTrue(edit.TryAssign(wheel,"RightShoulder",out var error),error);Assert.AreEqual("LeftShoulder",edit.Draft[("gamepad","outside","DashPrimary")]);Assert.AreEqual("RightShoulder",edit.Draft[("gamepad","battle","CardPrimary")]);
+            edit=current.BeginEdit();Assert.IsFalse(edit.TryAssign(("gamepad","menu","Decide"),"LeftShoulder",out _));CollectionAssert.AreEquivalent(current.Bindings,edit.Draft);
+            var menu=UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();Assert.IsTrue(menu.TryAssign(("gamepad","menu","Decide"),"RightStick",out _));var customized=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(menu.Draft);customized.Remove(wheel);customized[("gamepad","menu","Decide")]="LeftShoulder";customized[("gamepad","menu","PageUp")]="RightStick";
+            loaded=UnityInputProvider.DecodeSelectionSlots(customized,true);Assert.IsNull(loaded.Bindings[wheel]);Assert.AreEqual("LeftShoulder",loaded.Bindings[("gamepad","menu","Decide")]);
+        }
+        [Test] public void 神依ホイールraw入力は開始Padを固定し停止snapshot中も解放と確定を読みBで確定しない()
+        {
+            var a=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var b=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
+            using(var input=new UnityInputProvider())try{
+                input.GamepadContext=()=>"outside";input.StartEventCapture();input.CaptureTimestamped();
+                void State(UnityEngine.InputSystem.Gamepad pad,UnityEngine.InputSystem.LowLevel.GamepadState value){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,value);UnityEngine.InputSystem.InputSystem.Update();}
+                State(a,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=UnityEngine.Vector2.right}.WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftShoulder));
+                Assert.IsTrue(input.ReadOutsideWheel(-1,out var id,out var held,out var decide,out var direction));Assert.AreEqual(a.deviceId,id);Assert.IsTrue(held);Assert.IsFalse(decide);Assert.AreEqual(UnityEngine.Vector2.right,direction);
+                input.QueueSnapshot();Assert.IsFalse(input.ReadOutsideWheel(-1,out _,out _,out _,out _),"blockedな保持から新しく開かない");Assert.IsTrue(input.ReadOutsideWheel(id,out _,out held,out decide,out direction));Assert.IsTrue(held);Assert.AreEqual(UnityEngine.Vector2.right,direction);
+                State(b,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.ReadOutsideWheel(id,out _,out held,out decide,out _));Assert.IsFalse(decide,"別PadのAを混ぜない");
+                State(a,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftShoulder).WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));input.ReadOutsideWheel(id,out _,out held,out decide,out _);Assert.IsTrue(held);Assert.IsFalse(decide);
+                State(a,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftShoulder).WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));input.ReadOutsideWheel(id,out _,out held,out decide,out _);Assert.IsTrue(decide);
+                State(a,new UnityEngine.InputSystem.LowLevel.GamepadState());input.ReadOutsideWheel(id,out _,out held,out decide,out _);Assert.IsFalse(held);Assert.IsFalse(decide);
+                State(a,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.LeftShoulder));Assert.IsTrue(input.ReadOutsideWheel(-1,out var fresh,out held,out _,out _));Assert.AreEqual(id,fresh);Assert.IsTrue(held);
+            }finally{UnityEngine.InputSystem.InputSystem.RemoveDevice(a);UnityEngine.InputSystem.InputSystem.RemoveDevice(b);}
+        }
         private sealed class ReplaceFault : CheckpointFileIo
         {
             public bool Fail, After;

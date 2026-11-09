@@ -68,6 +68,7 @@ namespace Olca.Application.Management
         private Func<bool> allowed;private Action returned;private bool disposed;
         private readonly OutsideExplorationRuntime runtime;private readonly UnityInputProvider input;private Action paused;private Func<Olca.Core.Domain.Card,Sprite> icon;
         public Olca.Presentation.Exploration.OutsideExplorationView View{get;private set;}
+        public ManagedScreenContext Context{get;private set;}
         private Olca.Core.Domain.InputBindingProfile guideKeyboard,guideGamepad;private InputGuideDevice guideDevice;private string selectionGuide,movementGuide;
         private string SelectionGuide()
         {
@@ -79,7 +80,7 @@ namespace Olca.Application.Management
                 string traversal=device==InputGuideDevice.Gamepad?"outside":"exploration";
                 string Label(string context,string action)=>profile.Bindings.TryGetValue((kind,context,action),out var key)&&key!=null?(device==InputGuideDevice.Gamepad?UnityInputProvider.GamepadBindingLabel(key):key):"ミワリアテ";
                 string Group(params string[] actions){var keys=actions.Select(action=>profile.Bindings.TryGetValue((kind,"battle",action),out var key)?key:null).Where(key=>key!=null).Distinct().Select(key=>device==InputGuideDevice.Gamepad?UnityInputProvider.GamepadBindingLabel(key):key);return keys.Any()?string.Join("/",keys):"ミワリアテ";}
-                movementGuide=device==InputGuideDevice.Touch?"":Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Gamepad?"イドウ: ヒダリ スティック":"イドウ  ヒダリ: "+Group("LeftPrimary","LeftSecondary")+"  ミギ: "+Group("RightPrimary","RightSecondary"))+"\nジャンプ: "+Label(traversal,"JumpPrimary")+"  /  ダッシュ: "+Label(traversal,"DashPrimary")+(device==InputGuideDevice.Gamepad?"":"/"+Label(traversal,"DashSecondary")));
+                movementGuide=device==InputGuideDevice.Touch?"":Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Gamepad?"イドウ: ヒダリ スティック":"イドウ  ヒダリ: "+Group("LeftPrimary","LeftSecondary")+"  ミギ: "+Group("RightPrimary","RightSecondary"))+"\nジャンプ: "+Label(traversal,"JumpPrimary")+"  /  ダッシュ: "+Label(traversal,"DashPrimary")+(device==InputGuideDevice.Gamepad?"":"/"+Label(traversal,"DashSecondary")))+(device==InputGuideDevice.Gamepad?"\nカムイ ホイール: "+Label("outside","WheelPrimary"):"");
                 selectionGuide=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(device==InputGuideDevice.Touch?"カード タップ: センタク":"カード センタク  マエ: "+Label(traversal,"SelectionPrevious")+"  /  ツギ: "+Label(traversal,"SelectionNext"));
             }
             return selectionGuide;
@@ -93,11 +94,11 @@ namespace Olca.Application.Management
             layer.Register(registrationOwner,ScreenKey,factory,(panel,context)=>{
                 if(disposed||!this.allowed())throw new OperationCanceledException();
                 View=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()??throw new InvalidOperationException("外界Viewがありません");
-                var lease=session.AttachPresentation();try{runtime?.Attach(this,input);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide);}catch{runtime?.Detach(this);lease.Dispose();throw;}
+                Context=context;var lease=session.AttachPresentation();try{runtime?.Attach(this,input);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide);}catch{runtime?.Detach(this);lease.Dispose();throw;}
             },panel=>{
                 runtime?.Detach(this);
                 // 管理側の閉鎖は復旧対象から外す。表示中の外部破棄ではこの経路を通らない。
-                View=null;
+                Context=null;View=null;
                 if(panel!=null)panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()?.Hide();
             });
         }
@@ -105,7 +106,7 @@ namespace Olca.Application.Management
         {if(disposed||!allowed())return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
         public void SetCovered(bool covered){runtime?.SetCovered(this,covered);if(View!=null)View.SetCovered(covered);}
         public void Pump(bool active){runtime?.Pump(this,active&&IsOpen&&View.CanPlay);if(View!=null)View.Render();}
-        public void Dispose(){if(disposed)return;disposed=true;runtime?.Detach(this);layer.UnregisterOwner(registrationOwner);View=null;allowed=null;returned=null;paused=null;icon=null;}
+        public void Dispose(){if(disposed)return;disposed=true;runtime?.Detach(this);layer.UnregisterOwner(registrationOwner);Context=null;View=null;allowed=null;returned=null;paused=null;icon=null;}
     }
 }
 
