@@ -8,6 +8,37 @@ namespace Olca.Tests
 {
     public class SettingsWriteRefactorTests
     {
+        private static readonly OutsideItemDisplayDefinition[] InventoryDefinitions={OutsideItemDisplayDefinition.RecoverySample,new OutsideItemDisplayDefinition("outside-second","フタつめ","2")};
+        private static ClearReturnProfile InventoryProfile()=>new ClearReturnProfile{ReturnedHp=100,Tokens=3,OutsideInventory=new OutsideInventoryData{Currency=99,Items=new[]{new OutsideItemCount{Id=OutsideItemDisplayDefinition.RecoverySample.Id,Count=3},new OutsideItemCount{Id="outside-second",Count=0},new OutsideItemCount{Id="future-unknown",Count=2}}}};
+        [Test] public void 探索所持欄の旧形式は空で読み原本を一切書き換えず明示変更だけ保存する()
+        {
+            var directory=Path.Combine(Path.GetTempPath(),"olca-inventory-legacy-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var store=new ClearReturnFileStore(directory);var bytes=Convert.FromBase64String("eyJQYXlsb2FkIjoie1wiQ2hlY2twb2ludEdlbmVyYXRpb25cIjpudWxsLFwiQ2xlYXJlZER1bmdlb25zXCI6W10sXCJDb21taXRJZFwiOm51bGwsXCJDdXN0b21pemF0aW9uXCI6bnVsbCxcIkRpc2NvdmVyZWRDYXJkc1wiOm51bGwsXCJFcXVpcHBlZERlY2tJZFwiOm51bGwsXCJFeGNoYW5nZVJlY2VpcHRzXCI6bnVsbCxcIkV4Y2hhbmdlU3RvY2tcIjpudWxsLFwiRXhjaGFuZ2VUb3RhbHNcIjpudWxsLFwiRXhwZXJpZW5jZVwiOjAsXCJGbG93XCI6bnVsbCxcIkxldmVsXCI6MSxcIk5leHREZXBhcnR1cmVcIjpudWxsLFwiT3duZWRcIjpbXSxcIlJlY2VpcHRzXCI6W10sXCJSZXR1cm5lZEhwXCI6MTAwLFwiUmV2ZWFsZWRSZWNpcGVzXCI6bnVsbCxcIlJldmlzaW9uXCI6MCxcIlNhdmVkRGVja3NcIjpbXSxcIlNlbGVjdGVkU3R5bGVJZFwiOm51bGwsXCJUb2tlbnNcIjozLFwiVmVyc2lvblwiOjF9IiwiU2hhMjU2IjoiMEI2QkFEMTdDMzFGRjNGNUYxQjM2M0VFRjYzMTI0OEFBODhDNzAxN0FDOEREMjU3Qzc4MDg1RTkxRjU2MUM4MCIsIlZlcnNpb24iOjF9");File.WriteAllBytes(store.ActivePath,bytes);var session=new ClearReturnSession(store);Assert.IsTrue(session.Ready,session.Error);Assert.AreEqual(3,session.Snapshot.Tokens);Assert.AreEqual(0,session.OutsideInventorySnapshot.Currency);Assert.IsEmpty(session.OutsideInventorySnapshot.Items);CollectionAssert.AreEqual(new string[4],session.OutsideInventorySnapshot.Shortcuts);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));Assert.IsFalse(session.TryAssignOutsideItem(0,OutsideItemDisplayDefinition.RecoverySample.Id,InventoryDefinitions));CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));}
+            finally{Directory.Delete(directory,true);}
+        }
+        [Test] public void 探索4枠は登録交換解除と再読込で所持数と別通貨と既存トークンを変えない()
+        {
+            var directory=Path.Combine(Path.GetTempPath(),"olca-inventory-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var store=new ClearReturnFileStore(directory);File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(InventoryProfile()));var session=new ClearReturnSession(store);
+                Assert.IsTrue(session.TryAssignOutsideItem(0,InventoryDefinitions[0].Id,InventoryDefinitions),session.Error);long revision=session.InventoryRevision;Assert.IsTrue(session.TryAssignOutsideItem(0,InventoryDefinitions[0].Id,InventoryDefinitions));Assert.AreEqual(revision,session.InventoryRevision);
+                Assert.IsTrue(session.TryAssignOutsideItem(1,"outside-second",InventoryDefinitions),session.Error);Assert.IsTrue(session.TryAssignOutsideItem(1,InventoryDefinitions[0].Id,InventoryDefinitions));CollectionAssert.AreEqual(new[]{"outside-second",InventoryDefinitions[0].Id,null,null},session.OutsideInventorySnapshot.Shortcuts);
+                Assert.IsTrue(session.TryAssignOutsideItem(1,null,InventoryDefinitions));var bytes=File.ReadAllBytes(store.ActivePath);var loaded=new ClearReturnSession(new ClearReturnFileStore(directory));Assert.IsTrue(loaded.Ready,loaded.Error);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));CollectionAssert.AreEqual(new[]{"outside-second",null,null,null},loaded.OutsideInventorySnapshot.Shortcuts);Assert.AreEqual(99,loaded.OutsideInventorySnapshot.Currency);Assert.AreEqual(3,loaded.Snapshot.Tokens);Assert.AreEqual(3,loaded.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(0,loaded.OutsideInventorySnapshot.Items[1].Count);Assert.AreEqual("future-unknown",loaded.OutsideInventorySnapshot.Items[2].Id);
+                var copy=loaded.OutsideInventorySnapshot;copy.Currency=0;copy.Items[0].Count=0;copy.Shortcuts[0]=null;Assert.AreEqual(99,loaded.OutsideInventorySnapshot.Currency);Assert.AreEqual(3,loaded.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual("outside-second",loaded.OutsideInventorySnapshot.Shortcuts[0]);
+            }finally{Directory.Delete(directory,true);}
+        }
+        [TestCase(false)][TestCase(true)] public void 探索登録は保存前後の障害で原子的に確定し同じ再試行を二重適用しない(bool after)
+        {
+            var directory=Path.Combine(Path.GetTempPath(),"olca-inventory-fault-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var io=new ReplaceFault();var store=new ClearReturnFileStore(directory,io);File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(InventoryProfile()));var bytes=File.ReadAllBytes(store.ActivePath);var session=new ClearReturnSession(store);io.Fail=true;io.After=after;Assert.AreEqual(after,session.TryAssignOutsideItem(2,InventoryDefinitions[0].Id,InventoryDefinitions));
+                if(!after){CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));Assert.IsNull(session.OutsideInventorySnapshot.Shortcuts[2]);Assert.IsTrue(session.HasPendingSave);Assert.IsFalse(session.TryAssignOutsideItem(0,"outside-second",InventoryDefinitions));}
+                io.Fail=false;Assert.IsTrue(session.Retry(),session.Error);Assert.AreEqual(InventoryDefinitions[0].Id,session.OutsideInventorySnapshot.Shortcuts[2]);Assert.AreEqual(1,session.InventoryRevision);var confirmed=File.ReadAllBytes(store.ActivePath);Assert.IsTrue(session.Retry());CollectionAssert.AreEqual(confirmed,File.ReadAllBytes(store.ActivePath));Assert.AreEqual(3,session.OutsideInventorySnapshot.Items[0].Count);Assert.IsEmpty(Directory.GetFiles(directory,"*.tmp"));
+            }finally{Directory.Delete(directory,true);}
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)] public void 探索所持欄の不正データは拒否し未知IDの既存所持と登録を保持する(int invalid)
+        {
+            var profile=InventoryProfile();profile.OutsideInventory.Shortcuts[3]="future-unknown";ClearReturnProfile.Validate(profile);var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile);var loaded=Olca.Core.Logic.Dungeon.PortableCheckpointJson.DecodeProgress(bytes);Assert.AreEqual("future-unknown",loaded.OutsideInventory.Shortcuts[3]);
+            if(invalid==0)profile.OutsideInventory.Currency=-1;if(invalid==1)profile.OutsideInventory.Items[0].Count=-1;if(invalid==2)profile.OutsideInventory.Shortcuts[0]="future-unknown";if(invalid==3)profile.OutsideInventory.Shortcuts[0]="missing";Assert.Throws<ArgumentException>(()=>ClearReturnProfile.Validate(profile));
+        }
         [TestCase(false)][TestCase(true)] public void PCホイールの旧設定補完は旧割当と原本を守りTab競合時だけ新slotを空にする(bool collision)
         {
             var current=UnityInputProvider.CreateDefaultKeyboardProfile();var wheel=("keyboard","outside","WheelPrimary");Assert.AreEqual("Tab",current.Bindings[wheel]);

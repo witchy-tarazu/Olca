@@ -238,7 +238,7 @@ namespace Olca.Application.Dungeon
         {
             if(gameSystem!=null){pauseViews=gameSystem.Views.GetLayer("system-pause");pauseViewRegistered=true;}
             hostPanels.Register(ManagedPauseScreen,"system-pause",BuildPausePanel,
-                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
+                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.GameplayPauseView>().Hide();});
         }
         private void RegisterReturnViews(){RegisterReturnView(false);RegisterReturnView(true);}
@@ -530,11 +530,12 @@ namespace Olca.Application.Dungeon
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
                     if(outsideLandingRoute&&services.OutsideExploration.Core.Frame==0&&!services.OutsideExploration.IsPresented)services.OutsideExploration.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true));
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
-                        ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources));},
+                        ct=>{ct.ThrowIfCancellationRequested();var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources);panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>().ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);return System.Threading.Tasks.Task.FromResult(panel);},
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
                         ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true);
                 }
                 var result=await outsideExploration.OpenAsync();
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null)outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
@@ -1093,12 +1094,18 @@ namespace Olca.Application.Dungeon
             gameplayAudio?.SetPaused(paused||outsideWheelPaused||!isActiveAndEnabled);
             GameplayPause.SetPaused(paused||DialogueOpen||outsideWheelPaused);
             if (paused) { timeScaleBeforePause = Time.timeScale; Time.timeScale = 0f; }
-            else { Time.timeScale = timeScaleBeforePause; if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();if(audioSettingsView!=null)audioSettingsView.DiscardAndClose();if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose(); }
+            else { Time.timeScale = timeScaleBeforePause;outsideItemRegistrationView?.Hide(); if (keyboardSettingsView != null) keyboardSettingsView.DiscardAndClose();if(audioSettingsView!=null)audioSettingsView.DiscardAndClose();if(gamepadSettingsView!=null)gamepadSettingsView.DiscardAndClose(); }
             // Unityでは破棄済み参照もCLR上は非nullになるため、生存判定を通す。
             SetPausePanelVisible(paused); if (paused&&pauseOverlay!=null) pauseOverlay.transform.SetAsLastSibling();
             inputProvider?.QueueSnapshot();
         }
 
+        private const string ManagedOutsideItems="outside-item-registration";
+        private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
+        private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample};
+        private void OpenOutsideItems(){if(!IsUserPaused||outsideExploration?.IsOpen!=true||gameSystem==null||gameSystem.Dialogs.ActiveCount!=0)return;ShowOutsideItemsAsync().Forget();}
+        private async UniTaskVoid ShowOutsideItemsAsync(){var owner=gameSystemSession;var result=await gameSystem.Views.ShowAsync(ManagedOutsideItems);if(this!=null&&ReferenceEquals(owner,gameSystemSession)&&!result.Succeeded&&!result.Cancelled){logger?.LogWarning(result.Error);SetPausePanelVisible(IsUserPaused);}}
+        private void CloseOutsideItems(){outsideItemRegistrationView?.Hide();SetPausePanelVisible(IsUserPaused);if(IsUserPaused&&pauseOverlay!=null)pauseOverlay.transform.SetAsLastSibling();}
         private Olca.Presentation.Management.GameplayPanelFactory panelFactory;
         private Olca.Application.Management.HostPanelBindings hostPanels;
         private void CreatePauseControls()
@@ -1147,6 +1154,10 @@ namespace Olca.Application.Dungeon
                     panel=>{if(panel!=null)panel.GetComponent<GameplayAudioSettingsView>().DiscardAndClose();});
             }
 
+            if(gameSystem!=null)gameSystem.Views.Register(this,ManagedOutsideItems,
+                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideItemRegistrationView>("OutsideItemRegistrationView",view=>{outsideItemRegistrationView=view;view.Initialize(panelFactory.Font,clearReturnSession,outsideItemDefinitions,CloseOutsideItems);}).gameObject);},
+                (panel,context)=>{if(!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Open(context);},
+                panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide();});
             RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();
             hostPanels.Register("dialogue","dialogue",()=>{
                 dialogueView=panelFactory.Component<DialogueView>("DialoguePanel",view=>view.Initialize(font,()=>SetUserPaused(true)));return dialogueView.gameObject;
@@ -1157,12 +1168,13 @@ namespace Olca.Application.Dungeon
             },(panel,context)=>panel.SetActive(true),panel=>{if(panel!=null)panel.SetActive(false);});
             ShowCheckpointStatus();
         }
-        private static bool OutsidePauseControlAllowed(string name)=>name=="ResumeButton"||name=="KeyboardSettingsButton"||name=="GamepadSettingsButton"||name=="AudioSettingsButton"||name=="VibrationSetting"||name=="TransformationAnimationSetting"||name=="DialogueTextSpeedButton";
+        private static bool OutsidePauseControlAllowed(string name)=>name=="OutsideItemsButton"||name=="ResumeButton"||name=="KeyboardSettingsButton"||name=="GamepadSettingsButton"||name=="AudioSettingsButton"||name=="VibrationSetting"||name=="TransformationAnimationSetting"||name=="DialogueTextSpeedButton";
         private GameObject BuildPausePanel()
         {
             pauseOverlay=panelFactory.Pause();var bindings=hostPanels;
             Button Button(string name)=>pauseOverlay.transform.Find(name).GetComponent<Button>();
             void Bind(string name,System.Action action)=>Button(name).onClick.AddListener(()=>{if(this!=null&&bindings.IsAlive&&(!OutsideRouteBusy||OutsidePauseControlAllowed(name))&&Time.frameCount!=outsideClosedFrame)action();});
+            Bind("OutsideItemsButton",OpenOutsideItems);
             Bind("ResumeButton",()=>SetUserPaused(false));Bind("LoadCheckpointButton",ContinueCheckpointFromUi);
             Bind("KeyboardSettingsButton",OpenKeyboardSettings);Bind("GamepadSettingsButton",OpenGamepadSettings);Bind("AudioSettingsButton",OpenAudioSettings);
             Bind("OwnedCardsButton",OpenOwnedCards);Bind("RetreatButton",RequestRetreat);

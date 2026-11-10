@@ -472,6 +472,7 @@ namespace Olca.Core.Domain
         public int Version = 1;
         public long Revision, Experience, Tokens;
         public int Level = 1, ReturnedHp;
+        public OutsideInventoryData OutsideInventory; // nullは旧保存。カード/装備/超過トークンとは別の所持欄。
         public string CommitId;
         public string CheckpointGeneration; // nullは旧保存の領域。新規開始だけで切替。
         public OwnedCardCount[] Owned = new OwnedCardCount[0];
@@ -489,7 +490,7 @@ namespace Olca.Core.Domain
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public Olca.Core.Logic.Customization.CustomizationProgress Customization; // 旧省略/nullは空状態
         public ClearReturnProfile Copy() => new ClearReturnProfile {
-            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration,
+            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(),
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
             Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, Customization=Customization?.Copy(), DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
@@ -497,6 +498,7 @@ namespace Olca.Core.Domain
         public static void Validate(ClearReturnProfile p)
         {
             Olca.Core.Logic.Customization.CustomizationProgress.Validate(p?.Customization);
+            OutsideInventoryData.Validate(p?.OutsideInventory);
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
@@ -1182,5 +1184,53 @@ namespace Olca.Core.Domain
             finally{writing=false;}
         }
         public void Dispose(){disposed=true;pending=null;current=null;}
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    public sealed class OutsideItemCount
+    {
+        public string Id;public int Count;
+        public OutsideItemCount Copy()=>new OutsideItemCount{Id=Id,Count=Count};
+    }
+    /// <summary>探索専用の永続所持欄。未知IDは失わず保持し、使用可能な定義との照合は別責務。</summary>
+    public sealed class OutsideInventoryData
+    {
+        public long Currency;
+        public OutsideItemCount[] Items=Array.Empty<OutsideItemCount>();
+        public string[] Shortcuts=new string[4]; // 上/右/下/左。旧nullは未登録4枠。
+        public OutsideInventoryData Copy()=>new OutsideInventoryData{Currency=Currency,Items=Items?.Select(v=>v?.Copy()).ToArray(),Shortcuts=Shortcuts?.ToArray()};
+        public static void Validate(OutsideInventoryData value)
+        {
+            if(value==null)return;
+            if(value.Currency<0||value.Items==null||value.Items.Any(v=>v==null||string.IsNullOrWhiteSpace(v.Id)||v.Count<0)||value.Items.Select(v=>v.Id).Distinct().Count()!=value.Items.Length||value.Shortcuts==null||value.Shortcuts.Length!=4||value.Shortcuts.Any(v=>v!=null&&string.IsNullOrWhiteSpace(v)))throw new ArgumentException("探索所持欄の形式が不正です");
+            var registered=value.Shortcuts.Where(v=>v!=null).ToArray();if(registered.Distinct().Count()!=registered.Length||registered.Any(id=>!value.Items.Any(v=>v.Id==id)))throw new ArgumentException("探索ショートカットの所有記録が一致しません");
+        }
+    }
+    public sealed class OutsideItemDisplayDefinition
+    {
+        public string Id{get;}public string Name{get;}public string Mark{get;}
+        public OutsideItemDisplayDefinition(string id,string name,string mark){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(name)||string.IsNullOrWhiteSpace(mark))throw new ArgumentException("表示用アイテム定義が必要です");Id=id;Name=name;Mark=mark;}
+        // 表示候補だけ。入手・効果量・価格・CDを仮決めした実用品として登録しない。
+        public static readonly OutsideItemDisplayDefinition RecoverySample=new OutsideItemDisplayDefinition("outside-recovery-sample-v1","HPカイフク（カリ）","HP");
+    }
+    public sealed partial class ClearReturnSession
+    {
+        public long InventoryRevision=>current?.Revision??-1;
+        public OutsideInventoryData OutsideInventorySnapshot=>(current?.OutsideInventory??new OutsideInventoryData()).Copy();
+        public bool TryAssignOutsideItem(int slot,string id,IReadOnlyList<OutsideItemDisplayDefinition> definitions)
+        {
+            if(!Available())return Fail("未保存の処理を先に再試行してください");
+            try{
+                if(customizationRunActive?.Invoke()==true)return Fail("ダンジョン中は探索アイテムを変更できません");
+                if(slot<0||slot>=4||definitions==null||definitions.Any(v=>v==null)||definitions.Select(v=>v.Id).Distinct().Count()!=definitions.Count)throw new ArgumentException("登録先または表示定義が不正です");
+                var inventory=OutsideInventorySnapshot;
+                if(id!=null&&(!definitions.Any(v=>v.Id==id)||!inventory.Items.Any(v=>v.Id==id)))return Fail("所持記録と登録定義のあるアイテムが必要です");
+                if(inventory.Shortcuts[slot]==id){Error=null;return true;}
+                int other=id==null?-1:Array.IndexOf(inventory.Shortcuts,id);string previous=inventory.Shortcuts[slot];inventory.Shortcuts[slot]=id;if(other>=0)inventory.Shortcuts[other]=previous;
+                var next=current.Copy();next.OutsideInventory=inventory;return Stage(next);
+            }catch(Exception e) when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
+        }
     }
 }

@@ -213,9 +213,9 @@ namespace Olca.Tests.Application
                 Assert.IsFalse(sounds.Router.IsPaused);
                 controller.enabled=false;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsTrue(sounds.Router.IsPaused);
                 controller.enabled=true;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnEnable",flags).Invoke(controller,null);Assert.IsFalse(sounds.Router.IsPaused);
-                Assert.AreEqual(3,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(3,views.RegisteredCount);
+                Assert.AreEqual(4,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(4,views.RegisteredCount);
                 var entries=(System.Collections.IDictionary)typeof(ViewManager).GetField("entries",flags).GetValue(views);
-                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings"},entries.Keys);
+                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings","outside-item-registration"},entries.Keys);
             } finally {
                 var canvas=(GameObject)typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("pauseCanvas",flags).GetValue(controller);if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);
                 // 反射StartのEditMode fixtureでは破棄通知も明示し、実行中購読を残さない。

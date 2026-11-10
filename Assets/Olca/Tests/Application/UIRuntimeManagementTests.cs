@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Reflection;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -187,6 +188,27 @@ namespace Olca.Tests.Application
             Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));
             for(int i=0;i<120;i++)core.TickFrame(1,false,false,false,false);
             Assert.IsTrue(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));core.TickFrame(0,true,true,false,false);Assert.IsFalse(core.IsGrounded);Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));
+        }
+    }
+}
+
+namespace Olca.Tests.Application
+{
+    public sealed class OutsideItemRegistrationTests
+    {
+        private sealed class Store:Olca.Core.Domain.IClearReturnStore
+        {
+            public bool Fail;public Olca.Core.Domain.ClearReturnProfile Value=new Olca.Core.Domain.ClearReturnProfile{OutsideInventory=new Olca.Core.Domain.OutsideInventoryData{Items=new[]{new Olca.Core.Domain.OutsideItemCount{Id=Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample.Id,Count=0}}}};
+            public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
+            public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){error=Fail?"fixture save failure":null;if(Fail)return false;if(Value.Revision!=expected)return false;Value=value.Copy();return true;}
+        }
+        [Test] public async System.Threading.Tasks.Task 登録Viewは旧描画と旧世代callbackを無効化し0個の登録と失敗再試行を守る()
+        {
+            var root=new GameObject("InventoryViewFixture",typeof(RectTransform));var resources=new ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>17);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);var store=new Store();var session=new Olca.Core.Domain.ClearReturnSession(store);Olca.Presentation.Management.OutsideItemRegistrationView view=null;
+            try{
+                views.Register(this,"items",ct=>{var panel=new GameObject("Items",typeof(RectTransform));panel.transform.SetParent(root.transform,false);view=panel.AddComponent<Olca.Presentation.Management.OutsideItemRegistrationView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),session,new[]{Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample},()=>views.CloseCurrent());return System.Threading.Tasks.Task.FromResult(panel);},(p,c)=>view.Open(c),p=>p.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide());
+                Assert.IsTrue((await views.ShowAsync("items")).Succeeded);Button B(string name)=>view.GetComponentsInChildren<Button>().Single(b=>b.name==name);var old=B("RegisterOutsideItem_0").onClick;B("OutsideItemSlot_1").onClick.Invoke();old.Invoke();Assert.AreEqual(0,session.InventoryRevision,"旧描画が新slotへ作用しない");store.Fail=true;B("RegisterOutsideItem_0").onClick.Invoke();Assert.IsTrue(session.HasPendingSave);Assert.IsNull(session.OutsideInventorySnapshot.Shortcuts[1]);Assert.IsTrue(B("RetryOutsideItemsSave").interactable);store.Fail=false;B("RetryOutsideItemsSave").onClick.Invoke();Assert.AreEqual(Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample.Id,session.OutsideInventorySnapshot.Shortcuts[1]);Assert.AreEqual(0,session.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(1,session.InventoryRevision);var previous=B("RegisterOutsideItem_0").onClick;views.CloseCurrent();previous.Invoke();Assert.AreEqual(1,session.InventoryRevision);Assert.IsTrue((await views.ShowAsync("items")).Succeeded);previous.Invoke();Assert.AreEqual(1,session.InventoryRevision);Assert.AreEqual(Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample.Id,session.OutsideInventorySnapshot.Shortcuts[1]);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
         }
     }
 }
