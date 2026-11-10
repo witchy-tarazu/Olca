@@ -739,6 +739,14 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [Test] public async Task 所有者の回復保存待ちだけ画面を再生成でき戻る条件と旧世代を緩めない()
+        {
+            bool allowed=true,pending=false;int returned=0;var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(40);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>allowed,()=>returned++,restoreAllowed:()=>pending)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var old=binding.View.GetComponentsInChildren<Button>().Single(v=>v.name=="CloseOutsideExploration").onClick;allowed=false;pending=true;var lost=binding.View;typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(lost,null);UnityEngine.Object.DestroyImmediate(lost.gameObject);Assert.IsTrue(binding.HasLostView);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(40,model.Player.CurrentHp);Assert.IsFalse(binding.ReturnToHub());old.Invoke();Assert.AreEqual(0,returned);Assert.IsTrue(binding.IsOpen);pending=false;allowed=true;Assert.IsTrue(binding.ReturnToHub());Assert.AreEqual(1,returned);
+            }
+        }
         [Test] public async Task 外界入口は同レイヤーを切替え旧操作を拒否しView再生成でRootSessionを失わない()
         {
             var layer=views.GetLayer("return-hub");var hub=Panel("outside-fixture-hub");var entry=Button(hub,"outside-fixture-entry");ManagedScreenContext hubContext=null;int hubCalls=0,returned=0;
@@ -937,6 +945,13 @@ namespace Olca.Tests.Application
             }finally{if(Directory.Exists(path))Directory.Delete(path,true);}
         }
 
+        [Test] public void 外界の追いつき中に死亡したら同じPumpの残frameで移動を続けない()
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(1));bool paused=Olca.Unity.GameplayPause.IsPaused;var pt=typeof(Olca.Unity.GameplayPause);var release=pt.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pt.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var oldRelease=release.GetValue(null);var oldResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);release.SetValue(null,false);resume.SetValue(null,0);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                var driver=new object();runtime.Attach(driver,input);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);long freq=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+freq*10;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);loop.AfterFrames(1,()=>model.Player.TakeDamage(1,affectsPoise:false));now+=freq/10;runtime.Pump(driver,true);Assert.IsTrue(model.Player.IsDead);Assert.AreEqual(1,model.Core.Frame);Assert.AreEqual(1,runtime.Frame);long x=model.Core.Position;now+=freq;runtime.Pump(driver,true);Assert.AreEqual(1,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);
+            }}finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,oldRelease);resume.SetValue(null,oldResume);model.Dispose();}
+        }
         [Test] public void 外界Runtimeは単一driverだけを許し解放後も同じRoot状態と時計を再利用する()
         {
             var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();

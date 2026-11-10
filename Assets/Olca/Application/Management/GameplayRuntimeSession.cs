@@ -73,7 +73,7 @@ namespace Olca.Application.Management
             if(disposed)throw new System.ObjectDisposedException(nameof(OutsideExplorationRuntime));
             if(owner==null||provider==null)throw new System.ArgumentNullException(nameof(owner));
             if(driver!=null&&!ReferenceEquals(driver,owner))throw new System.InvalidOperationException("外界driverが重複しています");
-            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded);driver=owner;input=provider;covered=resumeSelection=false;selection.Reset();Reset();
+            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);driver=owner;input=provider;covered=resumeSelection=false;selection.Reset();Reset();
         }
         private void Reset(){active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
         public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();selection.Reset();covered=resumeSelection=false;driver=null;input=null;}
@@ -82,7 +82,7 @@ namespace Olca.Application.Management
             if(disposed||!ReferenceEquals(driver,owner)||pumping)return;
             pumping=true;
             try{
-                if(!canPlay){if(active)Reset();loop.Observe(false);input.CaptureTimestamped();return;}
+                if(!canPlay||session.Player?.IsDead==true){if(active)Reset();loop.Observe(false);input.CaptureTimestamped();return;}
                 if(!active){Reset();selection.Reset(resumeSelection);resumeSelection=false;active=true;}
                 // 時刻順/floor/未来保留は既存loopだけが判断する。未採用イベントでneutralを解除しない。
                 var samples=new System.Collections.Generic.List<Olca.Unity.TimestampedLogicalInput>();
@@ -97,7 +97,7 @@ namespace Olca.Application.Management
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
                     session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton,accept&&value.DashButtonDown,accept&&value.DashButton);
                     session.AdvancePlayerFrame();
-                },()=>session.IsPresented&&!session.IsEnded);
+                },()=>session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);
             }finally{pumping=false;}
         }
         public void Dispose(){if(disposed)return;disposed=true;Reset();driver=null;input=null;loop?.Dispose();}

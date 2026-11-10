@@ -452,6 +452,20 @@ namespace Olca.Application.Dungeon
         private Olca.Application.Management.OutsideExplorationPresentationBinding outsideExploration;
         private bool outsideExplorationOpening;
         private bool outsideLandingRoute,outsideDungeonSelection,outsideEntranceRequest;
+        private bool outsideRecoveryPending;private int outsideRecoveryAppliedFrame=-1,outsideRecoveryAttemptFrame=-1;private string outsideRecoveryError;
+        private bool CanRestoreOutsideRecovery=>CustomizationUiLive&&outsideLandingRoute&&outsideRecoveryPending&&clearReturnSession?.HasPendingSave==true&&!progressStartupBlocked&&clearReturnVisible;
+        private bool OutsideRecoveryReady=>outsideExploration?.IsOpen==true&&!IsUserPaused&&!outsideWheelPaused&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideRecoveryAppliedFrame&&Time.frameCount!=outsideRecoveryAttemptFrame&&(outsideRecoveryPending||OutsideHubEligible&&outsideExploration.View.CanPlay&&gameSystem.OutsideExploration.Player?.IsDead==false&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core));
+        private void UseOutsideRecovery()
+        {
+            if(!OutsideRecoveryReady)return;outsideRecoveryAttemptFrame=Time.frameCount;
+            outsideExploration.Pump(false);
+            bool saved=outsideRecoveryPending?clearReturnSession.Retry():clearReturnSession.TrySaveOutsideRecoveryPoint(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId);
+            outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;
+            if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId,false);outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();}
+        }
+        private void BindOutsideRecovery()
+        {outsideExploration.View.ConfigureRecovery(UseOutsideRecovery,()=>OutsideRecoveryReady,()=>outsideRecoveryPending?"ホゾン シッパイ / オシテ サイシコウ":outsideRecoveryError!=null?outsideRecoveryError:"ケンショウ カイフク（カリ）\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ カイフク・ホゾン":"チカヅイテ シラベル"));}
+
         /// <summary>通常Bootstrapだけの導線。旧直起動/明示fixtureは従来の入口を維持する。</summary>
         public void ConfigureOutsideLandingRoute(){if(manager!=null)throw new System.InvalidOperationException("起動前に導線を設定してください");outsideLandingRoute=true;}
         // 完了した攻略のmarkerは残る。現在の帰還に対して準備済みの計画だけを優先する。
@@ -523,20 +537,21 @@ namespace Olca.Application.Dungeon
         private void ResetOutsideRouteInput(){logicalLoop?.ReleaseInput();inputProvider?.QueueSnapshot();ResetTouchInput();}
         private async UniTaskVoid OpenOutsideExplorationAsync()
         {
-            if(gameSystem==null||!OutsideHubEligible||(!CanSelectDungeon&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
+            if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
-                    services.OutsideExploration.TryInitializePlayer(()=>CreateCoreFactory().CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames));
+                    if(services.OutsideExploration.Player==null){try{Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(services.OutsideExploration.Core,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){clearReturnError=e.Message;ShowDungeonSelection();return;}}
+                    if(services.OutsideExploration.TryInitializePlayer(()=>CreateCoreFactory().CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames)))services.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);
                     if(outsideLandingRoute&&services.OutsideExploration.Core.Frame==0&&!services.OutsideExploration.IsPresented)services.OutsideExploration.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true));
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources);panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>().ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);return System.Threading.Tasks.Task.FromResult(panel);},
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
-                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true);
+                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery);
                 }
                 var result=await outsideExploration.OpenAsync();
-                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null)outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);BindOutsideRecovery();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
@@ -2142,15 +2157,17 @@ namespace Olca.Application.Dungeon
             gamepadVibration?.Tick();
             if (manager == null) return;
             UpdateOutsideWheel();
-            if(outsideExploration?.HasLostView==true)OpenOutsideExplorationAsync().Forget();
+            if(outsideExploration?.HasLostView==true||CanRestoreOutsideRecovery&&outsideExploration?.IsOpen!=true)OpenOutsideExplorationAsync().Forget();
             gameplayChrome?.SetCovered(OutsideRouteBusy);
             if(OutsideRouteBusy){
                 logicalLoop.Observe(false);
                 if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
                 outsideExploration?.SetCovered(IsUserPaused||outsideWheelPaused);
                 bool inspect=inputProvider.OutsideInteractionPressed(outsideExploration?.Context);
+                if(gameSystem.OutsideExploration.Player?.IsDead==true&&!outsideRecoveryPending&&!progressStartupBlocked&&!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0){outsideExploration.Pump(false);try{gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){outsideRecoveryError=e.Message;progressStartupBlocked=true;}outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();outsideExploration.View.Render();return;}
+                if(OutsideRecoveryReady&&inspect){UseOutsideRecovery();return;}
                 if(OutsideEntranceReady&&inspect){EnterOutsideDungeon();return;}
-                outsideExploration?.Pump(!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0);
+                outsideExploration?.Pump(!IsUserPaused&&!outsideWheelPaused&&!outsideRecoveryPending&&!progressStartupBlocked&&Time.timeScale>0);
                 if(IsUserPaused)RefreshSystemMenu();else{systemMenu?.Suspend();systemMenuRoot=null;}
                 return;
             }

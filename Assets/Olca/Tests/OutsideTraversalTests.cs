@@ -194,5 +194,21 @@ namespace Olca.Tests
                 }
             }
         }
+        [Test] public void 回復復帰はHPと状態とゲージを戻し時間と個体と永続所持を再初期化しない()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var actor=s.Player;using(var lease=s.AttachPresentation()){
+                    for(int i=0;i<20;i++)s.Core.TickFrame(1,jumpDown:i==0,jumpHeld:true);long frame=s.Core.Frame;actor.SetHp(0);s.Core.CardGauge.TrySpend(30);actor.ApplyParalysis(60);
+                    s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.AreSame(actor,s.Player);Assert.AreEqual(100,actor.CurrentHp);Assert.IsFalse(actor.IsParalyzed);Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(OutsideTrialRoute.RecoveryX,s.Core.Position);Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(0,s.Core.Height);Assert.AreEqual(0,s.Core.VerticalVelocity);Assert.IsFalse(s.Core.IsDashing);Assert.IsFalse(s.Core.IsWallKicking);Assert.AreEqual(s.Core.CardGauge.MaximumUnits,s.Core.CardGauge.CurrentUnits);Assert.IsFalse(s.AdvancePlayerFrame());
+                    actor.SetHp(20);long x=s.Core.Position;s.RecoverOutside(OutsideTrialRoute.RecoveryPointId,false);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(100,actor.CurrentHp);
+                }
+            }
+        }
+        [Test] public void 未登録の復帰先は元のHPと位置を変更せず旧nullだけ既存開始地点へ戻す()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.Player.SetHp(33);s.Core.TickFrame(1);long x=s.Core.Position;Assert.Throws<ArgumentException>(()=>s.RecoverOutside("unknown-preserve"));Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(33,s.Player.CurrentHp);s.RecoverOutside(null);Assert.AreEqual(s.Core.Definition.Start,s.Core.Position);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
     }
 }

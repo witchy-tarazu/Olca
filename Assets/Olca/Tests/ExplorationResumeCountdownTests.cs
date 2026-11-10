@@ -285,5 +285,11 @@ namespace Olca.Tests
             StringAssert.EndsWith(before,Olca.Presentation.Exploration.OutsideExplorationView.FormatCardGauge(gauge));Assert.AreEqual(units,gauge.CurrentUnits);Assert.IsFalse(gauge.TrySpend(maximum));
             gauge.AdvanceFrame();StringAssert.EndsWith(full,Olca.Presentation.Exploration.OutsideExplorationView.FormatCardGauge(gauge));Assert.IsTrue(gauge.TrySpend(maximum));Assert.AreEqual(0,gauge.CurrentUnits);
         }
+        [Test] public void 外界の回復ポイントは二十枚全体を再装填し左端へ戻すが再表示だけでは変えない()
+        {
+            var source=CardFixture();using(var session=new OutsideExplorationSession()){
+                session.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));Assert.IsTrue(session.TryInitializeCards(source,Owned(source),new Olca.Tests.Mocks.MockRandomProvider(),out _));var cards=session.Cards;cards.TrySelect(2);long revision=cards.HandRevision;var old=cards.Hand;session.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.AreSame(cards,session.Cards);Assert.AreEqual(revision+1,cards.HandRevision);Assert.AreEqual(0,cards.SelectedIndex);Assert.AreEqual(20,cards.TotalCount);Assert.AreEqual(17,cards.RemainingCount);Assert.AreEqual(3,cards.Hand.Count);Assert.AreNotSame(old,cards.Hand);using(var lease=session.AttachPresentation()){}Assert.AreEqual(revision+1,cards.HandRevision);
+            }
+        }
     }
 }

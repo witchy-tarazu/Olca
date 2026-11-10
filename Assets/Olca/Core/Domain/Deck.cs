@@ -472,6 +472,7 @@ namespace Olca.Core.Domain
         public int Version = 1;
         public long Revision, Experience, Tokens;
         public int Level = 1, ReturnedHp;
+        public string OutsideRecoveryPointId; // nullは旧保存/復帰地点未登録。
         public OutsideInventoryData OutsideInventory; // nullは旧保存。カード/装備/超過トークンとは別の所持欄。
         public string CommitId;
         public string CheckpointGeneration; // nullは旧保存の領域。新規開始だけで切替。
@@ -490,7 +491,7 @@ namespace Olca.Core.Domain
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public Olca.Core.Logic.Customization.CustomizationProgress Customization; // 旧省略/nullは空状態
         public ClearReturnProfile Copy() => new ClearReturnProfile {
-            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(),
+            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(), OutsideRecoveryPointId=OutsideRecoveryPointId,
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
             Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, Customization=Customization?.Copy(), DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
@@ -499,6 +500,7 @@ namespace Olca.Core.Domain
         {
             Olca.Core.Logic.Customization.CustomizationProgress.Validate(p?.Customization);
             OutsideInventoryData.Validate(p?.OutsideInventory);
+            if(p?.OutsideRecoveryPointId!=null&&string.IsNullOrWhiteSpace(p.OutsideRecoveryPointId))throw new ArgumentException("外界復帰地点IDが不正です");
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
@@ -1217,6 +1219,13 @@ namespace Olca.Core.Domain
     }
     public sealed partial class ClearReturnSession
     {
+        public bool TrySaveOutsideRecoveryPoint(string id)
+        {
+            if(!Available())return Fail("未保存の処理を先に再試行してください");
+            if(customizationRunActive?.Invoke()==true)return Fail("ダンジョン中は外界復帰地点を変更できません");
+            if(id!=Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId)return Fail("未登録の外界回復ポイントです");
+            var next=current.Copy();next.OutsideRecoveryPointId=id;return Stage(next);
+        }
         public long InventoryRevision=>current?.Revision??-1;
         public OutsideInventoryData OutsideInventorySnapshot=>(current?.OutsideInventory??new OutsideInventoryData()).Copy();
         public bool TryAssignOutsideItem(int slot,string id,IReadOnlyList<OutsideItemDisplayDefinition> definitions)

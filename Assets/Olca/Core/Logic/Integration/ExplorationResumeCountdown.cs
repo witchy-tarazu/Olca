@@ -47,7 +47,10 @@ namespace Olca.Core.Logic.Integration
     public sealed class OutsideExplorationCards
     {
         private readonly Olca.Core.Domain.Deck deck;
-        public System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> Hand {get;}
+        public System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> Hand {get;private set;}
+        private readonly Olca.Core.Interfaces.IRandomProvider random;
+        public long HandRevision {get;private set;}
+        public void Reload(){deck.Shuffle(random);Hand=deck.DrawCards(3,random).AsReadOnly();SelectedIndex=0;HandRevision++;}
         public int SelectedIndex {get;private set;}
         public Olca.Core.Domain.Card SelectedCard=>Hand[SelectedIndex];
         public bool TrySelect(int index)
@@ -55,7 +58,7 @@ namespace Olca.Core.Logic.Integration
         public int RemainingCount=>deck.RemainingCount;
         public int TotalCount=>deck.TotalCount;
         private OutsideExplorationCards(Olca.Core.Domain.Deck deck,Olca.Core.Interfaces.IRandomProvider random)
-        {this.deck=deck;Hand=deck.DrawCards(3,random).AsReadOnly();}
+        {this.deck=deck;this.random=random;Hand=deck.DrawCards(3,random).AsReadOnly();}
         public static bool TryCreate(System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> cards,System.Collections.Generic.IReadOnlyDictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out OutsideExplorationCards result,out string error)
         {
             if(random==null)throw new System.ArgumentNullException(nameof(random));
@@ -117,6 +120,14 @@ namespace Olca.Core.Logic.Integration
             if(IsPresented)throw new System.InvalidOperationException("表示前に外界個体を初期化してください");
             var value=factory();if(value==null||value.IsDead)throw new System.ArgumentException("生存する外界個体が必要です");
             Player=value;playerFrame=Core.Frame;return true;
+        }
+        public void RecoverOutside(string pointId,bool relocate=true)
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
+            long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);
+            if(relocate)Core.RestoreRecoveryPosition(position);Cards?.Reload();Core.CardGauge.RestoreFull();
+            Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;
         }
         public bool AdvancePlayerFrame()
         {
