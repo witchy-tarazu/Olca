@@ -382,7 +382,7 @@ namespace Olca.Presentation.Dungeon
         private void FitReturnPanels()
         {
             if(content==null||content.name!="ReturnContents")return;
-            var stats=content.transform.Find("HomeStats")?.GetComponent<Text>();if(stats==null)return;
+            var stats=content.transform.Find("HomeStats")?.GetComponent<Text>();
             var root=(RectTransform)content.transform;
             void Fit(string name,float y,float height,Text label,float inset)
             {
@@ -399,6 +399,7 @@ namespace Olca.Presentation.Dungeon
                 label.rectTransform.anchoredPosition=new Vector2((left+right)/2,label.rectTransform.anchoredPosition.y);label.rectTransform.sizeDelta=new Vector2(right-left-inset,label.rectTransform.sizeDelta.y);
             }
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
+            if(stats==null){var title=content.transform.Find("Title").GetComponent<Text>();title.resizeTextForBestFit=true;title.resizeTextMinSize=22;title.resizeTextMaxSize=36;return;}
             // 書体による行高の差を吸収し、保存済み案内の3行目も一覧の上端までに収める。
             float summaryHeight=Mathf.Clamp(Mathf.Ceil(stats.preferredHeight)+24,110,140);
             float summaryY=325-summaryHeight/2;
@@ -543,7 +544,8 @@ namespace Olca.Presentation.Dungeon
             gameObject.SetActive(true); profile = profile ?? new ClearReturnProfile();
             bool settlementPending=blocked&&flow?.Stage==ClearReturnStage.Awarded&&(profile.Flow?.RunId!=flow.RunId||profile.Flow.Stage==ClearReturnStage.Choosing);
             float homeFooterY=-420,homeAuxY=-493,homePageY=-340;
-            CommerceSurface();CommerceFace("ReturnHeader",0,450,1760,120,true);CommerceFace("ReturnBody",0,-30,1760,700);
+            bool resultReading=!collectionOnly&&(flow?.Stage==ClearReturnStage.Choosing||flow?.Stage==ClearReturnStage.Awarded);
+            CommerceSurface();CommerceFace("ReturnHeader",0,450,1760,120,true);CommerceFace("ReturnBody",0,-30,1760,700,resultReading);
             var heading=Text("Title", blocked && flow != null && flow.Outcome != RunReturnOutcome.Cleared ? "敗北・撤退の帰還を保存できません" : collectionOnly ? "所持カード・成長" : flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
                 flow.Stage == ClearReturnStage.Awarded ? (settlementPending?"クリア結果は未確定です":"持ち帰り・経験値を反映しました") :
                 flow.Outcome == RunReturnOutcome.Defeated ? "敗北して帰還しました" : flow.Outcome == RunReturnOutcome.Retreated ? "撤退して帰還しました" : "帰還しました", 0, 455, 1680, 80, 36);heading.color=Color.white;
@@ -566,7 +568,7 @@ namespace Olca.Presentation.Dungeon
                 Button("ConfirmCarryHome", $"{flow.Selected.Length}枚で確定・経験値反映", 0, -420, 900, 75, confirm).interactable = !blocked;
             } else if (!collectionOnly && flow.Stage == ClearReturnStage.Awarded) {
                 var experience=Text("AwardSummary",$"経験値 +{flow.ExperienceAward}"+(settlementPending?"（未確定）":"（反映済み）")+$"\nLv {profile.Level} / 総経験値 {profile.Experience}",-425,235,760,145,30);experience.lineSpacing=1.25f;
-                var tokens=Text("AwardTokens",$"超過変換 +{flow.TokenAward} トークン\n所持トークン {profile.Tokens}"+(flow.Terms==null?"":(settlementPending?"\n費用（未確定）: 通貨 ":"\n費用支払済み: 通貨 ")+flow.Terms.Cost.Currency+" / アイテム "+flow.Terms.Cost.Items.Length+"シュルイ"),425,235,760,145,30);tokens.lineSpacing=1.25f;AddOverflowTextDetails(tokens,"トークンと費用");
+                var tokens=Text("AwardTokens",$"超過変換 +{flow.TokenAward} トークン\n所持トークン {profile.Tokens}"+(flow.Terms==null?"":(settlementPending?"\n費用（未確定）: 通貨 ":"\n費用支払済み: 通貨 ")+flow.Terms.Cost.Currency+" / アイテム "+flow.Terms.Cost.Items.Length+"シュルイ"),425,235,760,145,26);tokens.lineSpacing=1.1f;AddTrailingTextDetails(tokens,"AwardTokensDetails","トークンと費用");
                 var carryHeading=Text("AwardCardsHeading",settlementPending?"持ち帰り（未確定）":"持ち帰り確定",0,130,1600,44,24);carryHeading.alignment=TextAnchor.MiddleLeft;
                 int rows=Mathf.Max(1,flow.Selected.Length);
                 if(flow.Selected.Length==0)Text("AwardCards","0枚",0,60,1600,64,30).alignment=TextAnchor.MiddleLeft;
@@ -612,7 +614,9 @@ namespace Olca.Presentation.Dungeon
             if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,homeAuxY,410,58,selectStyle);
             if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,homeAuxY,410,58,openExchange);
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, homeAuxY, 800, 58, retry);
-                    SetMenu(content.transform,collectionOnly?closeCollection:null,collectionOnly?"CloseOwnedCards":"SavedDeckMenu");
+            // 結果の読取り面だけを暗い水鏡と明色文字へ揃える。操作部・カード絵・保存処理は変えない。
+            if(resultReading)foreach(var label in content.GetComponentsInChildren<Text>())if(label.GetComponentInParent<Button>()==null)label.color=new Color(.88f,.97f,1f,1f);
+            SetMenu(content.transform,collectionOnly?closeCollection:null,collectionOnly?"CloseOwnedCards":"SavedDeckMenu");FitReturnPanels();
         }
         public static string FormatDungeonInformation(DungeonDeparturePreview info)
         {

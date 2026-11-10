@@ -16,6 +16,30 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
+        [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
+        public void 結果の見出しは常設操作と重ならず費用本文を明色で読める(float width,float height,bool awarded)
+        {
+            var root=new GameObject("ResultReading138",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(width,height);
+            try{
+                var font=Resources.Load<Font>("OlcaUI/MenuText");var factory=new Olca.Presentation.Management.GameplayPanelFactory(root.transform,font,null);var chrome=factory.Chrome();chrome.Collection.gameObject.SetActive(true);
+                var host=new GameObject("ResultView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();int confirmed=0;
+                view.Initialize(font,_=>{},()=>confirmed++,()=>{},()=>{});view.ConfigureMenuNavigation(()=>new[]{chrome.NewGame,chrome.Collection});
+                var flow=new ClearReturnData{RunId="reading",Stage=awarded?ClearReturnStage.Awarded:ClearReturnStage.Choosing,Candidates=new[]{new ReturnCardData{Id="a",Name="カード"}},Selected=new[]{0},ExperienceAward=100,ReturnedMaxHp=105,ReturnedAttack=11,Terms=new DepartureTermsData{Cost=new DepartureCostData{Currency=10},ReturnSettings=new ClearReturnSettings()}};
+                var profile=new ClearReturnProfile{Flow=flow,Level=2,Experience=awarded?100:0};var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);
+                Rect Area(RectTransform r){var a=new Vector3[4];r.GetWorldCorners(a);return Rect.MinMaxRect(a.Min(v=>v.x),a.Min(v=>v.y),a.Max(v=>v.x),a.Max(v=>v.y));}
+                for(int repeat=0;repeat<2;repeat++){
+                    view.Render(profile,flow,false,null);typeof(ClearReturnView).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Canvas.ForceUpdateCanvases();
+                    var title=host.GetComponentsInChildren<Text>().Single(x=>x.name=="Title");foreach(var extra in new[]{chrome.NewGame,chrome.Collection})Assert.IsFalse(Area(title.rectTransform).Overlaps(Area((RectTransform)extra.transform)),extra.name);
+                    using(var generated=new TextGenerator()){generated.Populate(title.text,title.GetGenerationSettings(title.rectTransform.rect.size));Assert.GreaterOrEqual(generated.characterCountVisible,title.text.Length);}
+                    var body=host.transform.Find("ReturnContents/ReturnBody").GetComponent<Image>();Assert.AreSame(Resources.Load<Sprite>("OlcaUI/description"),body.sprite);Assert.IsFalse(body.raycastTarget);
+                    var label=host.GetComponentsInChildren<Text>().Single(x=>x.name==(awarded?"AwardTokens":"SelectionRules"));Assert.Greater(label.color.grayscale,.8f);Assert.AreSame(font,label.font);
+                    if(awarded){Assert.GreaterOrEqual(label.rectTransform.rect.width,580);using(var generated=new TextGenerator()){generated.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.GreaterOrEqual(generated.characterCountVisible,label.text.Length);}}
+                }
+                CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));Assert.AreEqual(0,confirmed);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
         [TestCase(false)][TestCase(true)] public void 費用結果表示は保存失敗の未確定と既存単独表示を区別する(bool blocked)
         {
             var root=new GameObject("CostPending137",typeof(RectTransform));try{((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var profile=new ClearReturnProfile{Flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Choosing}};var flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Awarded,Outcome=RunReturnOutcome.Cleared,ExperienceAward=100,NewLevel=2,ReturnedMaxHp=105,ReturnedAttack=11,Terms=new DepartureTermsData{DungeonId="test",DefinitionKey="display-only",Cost=new DepartureCostData{Currency=10},ReturnSettings=new ClearReturnSettings()}};view.Render(profile,flow,blocked,blocked?"ホゾンシッパイ":null);var title=root.GetComponentsInChildren<Text>().Single(t=>t.name=="Title").text;var summary=root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardSummary").text;Assert.AreEqual(blocked,title.Contains("ミカクテイ"));Assert.AreEqual(blocked,summary.Contains("ミカクテイ"));StringAssert.Contains("ヒヨウ",root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardTokens").text);}finally{Object.DestroyImmediate(root);}
