@@ -55,6 +55,8 @@ namespace Olca.Core.Logic.Integration
         public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         public static long ResolveRecovery(OutsideExplorationCore core,string id)
         {if(core==null||core.Definition.Id!="validation-landing-32"||id!=null&&id!=RecoveryPointId)throw new ArgumentException("復帰先の外界マップ/地点が未登録です");return id==null?core.Definition.Start:RecoveryX;}
+        public const long PoisonTrialX=2*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanTryPoison(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonTrialX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long PoisonSupplyX=16*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;

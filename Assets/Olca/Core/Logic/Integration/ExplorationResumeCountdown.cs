@@ -539,6 +539,24 @@ namespace Olca.Core.Logic.Integration
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
             finally{usingItem=false;}
         }
+        // 試用地形だけの明示付与。正式な毒源/進行条件や他状態の探索規則を定義しない。
+        public const string TrialPoisonKind="validation-voluntary-poison-v1";
+        public const int TrialPoisonDurationFrames=1800,TrialPoisonIntervalFrames=600,TrialPoisonDamage=1;
+        private static StatusEffect TrialPoisonEffect()=>new StatusEffect(StatusEffectType.Poison,checked(TrialPoisonDurationFrames*1000/60),TrialPoisonDamage);
+        public bool CanTryTrialPoison=>!IsEnded&&!usingItem&&IsPresented&&CanPerformAttack&&Player.CanCaptureTimedAilments&&!Player.HasPoisonState&&OutsideTrialRoute.CanTryPoison(Core);
+        public bool TryApplyTrialPoison(ClearReturnSession save,CheckpointDefinitions definitions,out string error)
+        {
+            error=null;if(save==null||!CanTryTrialPoison){error="今は試用毒を付与できません";return false;}usingItem=true;
+            try{
+                var candidate=OutsidePlayerSaveData.Capture(Player).Restore();candidate.ApplyPoison(TrialPoisonKind,TrialPoisonEffect(),TrialPoisonIntervalFrames);
+                var actor=OutsidePlayerSaveData.Capture(candidate);if(!actor.Player.Poisons.Any(v=>v.Kind==TrialPoisonKind)){error="毒耐性により付与されません";return false;}
+                var runtime=CaptureItemRuntime(definitions);runtime.Id=actor.Id;
+                var itemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=itemCooldowns.Where(v=>v.Value>Core.Frame).Select(v=>new OutsideItemCooldownData{Id=v.Key,RemainingFrames=checked((int)(v.Value-Core.Frame))}).ToArray()};itemState.Validate(actor,runtime);
+                if(!save.TryCommitOutsideTrialPoison(actor,runtime,itemState,out error))return false;
+                Player.ApplyPoison(TrialPoisonKind,TrialPoisonEffect(),TrialPoisonIntervalFrames);appliedItemStateId=actor.Id;savedPlayerId=actor.Id;savedPlayerKey=actor.Key();savedRuntimeId=runtime.Id;savedRuntimeKey=runtime.Key();return true;
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+            finally{usingItem=false;}
+        }
         private OutsideRuntimeSaveData CaptureItemRuntime(CheckpointDefinitions definitions)
         {
             var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions)};value.Validate();return value;

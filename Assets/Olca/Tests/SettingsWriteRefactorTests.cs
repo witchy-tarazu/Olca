@@ -392,5 +392,10 @@ namespace Olca.Tests
             Assert.IsTrue(heal&&poison&&entrance&&recovery);
         }
 
+        [Test] public void 試用毒地点は既存の回復補給入口と重ならず通常歩行で到達する()
+        {
+            var core=new Olca.Core.Logic.Integration.OutsideExplorationCore(Olca.Core.Logic.Integration.OutsideMovementDefinition.ValidationLandingTerrain);for(int n=0;n<70;n++)core.TickFrame(-1);bool visited=false;for(int n=0;n<280;n++){bool poison=Olca.Core.Logic.Integration.OutsideTrialRoute.CanTryPoison(core);visited|=poison;int total=(poison?1:0)+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(core)?1:0)+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(core)?1:0)+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(core)?1:0)+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core)?1:0);Assert.LessOrEqual(total,1);core.TickFrame(1);}Assert.IsTrue(visited);
+        }
+
     }
 }

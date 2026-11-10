@@ -4698,6 +4698,40 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        [TestCase(false,false)] [TestCase(true,false)] [TestCase(false,true)]
+        public void 試用毒は成功後だけ付与し数量登録時計CDを一括保全して再起動後解除できる(bool fail,bool after)
+        {
+            var cure=OutsideRecoveryItemDefinition.PoisonProvisional;var heal=OutsideRecoveryItemDefinition.Provisional;var io=new FaultIo();var store=Store(io);System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=99,Items=new[]{new OutsideItemCount{Id=cure.Id,Count=2},new OutsideItemCount{Id=heal.Id,Count=2},new OutsideItemCount{Id="unknown-146",Count=7}},Shortcuts=new[]{cure.Id,heal.Id,null,null},ClaimedSources=new[]{"future-146"}}}));var save=new ClearReturnSession(store);
+            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100));using(var lease=world.AttachPresentation()){
+                    for(int n=0;n<60;n++){world.Core.TickFrame(-1);world.AdvancePlayerFrame();}Assert.IsTrue(world.CanTryTrialPoison);world.Player.SetHp(50);Assert.IsTrue(world.TryUseRecoveryItem(save,heal,null,out _));long frame=world.Core.Frame;int cd=world.ItemCooldownRemaining(heal.Id);var before=System.IO.File.ReadAllBytes(store.ActivePath);var inventory=PortableCheckpointJson.Serialize(save.OutsideInventorySnapshot);io.Before=fail;io.After=after;
+                    Assert.AreEqual(!fail,world.TryApplyTrialPoison(save,null,out var error),error);Assert.AreSame(lease.Player,world.Player);Assert.AreEqual(frame,world.Core.Frame);Assert.AreEqual(cd,world.ItemCooldownRemaining(heal.Id));Assert.AreEqual(75,world.Player.CurrentHp);Assert.IsFalse(save.HasPendingSave);Assert.IsNull(save.Error);
+                    if(fail){Assert.IsEmpty(world.Player.CapturePoisons());CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));io.Before=false;Assert.IsTrue(world.TryApplyTrialPoison(save,null,out error),error);}
+                    CollectionAssert.AreEqual(inventory,PortableCheckpointJson.Serialize(save.OutsideInventorySnapshot));var poison=world.Player.CapturePoisons().Single();Assert.AreEqual(Olca.Core.Logic.Integration.OutsideExplorationSession.TrialPoisonKind,poison.Kind);Assert.AreEqual(1800*50L,poison.RemainingUnits);var saved=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsFalse(world.TryApplyTrialPoison(save,null,out _));CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(store.ActivePath));
+                    var cold=new ClearReturnSession(Store());using(var restored=new Olca.Core.Logic.Integration.OutsideExplorationSession()){Assert.IsTrue(restored.RestoreSavedState(cold.Snapshot.OutsidePlayerSave,cold.Snapshot.OutsideRuntimeSave,cold.Snapshot.OutsideRecoveryPointId));restored.RestoreItemCooldowns(cold.Snapshot.OutsideItemState,cold.Snapshot.OutsidePlayerSave,cold.Snapshot.OutsideRuntimeSave);Assert.AreEqual(frame,restored.Core.Frame);Assert.AreEqual(world.Core.Position,restored.Core.Position);Assert.AreEqual(cd,restored.ItemCooldownRemaining(heal.Id));Assert.AreEqual(poison.Kind,restored.Player.CapturePoisons().Single().Kind);using(var shown=restored.AttachPresentation()){Assert.IsTrue(restored.TryUseRecoveryItem(cold,cure,null,out error),error);Assert.IsEmpty(restored.Player.CapturePoisons());Assert.AreEqual(1,cold.OutsideInventorySnapshot.Items.Single(v=>v.Id==cure.Id).Count);Assert.AreEqual(75,restored.Player.CurrentHp);}}
+                }
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)]
+        public void 試用毒は範囲外空中既存毒麻痺非表示耐性を迂回しない(int mode)
+        {
+            var store=Store();var save=new ClearReturnSession(store);Assert.IsTrue(save.ManualSave());var before=System.IO.File.ReadAllBytes(store.ActivePath);using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100,statusResistances:mode==5?new TimedStatusResistances(poison:100):null));using(var lease=world.AttachPresentation()){
+                    for(int n=0;n<60;n++){world.Core.TickFrame(-1);world.AdvancePlayerFrame();}
+                    if(mode==0)for(int n=0;n<40;n++){world.Core.TickFrame(1);world.AdvancePlayerFrame();}
+                    if(mode==1){world.Core.TickFrame(0,true,true);world.AdvancePlayerFrame();}
+                    if(mode==2)world.Player.ApplyPoison("existing-product-kind",new StatusEffect(StatusEffectType.Poison,100,7),60);
+                    if(mode==3){world.Player.ApplyParalysis(100);world.Core.TickFrame(0);world.AdvancePlayerFrame();}
+                    if(mode==4)lease.Dispose();
+                    Assert.IsFalse(world.TryApplyTrialPoison(save,null,out _));CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));Assert.IsFalse(save.HasPendingSave);Assert.IsNull(save.Error);Assert.AreEqual(mode==2?1:0,world.Player.CapturePoisons().Length);
+                }
+            }
+        }
+        [Test] public void 試用毒は既存の六百フレーム間隔と非致死下限を使い保存時に時計を進めない()
+        {
+            var save=new ClearReturnSession(Store());using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(100));using(var shown=world.AttachPresentation()){for(int n=0;n<60;n++){world.Core.TickFrame(-1);world.AdvancePlayerFrame();}world.Player.SetHp(2);Assert.IsTrue(world.TryApplyTrialPoison(save,null,out _));for(int n=0;n<599;n++){world.Core.TickFrame(0);world.AdvancePlayerFrame();}Assert.AreEqual(2,world.Player.CurrentHp);world.Core.TickFrame(0);world.AdvancePlayerFrame();Assert.AreEqual(1,world.Player.CurrentHp);for(int n=0;n<1200;n++){world.Core.TickFrame(0);world.AdvancePlayerFrame();}Assert.AreEqual(1,world.Player.CurrentHp);Assert.IsFalse(world.Player.IsDead);Assert.IsEmpty(world.Player.CapturePoisons());}}
+        }
+
         [TestCase(false)][TestCase(true)] public void 使用失敗は共有保存エラーを残さず補給取得や別操作を妨げない(bool ioFailure)
         {
             var definition=OutsideRecoveryItemDefinition.Provisional;var io=new FaultIo();var store=Store(io);System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=ioFailure?1:0}}}}));var save=new ClearReturnSession(store);using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(100));world.Player.SetHp(40);using(var lease=world.AttachPresentation()){var before=System.IO.File.ReadAllBytes(store.ActivePath);io.Before=ioFailure;Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out var error));Assert.IsNotNull(error);Assert.IsNull(save.Error);Assert.IsFalse(save.HasPendingSave);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(40,world.Player.CurrentHp);Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));io.Before=false;Assert.IsTrue(save.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out _,out error),error);Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out error),error);Assert.AreEqual(65,world.Player.CurrentHp);Assert.AreEqual(ioFailure?3:2,save.OutsideInventorySnapshot.Items[0].Count);}}
