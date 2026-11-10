@@ -339,14 +339,15 @@ namespace Olca.Presentation.Exploration
     {
         private sealed class Entry{public Text Text;public Vector2 World;public float Age,Lift;public bool Active,Placed;}
         private readonly List<Entry> entries=new List<Entry>();
-        private Olca.Core.Domain.PlayerCharacter actor;private Olca.Presentation.Effects.CombatNumberStyle style;
+        private Olca.Core.Domain.PlayerCharacter actor;private Olca.Core.Domain.Enemy enemy;private Olca.Presentation.Effects.CombatNumberStyle style;
         private Func<bool> live;private Func<Vector2> origin;private float pixelsPerWorldUnit;private int lastFrame=-1;
         public int ActiveCount{get;private set;}
         public void Bind(Olca.Core.Domain.PlayerCharacter value,Olca.Presentation.Effects.CombatNumberStyle visual,Func<bool> isLive,Func<Vector2> anchor,float scale)
         {Unbind();if(value==null||visual==null)return;actor=value;style=visual;live=isLive;origin=anchor;pixelsPerWorldUnit=scale;actor.OnCombatFeedback+=OnFeedback;}
+        public void BindEnemy(Olca.Core.Domain.Enemy value,Olca.Presentation.Effects.CombatNumberStyle visual,Func<bool> isLive,Func<Vector2> anchor,float scale){Unbind();if(value==null||visual==null)return;enemy=value;style=visual;live=isLive;origin=anchor;pixelsPerWorldUnit=scale;enemy.OnCombatFeedback+=OnFeedback;}
         private void OnFeedback(Olca.Core.Domain.CombatFeedback feedback)
         {
-            if(actor==null||style==null||live?.Invoke()!=true||origin==null)return;
+            if(actor==null&&enemy==null||style==null||live?.Invoke()!=true||origin==null)return;
             var entry=entries.FirstOrDefault(e=>!e.Active);
             if(entry==null){var go=new GameObject("OutsideCombatNumber_"+entries.Count,typeof(RectTransform),typeof(Text),typeof(Outline));go.transform.SetParent(transform,false);var text=go.GetComponent<Text>();text.raycastTarget=false;text.alignment=TextAnchor.MiddleCenter;text.horizontalOverflow=HorizontalWrapMode.Overflow;text.verticalOverflow=VerticalWrapMode.Overflow;text.supportRichText=false;text.lineSpacing=1;entry=new Entry{Text=text};entries.Add(entry);}
             entry.Text.font=style.Font;entry.Text.fontStyle=style.FontStyle;entry.Text.fontSize=Mathf.Max(1,Mathf.RoundToInt(style.FontWorldUnits*pixelsPerWorldUnit));entry.Text.text=Olca.Presentation.Effects.CombatNumberPresentation.Format(feedback);entry.Text.color=style.Color;
@@ -371,7 +372,7 @@ namespace Olca.Presentation.Exploration
             float shift=Mathf.Max(0,top-(root.rect.yMax-144));
             foreach(var row in visible){var position=row.Position-Vector2.up*shift;row.Entry.Text.rectTransform.anchoredPosition=position;var color=style.Color;color.a=Olca.Presentation.Effects.CombatNumberPresentation.Alpha(style.Duration,row.Entry.Age);row.Entry.Text.color=color;row.Entry.Text.enabled=position.y-row.Size.y*.5f>=root.rect.yMin+160;}
         }
-        public void Unbind(){if(actor!=null)actor.OnCombatFeedback-=OnFeedback;actor=null;style=null;live=null;origin=null;lastFrame=-1;ActiveCount=0;foreach(var entry in entries){entry.Active=false;entry.Age=0;if(entry.Text!=null){entry.Text.text="";entry.Text.font=null;entry.Text.gameObject.SetActive(false);}}}
+        public void Unbind(){if(actor!=null)actor.OnCombatFeedback-=OnFeedback;if(enemy!=null)enemy.OnCombatFeedback-=OnFeedback;actor=null;enemy=null;style=null;live=null;origin=null;lastFrame=-1;ActiveCount=0;foreach(var entry in entries){entry.Active=false;entry.Age=0;if(entry.Text!=null){entry.Text.text="";entry.Text.font=null;entry.Text.gameObject.SetActive(false);}}}
         private void OnDisable()=>Unbind();
         private void OnDestroy(){Unbind();entries.Clear();}
     }
@@ -381,6 +382,7 @@ namespace Olca.Presentation.Exploration
         private readonly List<RectTransform> feedbackObstacles=new List<RectTransform>();
         public void ConfigureCombatFeedback(Olca.Presentation.Effects.CombatNumberStyle style)
         {
+            trialNumberStyle=style;BindTrialTargetFeedback();
             if(feedbackCanvas==null&&style!=null)feedbackCanvas=gameObject.AddComponent<OutsideCombatFeedbackCanvas>();if(feedbackCanvas==null)return;var owner=context;var lease=presentation;
             feedbackCanvas.Bind(lease?.Player,style,()=>this!=null&&ReferenceEquals(context,owner)&&owner?.IsCurrent==true&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)lease.Core.Position/OutsideMovementDefinition.UnitsPerWorldUnit,(float)lease.Core.Height/OutsideMovementDefinition.UnitsPerWorldUnit+player.rectTransform.rect.height/pixelsPerWorldUnit+.2f),pixelsPerWorldUnit);
         }
@@ -388,7 +390,42 @@ namespace Olca.Presentation.Exploration
         private void RenderCombatFeedback(float camera,float verticalOffset)
         {
             if(feedbackCanvas==null||feedbackCanvas.ActiveCount==0)return;feedbackObstacles.Clear();if(recoveryPoint!=null)feedbackObstacles.Add((RectTransform)recoveryPoint.transform);if(entrance!=null)feedbackObstacles.Add((RectTransform)entrance.transform);foreach(var slot in supplySlots)if(slot?.Button!=null)feedbackObstacles.Add((RectTransform)slot.Button.transform);
-            float floor=-((RectTransform)transform).rect.height*.29f;feedbackCanvas.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,floor+(world.y-verticalOffset)*pixelsPerWorldUnit),feedbackObstacles);
+            if(trialTargetName!=null)feedbackObstacles.Add(trialTargetPlate);if(trialTargetGauge!=null&&trialTargetGauge.enabled)feedbackObstacles.Add(trialTargetGauge.rectTransform);float floor=-((RectTransform)transform).rect.height*.29f;feedbackCanvas.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,floor+(world.y-verticalOffset)*pixelsPerWorldUnit),feedbackObstacles);
         }
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    // World EnemyViewと同じ円/外周半円の配色と5度分割をOverlayへ適応する。生成Textureは不要。
+    public sealed class OutsideTrialHpArc:Graphic
+    {
+        private float fraction=1;public void SetFraction(float value){if(float.IsNaN(value)||float.IsInfinity(value))throw new ArgumentOutOfRangeException(nameof(value));value=Mathf.Clamp01(value);if(value==fraction)return;fraction=value;SetVerticesDirty();}
+        protected override void OnPopulateMesh(VertexHelper mesh){mesh.Clear();Arc(mesh,29.7f,4.752f,360,new Color(.035f,.1f,.13f,1));Arc(mesh,29.7f,3.267f,360*fraction,new Color(.42f,.85f,.87f,1));Arc(mesh,38.016f,2.673f,180,new Color(.12f,.13f,.08f,1));}
+        private static void Arc(VertexHelper mesh,float radius,float width,float degrees,Color color){if(degrees<=0)return;int steps=Mathf.Max(1,Mathf.CeilToInt(degrees/5));for(int i=0;i<steps;i++){float a=(90-degrees*i/steps)*Mathf.Deg2Rad,b=(90-degrees*(i+1)/steps)*Mathf.Deg2Rad;Vector2 pa=new Vector2(Mathf.Cos(a),Mathf.Sin(a)),pb=new Vector2(Mathf.Cos(b),Mathf.Sin(b));int n=mesh.currentVertCount;mesh.AddVert(pa*(radius-width*.5f),color,Vector2.zero);mesh.AddVert(pa*(radius+width*.5f),color,Vector2.zero);mesh.AddVert(pb*(radius+width*.5f),color,Vector2.zero);mesh.AddVert(pb*(radius-width*.5f),color,Vector2.zero);mesh.AddTriangle(n,n+1,n+2);mesh.AddTriangle(n,n+2,n+3);}}
+    }
+    public sealed partial class OutsideExplorationView
+    {
+        private RectTransform trialTargetPlate;private Image trialTargetImage,trialSwordImage;private Text trialTargetName,trialTargetHp;private OutsideTrialHpArc trialTargetGauge;
+        private Olca.Unity.GeneratedSpriteAssets.Lease trialSwordAssets;private OutsideCombatFeedbackCanvas trialTargetFeedback;private Olca.Core.Domain.Enemy feedbackTarget;
+        private Olca.Presentation.Effects.CombatNumberStyle trialNumberStyle;private OutsideExplorationSession.PresentationLease feedbackLease;
+        private void InitializeTrialSword(Font font,Olca.Presentation.Field.GameFieldView field){
+            var body=new GameObject("OutsideTrialTarget",typeof(RectTransform),typeof(Image));body.transform.SetParent(transform,false);trialTargetImage=body.GetComponent<Image>();trialTargetImage.sprite=field.AuthoredTrialEnemySprite;if(trialTargetImage.sprite==null)throw new InvalidOperationException("試用標的の既存素材がありません");trialTargetImage.raycastTarget=false;var rect=trialTargetImage.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.21f);rect.pivot=trialTargetImage.sprite.pivot/trialTargetImage.sprite.rect.size;rect.sizeDelta=trialTargetImage.sprite.bounds.size*pixelsPerWorldUnit*.8f;rect.localScale=new Vector3(-1,1,1);
+            var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);trialTargetName=factory.Label("OutsideTrialTargetName",transform,new Vector2(0,.21f),Vector2.zero,new Vector2(300,40));trialTargetName.font=field.AuthoredTrialEnemyFont??font;trialTargetName.fontSize=18;trialTargetName.alignment=TextAnchor.MiddleCenter;trialTargetName.color=Color.white;trialTargetName.raycastTarget=false;var plate=new GameObject("OutsideTrialTargetNamePlate",typeof(RectTransform),typeof(Image));plate.transform.SetParent(transform,false);var pr=(RectTransform)plate.transform;pr.anchorMin=pr.anchorMax=new Vector2(0,.21f);pr.sizeDelta=new Vector2(316,48);plate.GetComponent<Image>().color=new Color(.025f,.07f,.1f,.9f);plate.GetComponent<Image>().raycastTarget=false;pr.SetSiblingIndex(trialTargetName.transform.GetSiblingIndex());trialTargetPlate=pr;
+            trialTargetHp=factory.Label("OutsideTrialTargetHp",transform,new Vector2(0,.21f),Vector2.zero,new Vector2(58,42));trialTargetHp.font=field.AuthoredTrialEnemyFont??font;trialTargetHp.fontSize=22;trialTargetHp.alignment=TextAnchor.MiddleCenter;trialTargetHp.color=Color.white;trialTargetHp.raycastTarget=false;
+            var gauge=new GameObject("OutsideTrialTargetGauge",typeof(RectTransform),typeof(OutsideTrialHpArc));gauge.transform.SetParent(transform,false);trialTargetGauge=gauge.GetComponent<OutsideTrialHpArc>();trialTargetGauge.raycastTarget=false;var gr=(RectTransform)gauge.transform;gr.anchorMin=gr.anchorMax=new Vector2(0,.21f);gr.sizeDelta=new Vector2(82,82);gauge.transform.SetSiblingIndex(trialTargetHp.transform.GetSiblingIndex());
+            var sword=new GameObject("OutsideTrialSword",typeof(RectTransform),typeof(Image));sword.transform.SetParent(transform,false);trialSwordImage=sword.GetComponent<Image>();trialSwordImage.raycastTarget=false;trialSwordImage.rectTransform.anchorMin=trialSwordImage.rectTransform.anchorMax=new Vector2(0,.21f);trialSwordImage.enabled=false;
+            var numbers=new GameObject("OutsideTargetCombatFeedback",typeof(RectTransform));numbers.transform.SetParent(transform,false);var nr=(RectTransform)numbers.transform;nr.anchorMin=Vector2.zero;nr.anchorMax=Vector2.one;nr.offsetMin=nr.offsetMax=Vector2.zero;trialTargetFeedback=numbers.AddComponent<OutsideCombatFeedbackCanvas>();
+        }
+        private float TrialTargetTop()=>Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(trialTargetImage.sprite).size.y*pixelsPerWorldUnit*.8f;
+        private void BindTrialTargetFeedback(){if(trialTargetFeedback==null||trialNumberStyle==null||presentation?.IsCurrent!=true)return;var lease=presentation;var target=lease.TrialTarget;if(ReferenceEquals(feedbackTarget,target)&&ReferenceEquals(feedbackLease,lease))return;feedbackTarget=target;feedbackLease=lease;trialTargetFeedback.BindEnemy(target,trialNumberStyle,()=>this!=null&&IsOpen&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)OutsideExplorationSession.TrialTargetX/OutsideMovementDefinition.UnitsPerWorldUnit,TrialTargetTop()/pixelsPerWorldUnit+.5f),pixelsPerWorldUnit);}
+        private void RenderTrialSword(float camera,float viewport,float verticalOffset){
+            if(trialTargetImage==null)return;BindTrialTargetFeedback();var core=presentation.Core;var target=presentation.TrialTarget;float x=((float)OutsideExplorationSession.TrialTargetX/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit;float y=-verticalOffset*pixelsPerWorldUnit;trialTargetImage.rectTransform.anchoredPosition=new Vector2(x,y-Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(trialTargetImage.sprite).min.y*pixelsPerWorldUnit*.8f);trialTargetImage.enabled=!target.IsDead;
+            float top=TrialTargetTop()+44.55f+y;trialTargetHp.rectTransform.anchoredPosition=new Vector2(x,top);trialTargetHp.text=target.CurrentHp.ToString();trialTargetHp.enabled=!target.IsDead;trialTargetGauge.rectTransform.anchoredPosition=new Vector2(x,top);trialTargetGauge.SetFraction(target.CurrentHp/(float)target.MaxHp);trialTargetGauge.enabled=!target.IsDead;trialTargetName.rectTransform.anchoredPosition=new Vector2(x+210,top+50);trialTargetName.text=target.IsDead?"カイフクデ サイセイ":"ヒョウテキ（カリ） / ∞";
+            trialTargetPlate.anchoredPosition=trialTargetName.rectTransform.anchoredPosition;
+            var strike=presentation.TrialStrike;bool show=strike!=null&&core.Frame>=strike.Frame&&core.Frame-strike.Frame<12;trialSwordImage.enabled=show;if(show){if(trialSwordAssets==null)trialSwordAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);if(trialSwordImage.sprite==null){if(!Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Sword,out var sprite,trialSwordAssets))throw new InvalidOperationException("共用ソード素材がありません");trialSwordImage.sprite=sprite;trialSwordImage.rectTransform.pivot=sprite.pivot/sprite.rect.size;trialSwordImage.rectTransform.sizeDelta=sprite.bounds.size*pixelsPerWorldUnit;}trialSwordImage.rectTransform.anchoredPosition=new Vector2(((float)strike.X/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f+.35f*strike.Facing)*pixelsPerWorldUnit,((float)strike.Y/OutsideMovementDefinition.UnitsPerWorldUnit+1.2f-verticalOffset)*pixelsPerWorldUnit);trialSwordImage.rectTransform.localScale=new Vector3(strike.Facing,1,1);}
+            if(trialTargetFeedback.ActiveCount>0){var obstacles=new List<RectTransform>{trialTargetPlate,trialTargetGauge.rectTransform};trialTargetFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),obstacles);}
+        }
+        private void ClearTrialSword(){trialTargetFeedback?.Unbind();feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
     }
 }

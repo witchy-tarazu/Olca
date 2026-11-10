@@ -12,25 +12,24 @@ namespace Olca.Presentation.Effects
         [System.Serializable] private sealed class ContentBounds { public string name; public int width, height, x, y, w, h; }
         [System.Serializable] private sealed class BoundsDocument { public ContentBounds[] entries; }
         private static BoundsDocument contentBounds;
+        private static bool TryContentBounds(Sprite sprite,out Bounds bounds)
+        {
+            bounds=new Bounds();if(sprite==null)return false;
+            if(contentBounds==null){var json=Resources.Load<TextAsset>("OlcaDefensiveFields/actor-bounds");contentBounds=json==null?new BoundsDocument():JsonUtility.FromJson<BoundsDocument>(json.text);}
+            foreach(var entry in contentBounds.entries??System.Array.Empty<ContentBounds>()){
+                if(entry.name!=sprite.name||entry.width!=sprite.rect.width||entry.height!=sprite.rect.height)continue;
+                bounds=new Bounds(new Vector3((entry.x+entry.w*.5f-sprite.pivot.x)/sprite.pixelsPerUnit,(entry.y+entry.h*.5f-sprite.pivot.y)/sprite.pixelsPerUnit,0),new Vector3(entry.w/sprite.pixelsPerUnit,entry.h/sprite.pixelsPerUnit,0));return true;
+            }return false;
+        }
+        /// <summary>UIにも同じ不透明領域の校正を使い、透明余白の上へHUDを浮かせない。</summary>
+        public static Bounds GetLocalBodyBounds(Sprite sprite)=>TryContentBounds(sprite,out var bounds)?bounds:sprite==null?new Bounds():sprite.bounds;
         /// <summary>既存敵PNGの不透明領域から生成した描画校正。未知の絵は既存boundsを使う。</summary>
         public static Bounds GetBodyBounds(SpriteRenderer body)
         {
-            if (body == null || body.sprite == null) return new Bounds();
-            if (contentBounds == null) {
-                var json = Resources.Load<TextAsset>("OlcaDefensiveFields/actor-bounds");
-                contentBounds = json == null ? new BoundsDocument() : JsonUtility.FromJson<BoundsDocument>(json.text);
-            }
-            var sprite = body.sprite;
-            foreach (var entry in contentBounds.entries ?? System.Array.Empty<ContentBounds>()) {
-                if (entry.name != sprite.name || entry.width != sprite.rect.width || entry.height != sprite.rect.height) continue;
-                var center = new Vector3((entry.x + entry.w * .5f - sprite.pivot.x) / sprite.pixelsPerUnit,
-                    (entry.y + entry.h * .5f - sprite.pivot.y) / sprite.pixelsPerUnit, 0);
-                if (body.flipX) center.x = -center.x; if (body.flipY) center.y = -center.y;
-                var x = body.transform.TransformVector(new Vector3(entry.w / sprite.pixelsPerUnit, 0, 0));
-                var y = body.transform.TransformVector(new Vector3(0, entry.h / sprite.pixelsPerUnit, 0));
-                return new Bounds(body.transform.TransformPoint(center), new Vector3(Mathf.Abs(x.x)+Mathf.Abs(y.x), Mathf.Abs(x.y)+Mathf.Abs(y.y), Mathf.Abs(x.z)+Mathf.Abs(y.z)));
-            }
-            return body.bounds;
+            if(body==null||body.sprite==null)return new Bounds();if(!TryContentBounds(body.sprite,out var bounds))return body.bounds;
+            var center=bounds.center;if(body.flipX)center.x=-center.x;if(body.flipY)center.y=-center.y;
+            var x=body.transform.TransformVector(new Vector3(bounds.size.x,0,0));var y=body.transform.TransformVector(new Vector3(0,bounds.size.y,0));
+            return new Bounds(body.transform.TransformPoint(center),new Vector3(Mathf.Abs(x.x)+Mathf.Abs(y.x),Mathf.Abs(x.y)+Mathf.Abs(y.y),Mathf.Abs(x.z)+Mathf.Abs(y.z)));
         }
         private SpriteRenderer field;
         private bool disposed;

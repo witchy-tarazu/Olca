@@ -233,6 +233,8 @@ namespace Olca.Presentation.Battle
 
         /// <summary>WorldEnemyView がダメージフラッシュに使う SpriteRenderer</summary>
         public SpriteRenderer BodyRenderer => enemyImage;
+        public Sprite AuthoredGruntSprite=>gruntSprite;
+        public Font AuthoredHudFont=>hpText!=null?hpText.font:null;
 
         public void Initialize(Enemy enemy)
         {
