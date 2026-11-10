@@ -457,16 +457,17 @@ namespace Olca.Application.Dungeon
         public void ConfigureDepartureCost(string dungeonId,DepartureCostData cost){if(string.IsNullOrWhiteSpace(dungeonId)||cost==null)throw new System.ArgumentException("対象と費用が必要です");cost.Validate();departureCosts[dungeonId]=cost.Copy();}
         private DepartureCostData DepartureCost(string id)=>departureCosts.TryGetValue(id,out var value)?value.Copy():new DepartureCostData();
         private string outsideDepartureError;
-        private bool outsideRecoveryPending;private int outsideRecoveryAppliedFrame=-1,outsideRecoveryAttemptFrame=-1;private string outsideRecoveryError;
+        private bool outsideRecoveryPending,outsideRecoveryRelocate;private int outsideRecoveryAppliedFrame=-1,outsideRecoveryAttemptFrame=-1;private string outsideRecoveryError;
         private bool CanRestoreOutsideRecovery=>CustomizationUiLive&&outsideLandingRoute&&outsideRecoveryPending&&clearReturnSession?.HasPendingSave==true&&!progressStartupBlocked&&clearReturnVisible;
         private bool OutsideRecoveryReady=>outsideExploration?.IsOpen==true&&!IsUserPaused&&!outsideWheelPaused&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideRecoveryAppliedFrame&&Time.frameCount!=outsideRecoveryAttemptFrame&&(outsideRecoveryPending||OutsideHubEligible&&outsideExploration.View.CanPlay&&gameSystem.OutsideExploration.Player?.IsDead==false&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core));
         private void UseOutsideRecovery()
         {
             if(!OutsideRecoveryReady)return;outsideRecoveryAttemptFrame=Time.frameCount;
             outsideExploration.Pump(false);
-            bool saved=outsideRecoveryPending?clearReturnSession.Retry():clearReturnSession.TrySaveOutsideRecoveryPoint(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId);
+            if(!outsideRecoveryPending)outsideRecoveryRelocate=false;
+            bool saved=outsideRecoveryPending?clearReturnSession.Retry():clearReturnSession.TrySaveOutsideRecoveryPoint(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId,gameSystem.OutsideExploration.Player);
             outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;
-            if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId,false);outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();}
+            if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId,outsideRecoveryRelocate);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();}
         }
         private void BindOutsideRecovery()
         {outsideExploration.View.ConfigureRecovery(UseOutsideRecovery,()=>OutsideRecoveryReady,()=>outsideRecoveryPending?"ホゾン シッパイ / オシテ サイシコウ":outsideRecoveryError!=null?outsideRecoveryError:"ケンショウ カイフク（カリ）\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ カイフク・ホゾン":"チカヅイテ シラベル"));}
@@ -545,6 +546,7 @@ namespace Olca.Application.Dungeon
             if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             outsideDepartureError=null;outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
+                try{gameSystem.OutsideExploration.RestoreSavedPlayer(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
                     if(services.OutsideExploration.Player==null){try{Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(services.OutsideExploration.Core,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){clearReturnError=e.Message;ShowDungeonSelection();return;}}
@@ -2185,7 +2187,7 @@ namespace Olca.Application.Dungeon
                 if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
                 outsideExploration?.SetCovered(IsUserPaused||outsideWheelPaused);
                 bool inspect=inputProvider.OutsideInteractionPressed(outsideExploration?.Context);
-                if(gameSystem.OutsideExploration.Player?.IsDead==true&&!outsideRecoveryPending&&!progressStartupBlocked&&!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0){outsideExploration.Pump(false);try{gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){outsideRecoveryError=e.Message;progressStartupBlocked=true;}outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();outsideExploration.View.Render();return;}
+                if(gameSystem.OutsideExploration.Player?.IsDead==true&&!outsideRecoveryPending&&!progressStartupBlocked&&!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0){outsideExploration.Pump(false);outsideRecoveryRelocate=true;try{bool saved=clearReturnSession.TrySaveOutsideDeathRecovery(gameSystem.OutsideExploration.Player);outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;}else if(!outsideRecoveryPending)progressStartupBlocked=true;}catch(System.ArgumentException e){outsideRecoveryError=e.Message;progressStartupBlocked=true;}outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();outsideExploration.View.Render();return;}
                 if(OutsideRecoveryReady&&inspect){UseOutsideRecovery();return;}
                 if(OutsideEntranceReady&&inspect){EnterOutsideDungeon();return;}
                 outsideExploration?.Pump(!IsUserPaused&&!outsideWheelPaused&&!outsideRecoveryPending&&!progressStartupBlocked&&Time.timeScale>0);

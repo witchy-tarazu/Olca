@@ -129,6 +129,22 @@ namespace Olca.Core.Logic.Integration
             if(relocate)Core.RestoreRecoveryPosition(position);Cards?.Reload();Core.CardGauge.RestoreFull();
             Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;
         }
+        private string savedPlayerId,savedPlayerKey;
+        /// <summary>同じRoot/Actorの再表示では適用し直さない。coldは従来の復帰位置へ個体だけ復元する。</summary>
+        public bool RestoreSavedPlayer(Olca.Core.Domain.OutsidePlayerSaveData data,string recoveryPoint)
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));if(data==null)return false;
+            string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
+            if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
+            var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
+            if(Player==null)Core.RestoreRecoveryPosition(position);Player=candidate;playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
+        }
+        /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
+        public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
+        {
+            if(data==null)return;data.Validate();var actual=Olca.Core.Domain.OutsidePlayerSaveData.Capture(Player);actual.Id=data.Id;
+            if(actual.Key()!=data.Key())throw new System.ArgumentException("回復した個体と保存が一致しません");savedPlayerId=data.Id;savedPlayerKey=data.Key();
+        }
         public bool AdvancePlayerFrame()
         {
             if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;

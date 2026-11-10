@@ -16,6 +16,10 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(false)][TestCase(true)] public void 初回帰還HPの表示は未保存のprofile旧levelでなく結果計画の新levelを使う(bool blocked)
+        {
+            var root=new GameObject("ArrivalPreview139",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);var entry=OutsidePlayerSaveData.Capture(new PlayerCharacter(100));var end=entry.Player.Copy();end.Hp=37;var flow=new ClearReturnData{RunId=System.Guid.NewGuid().ToString("N"),Stage=ClearReturnStage.Awarded,NewLevel=2,ReturnedMaxHp=105,ReturnedAttack=11,Settings=new ClearReturnSettings(),OutsideEnd=new OutsideClearEndData{EntryLevel=1,Entry=entry,End=end}};var profile=new ClearReturnProfile{Level=1,Flow=flow.Copy()};profile.Flow.Stage=ClearReturnStage.Choosing;view.Render(profile,flow,blocked,blocked?"ホゾン シッパイ":null);var label=root.GetComponentsInChildren<Text>().Single(t=>t.name=="ReturnStats");StringAssert.Contains("42/105",label.text);Assert.AreEqual(1,profile.Level);Assert.AreEqual(37,flow.OutsideEnd.End.Hp);}finally{Object.DestroyImmediate(root);}
+        }
         [TestCase(1920f,1080f,false)][TestCase(1662.77f,1247.08f,false)][TestCase(2199.64f,942.70f,false)]
         [TestCase(1920f,1080f,true)][TestCase(1662.77f,1247.08f,true)][TestCase(2199.64f,942.70f,true)]
         public void 結果の見出しは常設操作と重ならず費用本文を明色で読める(float width,float height,bool awarded)
