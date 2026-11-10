@@ -1471,6 +1471,7 @@ namespace Olca.Core.Logic.Dungeon
     /// <summary>復元候補。検証が全件成功するまで通常ゲームの参照へ接続しない。</summary>
     public sealed class RestoredCheckpoint
     {
+        internal CheckpointDefinitions Definitions {get;}
         private readonly CheckpointDto snapshot;
         public CheckpointDto Snapshot => snapshot.Copy();
         public PlayerCharacter Player { get; }
@@ -1483,7 +1484,7 @@ namespace Olca.Core.Logic.Dungeon
         public IReadOnlyList<Card> RewardCandidates { get; }
         internal RestoredCheckpoint(CheckpointDto dto, Dictionary<string, Card> cards, Dictionary<int, Enemy> enemies, CheckpointDefinitions definitions)
         {
-            snapshot = dto.Copy(); Cards = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Card>(cards);
+            Definitions=definitions;snapshot = dto.Copy(); Cards = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Card>(cards);
             Enemies = new System.Collections.ObjectModel.ReadOnlyDictionary<int, Enemy>(enemies);
             Map = definitions.RestoreMap(enemies);
             Player = CheckpointPlayerMapper.Restore(dto.Player);

@@ -509,6 +509,26 @@ namespace Olca.Core.Logic.Integration
             jumpWasHeld=dashWasHeld=false;CardGauge.Restore(v.GaugeMaximum,v.GaugeRecovery,v.GaugeUnits);afterimages.Clear();afterimages.AddRange(v.Afterimages.Select(a=>new OutsideAfterimage(a.X,a.Y,a.Frame,a.Facing,a.Pose)));
         }
     }
+    /// <summary>登録済み試用地形の死亡復帰候補。Rootを触らず、既存回復処理と専用乱数を使う。</summary>
+    public static class OutsideFirstRecoveryFactory
+    {
+        internal static OutsideExplorationCore RecoveryCore(OutsideCoreStateData state)
+        {
+            var profiles=new OutsideTraversalProfile[]{OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash,null};
+            foreach(var profile in profiles){var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,profile);if(core.StateDefinitionKey()==state.DefinitionKey){core.RestoreState(state);return core;}}
+            throw new ArgumentException("死亡復帰先の外界地形定義が未登録です");
+        }
+        public static OutsideRecoveryData Create(OutsideDepartureVitals entry,string point,CheckpointDefinitions definitions,string run)
+        {
+            entry.Validate();if(entry.Retry||entry.Template==null||entry.Runtime==null||!Guid.TryParseExact(run,"N",out _))throw new ArgumentException("初回の入場時個体とRuntimeが必要です");
+            var geometry=RecoveryCore(entry.Runtime.Core);var actor=entry.Template.Copy();actor.Id=entry.Runtime.Id;
+            using(var candidate=new OutsideExplorationSession()){
+                candidate.Core.ConfigureTraversal(geometry.TraversalProfile);candidate.RestoreSavedState(actor,entry.Runtime,point,definitions,geometry.TraversalProfile);
+                candidate.RecoverOutside(point);var recovered=OutsidePlayerSaveData.ForRecovery(candidate.Player);recovered.Id=run;var runtime=candidate.CaptureRuntime(definitions);runtime.Id=run;
+                var result=new OutsideRecoveryData{PointId=point,SourcePlayerKey=entry.Template.Key(),SourceRuntimeKey=entry.Runtime.Key(),Player=recovered,Runtime=runtime};result.Validate();return result;
+            }
+        }
+    }
     public sealed partial class OutsideExplorationSession
     {
         private readonly System.Collections.Generic.Dictionary<string,long> itemCooldowns=new System.Collections.Generic.Dictionary<string,long>();
