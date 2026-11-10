@@ -131,7 +131,7 @@ namespace Olca.Core.Logic.Integration
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
-            long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);
+            long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);itemCooldowns.Clear();
             if(relocate)Core.RestoreRecoveryPosition(position);Cards?.Reload();Core.CardGauge.RestoreFull();
             Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;
         }
@@ -143,7 +143,7 @@ namespace Olca.Core.Logic.Integration
             string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
             if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
             var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
-            if(Player==null)Core.RestoreRecoveryPosition(position);Player=candidate;playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
+            if(Player==null)Core.RestoreRecoveryPosition(position);Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
         }
         /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
         public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
@@ -509,6 +509,38 @@ namespace Olca.Core.Logic.Integration
     }
     public sealed partial class OutsideExplorationSession
     {
+        private readonly System.Collections.Generic.Dictionary<string,long> itemCooldowns=new System.Collections.Generic.Dictionary<string,long>();
+        private bool usingItem;private string appliedItemStateId;
+        public void RestoreItemCooldowns(OutsideItemStateData state,OutsidePlayerSaveData actor,OutsideRuntimeSaveData runtime)
+        {
+            if(state==null)return;state.Validate(actor,runtime);if(appliedItemStateId==actor.Id)return;
+            if(savedRuntimeId!=actor.Id||Core.Frame!=runtime.Core.Frame)throw new ArgumentException("アイテムCDと復元時計が一致しません");
+            var prepared=state.Cooldowns.ToDictionary(v=>v.Id,v=>checked(Core.Frame+v.RemainingFrames));itemCooldowns.Clear();foreach(var pair in prepared)itemCooldowns[pair.Key]=pair.Value;appliedItemStateId=actor.Id;
+        }
+        public int ItemCooldownRemaining(string id)=>id!=null&&itemCooldowns.TryGetValue(id,out var until)?(int)System.Math.Max(0,until-Core.Frame):0;
+        public bool TryUseRecoveryItem(ClearReturnSession save,OutsideRecoveryItemDefinition definition,CheckpointDefinitions definitions,out string error)
+        {
+            error=null;
+            if(usingItem||save==null||definition==null||!IsPresented||!CanPerformAttack){error="今はアイテムを使用できません";return false;}
+            if(ItemCooldownRemaining(definition.Id)>0){error="クールタイム中です";return false;}
+            if(Player.CurrentHp==Player.MaxHp){error="HPは満タンです";return false;}
+            usingItem=true;
+            try{
+                long until=checked(Core.Frame+definition.CooldownFrames);
+                var actor=OutsidePlayerSaveData.Capture(Player);actor.Player.Hp=(int)System.Math.Min(actor.Player.MaxHp,(long)actor.Player.Hp+definition.HealHp);actor.Validate();
+                var runtime=CaptureItemRuntime(definitions);runtime.Id=actor.Id;
+                var cooldowns=itemCooldowns.Where(v=>v.Value>Core.Frame&&v.Key!=definition.Id).Select(v=>new OutsideItemCooldownData{Id=v.Key,RemainingFrames=checked((int)(v.Value-Core.Frame))}).Concat(new[]{new OutsideItemCooldownData{Id=definition.Id,RemainingFrames=definition.CooldownFrames}}).ToArray();
+                var itemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=cooldowns};itemState.Validate(actor,runtime);
+                if(!save.TryCommitOutsideItem(definition.Id,actor,runtime,itemState)){error=save.Error;return false;}
+                // 保存成功後だけ現個体へ効果を適用。個体/時計/手札を置換しない。
+                itemCooldowns[definition.Id]=until;appliedItemStateId=actor.Id;Player.Heal(definition.HealHp);savedPlayerId=actor.Id;savedPlayerKey=actor.Key();savedRuntimeId=runtime.Id;savedRuntimeKey=runtime.Key();return true;
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+            finally{usingItem=false;}
+        }
+        private OutsideRuntimeSaveData CaptureItemRuntime(CheckpointDefinitions definitions)
+        {
+            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions)};value.Validate();return value;
+        }
         private string savedRuntimeId,savedRuntimeKey;
         public OutsideRuntimeSaveData CaptureRuntime(CheckpointDefinitions definitions=null)
         {
@@ -525,7 +557,7 @@ namespace Olca.Core.Logic.Integration
             var actor=player.Restore();var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
             var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);itemCooldowns.Clear();Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
         }
     }
 }

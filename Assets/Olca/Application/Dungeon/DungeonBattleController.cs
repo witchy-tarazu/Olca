@@ -546,7 +546,7 @@ namespace Olca.Application.Dungeon
             if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             outsideDepartureError=null;outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
-                try{gameSystem.OutsideExploration.RestoreSavedState(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true):null);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
+                try{gameSystem.OutsideExploration.RestoreSavedState(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true):null);gameSystem.OutsideExploration.RestoreItemCooldowns(clearReturnSession.Snapshot.OutsideItemState,clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
                     if(services.OutsideExploration.Player==null){try{Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(services.OutsideExploration.Core,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){clearReturnError=e.Message;ShowDungeonSelection();return;}}
@@ -1125,6 +1125,12 @@ namespace Olca.Application.Dungeon
         private const string ManagedOutsideItems="outside-item-registration";
         private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
         private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample};
+        private string UseOutsideRecoveryItem(string id)
+        {
+            if(!IsUserPaused||outsideExploration?.IsOpen!=true||gameSystem==null||!isActiveAndEnabled)return "今は使用できません";
+            var definition=OutsideRecoveryItemDefinition.Provisional;if(id!=definition.Id)return "使用定義が未登録です";
+            return gameSystem.OutsideExploration.TryUseRecoveryItem(clearReturnSession,definition,memoryCheckpoints?.Definitions,out var error)?"HPをカイフクしました":error;
+        }
         private void OpenOutsideItems(){if(!IsUserPaused||outsideExploration?.IsOpen!=true||gameSystem==null||gameSystem.Dialogs.ActiveCount!=0)return;ShowOutsideItemsAsync().Forget();}
         private async UniTaskVoid ShowOutsideItemsAsync(){var owner=gameSystemSession;var result=await gameSystem.Views.ShowAsync(ManagedOutsideItems);if(this!=null&&ReferenceEquals(owner,gameSystemSession)&&!result.Succeeded&&!result.Cancelled){logger?.LogWarning(result.Error);SetPausePanelVisible(IsUserPaused);}}
         private void CloseOutsideItems(){outsideItemRegistrationView?.Hide();SetPausePanelVisible(IsUserPaused);if(IsUserPaused&&pauseOverlay!=null)pauseOverlay.transform.SetAsLastSibling();}
@@ -1177,7 +1183,7 @@ namespace Olca.Application.Dungeon
             }
 
             if(gameSystem!=null)gameSystem.Views.Register(this,ManagedOutsideItems,
-                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideItemRegistrationView>("OutsideItemRegistrationView",view=>{outsideItemRegistrationView=view;view.Initialize(panelFactory.Font,clearReturnSession,outsideItemDefinitions,CloseOutsideItems);}).gameObject);},
+                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideItemRegistrationView>("OutsideItemRegistrationView",view=>{outsideItemRegistrationView=view;view.Initialize(panelFactory.Font,clearReturnSession,outsideItemDefinitions,CloseOutsideItems);view.ConfigureUse(UseOutsideRecoveryItem,id=>gameSystem?.OutsideExploration?.ItemCooldownRemaining(id)??0);}).gameObject);},
                 (panel,context)=>{if(!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide();});
             RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();

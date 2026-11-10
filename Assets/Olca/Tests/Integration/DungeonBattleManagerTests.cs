@@ -4698,6 +4698,47 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)]
+        public void 探索アイテムは成功時だけ数量HPを同時保存し失敗では効果CDと保留計画を残さない(bool failure,bool after)
+        {
+            var definition=OutsideRecoveryItemDefinition.Provisional;var io=new FaultIo();var store=Store(io);System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2}},Shortcuts=new[]{definition.Id,null,null,null}}}));
+            var save=new ClearReturnSession(store);using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                var actor=new PlayerCharacter(100);actor.SetHp(40);world.TryInitializePlayer(()=>actor);using(var lease=world.AttachPresentation()){
+                    var before=System.IO.File.ReadAllBytes(store.ActivePath);io.Before=failure;io.After=after;
+                    Assert.AreEqual(!failure,world.TryUseRecoveryItem(save,definition,null,out var error),error);Assert.AreEqual(failure?40:65,actor.CurrentHp);Assert.AreEqual(failure?2:1,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(failure?0:180,world.ItemCooldownRemaining(definition.Id));Assert.IsFalse(save.HasPendingSave);
+                    if(failure){CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));io.Before=false;Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out error),error);}
+                    var saved=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));CollectionAssert.AreEqual(saved,System.IO.File.ReadAllBytes(store.ActivePath));
+                    for(int i=0;i<10;i++)Assert.IsFalse(world.AdvancePlayerFrame());Assert.AreEqual(180,world.ItemCooldownRemaining(definition.Id));
+                    for(int i=0;i<180;i++){world.Core.TickFrame(0);world.AdvancePlayerFrame();}Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out error),error);Assert.AreEqual(90,actor.CurrentHp);Assert.AreEqual(0,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(definition.Id,save.OutsideInventorySnapshot.Shortcuts[0]);
+                }
+                var coldSave=new ClearReturnSession(Store());using(var cold=new Olca.Core.Logic.Integration.OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(coldSave.Snapshot.OutsidePlayerSave,coldSave.Snapshot.OutsideRuntimeSave,null));cold.RestoreItemCooldowns(coldSave.Snapshot.OutsideItemState,coldSave.Snapshot.OutsidePlayerSave,coldSave.Snapshot.OutsideRuntimeSave);Assert.AreEqual(180,cold.ItemCooldownRemaining(definition.Id));Assert.AreEqual(90,cold.Player.CurrentHp);Assert.AreEqual(world.Core.Frame,cold.Core.Frame);}
+            }
+        }
+        [Test]
+        public void 探索アイテムは満タン麻痺非表示未知定義不足所持を拒否し回復地点でCDをリセットする()
+        {
+            var definition=OutsideRecoveryItemDefinition.Provisional;var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=3}}}}));var save=new ClearReturnSession(store);
+            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));using(var lease=world.AttachPresentation()){Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));world.Player.SetHp(20);world.Player.ApplyParalysis(5);world.Core.TickFrame(0);world.AdvancePlayerFrame();Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));for(int i=0;i<4;i++){world.Core.TickFrame(0);world.AdvancePlayerFrame();}Assert.IsFalse(world.TryUseRecoveryItem(save,new OutsideRecoveryItemDefinition("unknown",25,180),null,out _));Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out _));Assert.AreEqual(45,world.Player.CurrentHp);world.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId);Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));Assert.AreEqual(2,save.OutsideInventorySnapshot.Items[0].Count);}}
+        }
+        [Test]
+        public void アイテム保存はCD終端のoverflowと個体時計の取り違えを読込前に拒否する()
+        {
+            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100));var actor=OutsidePlayerSaveData.Capture(world.Player);var runtime=world.CaptureRuntime();runtime.Id=actor.Id;
+                var state=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=new[]{new OutsideItemCooldownData{Id="test",RemainingFrames=180}}};state.Validate(actor,runtime);
+                var profile=new ClearReturnProfile{OutsidePlayerSave=actor,OutsideRuntimeSave=runtime,OutsideItemState=state};Assert.DoesNotThrow(()=>ClearReturnProfile.Validate(profile));
+                state.ActorKey="changed";Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(profile));state.ActorKey=actor.Key();runtime.Core.Frame=long.MaxValue-100;state.RuntimeKey=runtime.Key();Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(profile));
+            }
+        }
+        [Test]
+        public void アイテムCDはView終了再入で保持し旧Runtimeなしの新帰還個体ではリセットする()
+        {
+            var definition=OutsideRecoveryItemDefinition.Provisional;var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2}}}}));var save=new ClearReturnSession(store);
+            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100));world.Player.SetHp(20);using(var lease=world.AttachPresentation()){Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out var error),error);}Assert.AreEqual(180,world.ItemCooldownRemaining(definition.Id));
+                using(var lease=world.AttachPresentation())Assert.AreEqual(180,world.ItemCooldownRemaining(definition.Id));Assert.IsTrue(world.RestoreSavedPlayer(OutsidePlayerSaveData.ForRecovery(world.Player),null));Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));Assert.AreEqual(1,save.OutsideInventorySnapshot.Items[0].Count);
+            }
+        }
         private sealed class ProgressActionFaultIo : Olca.Unity.CheckpointFileIo
         {
             public bool Before,After;
