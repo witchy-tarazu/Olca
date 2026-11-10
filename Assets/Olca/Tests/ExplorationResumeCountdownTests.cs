@@ -10,6 +10,46 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        [TestCase(2)] [TestCase(6)] public void 探索の予約入力は保存せず失敗再試行と冷起動で二枚目を重複消費しない(int at)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"buffer160-"+Guid.NewGuid().ToString("N"));try{using(var s=Buffer160()){var lease=s.AttachPresentation();Start160(s);long rev=s.Cards.HandRevision;for(int n=1;n<=at;n++)Tick160(s,n==at);Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);lease.Dispose();Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var plan=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsideRuntimeSave=runtime,OutsidePlayerSave=actor,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,plan,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(0,plan,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,plan,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var loaded=store.Read(out error);using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null,defs);using(var view=cold.AttachPresentation()){Assert.AreEqual(AttackReservationKind.None,cold.PendingAttack);for(int n=at;n<20;n++)Tick160(cold);Assert.AreEqual(30,cold.Player.CurrentHp);Assert.AreEqual(rev,cold.Cards.HandRevision);}}}}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [TestCase(false)] [TestCase(true)] public void 探索の後隙キャンセルで次カード消費を拒否しても旧後隙を消さない(bool pending)
+        {
+            using(var s=Buffer160(2))using(var view=s.AttachPresentation()){Start160(s);typeof(OutsideExplorationCards).GetProperty("HandRevision").SetValue(s.Cards,long.MaxValue);for(int n=1;n<=5;n++)Tick160(s,pending?n==1:n==5);Assert.IsTrue(s.IsAttacking);Assert.AreEqual(0,s.AttackState.StartedAt);Assert.AreEqual(8,s.AttackState.RecoveryFrames);Assert.AreEqual(long.MaxValue,s.Cards.HandRevision);for(int n=6;n<11;n++){Tick160(s);Assert.IsTrue(s.IsAttacking);}Tick160(s);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(30,s.Player.CurrentHp);}
+        }
+        private static OutsideExplorationSession Buffer160(int? cancel=null)
+        {
+            var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100,staggerDurationFrames:2));var source=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"heal",new PlayerAttackTiming(3,8,cancel)}}).CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(160),out _));for(int n=0;n<1000&&s.Cards.Hand.Count(c=>c.Id=="heal")<2;n++)s.Cards.Reload();Assert.GreaterOrEqual(s.Cards.Hand.Count(c=>c.Id=="heal"),2);s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal"));s.Player.SetHp(10);return s;
+        }
+        private static void Start160(OutsideExplorationSession s){Assert.IsTrue(s.TryUseSelectedHealingCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal"));}
+        private static void Tick160(OutsideExplorationSession s,bool press=false,bool selection=false,bool basic=false,long cardAt=0,long basicAt=0){s.Core.TickFrame(0);s.AdvancePlayerFrame();s.ProcessCardUseInput(press,selection,basic,cardAt,basicAt,out _);}
+        [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)] public void 探索カード予約は六フレーム目の開始で失効し予約時に消費しない(int at)
+        {
+            using(var s=Buffer160())using(var view=s.AttachPresentation()){Start160(s);long rev=s.Cards.HandRevision;for(int n=1;n<=15;n++){Tick160(s,n==at);if(n==at)Assert.AreEqual(rev,s.Cards.HandRevision);}Assert.AreEqual(at>=6?50:30,s.Player.CurrentHp);Assert.AreEqual(rev+(at>=6?1:0),s.Cards.HandRevision);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);}
+        }
+        [TestCase(false)] [TestCase(true)] public void 探索カード予約の押し直しだけが期限を更新し同frameの多重呼出は延長しない(bool refresh)
+        {
+            using(var s=Buffer160())using(var view=s.AttachPresentation()){Start160(s);long rev=s.Cards.HandRevision;for(int n=1;n<=15;n++){Tick160(s,n==5||refresh&&n==8);if(n==5)for(int i=0;i<10;i++)s.ProcessCardUseInput(true,false,false,0,0,out _);}Assert.AreEqual(refresh?50:30,s.Player.CurrentHp);Assert.AreEqual(rev+(refresh?1:0),s.Cards.HandRevision);}
+        }
+        [TestCase(false)] [TestCase(true)] public void 探索カード予約は入力時と発動時の不足コストを拒否して後で自動復活しない(bool atExecution)
+        {
+            using(var s=Buffer160())using(var view=s.AttachPresentation()){Start160(s);long rev=s.Cards.HandRevision;for(int n=1;n<=20;n++){if(n==(atExecution?11:6))Assert.IsTrue(s.Core.CardGauge.TrySpend((int)(s.Core.CardGauge.CurrentUnits/60)));Tick160(s,n==6);}Assert.AreEqual(30,s.Player.CurrentHp);Assert.AreEqual(rev,s.Cards.HandRevision);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] public void 探索カード予約は選択と場面身体状態の変化で取り消す(int mode)
+        {
+            using(var s=Buffer160()){var view=s.AttachPresentation();try{Start160(s);long rev=s.Cards.HandRevision;for(int n=1;n<=6;n++)Tick160(s,n==6);Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);
+                if(mode==0){s.Core.TickFrame(0);s.AdvancePlayerFrame();s.ProcessCardUseInput(false,true,false,0,0,out _);}if(mode==1){int facing=s.Core.Facing;bool grounded=s.Core.IsGrounded;s.Core.TickFrame(-1);s.ObserveAttackBoundary(facing,grounded);}if(mode==2){int facing=s.Core.Facing;bool grounded=s.Core.IsGrounded;s.Core.TickFrame(0,true,true);s.ObserveAttackBoundary(facing,grounded);}if(mode==3){s.Player.TakeDamage(0,forceStagger:true);Tick160(s);}if(mode==4){s.Player.ApplyParalysis(2);Tick160(s);}if(mode==5){view.Dispose();view=s.AttachPresentation();}if(mode==6)s.CancelAttackReservation();Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);for(int n=0;n<20;n++)Tick160(s);Assert.AreEqual(30,s.Player.CurrentHp);Assert.AreEqual(rev,s.Cards.HandRevision);
+            }finally{view.Dispose();}}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] public void 探索の同frame優先は選択が最優先で前後不明はカードを優先し未実装キックを実行しない(int mode)
+        {
+            using(var s=Buffer160())using(var view=s.AttachPresentation()){Start160(s);for(int n=1;n<6;n++)Tick160(s);Tick160(s,true,mode==3,true,mode==0?10:mode==1?20:0,mode==0?20:mode==1?10:0);Assert.AreEqual(mode==0||mode==3?AttackReservationKind.None:AttackReservationKind.Card,s.PendingAttack);for(int n=7;n<=15;n++)Tick160(s);Assert.AreEqual(mode==0||mode==3?30:50,s.Player.CurrentHp);}
+        }
+        [TestCase(0)] [TestCase(2)] [TestCase(8)] public void 探索カード予約は既存の後隙キャンセル開始か終了の最速で発動する(int cancel)
+        {
+            using(var s=Buffer160(cancel))using(var view=s.AttachPresentation()){Start160(s);long rev=s.Cards.HandRevision;Tick160(s,true);long expected=3+cancel;for(int n=2;n<=Math.Max(11,expected);n++){Tick160(s);if(n<expected)Assert.AreEqual(rev,s.Cards.HandRevision);}Assert.AreEqual(rev+(expected<7?1:0),s.Cards.HandRevision);}
+        }
         [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] public void 探索の開始済ヒールは前隙と発動済を保存し復元後一度だけ適用する(int saveAt)
         {
             using(var s=Heal158(3,4)){var lease=s.AttachPresentation();s.Player.SetHp(50);var card=s.Cards.SelectedCard;Assert.IsTrue(s.TryUseSelectedHealingCard(card,s.Cards.HandRevision,out _));Assert.AreEqual(50,s.Player.CurrentHp);Assert.IsFalse(s.CanPerformAttack);

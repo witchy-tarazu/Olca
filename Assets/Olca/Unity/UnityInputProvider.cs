@@ -143,7 +143,7 @@ namespace Olca.Unity
         public void QueueOutsideHandPress(Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Olca.Core.Logic.Integration.OutsideExplorationCards cards,int index,long revision)
         {
             if(!capturing||!OutsideGamepad||GameplayPause.InputBlocked||GamepadGameplayActive?.Invoke()!=true||lease?.IsCurrent!=true||!ReferenceEquals(lease.Cards,cards)||cards==null||cards.HandRevision!=revision||index<0||index>=cards.Hand.Count)return;
-            var value=BuildState();value.ClearEdges();value.OutsideHandPress=index;value.OutsideHandOwner=cards;value.OutsideHandLease=lease;value.OutsideHandRevision=revision;events.Add(new TimestampedLogicalInput(PointerClickTimestamp,value));
+            var value=BuildState();value.ClearEdges();value.OutsideHandPress=index;value.OutsideHandOwner=cards;value.OutsideHandLease=lease;value.OutsideHandRevision=revision;value.OutsideHandSelectionChanged=index!=cards.SelectedIndex;long at=PointerClickTimestamp;value.OutsideHandPressedAt=at;events.Add(new TimestampedLogicalInput(at,value));
         }
         private bool CardActionHeld()=>OutsideGamepad?(Held("outside","CardPrimary")||PadActionHeld("outside","CardPrimary")):ActionHeld("battle","CardPrimary");
         private int ItemPressMask(InputDevice device,List<ButtonControl> presses)

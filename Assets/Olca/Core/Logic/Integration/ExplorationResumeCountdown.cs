@@ -129,7 +129,7 @@ namespace Olca.Core.Logic.Integration
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
-            public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
+            public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this)){prior.current=null;prior.CancelAttackReservation();}}
         }
         private PresentationLease current;
         // 外界だけが所有する個体。DungeonのPlayerやViewへ所有権を渡さない。
@@ -139,16 +139,48 @@ namespace Olca.Core.Logic.Integration
         public long CardUseMessageFrame {get;private set;}=-1;
         private long lastCardUseAttempt=-1;
         private OutsideAttackStateData attackState;
+        private readonly Olca.Core.Logic.Battle.AttackInputReservation attackReservation=new Olca.Core.Logic.Battle.AttackInputReservation();
+        private Card reservedCard;private OutsideExplorationCards reservedOwner;private long reservedRevision,reservedActionFrame,lastAttackInputFrame=-1;
+        public Olca.Core.Logic.Battle.AttackReservationKind PendingAttack=>attackReservation.Kind;
+        public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
+        public void ObserveAttackBoundary(int facing,bool grounded){if(Core.Facing!=facing||Core.IsGrounded!=grounded)CancelAttackReservation();}
+        private bool SupportedHeal(Card card)=>card!=null&&Core.Definition.Id=="validation-landing-32"&&Core.IsGrounded&&card.Id=="heal"&&card.Category==CardCategory.Defense&&card.SubCategory==CardSubCategory.Heal&&card.ExceedLevel==ExceedLevel.Normal&&card.Power>=0;
+        private bool CanCancelAttack()=>attackState!=null&&attackState.EffectApplied&&Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.HasValue&&Core.Frame-attackState.StartedAt>=attackState.StartupFrames+(long)Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.Value;
+        // 予約入力は保存しない。Sessionの行動開始と同じ境界で最後に再検証する。
+        public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error)
+        {
+            error=null;if(lastAttackInputFrame==Core.Frame)return false;lastAttackInputFrame=Core.Frame;
+            attackReservation.Observe(Core.Frame);if(attackReservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.None&&reservedCard!=null)CancelAttackReservation();
+            if(selectionChanged||!IsPresented||IsDeckEditingLocation||!BodyCanAttack){CancelAttackReservation();return false;}
+            if(reservedCard!=null&&(!ReferenceEquals(reservedOwner,Cards)||!ReferenceEquals(reservedCard,Cards?.SelectedCard)||reservedRevision!=Cards.HandRevision||attackState!=null&&reservedActionFrame!=attackState.StartedAt))CancelAttackReservation();
+            // 未登録の通常キックを実行/予約しないが、後からの固有攻撃入力で旧予約を復活させない。
+            if(basicRequested&&(!requested||cardAt!=0&&basicAt!=0&&basicAt>cardAt)){CancelAttackReservation();error="固有攻撃は未接続です";return false;}
+            if(requested){
+                CancelAttackReservation();var card=Cards?.SelectedCard;
+                if(!SupportedHeal(card)){return TryUseSelectedHealingCard(card,Cards?.HandRevision??0,out error);}
+                if(Core.CardGauge.CurrentUnits<(long)card.GetFinalCost()*OutsideCardGauge.UnitsPerPoint){error="カードゲージが不足しています";return false;}
+                if(IsAttacking&&!CanCancelAttack()){attackReservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,Core.Frame);reservedCard=card;reservedOwner=Cards;reservedRevision=Cards.HandRevision;reservedActionFrame=attackState.StartedAt;return false;}
+                return StartCardAfterRecovery(card,Cards.HandRevision,out error);
+            }
+            if(attackReservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Card||IsAttacking&&!CanCancelAttack())return false;
+            var expected=reservedCard;long revision=reservedRevision;CancelAttackReservation();
+            if(!SupportedHeal(expected)||Core.CardGauge.CurrentUnits<(long)expected.GetFinalCost()*OutsideCardGauge.UnitsPerPoint)return false;
+            return StartCardAfterRecovery(expected,revision,out error);
+        }
+        private bool StartCardAfterRecovery(Card card,long revision,out string error)
+        {
+            var prior=attackState;attackState=null;bool started=TryUseSelectedHealingCard(card,revision,out error);if(!started)attackState=prior;return started;
+        }
         public OutsideAttackStateData AttackState=>attackState?.Copy();
         public bool IsAttacking=>attackState!=null;
         private static int Startup(Card card)=>card.StartupFrames??(int)Math.Ceiling(card.StartupTime*60d-0.00001d);
         private static int Recovery(Card card)=>card.RecoveryFrames??(int)Math.Ceiling(card.RecoveryTime*60d-0.00001d);
-        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=-1;attackState=null;}
+        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=-1;attackState=null;lastAttackInputFrame=-1;CancelAttackReservation();}
         // Viewと独立した論理時計で一度だけ効果を確定する。停止/同frame再読込では進めない。
         private void AdvanceAttack(bool bodyAllowed)
         {
             var action=attackState;if(action==null)return;
-            if(!bodyAllowed){attackState=null;return;}
+            if(!bodyAllowed){attackState=null;CancelAttackReservation();return;}
             if(!action.EffectApplied&&Core.Frame-action.StartedAt>=action.StartupFrames){action.EffectApplied=true;Player.Heal(Cards.ActionCard(action.CardIndex).Power);}
             if(Core.Frame-action.StartedAt>=action.StartupFrames+(long)action.RecoveryFrames)attackState=null;
         }
@@ -187,7 +219,7 @@ namespace Olca.Core.Logic.Integration
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
             long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);itemCooldowns.Clear();
             if(relocate){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}Cards?.Reload();Core.CardGauge.RestoreFull();
-            attackState=null;Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;
+            attackState=null;CancelAttackReservation();Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;
         }
         private string savedPlayerId,savedPlayerKey;
         /// <summary>同じRoot/Actorの再表示では適用し直さない。coldは従来の復帰位置へ個体だけ復元する。</summary>
@@ -238,7 +270,7 @@ namespace Olca.Core.Logic.Integration
         public bool AdvanceDeckLocation()
         {
             if(!managedDeckLocations||IsEnded)return false;
-            if(IsDeckEditingLocation){attackState=null;deckLocationArmed=true;return false;}
+            if(IsDeckEditingLocation){attackState=null;CancelAttackReservation();deckLocationArmed=true;return false;}
             if(!deckLocationArmed)return false;deckLocationArmed=false;
             if(pendingLocationDeck!=null){var random=Cards?.RandomProvider??pendingLocationRandom;pendingLocationDeck.Shuffle(random);Cards=new OutsideExplorationCards(pendingLocationDeck,random,queuedDeckKey);pendingLocationDeck=null;pendingLocationRandom=null;return true;}
             if(Cards?.TotalCount!=ExplorationDeckRules.RequiredCards)return false;
@@ -273,7 +305,7 @@ namespace Olca.Core.Logic.Integration
         public PresentationLease AttachPresentation()
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
-            return current=new PresentationLease(this);
+            CancelAttackReservation();return current=new PresentationLease(this);
         }
         public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();Player=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
     }
