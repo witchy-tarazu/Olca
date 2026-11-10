@@ -337,25 +337,26 @@ namespace Olca.Core.Domain
     /// <summary>出撃保存と同時に固定する外界HP/持越し毒。未接続の時間状態は黙って落とさない。</summary>
     public sealed class OutsideDepartureVitals
     {
-        public int Version=1,Hp,MaxHp;public bool Retry;public PlayerPoisonDto[] Poisons=Array.Empty<PlayerPoisonDto>();
-        public OutsideDepartureVitals Copy()=>new OutsideDepartureVitals{Version=Version,Hp=Hp,MaxHp=MaxHp,Retry=Retry,Poisons=Poisons?.Select(p=>p?.Copy()).ToArray()};
+        public int Version=1,Hp,MaxHp;public bool Retry;public PlayerTimedAilmentsDto TimedAilments;public PlayerPoisonDto[] Poisons=Array.Empty<PlayerPoisonDto>();
+        public OutsideDepartureVitals Copy()=>new OutsideDepartureVitals{Version=Version,Hp=Hp,MaxHp=MaxHp,Retry=Retry,TimedAilments=TimedAilments?.Copy(),Poisons=Poisons?.Select(p=>p?.Copy()).ToArray()};
         public static OutsideDepartureVitals Capture(PlayerCharacter player,bool retry)
         {
             if(player==null||player.IsDead)throw new ArgumentException("生存する外界プレイヤーが必要です");
             if(!player.CanCaptureOutsideDeparture)throw new ArgumentException("この状態の持込みはまだ未接続です。回復後に出撃してください");
-            var value=new OutsideDepartureVitals{Hp=player.CurrentHp,MaxHp=player.MaxHp,Retry=retry,Poisons=player.CapturePoisons()};value.Validate();return value;
+            var value=new OutsideDepartureVitals{Hp=player.CurrentHp,MaxHp=player.MaxHp,Retry=retry,TimedAilments=player.CaptureTimedAilments(),Poisons=player.CapturePoisons()};value.Validate();return value;
         }
         public void Validate()
         {
             if(Version!=1||MaxHp<=0||Hp<=0||Hp>MaxHp||Poisons==null||Poisons.Any(p=>p==null)||Poisons.Select(p=>p.Kind).Distinct().Count()!=Poisons.Length)throw new ArgumentException("外界の入場前HP/毒が不正です");
-            foreach(var p in Poisons)p.Validate();
+            TimedAilments?.Validate();foreach(var p in Poisons)p.Validate();
         }
         public void ApplyToStart(PlayerCharacter player)
-        {Validate();if(player==null||!player.CanCaptureOutsideDeparture||!Retry&&Hp>player.MaxHp)throw new ArgumentException("出撃先へHP/毒を安全に引き継げません");player.SetHp(Retry?player.MaxHp:Hp);player.RestorePoisons(Retry?Array.Empty<PlayerPoisonDto>():Poisons.Select(p=>p.Copy()).ToArray());}
+        {Validate();if(player==null||!player.CanCaptureTimedAilments||!Retry&&Hp>player.MaxHp)throw new ArgumentException("出撃先へHP/毒を安全に引き継げません");player.SetHp(Retry?player.MaxHp:Hp);player.RestoreTimedAilments(Retry?null:TimedAilments);player.RestorePoisons(Retry?Array.Empty<PlayerPoisonDto>():Poisons.Select(p=>p.Copy()).ToArray());}
         public void ValidateStart(CheckpointPlayerDto player)
         {
             Validate();var expected=Retry?Array.Empty<PlayerPoisonDto>():Poisons;var actual=player?.Poisons??Array.Empty<PlayerPoisonDto>();
             if(player==null||player.MaxHp<=0||player.Hp<=0||player.Hp>player.MaxHp||player.Hp!=(Retry?player.MaxHp:Hp)||actual.Any(p=>p==null)||actual.Length!=expected.Length)throw new ArgumentException("保存出撃のHP/毒が入場計画と一致しません");
+            if(!PlayerTimedAilmentsDto.Same(Retry?null:TimedAilments,player.TimedAilments))throw new ArgumentException("保存出撃の時間状態が入場計画と一致しません");
             foreach(var p in actual)p.Validate();var ordered=actual.OrderBy(p=>p.Kind,StringComparer.Ordinal).ToArray();var source=expected.OrderBy(p=>p.Kind,StringComparer.Ordinal).ToArray();
             for(int i=0;i<source.Length;i++)if(source[i].Kind!=ordered[i].Kind||source[i].Damage!=ordered[i].Damage||source[i].IntervalFrames!=ordered[i].IntervalFrames||source[i].RemainingUnits!=ordered[i].RemainingUnits||source[i].NextDamageUnits!=ordered[i].NextDamageUnits)throw new ArgumentException("保存出撃の毒時計が入場計画と一致しません");
         }
