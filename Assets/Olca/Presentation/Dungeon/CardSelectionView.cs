@@ -382,7 +382,7 @@ namespace Olca.Presentation.Dungeon
         private void FitReturnPanels()
         {
             if(content==null||content.name!="ReturnContents")return;
-            var stats=content.transform.Find("HomeStats")?.GetComponent<Text>();if(stats==null)return;
+            var stats=content.transform.Find("HomeStats")?.GetComponent<Text>();
             var root=(RectTransform)content.transform;
             void Fit(string name,float y,float height,Text label,float inset)
             {
@@ -399,6 +399,7 @@ namespace Olca.Presentation.Dungeon
                 label.rectTransform.anchoredPosition=new Vector2((left+right)/2,label.rectTransform.anchoredPosition.y);label.rectTransform.sizeDelta=new Vector2(right-left-inset,label.rectTransform.sizeDelta.y);
             }
             Fit("ReturnHeader",450,120,content.transform.Find("Title").GetComponent<Text>(),80);
+            if(stats==null){var title=content.transform.Find("Title").GetComponent<Text>();title.resizeTextForBestFit=true;title.resizeTextMinSize=22;title.resizeTextMaxSize=36;return;}
             // 書体による行高の差を吸収し、保存済み案内の3行目も一覧の上端までに収める。
             float summaryHeight=Mathf.Clamp(Mathf.Ceil(stats.preferredHeight)+24,110,140);
             float summaryY=325-summaryHeight/2;
@@ -424,6 +425,16 @@ namespace Olca.Presentation.Dungeon
             var captured=ManagementContext;activeDialog=dialog;dialog.Terminated+=()=>{if(ReferenceEquals(activeDialog,dialog))activeDialog=null;};SaveMenuFocus();menu?.Suspend();
             if(dialog.Open(parent,dialogs,captured,()=>SameDialogParent(parent,captured),cover)){Canvas.ForceUpdateCanvases();if(dialog is Olca.Presentation.Management.ReadOnlyDetailsDialog reading)reading.RefreshLayout();return true;}
             activeDialog=null;return false;
+        }
+        public static string FormatDepartureCost(DepartureCostData cost)
+        {cost.Validate();return "クリア時の費用: 通貨 "+cost.Currency+(cost.Items.Length==0?" / アイテムなし":" / "+string.Join(" / ",cost.Items.Select(v=>v.Name+" × "+v.Count)));}
+        public bool ConfirmDepartureCost(DepartureTermsData terms,string dungeonName,Func<OutsideInventoryData> inventory,Action<DepartureTermsData> accept,Action cancel,Action ended)
+        {
+            if(HasMenuModal||!CanOperateView)return false;var frozen=terms.Copy();frozen.Validate();var parent=content;var captured=ManagementContext;bool enough=frozen.Cost.CanAfford(inventory(),out var shortage);
+            var dialog=Olca.Presentation.Management.ConfirmationDialog.Create(transform,font,new Olca.Presentation.Management.ConfirmationContent{RootName="DepartureCostDialog",Title="出撃費用の確認",Subject=dungeonName,StatusName="DepartureCostStatus",Status=shortage??"出撃時には消費しません",Message=FormatDepartureCost(frozen.Cost)+"\n\nクリア時に報酬とまとめて保存します。\n敗北・撤退では消費しません。",ConfirmName="ConfirmDepartureCost",ConfirmLabel="この費用で出撃",CancelName="CancelDepartureCost",CancelLabel="戻る",ConfirmEnabled=enough});
+            dialog.CanConfirm=()=>{if(!SameDialogParent(parent,captured))return false;bool ok=frozen.Cost.CanAfford(inventory(),out var error);var label=dialog.GetComponentsInChildren<Text>(true).FirstOrDefault(v=>v.name=="DepartureCostStatus");if(label!=null)label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error??"出撃時には消費しません");return ok;};
+            dialog.Terminated+=()=>ended?.Invoke();dialog.Completed+=accepted=>{if(!SameDialogParent(parent,captured))return;if(accepted)accept?.Invoke(frozen.Copy());else{cancel?.Invoke();FocusCurrentContent("ConfirmDungeonSelection");}};
+            return StartDialog(dialog,parent,true);
         }
         private void OpenDiscard(Action<bool> close,Action resume)
         {
@@ -531,16 +542,18 @@ namespace Olca.Presentation.Dungeon
             content = new GameObject("ReturnContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
             gameObject.SetActive(true); profile = profile ?? new ClearReturnProfile();
+            bool settlementPending=blocked&&flow?.Stage==ClearReturnStage.Awarded&&(profile.Flow?.RunId!=flow.RunId||profile.Flow.Stage==ClearReturnStage.Choosing);
             float homeFooterY=-420,homeAuxY=-493,homePageY=-340;
-            CommerceSurface();CommerceFace("ReturnHeader",0,450,1760,120,true);CommerceFace("ReturnBody",0,-30,1760,700);
+            bool resultReading=!collectionOnly&&(flow?.Stage==ClearReturnStage.Choosing||flow?.Stage==ClearReturnStage.Awarded);
+            CommerceSurface();CommerceFace("ReturnHeader",0,450,1760,120,true);CommerceFace("ReturnBody",0,-30,1760,700,resultReading);
             var heading=Text("Title", blocked && flow != null && flow.Outcome != RunReturnOutcome.Cleared ? "敗北・撤退の帰還を保存できません" : collectionOnly ? "所持カード・成長" : flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
-                flow.Stage == ClearReturnStage.Awarded ? "持ち帰り・経験値を反映しました" :
+                flow.Stage == ClearReturnStage.Awarded ? (settlementPending?"クリア結果は未確定です":"持ち帰り・経験値を反映しました") :
                 flow.Outcome == RunReturnOutcome.Defeated ? "敗北して帰還しました" : flow.Outcome == RunReturnOutcome.Retreated ? "撤退して帰還しました" : "帰還しました", 0, 455, 1680, 80, 36);heading.color=Color.white;
             var status=Text("ReturnStatus",error??"",0,355,1680,60,24);status.color=Color.white;AddTrailingTextDetails(status,"ReturnStatusDetails","ホゾンのメッセージ");
             if (flow == null && !collectionOnly) {
                 Text("ReturnHelp", "進行データを確認できるまで、既存の保存を変更せず停止します。", 0, 100, 1700, 120, 28);
             } else if (!collectionOnly && flow.Stage == ClearReturnStage.Choosing) {
-                Text("SelectionRules", $"最大3枚・同じカード1枚まで・★★★不可　選択 {flow.Selected.Length}/3\n選ばなかったカードは失います。経験値予定 +{flow.ExperienceAward}", 0, 260, 1740, 110, 25);
+                var rules=Text("SelectionRules", $"最大3枚・同じカード1枚まで・★★★不可　選択 {flow.Selected.Length}/3\n選ばなかったカードは失います。経験値予定 +{flow.ExperienceAward}"+(flow.Terms==null?"":"\n"+FormatDepartureCost(flow.Terms.Cost)), 0, 260, 1740, 110, 25);AddOverflowTextDetails(rules,"持ち帰り条件・費用");
                 int pages = Math.Max(1, (flow.Candidates.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
                 for (int row = 0; row < PageSize && page * PageSize + row < flow.Candidates.Length; row++) {
                     int index = page * PageSize + row; var card = flow.Candidates[index];
@@ -554,9 +567,9 @@ namespace Olca.Presentation.Dungeon
                 Pages(profile, flow, blocked, error, pages);
                 Button("ConfirmCarryHome", $"{flow.Selected.Length}枚で確定・経験値反映", 0, -420, 900, 75, confirm).interactable = !blocked;
             } else if (!collectionOnly && flow.Stage == ClearReturnStage.Awarded) {
-                var experience=Text("AwardSummary",$"経験値 +{flow.ExperienceAward}（反映済み）\nLv {profile.Level} / 総経験値 {profile.Experience}",-425,235,760,145,30);experience.lineSpacing=1.25f;
-                var tokens=Text("AwardTokens",$"超過変換 +{flow.TokenAward} トークン\n所持トークン {profile.Tokens}",425,235,760,145,30);tokens.lineSpacing=1.25f;
-                var carryHeading=Text("AwardCardsHeading","持ち帰り確定",0,130,1600,44,24);carryHeading.alignment=TextAnchor.MiddleLeft;
+                var experience=Text("AwardSummary",$"経験値 +{flow.ExperienceAward}"+(settlementPending?"（未確定）":"（反映済み）")+$"\nLv {profile.Level} / 総経験値 {profile.Experience}",-425,235,760,145,30);experience.lineSpacing=1.25f;
+                var tokens=Text("AwardTokens",$"超過変換 +{flow.TokenAward} トークン\n所持トークン {profile.Tokens}"+(flow.Terms==null?"":(settlementPending?"\n費用（未確定）: 通貨 ":"\n費用支払済み: 通貨 ")+flow.Terms.Cost.Currency+" / アイテム "+flow.Terms.Cost.Items.Length+"シュルイ"),425,235,760,145,26);tokens.lineSpacing=1.1f;AddTrailingTextDetails(tokens,"AwardTokensDetails","トークンと費用");
+                var carryHeading=Text("AwardCardsHeading",settlementPending?"持ち帰り（未確定）":"持ち帰り確定",0,130,1600,44,24);carryHeading.alignment=TextAnchor.MiddleLeft;
                 int rows=Mathf.Max(1,flow.Selected.Length);
                 if(flow.Selected.Length==0)Text("AwardCards","0枚",0,60,1600,64,30).alignment=TextAnchor.MiddleLeft;
                 for(int row=0;row<flow.Selected.Length;row++){
@@ -566,7 +579,7 @@ namespace Olca.Presentation.Dungeon
                     if(sprite!=null)CollectionIcon("ReturnCardIcon_"+row,card,-780,y,64,_=>sprite);else Text("ReturnCardIndex_"+row,(row+1).ToString(),-780,y,64,64,24);
                 }
                 float statsY=-115-(rows-1)*80;var body=(RectTransform)content.transform.Find("ReturnBody");float bodyHeight=Mathf.Min(700,540+(rows-1)*80);body.sizeDelta=new Vector2(1760,bodyHeight);body.anchoredPosition=new Vector2(0,320-bodyHeight/2);
-                var stats=Text("ReturnStats",$"帰還後：HP {flow.ReturnedMaxHp}/{flow.ReturnedMaxHp} / 攻撃 {flow.ReturnedAttack}\n帰還を確定すると、攻略中の状態を解除して全回復します。",0,statsY,1640,120,26);stats.lineSpacing=1.2f;
+                var outsideReturn=flow.OutsideRetry?.Build(flow.RunId,flow.NewLevel,flow.Settings)??flow.OutsideEnd?.Build(flow.RunId,flow.NewLevel,flow.Settings);var stats=Text("ReturnStats",$"帰還後：HP {outsideReturn?.Player.Hp??flow.ReturnedMaxHp}/{flow.ReturnedMaxHp} / 攻撃 {flow.ReturnedAttack}\n"+(outsideReturn==null?"帰還を確定すると、攻略中の状態を解除して全回復します。":flow.OutsideRetry!=null?"ニュウジョウマエのHP・ジョウタイへモドシ、セイチョウブンのみカサンします。":"HP・ドクはシュウリョウジからヒキツギ、セイチョウブンのみカサンします。"),0,statsY,1640,120,26);stats.lineSpacing=1.2f;
                 Button("ConfirmReturn","帰還を確定",0,Mathf.Max(-420,-280-(rows-1)*80),900,75,finish).interactable=!blocked;
             } else {
                 if(profile.Owned.Length<=4){
@@ -601,7 +614,9 @@ namespace Olca.Presentation.Dungeon
             if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&selectStyle!=null&&!blocked&&error==null)Button("SelectDepartureStyle","出撃スタイル",-215,homeAuxY,410,58,selectStyle);
             if(!collectionOnly&&flow?.Stage==ClearReturnStage.Returned&&openExchange!=null&&!blocked&&error==null)Button("OpenTokenExchange","トークン交換所",215,homeAuxY,410,58,openExchange);
             if (blocked || error != null) Button("RetryClearReturn", "保存・読込を再試行", 0, homeAuxY, 800, 58, retry);
-                    SetMenu(content.transform,collectionOnly?closeCollection:null,collectionOnly?"CloseOwnedCards":"SavedDeckMenu");
+            // 結果の読取り面だけを暗い水鏡と明色文字へ揃える。操作部・カード絵・保存処理は変えない。
+            if(resultReading)foreach(var label in content.GetComponentsInChildren<Text>())if(label.GetComponentInParent<Button>()==null)label.color=new Color(.88f,.97f,1f,1f);
+            SetMenu(content.transform,collectionOnly?closeCollection:null,collectionOnly?"CloseOwnedCards":"SavedDeckMenu");FitReturnPanels();
         }
         public static string FormatDungeonInformation(DungeonDeparturePreview info)
         {

@@ -1471,6 +1471,7 @@ namespace Olca.Core.Logic.Dungeon
     /// <summary>復元候補。検証が全件成功するまで通常ゲームの参照へ接続しない。</summary>
     public sealed class RestoredCheckpoint
     {
+        internal CheckpointDefinitions Definitions {get;}
         private readonly CheckpointDto snapshot;
         public CheckpointDto Snapshot => snapshot.Copy();
         public PlayerCharacter Player { get; }
@@ -1483,7 +1484,7 @@ namespace Olca.Core.Logic.Dungeon
         public IReadOnlyList<Card> RewardCandidates { get; }
         internal RestoredCheckpoint(CheckpointDto dto, Dictionary<string, Card> cards, Dictionary<int, Enemy> enemies, CheckpointDefinitions definitions)
         {
-            snapshot = dto.Copy(); Cards = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Card>(cards);
+            Definitions=definitions;snapshot = dto.Copy(); Cards = new System.Collections.ObjectModel.ReadOnlyDictionary<string, Card>(cards);
             Enemies = new System.Collections.ObjectModel.ReadOnlyDictionary<int, Enemy>(enemies);
             Map = definitions.RestoreMap(enemies);
             Player = CheckpointPlayerMapper.Restore(dto.Player);
@@ -1528,6 +1529,7 @@ namespace Olca.Core.Logic.Dungeon
                         CheckpointValues.Require(v!=null&&v.Cell==def.Cell&&v.Options!=null&&v.Purchased!=null&&v.Options.Length==def.Slots&&v.Purchased.Length==def.Slots&&v.Options.Distinct().Count()==def.Slots&&v.Options.All(n=>n>=0&&n<def.Options.Count)&& (def.IsShop||v.Purchased.Count(x=>x)<=1),"停止地点の候補/購入履歴が不正です");}
                 }
                 var p = d.Player;
+                CheckpointValues.Require(d.DepartureTermsKey==null||(d.DepartureTermsKey.Length==64&&d.DepartureTermsKey.All(Uri.IsHexDigit)),"出撃条件の識別が不正です");
                 p?.ValidatePermanentAbilities();
                 CheckpointValues.Require(p != null && p.MaxHp > 0 && p.Hp >= (d.Boundary == CheckpointBoundary.Terminal ? 0 : 1) && p.Hp <= p.MaxHp && p.AttackPower >= 0 && p.Poise > 0 && p.StaggerFrames >= 0 && (!p.PoiseRecoveryFrames.HasValue || p.PoiseRecoveryFrames > 0) &&
                     CheckpointValues.Finite(p.CustomSpeed) && p.CustomSpeed > 0, "プレイヤー値が不正です");
@@ -1613,7 +1615,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             if (!CheckpointCodec.TryRestore(data, definitions, out var candidate, out error)) return false;
             var snapshot = candidate.Snapshot;
-            if (current != null && (snapshot.RunId != current.RunId || snapshot.Sequence <= current.Sequence))
+            if (current != null && (snapshot.RunId != current.RunId || snapshot.DepartureTermsKey!=current.DepartureTermsKey || snapshot.Sequence <= current.Sequence))
             { error = "攻略IDまたは保存世代が競合しています"; return false; }
             current = snapshot;
             return true;
@@ -1732,6 +1734,8 @@ namespace Olca.Core.Logic.Dungeon
         public CheckpointDefinitions Definitions { get; }
         public ICheckpointStore Store { get; }
         public string RunId { get; private set; }
+        public string DepartureTermsKey {get;private set;}
+        public void BindDepartureTerms(string key){if(Last!=null||identities.Count!=0||HasUncommittedBoundary||Store.Read()!=null)throw new ArgumentException("開始済みの出撃条件は変更できません");if(key!=null&&(key.Length!=64||!key.All(Uri.IsHexDigit)))throw new ArgumentException("出撃条件の識別が不正です");DepartureTermsKey=key;}
         public CheckpointDto Last { get; private set; }
         internal bool HasUncommittedBoundary { get; set; }
         private readonly Dictionary<Card, string> identities = new Dictionary<Card, string>();
@@ -1753,7 +1757,7 @@ namespace Olca.Core.Logic.Dungeon
             if (!identities.TryGetValue(card, out var id)) { id = RunId + ":card:" + Guid.NewGuid().ToString("N"); identities.Add(card, id); }
             return id;
         }
-        internal void Accept(CheckpointDto dto) { Last = dto.Copy(); RunId = dto.RunId; HasUncommittedBoundary = false; }
+        internal void Accept(CheckpointDto dto) { Last = dto.Copy(); RunId = dto.RunId; DepartureTermsKey=dto.DepartureTermsKey; HasUncommittedBoundary = false; }
         internal void Adopt(RestoredCheckpoint restored)
         {
             identities.Clear(); foreach (var pair in restored.Cards) identities.Add(pair.Value, pair.Key);
@@ -1778,7 +1782,7 @@ namespace Olca.Core.Logic.Dungeon
                 throw new ArgumentException("通常移動途中の状態は保存できません");
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
-            if (!player.BattleStatusResistances.IsNeutral || player.Guard.IsActive || player.IsStaggered || player.HasParalysisState || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsTemporarilyFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)
+            if (!player.BattleStatusResistances.IsNeutral || player.Guard.IsActive || player.IsStaggered || !player.CanCaptureTimedAilments || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsTemporarilyFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)
                 throw new ArgumentException("未対応の一時状態を保存できません");
             var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
             var obtained = dungeon.GetObtainedCards().ToList();
@@ -1802,7 +1806,7 @@ namespace Olca.Core.Logic.Dungeon
                 TerrainChanges=Definitions.HasFallTerrain?dungeon.Map.CaptureTerrainChanges():null,
                 CollectedItemCells = Definitions.HasFieldItems ? dungeon.CheckpointCollectedItems : null,
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
-                RunId = RunId, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
+                RunId = RunId, DepartureTermsKey=DepartureTermsKey, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
                 Visits=dungeon.CaptureVisits(),
                 Player = CheckpointPlayerMapper.Capture(player),
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
@@ -2006,7 +2010,7 @@ namespace Olca.Core.Logic.Dungeon
         {
             error = null;
             if (writing || pending != null || Current == null || index != Current.FloorIndex || state == null ||
-                state.RunId != Current.Snapshot.State.RunId || state.Sequence < Current.Snapshot.State.Sequence)
+                state.RunId != Current.Snapshot.State.RunId || state.DepartureTermsKey!=Current.Snapshot.State.DepartureTermsKey || state.Sequence < Current.Snapshot.State.Sequence)
             { error = "現在階層・保存世代が一致しないか、保存処理中です"; return false; }
             return definitions.TryRestore(definitions.Wrap(index, state), out _, out error);
         }

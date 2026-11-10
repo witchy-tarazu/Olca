@@ -588,9 +588,10 @@ namespace Olca.Presentation.Battle
         private readonly System.Collections.Generic.List<Sprite> owned=new System.Collections.Generic.List<Sprite>();
         public GaugeSpriteSet()
         {
-            Track=Create("GaugeTrack",-2);Fill=Create("GaugeFill",-1);
+            var pixels=new PixelSource();
+            Track=Create("GaugeTrack",pixels.Create(-2));Fill=Create("GaugeFill",pixels.Create(-1));
             FullFrames=new Sprite[GaugeSpritePlayback.FrameCount];
-            for(int i=0;i<FullFrames.Length;i++)FullFrames[i]=Create("GaugeFull_"+i,i);
+            for(int i=0;i<FullFrames.Length;i++)FullFrames[i]=Create("GaugeFull_"+i,pixels.Create(i));
         }
         private static bool Inside(int x,int y,int inset)
         {
@@ -599,28 +600,60 @@ namespace Olca.Presentation.Battle
                 x+y>=inset*2+corner&&Width-1-x+y>=inset*2+corner&&
                 x+Height-1-y>=inset*2+corner&&Width-1-x+Height-1-y>=inset*2+corner;
         }
-        private Sprite Create(string name,int frame)
+        // 各満タンコマの光は240行ずつの循環移動。float色のまま一度計算し、
+        // Color32への変換を済ませた未マスク行をコピーして同じ角形状だけを適用する。
+        // View内の生成中だけ保持し、共有static cacheやUnity資産の所有は増やさない。
+        private sealed class PixelSource
         {
-            var pixels=new Color32[Width*Height];
-            for(int y=0;y<Height;y++){
-                float delta=Mathf.Abs(y-frame*Height/8f);delta=Mathf.Min(delta,Height-delta);
-                float light=frame>=0?Mathf.Exp(-delta*delta/(260f*260f)):0;
+            private readonly Color32[] track=new Color32[Width],trackMarks=new Color32[Width],fill=new Color32[Width];
+            private readonly Color32[] light=new Color32[Width*Height];
+            public PixelSource()
+            {
+                var colors=new Color[Width];
                 for(int x=0;x<Width;x++){
-                    Color color=Color.clear;
-                    if(frame==-2&&Inside(x,y,4)){
-                        color=new Color(.055f,.13f,.18f,.7f);
-                        if(!Inside(x,y,7))color=new Color(.33f,.88f,.94f,.85f);
-                        else if(!Inside(x,y,14)&&Inside(x,y,12))color=new Color(.28f,.69f,.76f,.45f);
-                        if(y%(Height/12)<3&&(x<26||x>Width-27))color=new Color(.5f,.94f,.98f,.55f);
-                    }else if(frame!=-2&&Inside(x,y,16)){
-                        float middle=1-Mathf.Abs(x-Width*.5f)/(Width*.5f);
-                        color=new Color(.06f+.10f*middle,.33f+.19f*middle,.43f+.18f*middle,.82f);
-                        if(x%24<2)color=Color.Lerp(color,new Color(.3f,.82f,.88f,.9f),.3f);
-                        if(frame>=0)color=Color.Lerp(color,new Color(.68f,1f,1f,.98f),light*.65f);
-                    }
-                    pixels[y*Width+x]=color;
+                    track[x]=TrackColor(x,Height/2+4);trackMarks[x]=TrackColor(x,Height/2);
+                    if(x<16||x>=Width-16)continue;
+                    float middle=1-Mathf.Abs(x-Width*.5f)/(Width*.5f);
+                    Color color=new Color(.06f+.10f*middle,.33f+.19f*middle,.43f+.18f*middle,.82f);
+                    if(x%24<2)color=Color.Lerp(color,new Color(.3f,.82f,.88f,.9f),.3f);
+                    colors[x]=color;fill[x]=color;
+                }
+                for(int y=0;y<Height;y++){
+                    float delta=Mathf.Abs(y);delta=Mathf.Min(delta,Height-delta);
+                    float amount=Mathf.Exp(-delta*delta/(260f*260f))*.65f;
+                    for(int x=16;x<Width-16;x++)light[y*Width+x]=Color.Lerp(colors[x],new Color(.68f,1f,1f,.98f),amount);
                 }
             }
+            private static Color32 TrackColor(int x,int y)
+            {
+                Color color=Color.clear;
+                if(Inside(x,y,4)){
+                    color=new Color(.055f,.13f,.18f,.7f);
+                    if(!Inside(x,y,7))color=new Color(.33f,.88f,.94f,.85f);
+                    else if(!Inside(x,y,14)&&Inside(x,y,12))color=new Color(.28f,.69f,.76f,.45f);
+                    if(y%(Height/12)<3&&(x<26||x>Width-27))color=new Color(.5f,.94f,.98f,.55f);
+                }
+                return color;
+            }
+            public Color32[] Create(int frame)
+            {
+                if(frame< -2||frame>=GaugeSpritePlayback.FrameCount)throw new System.ArgumentOutOfRangeException(nameof(frame));
+                var pixels=new Color32[Width*Height];
+                for(int y=0;y<Height;y++){
+                    if(frame== -2){
+                        if(y>=28&&y<Height-28)System.Array.Copy(y%(Height/12)<3?trackMarks:track,0,pixels,y*Width,Width);
+                        else for(int x=0;x<Width;x++)pixels[y*Width+x]=TrackColor(x,y);
+                    }else{
+                        if(frame== -1)System.Array.Copy(fill,0,pixels,y*Width,Width);
+                        else System.Array.Copy(light,((y-frame*(Height/8)+Height)%Height)*Width,pixels,y*Width,Width);
+                        if(y<30||y>=Height-30)for(int x=0;x<Width;x++)if(!Inside(x,y,16))pixels[y*Width+x]=default;
+                    }
+                }
+                return pixels;
+            }
+        }
+        private Sprite Create(string name,Color32[] pixels)
+        {
             var texture=new Texture2D(Width,Height,TextureFormat.RGBA32,false){name=name,filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp,hideFlags=HideFlags.HideAndDontSave};
             texture.SetPixels32(pixels);texture.Apply(false,true);
             var sprite=Sprite.Create(texture,new Rect(0,0,Width,Height),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=name;sprite.hideFlags=HideFlags.HideAndDontSave;owned.Add(sprite);return sprite;

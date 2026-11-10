@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Reflection;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -67,6 +68,43 @@ namespace Olca.Tests.Application
             public Fixture(){var panel=new GameObject("Wheel",typeof(RectTransform));panel.transform.SetParent(Root.transform,false);View=panel.AddComponent<Olca.Presentation.Management.OutsideKamuiWheelDialog>();View.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));}
             public bool Open(bool confirm=false,Vector2 direction=default)=>View.Open(Dialogs,Parent,()=>Parent.Alive,()=>Allowed,value=>{Paused=value;PauseTransitions++;},confirm,direction);
             public void Dispose(){try{if(View!=null)View.Abort();Dialogs.Dispose();}finally{UnityEngine.Object.DestroyImmediate(Root);}}
+        }
+        private static Olca.Unity.UnityInputProvider.OutsidePcWheelInput Pc(Vector2 direction=default,bool keyChanged=false,bool pointerChanged=false,long keyOrder=0,long pointerOrder=0,bool enter=false,bool click=false,bool toggle=false,bool available=true,Vector2 pointer=default)
+            =>new Olca.Unity.UnityInputProvider.OutsidePcWheelInput(available,toggle,enter,click,direction,pointer,true,keyChanged,pointerChanged,keyOrder,pointerOrder);
+        private static bool OpenPc(Fixture f,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)=>f.View.OpenPc(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,value=>{f.Paused=value;f.PauseTransitions++;},input);
+        [Test] public void PCホイールは初期hoverと既保持方向を表示しTab解放では閉じず二度目だけ取消す()
+        {
+            using(var f=new Fixture()){
+                Assert.IsTrue(OpenPc(f,Pc()));Assert.IsTrue(f.View.HasSelection,"項目上の初期pointerを読む");f.View.TickPc(Pc());Assert.IsTrue(f.View.IsOpen,"トグルキーの解放は閉じない");
+                f.View.TickPc(Pc(toggle:true));Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Cancelled,f.View.LastResult);
+            }
+            using(var f=new Fixture()){Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.up,pointer:new Vector2(10000,10000))));Assert.IsTrue(f.View.HasSelection,"既保持WASDは初期hoverより優先");}
+        }
+        [Test] public void PCホイールは方向全解放で未選択を維持しEnterを拒否して新たな項目クリックで確定する()
+        {
+            using(var f=new Fixture()){
+                Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.up)));f.View.TickPc(Pc(keyChanged:true,keyOrder:2));Assert.IsFalse(f.View.HasSelection);
+                f.View.TickPc(Pc(enter:true));Assert.IsTrue(f.View.IsOpen);Assert.IsFalse(f.View.HasSelection,"静止hoverでは復帰しない");
+                f.View.TickPc(Pc(click:true,pointer:new Vector2(10000,10000)));Assert.IsTrue(f.View.IsOpen,"未選択領域のクリックは無効");
+                f.View.TickPc(Pc(click:true));Assert.IsFalse(f.View.IsOpen);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Confirmed,f.View.LastResult);Assert.IsTrue(f.Dialogs.Blocks(f.Parent));Assert.AreEqual(2,f.PauseTransitions);
+            }
+        }
+        [Test] public void PCホイールは最後の操作側だけ選択し不許可では開いたまま所有keyboard消失で返す()
+        {
+            using(var f=new Fixture()){
+                f.Allowed=false;Assert.IsTrue(OpenPc(f,Pc()));f.View.TickPc(Pc(direction:Vector2.zero,keyChanged:true,pointerChanged:true,keyOrder:4,pointerOrder:3));Assert.IsFalse(f.View.HasSelection);
+                f.View.TickPc(Pc(direction:Vector2.zero,keyChanged:true,pointerChanged:true,keyOrder:5,pointerOrder:6));Assert.IsTrue(f.View.HasSelection);f.View.TickPc(Pc(enter:true));Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);
+                f.View.TickPc(Pc(available:false));Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(0,f.Dialogs.ActiveCount);int transitions=f.PauseTransitions;f.View.Abort();Assert.AreEqual(transitions,f.PauseTransitions);
+            }
+        }
+        [TestCase(true)][TestCase(false)] public void PCホイールは静止選択でも最新の切替可否を確定時に再判定する(bool initiallyAllowed)
+        {
+            using(var f=new Fixture()){
+                f.Allowed=initiallyAllowed;Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.up)));f.Allowed=!initiallyAllowed;
+                f.View.TickPc(Pc(enter:true));
+                if(initiallyAllowed){Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);f.Allowed=true;f.View.TickPc(Pc());f.View.TickPc(Pc(enter:true));}
+                Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Confirmed,f.View.LastResult);
+            }
         }
         [Test] public void ホイールは中央未選択と開く前A保持を守り初期stickを即選択して新Aだけで同状態を閉じる()
         {
@@ -150,6 +188,27 @@ namespace Olca.Tests.Application
             Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));
             for(int i=0;i<120;i++)core.TickFrame(1,false,false,false,false);
             Assert.IsTrue(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));core.TickFrame(0,true,true,false,false);Assert.IsFalse(core.IsGrounded);Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core));
+        }
+    }
+}
+
+namespace Olca.Tests.Application
+{
+    public sealed class OutsideItemRegistrationTests
+    {
+        private sealed class Store:Olca.Core.Domain.IClearReturnStore
+        {
+            public bool Fail;public Olca.Core.Domain.ClearReturnProfile Value=new Olca.Core.Domain.ClearReturnProfile{OutsideInventory=new Olca.Core.Domain.OutsideInventoryData{Items=new[]{new Olca.Core.Domain.OutsideItemCount{Id=Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample.Id,Count=0}}}};
+            public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
+            public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){error=Fail?"fixture save failure":null;if(Fail)return false;if(Value.Revision!=expected)return false;Value=value.Copy();return true;}
+        }
+        [Test] public async System.Threading.Tasks.Task 登録Viewは旧描画と旧世代callbackを無効化し0個の登録と失敗再試行を守る()
+        {
+            var root=new GameObject("InventoryViewFixture",typeof(RectTransform));var resources=new ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>17);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);var store=new Store();var session=new Olca.Core.Domain.ClearReturnSession(store);Olca.Presentation.Management.OutsideItemRegistrationView view=null;
+            try{
+                views.Register(this,"items",ct=>{var panel=new GameObject("Items",typeof(RectTransform));panel.transform.SetParent(root.transform,false);view=panel.AddComponent<Olca.Presentation.Management.OutsideItemRegistrationView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),session,new[]{Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample},()=>views.CloseCurrent());return System.Threading.Tasks.Task.FromResult(panel);},(p,c)=>view.Open(c),p=>p.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide());
+                Assert.IsTrue((await views.ShowAsync("items")).Succeeded);Button B(string name)=>view.GetComponentsInChildren<Button>().Single(b=>b.name==name);var old=B("RegisterOutsideItem_0").onClick;B("OutsideItemSlot_1").onClick.Invoke();old.Invoke();Assert.AreEqual(0,session.InventoryRevision,"旧描画が新slotへ作用しない");store.Fail=true;B("RegisterOutsideItem_0").onClick.Invoke();Assert.IsTrue(session.HasPendingSave);Assert.IsNull(session.OutsideInventorySnapshot.Shortcuts[1]);Assert.IsTrue(B("RetryOutsideItemsSave").interactable);store.Fail=false;B("RetryOutsideItemsSave").onClick.Invoke();Assert.AreEqual(Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample.Id,session.OutsideInventorySnapshot.Shortcuts[1]);Assert.AreEqual(0,session.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(1,session.InventoryRevision);var previous=B("RegisterOutsideItem_0").onClick;views.CloseCurrent();previous.Invoke();Assert.AreEqual(1,session.InventoryRevision);Assert.IsTrue((await views.ShowAsync("items")).Succeeded);previous.Invoke();Assert.AreEqual(1,session.InventoryRevision);Assert.AreEqual(Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample.Id,session.OutsideInventorySnapshot.Shortcuts[1]);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
         }
     }
 }

@@ -489,8 +489,9 @@ namespace Olca.Core.Logic.Integration
         public bool MenuConfirmButtonDown { get; set; }
         public bool MenuDecideButtonDown { get; set; }
         public bool MenuCancelButtonDown { get; set; }
+        public int OutsideItemDownMask {get;set;}
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { CardUsePressedAt = BasicAttackPressedAt = 0; SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+        public void ClearEdges() { OutsideItemDownMask=0; CardUsePressedAt = BasicAttackPressedAt = 0; SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
     }
 
     /// <summary>指ごとの押下順だけを所有する。UI除外・座標・時計はUnity側で決める。</summary>
@@ -530,7 +531,7 @@ namespace Olca.Core.Logic.Integration
                 var next = pending.Dequeue().Value;
                 // 同じ論理フレーム内で再押下されても、解放前の連続保持時間を引き継がない。
                 if (!next.BasicAttackButton) heldFrames = 0;
-                next.SelectionPreviousDown|=held.SelectionPreviousDown;next.SelectionNextDown|=held.SelectionNextDown;
+                next.OutsideItemDownMask|=held.OutsideItemDownMask;next.SelectionPreviousDown|=held.SelectionPreviousDown;next.SelectionNextDown|=held.SelectionNextDown;
                 next.JumpButtonDown |= held.JumpButtonDown;
                 next.DashButtonDown |= held.DashButtonDown;
                 next.CardUsePressedAt = MergeAttackTimestamp(held.CardUseButtonDown, held.CardUsePressedAt, next.CardUseButtonDown, next.CardUsePressedAt);

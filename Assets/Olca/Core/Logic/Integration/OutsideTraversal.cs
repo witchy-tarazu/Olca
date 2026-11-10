@@ -50,6 +50,17 @@ namespace Olca.Core.Logic.Integration
     /// <summary>導線確認専用の仮配置。製品Map/能力解放/永続座標とは区別する。</summary>
     public static class OutsideTrialRoute
     {
+        public const string RecoveryPointId="validation-recovery-left-v1";
+        public const long RecoveryX=6*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static long ResolveRecovery(OutsideExplorationCore core,string id)
+        {if(core==null||core.Definition.Id!="validation-landing-32"||id!=null&&id!=RecoveryPointId)throw new ArgumentException("復帰先の外界マップ/地点が未登録です");return id==null?core.Definition.Start:RecoveryX;}
+        public const long PoisonTrialX=2*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanTryPoison(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonTrialX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public const long PoisonSupplyX=16*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanClaimSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-SupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceX=20*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceRadius=OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanInspect(OutsideExplorationCore core)=>core!=null&&core.IsGrounded&&Math.Abs(core.Position-EntranceX)<=EntranceRadius;
@@ -62,8 +73,14 @@ namespace Olca.Core.Logic.Integration
     }
     public sealed partial class OutsideExplorationCore
     {
+        internal void RestoreRecoveryPosition(long position)
+        {
+            if(position<0||position>Definition.Width)throw new ArgumentOutOfRangeException(nameof(position));
+            Position=position;Height=0;VerticalVelocity=0;SupportId="floor";IsMoving=false;MovementFrame=IdleFrame=0;remainder=0;jumpWasHeld=dashWasHeld=false;
+            dashStartedAt=dashEndsAt=cooldownUntil=lastDashAt=wallKickAt=-1;consecutiveDashes=kickAway=0;IsDashJumping=IsWallSliding=false;WallSlideFrame=0;WallContactDirection=0;afterimages.Clear();
+        }
         public OutsideTraversalProfile TraversalProfile {get;private set;}
-        private bool IsIdleMotion=>IsGrounded&&!IsMoving&&!IsDashing&&!IsWallKicking;
+        private bool IsIdleMotion=>IsGrounded&&!IsMoving&&!IsWallKicking;
         private long dashStartedAt=-1,dashEndsAt=-1,cooldownUntil=-1,lastDashAt=-1,wallKickAt=-1;
         private int consecutiveDashes,kickAway;private bool dashWasHeld;
         public bool IsDashing=>dashEndsAt>Frame;
@@ -130,7 +147,7 @@ namespace Olca.Core.Logic.Integration
         private void UpdateWallSlide(int horizontal)
         {
             bool prior=IsWallSliding;var p=TraversalProfile;var wall=ContactWall(horizontal,out int side);WallContactDirection=side;
-            IsWallSliding=!IsGrounded&&p!=null&&p.WallActionsUnlocked&&wall!=null&&wall.AllowsSlide&&horizontal==side&&horizontal!=0;
+            IsWallSliding=!IsGrounded&&VerticalVelocity<0&&p!=null&&p.WallActionsUnlocked&&wall!=null&&wall.AllowsSlide&&horizontal==side&&horizontal!=0;
             WallSlideFrame=IsWallSliding?prior?WallSlideFrame+1:0:0;
             if(IsWallSliding){IsDashJumping=false;VerticalVelocity=Math.Max(VerticalVelocity,-p.WallSlidePerFrame);}
         }

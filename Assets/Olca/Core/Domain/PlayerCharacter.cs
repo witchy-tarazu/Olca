@@ -353,6 +353,30 @@ namespace Olca.Core.Domain
         internal event Action OnDamageProcessingCompleted;
 
         /// <summary>現在HP</summary>
+        internal bool CanCaptureTimedAilments=>!frameHp.Active&&!paralysisFrameOpen&&!confusionFrameOpen&&!blindnessFrameOpen;
+        internal bool CanCaptureOutsideDeparture=>CanCaptureTimedAilments&&!HasParalysisState&&!HasConfusionState&&!HasBlindnessState;
+        /// <summary>フレーム中を拒否し、付与/解除予約を消費せず捕捉する。</summary>
+        public PlayerTimedAilmentsDto CaptureTimedAilments()
+        {
+            if(!CanCaptureTimedAilments)throw new ArgumentException("未確定フレームの時間状態は捕捉できません");
+            var v=new PlayerTimedAilmentsDto{
+                Paralysis=new PlayerTimedAilmentDto{RemainingUnits=paralysisTimer.RemainingUnits,DisplayFrames=paralysisDisplayFrames,PendingFrames=pendingParalysisFrames,ClearPending=clearParalysisPending,InterruptPending=paralysisInterruptPending},
+                Confusion=new PlayerTimedAilmentDto{RemainingUnits=confusionTimer.RemainingUnits,DisplayFrames=confusionDisplayFrames,PendingFrames=pendingConfusionFrames,ClearPending=clearConfusionPending},
+                Blindness=new PlayerTimedAilmentDto{RemainingUnits=blindnessTimer.RemainingUnits,DisplayFrames=blindnessDisplayFrames,PendingFrames=pendingBlindnessFrames,ClearPending=clearBlindnessPending}};
+            v.Validate();return v.IsEmpty?null:v;
+        }
+        /// <summary>保存済みの耐性適用後の値を戻す。再付与・時計進行・中断は行わない。</summary>
+        public void RestoreTimedAilments(PlayerTimedAilmentsDto value)
+        {
+            if(!CanCaptureTimedAilments)throw new ArgumentException("未確定フレームへ時間状態を復元できません");
+            value?.Validate();if(IsDead&&value!=null&&!value.IsEmpty)throw new ArgumentException("死亡個体へ時間状態を復元できません");
+            ResetParalysis();ResetConfusion();ResetBlindness();paralysisDisplayFrames=confusionDisplayFrames=blindnessDisplayFrames=0;
+            if(value==null)return;
+            var p=value.Paralysis;paralysisTimer.RestoreUnits(p.RemainingUnits);paralysisDisplayFrames=p.DisplayFrames;pendingParalysisFrames=p.PendingFrames;clearParalysisPending=p.ClearPending;paralysisInterruptPending=p.InterruptPending;
+            p=value.Confusion;confusionTimer.RestoreUnits(p.RemainingUnits);confusionDisplayFrames=p.DisplayFrames;pendingConfusionFrames=p.PendingFrames;clearConfusionPending=p.ClearPending;
+            p=value.Blindness;blindnessTimer.RestoreUnits(p.RemainingUnits);blindnessDisplayFrames=p.DisplayFrames;pendingBlindnessFrames=p.PendingFrames;clearBlindnessPending=p.ClearPending;
+        }
+
         public int CurrentHp => currentHp;
 
         /// <summary>最大HP</summary>

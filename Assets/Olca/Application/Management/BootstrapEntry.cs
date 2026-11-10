@@ -41,15 +41,15 @@ namespace Olca.Application.Management
             if(layer.RegisteredCount!=0){await layer.ShowAsync(key);return;}
             var owner=new object();
             layer.Register(owner,key,ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Management.BootstrapTitleView.Create(services.UI.ViewParent,services.Resources));},(panel,context)=>{
-                bool starting=false,closed=false;var lifetime=new System.Threading.CancellationTokenSource();
-                void End(){if(closed)return;closed=true;lifetime.Cancel();if(!starting)lifetime.Dispose();}
+                bool starting=false,closed=false;var display=services.Cameras.HoldDisplay();var lifetime=new System.Threading.CancellationTokenSource();
+                void End(){if(closed)return;closed=true;display.Dispose();lifetime.Cancel();if(!starting)lifetime.Dispose();}
                 var view=panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>();
-                view.Show(context,async()=>{
+                try{view.Show(context,async()=>{
                     if(starting||!context.IsCurrent)return;starting=true;view.SetBusy(true,null);
                     try{var result=await root.StartGameplayHostAsync(lifetime.Token);if(!context.IsCurrent||view==null)return;if(result.Succeeded){layer.UnregisterOwner(owner);return;}view.SetBusy(false,result.Error??"開始を取り消しました");}
                     catch(Exception error){if(context.IsCurrent&&view!=null)view.SetBusy(false,error.Message);}
                     finally{starting=false;if(closed)lifetime.Dispose();}
-                },End);
+                },End);}catch{End();throw;}
             },panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>().Hide();});
             var opened=await layer.ShowAsync(key);if(!opened.Succeeded){layer.UnregisterOwner(owner);if(!opened.Cancelled)throw new InvalidOperationException(opened.Error);}
         }

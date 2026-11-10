@@ -21,6 +21,7 @@ namespace Olca.Core.Logic.Dungeon
                 BlindResistance = player.BaseStatusResistances.Blind,
                 AttackGrowth = player.AttackGrowth?.Capture(),
                 Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId && player.DepartureStyle.TransformationPhaseBonus == 0 ? null : player.DepartureStyle.Capture(),
+                TimedAilments = player.CaptureTimedAilments(),
                 Poisons = player.CapturePoisons(),
                 Hp = player.CurrentHp,
                 MaxHp = player.MaxHp,
@@ -46,6 +47,7 @@ namespace Olca.Core.Logic.Dungeon
             player.SetElementResistances(ElementResistances.Restore(p.RawBaseFireResistance??p.FireResistance, p.RawBaseWaterResistance??p.WaterResistance, p.RawBaseWindResistance??p.WindResistance, p.RawBaseEarthResistance??p.EarthResistance,p.AdditionalElementResistances));
             player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             player.RestorePoisons(p.Poisons);
+            player.RestoreTimedAilments(p.TimedAilments);
             return player;
         }
     }

@@ -349,6 +349,42 @@ namespace Olca.Tests.Application
             b.CustomGauge.SetGaugeMs(10000);Assert.AreEqual(0,playback.Sample(true,b.LogicalFrame));
         }
         [Test]
+        public void ゲージ全十枚の最適化画素は従来式と全RGBAバイトが一致する()
+        {
+            var type=typeof(Olca.Presentation.Battle.GaugeSpriteSet).GetNestedType("PixelSource",System.Reflection.BindingFlags.NonPublic);
+            var source=System.Activator.CreateInstance(type,true);var create=type.GetMethod("Create");
+            for(int frame= -2;frame<8;frame++){
+                var expected=LegacyGaugePixels(frame);var actual=(UnityEngine.Color32[])create.Invoke(source,new object[]{frame});Assert.AreEqual(expected.Length,actual.Length);
+                for(int i=0;i<actual.Length;i++)if(expected[i].r!=actual[i].r||expected[i].g!=actual[i].g||expected[i].b!=actual[i].b||expected[i].a!=actual[i].a)Assert.Fail($"frame={frame}, pixel={i}: expected={expected[i]}, actual={actual[i]}");
+            }
+        }
+        private static UnityEngine.Color32[] LegacyGaugePixels(int frame)
+        {
+            const int Width=128,Height=1920;
+            bool LegacyInside(int x,int y,int inset){const int corner=14;return x>=inset&&x<Width-inset&&y>=inset&&y<Height-inset&&x+y>=inset*2+corner&&Width-1-x+y>=inset*2+corner&&x+Height-1-y>=inset*2+corner&&Width-1-x+Height-1-y>=inset*2+corner;}
+            var pixels=new UnityEngine.Color32[Width*Height];
+            for(int y=0;y<Height;y++){
+                float delta=UnityEngine.Mathf.Abs(y-frame*Height/8f);delta=UnityEngine.Mathf.Min(delta,Height-delta);
+                float light=frame>=0?UnityEngine.Mathf.Exp(-delta*delta/(260f*260f)):0;
+                for(int x=0;x<Width;x++){
+                    UnityEngine.Color color=UnityEngine.Color.clear;
+                    if(frame==-2&&LegacyInside(x,y,4)){
+                        color=new UnityEngine.Color(.055f,.13f,.18f,.7f);
+                        if(!LegacyInside(x,y,7))color=new UnityEngine.Color(.33f,.88f,.94f,.85f);
+                        else if(!LegacyInside(x,y,14)&&LegacyInside(x,y,12))color=new UnityEngine.Color(.28f,.69f,.76f,.45f);
+                        if(y%(Height/12)<3&&(x<26||x>Width-27))color=new UnityEngine.Color(.5f,.94f,.98f,.55f);
+                    }else if(frame!=-2&&LegacyInside(x,y,16)){
+                        float middle=1-UnityEngine.Mathf.Abs(x-Width*.5f)/(Width*.5f);
+                        color=new UnityEngine.Color(.06f+.10f*middle,.33f+.19f*middle,.43f+.18f*middle,.82f);
+                        if(x%24<2)color=UnityEngine.Color.Lerp(color,new UnityEngine.Color(.3f,.82f,.88f,.9f),.3f);
+                        if(frame>=0)color=UnityEngine.Color.Lerp(color,new UnityEngine.Color(.68f,1f,1f,.98f),light*.65f);
+                    }
+                    pixels[y*Width+x]=color;
+                }
+            }
+            return pixels;
+        }
+        [Test]
         public void ゲージ素材は八枚独立Spriteで寸法とpivotがすべて同じ()
         {
             using var sprites=new Olca.Presentation.Battle.GaugeSpriteSet();Assert.AreEqual(8,sprites.FullFrames.Length);

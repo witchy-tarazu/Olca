@@ -4,6 +4,18 @@ using System.Threading;
 
 namespace Olca.Presentation.Effects
 {
+    /// <summary>World/Canvas間で借用する既存Prefabの表示値。Fontを所有・破棄しない。</summary>
+    public sealed class CombatNumberStyle
+    {
+        public readonly Font Font;public readonly FontStyle FontStyle;public readonly Color Color;public readonly float FontWorldUnits,OutlineWorldUnits,FloatSpeed,Duration;
+        public CombatNumberStyle(Font font,FontStyle fontStyle,Color color,float fontWorldUnits,float outlineWorldUnits,float speed,float duration){if(font==null||fontWorldUnits<=0||outlineWorldUnits<0||duration<=0)throw new System.ArgumentException("数値表示の共有設定が不正です");Font=font;FontStyle=fontStyle;Color=color;FontWorldUnits=fontWorldUnits;OutlineWorldUnits=outlineWorldUnits;FloatSpeed=speed;Duration=duration;}
+    }
+    public static class CombatNumberPresentation
+    {
+        public static string Format(Olca.Core.Domain.CombatFeedback value)=>value.Kind==Olca.Core.Domain.CombatFeedbackKind.Immune?"ムコウ":value.Kind==Olca.Core.Domain.CombatFeedbackKind.Guard?"ガード":value.Kind==Olca.Core.Domain.CombatFeedbackKind.Healing?"+"+value.Amount:value.Amount.ToString();
+        public static float Rise(float speed,float duration,float elapsed){float t=Mathf.Clamp01(elapsed/duration);return speed*duration*(1f-(1f-t)*(1f-t));}
+        public static float Alpha(float duration,float elapsed)=>1f-Mathf.Clamp01(elapsed/duration);
+    }
     /// <summary>
     /// World Space 用ダメージ数値View。
     /// TextMesh を使用して上昇＋フェードアウトアニメーションを行う。
@@ -23,6 +35,8 @@ namespace Olca.Presentation.Effects
         private Color originalColor;
         private TextMesh[] readabilityOutline;
         private CancellationTokenSource animCts;
+
+        public CombatNumberStyle FeedbackStyle=>textMesh==null||textMesh.font==null||duration<=0?null:new CombatNumberStyle(textMesh.font,textMesh.fontStyle,textMesh.color,Mathf.Max(1,textMesh.fontSize)*textMesh.characterSize*.1f*Mathf.Abs(textMesh.transform.lossyScale.y),textMesh.characterSize*.35f*Mathf.Abs(textMesh.transform.lossyScale.y),floatSpeed,duration);
 
         private void Awake()
         {
@@ -63,17 +77,17 @@ namespace Olca.Presentation.Effects
                     if (animCts.Token.IsCancellationRequested) break;
 
                     elapsed += Olca.Unity.BattleVisualClock.DeltaTime;
-                    float t = Mathf.Clamp01(elapsed / duration);
+
 
                     // 上昇（Ease-out: 最初速く、途中で減速して止まる）
-                    float eased = 1f - (1f - t) * (1f - t);
+
                     viewportOffset=Vector3.zero;
-                    transform.position = startPos + new Vector3(0f, floatSpeed * duration * eased, 0f);
+                    transform.position = startPos + new Vector3(0f, CombatNumberPresentation.Rise(floatSpeed,duration,elapsed), 0f);
                     KeepBelowViewportTop();
 
                     // フェードアウト
                     var c = originalColor;
-                    c.a = 1f - t;
+                    c.a = CombatNumberPresentation.Alpha(duration,elapsed);
                     textMesh.color = c;
 
                     await Olca.Unity.BattleVisualClock.NextFrame(animCts.Token);

@@ -10,7 +10,7 @@ namespace Olca.Presentation.Dungeon
     /// 接敵アニメーションを担当するコンポーネント
     /// 通常接敵・ダッシュ接敵それぞれのシーケンスを UniTask で実装する
     /// </summary>
-    public enum ContactVisualPhase { None, Impact, Knockback, Somersault }
+    public enum ContactVisualPhase { None, Impact, Knockback, Somersault, DashRush }
 
     public class ContactAnimator : MonoBehaviour
     {
@@ -112,6 +112,8 @@ namespace Olca.Presentation.Dungeon
             Vector3 rushStart = playerTransform.position;
             Vector3 rushEnd = rushStart + new Vector3((dashRushDistance + 0.5f) * units, 0f, 0f);
 
+            // 突進と衝撃停止中は既存ダッシュ姿勢を保持し、立ち姿へ戻さない。
+            pose?.Invoke(ContactVisualPhase.DashRush,0f);
             // フェーズ1: 突進（EaseInQuad で加速感）
             float elapsed = 0f;
             while (elapsed < dashRushDuration)

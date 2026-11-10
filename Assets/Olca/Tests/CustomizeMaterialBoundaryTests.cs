@@ -71,7 +71,7 @@ namespace Olca.Tests
             var format=typeof(CustomScreenView).GetMethod("FormatProcessingHint",BindingFlags.Static|BindingFlags.NonPublic);var kindType=format.GetParameters()[0].ParameterType;
             string Hint(string kind,Olca.Unity.InputGuideDevice device)=>(string)format.Invoke(null,new object[]{System.Enum.Parse(kindType,kind),"融合",device,profile});
             var pad=Hint("Ready",Olca.Unity.InputGuideDevice.Gamepad);StringAssert.Contains("LT",pad);StringAssert.DoesNotContain("Enter",pad);StringAssert.DoesNotContain("Start",pad);
-            var candidate=Hint("Candidate",Olca.Unity.InputGuideDevice.Gamepad);StringAssert.Contains("South",candidate);StringAssert.Contains("LT",candidate);
+            var candidate=Hint("Candidate",Olca.Unity.InputGuideDevice.Gamepad);StringAssert.Contains("A / ×",candidate);StringAssert.DoesNotContain("South",candidate);StringAssert.Contains("LT",candidate);
             StringAssert.Contains("Enter",Hint("Ready",Olca.Unity.InputGuideDevice.KeyboardMouse));StringAssert.Contains("Space",Hint("Candidate",Olca.Unity.InputGuideDevice.KeyboardMouse));
             var touch=Hint("Ready",Olca.Unity.InputGuideDevice.Touch);StringAssert.Contains("タップ",touch);StringAssert.DoesNotContain("Enter",touch);StringAssert.DoesNotContain("LT",touch);
             var guide=typeof(CustomScreenView).GetMethod("FormatPadGuide",BindingFlags.Static|BindingFlags.NonPublic);

@@ -13,6 +13,28 @@ namespace Olca.Tests.Application
 {
     public sealed class DungeonCoreFactoryTests
     {
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)] public void 外界持込みの未対応予約と未確定HPframeは無変更で拒否する(int kind)
+        {
+            var actor=new PlayerCharacter(100);actor.SetHp(37);if(kind==0)actor.ApplyParalysis(30);if(kind==1)actor.ApplyConfusion(30);if(kind==2)actor.ApplyBlindness(30);var flags=BindingFlags.Instance|BindingFlags.NonPublic;if(kind==3)typeof(PlayerCharacter).GetMethod("BeginHpFrame",flags).Invoke(actor,null);if(kind>=4)typeof(PlayerCharacter).GetMethod("Begin"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});
+            try{Assert.Throws<ArgumentException>(()=>OutsideDepartureVitals.Capture(actor,false));Assert.AreEqual(37,actor.CurrentHp);Assert.AreEqual(100,actor.MaxHp);}finally{if(kind==3){typeof(PlayerCharacter).GetMethod("CommitHpFrame",flags).Invoke(actor,null);typeof(PlayerCharacter).GetMethod("PublishHpFrame",flags).Invoke(actor,null);}if(kind>=4)typeof(PlayerCharacter).GetMethod("End"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});}
+        }
+        private static PlayerTimedAilmentsDto Ailments136()=>new PlayerTimedAilmentsDto{Paralysis=new PlayerTimedAilmentDto{RemainingUnits=1475,DisplayFrames=30},Confusion=new PlayerTimedAilmentDto{RemainingUnits=1425,DisplayFrames=29},Blindness=new PlayerTimedAilmentDto{RemainingUnits=1375,DisplayFrames=28}};
+        [Test] public void 時間状態は端数と耐性適用済み値とコピー分離をcheckpointへ保持する()
+        {
+            var actor=new PlayerCharacter(100);actor.SetHp(37);var state=Ailments136();actor.RestoreTimedAilments(state);state.Paralysis.RemainingUnits=0;Assert.AreEqual(1475,actor.CaptureTimedAilments().Paralysis.RemainingUnits);
+            var map=DungeonConfig.CreateTestDungeon(6,1,2);var defs=new CheckpointDefinitions("ailment136",map);var session=new DungeonCheckpointSession(defs,new MemoryCheckpointStore(defs));var factory=new DungeonCoreFactory(new UnityRandomProvider(7),new UnityLogger(),()=>new SimpleCardFactory());factory.CreatePreview(map,actor,new Deck(),session);var dto=session.Store.Read();Assert.IsTrue(CheckpointCodec.TryRestore(dto,defs,out var loaded,out var error),error);Assert.AreEqual(37,loaded.Player.CurrentHp);Assert.IsTrue(PlayerTimedAilmentsDto.Same(actor.CaptureTimedAilments(),loaded.Player.CaptureTimedAilments()));dto.Player.TimedAilments.Confusion.RemainingUnits=1;Assert.AreEqual(1425,loaded.Player.CaptureTimedAilments().Confusion.RemainingUnits);
+            var resistant=new PlayerCharacter(100,statusResistances:new TimedStatusResistances(0,100,100,100));resistant.RestoreTimedAilments(actor.CaptureTimedAilments());Assert.IsTrue(resistant.IsParalyzed&&resistant.IsConfused&&resistant.IsBlind);
+            using(var outside=new OutsideExplorationSession()){outside.TryInitializePlayer(()=>resistant);using(var lease=outside.AttachPresentation()){outside.Core.TickFrame(0);outside.AdvancePlayerFrame();}}Assert.AreEqual(1425,resistant.CaptureTimedAilments().Paralysis.RemainingUnits);Assert.AreEqual(1375,resistant.CaptureTimedAilments().Confusion.RemainingUnits);Assert.AreEqual(1325,resistant.CaptureTimedAilments().Blindness.RemainingUnits);
+        }
+        [Test] public void 未反映付与と解除は復元だけでは実行せず次論理frameに適用する()
+        {
+            var source=new PlayerCharacter(100);source.ApplyParalysis(30);source.ApplyConfusion(31);source.ApplyBlindness(32);var saved=source.CaptureTimedAilments();var target=new PlayerCharacter(100);target.RestoreTimedAilments(saved);Assert.IsFalse(target.IsParalyzed||target.IsConfused||target.IsBlind);Assert.AreEqual(30,target.CaptureTimedAilments().Paralysis.PendingFrames);
+            using(var outside=new OutsideExplorationSession()){outside.TryInitializePlayer(()=>target);using(var lease=outside.AttachPresentation()){outside.Core.TickFrame(0);outside.AdvancePlayerFrame();Assert.IsTrue(target.IsParalyzed&&target.IsConfused&&target.IsBlind);Assert.AreEqual(29,target.ParalysisRemainingFrames);target.ClearParalysis();target.ClearConfusion();target.ClearBlindness();var clearing=target.CaptureTimedAilments();var restored=new PlayerCharacter(100);restored.RestoreTimedAilments(clearing);Assert.IsTrue(PlayerTimedAilmentsDto.Same(clearing,restored.CaptureTimedAilments()));using(var resumed=new OutsideExplorationSession()){resumed.TryInitializePlayer(()=>restored);using(var resumedLease=resumed.AttachPresentation()){resumed.Core.TickFrame(0);resumed.AdvancePlayerFrame();}}Assert.IsNull(restored.CaptureTimedAilments());Assert.IsTrue(target.IsParalyzed&&target.IsConfused&&target.IsBlind);outside.Core.TickFrame(0);outside.AdvancePlayerFrame();Assert.IsNull(target.CaptureTimedAilments());}}
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)] public void 不正な時間状態は復元前に拒否し既存個体を変えない(int kind)
+        {
+            var actor=new PlayerCharacter(100);actor.RestoreTimedAilments(Ailments136());var before=actor.CaptureTimedAilments();var invalid=Ailments136();if(kind==0)invalid.Version=2;if(kind==1)invalid.Blindness=null;if(kind==2)invalid.Paralysis.RemainingUnits=-1;if(kind==3)invalid.Confusion.PendingFrames=0;if(kind==4)invalid.Blindness.InterruptPending=true;Assert.Throws<ArgumentException>(()=>actor.RestoreTimedAilments(invalid));Assert.IsTrue(PlayerTimedAilmentsDto.Same(before,actor.CaptureTimedAilments()));
+        }
         [TestCase(false)] [TestCase(true)] public void 通常生成と凍結preview_既存の加工System構成を区別する(bool preview)
         {
             int definitions=0;var factory=new DungeonCoreFactory(new UnityRandomProvider(7),new UnityLogger(),()=>{definitions++;return new SimpleCardFactory();});

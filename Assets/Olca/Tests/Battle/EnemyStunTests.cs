@@ -365,7 +365,7 @@ namespace Olca.Tests.Battle
         }
 
         [Test]
-        public void 未確定または有効なプレイヤー麻痺は保存へ混入できず不正期間は拒否する()
+        public void 麻痺の付与予約と有効時計は保存復元し不正期間と通常出撃は拒否する()
         {
             foreach(bool active in new[]{false,true}) {
                 var player=new PlayerCharacter(100);Assert.Throws<System.ArgumentOutOfRangeException>(()=>player.ApplyParalysis(0));
@@ -374,7 +374,7 @@ namespace Olca.Tests.Battle
                 if(active){var battle=new BattleSystem(player,new List<Enemy>{map.MapCells[5].Enemy},deck);battle.RunLogicalFrame(()=>player.ApplyParalysis(6));}
                 else player.ApplyParalysis(6);
                 var manager=new Olca.Core.Logic.Integration.DungeonBattleManager(map,player,deck,new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger(),checkpoints:checkpoints);
-                Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);Assert.IsNull(checkpoints.Store.Read());
+                Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked);var saved=checkpoints.Store.Read();Assert.IsNotNull(saved);Assert.IsTrue(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(saved,checkpoints.Definitions,out var restored,out var error),error);Assert.IsTrue(PlayerTimedAilmentsDto.Same(player.CaptureTimedAilments(),restored.Player.CaptureTimedAilments()));Assert.Throws<System.ArgumentException>(()=>OutsideDepartureVitals.Capture(player,false));
             }
         }
 

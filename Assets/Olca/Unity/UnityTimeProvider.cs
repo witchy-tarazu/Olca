@@ -164,7 +164,7 @@ namespace Olca.Unity
             if (sample != null && (sample.Horizontal != previous.Horizontal || sample.Vertical != previous.Vertical ||
                 sample.BasicAttackButton != previous.BasicAttackButton || sample.HasChargeHoldSample != previous.HasChargeHoldSample ||
                 sample.ChargeHoldButton != previous.ChargeHoldButton || sample.AnyKeyExceptCharge != previous.AnyKeyExceptCharge || sample.DashButton != previous.DashButton ||
-                sample.JumpButtonDown || sample.BasicAttackButtonDown || sample.BasicAttackButtonUp || sample.CardUseButtonDown || sample.CustomScreenButtonDown || sample.DashButtonDown || sample.MenuConfirmButtonDown || sample.MenuDecideButtonDown || sample.HorizontalDown != 0 || sample.TouchHorizontalDown != 0 || sample.CancelTouchTap))
+                sample.OutsideItemDownMask != 0 || sample.JumpButtonDown || sample.BasicAttackButtonDown || sample.BasicAttackButtonUp || sample.CardUseButtonDown || sample.CustomScreenButtonDown || sample.DashButtonDown || sample.MenuConfirmButtonDown || sample.MenuDecideButtonDown || sample.HorizontalDown != 0 || sample.TouchHorizontalDown != 0 || sample.CancelTouchTap))
             { inputs.Enqueue(Clock.InputFrame, sample); previous = sample.Copy(); previous.ClearEdges(); }
             var timeline = Clock;
             timeline.Drain((frame, ms) => {

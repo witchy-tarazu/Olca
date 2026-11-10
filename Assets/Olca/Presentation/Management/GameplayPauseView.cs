@@ -203,6 +203,7 @@ namespace Olca.Presentation.Management
             Place("ResumeButton", -480, 120, 360); Place("LoadCheckpointButton", -480, 12, 360);
             Place("OwnedCardsButton", -480, -96, 360); Place("RetreatButton", -480, -244, 360);
             Place("KeyboardSettingsButton", 20, 120, 340); Place("GamepadSettingsButton", 400, 120, 340);
+            Place("OutsideItemsButton", 210, -244, 720);
             Place("AudioSettingsButton", 20, 0, 340); Place("VibrationSetting", 400, 0, 340);
             Place("TransformationAnimationSetting", 20, -120, 340); Place("DialogueTextSpeedButton", 400, -120, 340);
         }
@@ -210,7 +211,7 @@ namespace Olca.Presentation.Management
         public GameObject Pause()
         {
             var panel=Panel("PauseOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
-            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
+            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
                 Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero);
             LayoutPauseMenu(panel);return panel;
         }

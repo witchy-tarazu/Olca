@@ -272,6 +272,8 @@ namespace Olca.Core.Domain
     {
         private long remaining;
         public bool IsActive => remaining > 0;
+        internal long RemainingUnits=>remaining;
+        internal void RestoreUnits(long value){if(value<0||value>int.MaxValue*50L)throw new System.ArgumentOutOfRangeException(nameof(value));remaining=value;}
         public int Milliseconds => (int)System.Math.Min(int.MaxValue, (remaining + 2) / 3);
         public int Frames => (int)((remaining + 49) / 50);
         public void SetFrames(int value) => remaining = System.Math.Max(0L, value * 50L);

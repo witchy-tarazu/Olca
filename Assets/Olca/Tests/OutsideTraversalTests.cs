@@ -69,11 +69,25 @@ namespace Olca.Tests
         }
         [Test] public void 壁方向保持だけで滑り速度を制限し離すと通常重力へ戻る()
         {
-            var c=Core(OutsideTraversalProfile.ValidationWall(true));ToWall(c);c.TickFrame(1,true,true);Assert.IsTrue(c.IsWallSliding);Assert.AreEqual(0,c.WallSlideFrame);
+            var c=Core(OutsideTraversalProfile.ValidationWall(true));ToWall(c);c.TickFrame(1,true,true);Assert.IsFalse(c.IsWallSliding,"上昇中は壁ずりしない");
+            while(c.VerticalVelocity>=0){c.TickFrame(1,false,true);Assert.IsFalse(c.IsWallSliding);}
+            c.TickFrame(1,false,true);Assert.IsTrue(c.IsWallSliding);Assert.AreEqual(0,c.WallSlideFrame);
             for(int i=0;i<60&&c.VerticalVelocity>-1800;i++)c.TickFrame(1,false,true);
             Assert.AreEqual(-1800,c.VerticalVelocity);
             long y=c.Height;c.TickFrame(1,false,true);Assert.AreEqual(y-1800,c.Height);Assert.AreEqual(-1800,c.VerticalVelocity);
             c.TickFrame(0,false,true);Assert.IsFalse(c.IsWallSliding);Assert.AreEqual(-2200,c.VerticalVelocity);
+        }
+        [TestCase(-1)][TestCase(1)] public void 壁ずりは左右とも頂点の静止stepまで開始せず下降stepから始まり接地で消える(int side)
+        {
+            var p=OutsideTraversalProfile.ValidationWall(true);long contact=p.Walls[0].X-side*p.BodyHalfWidth;
+            var c=new OutsideExplorationCore(new OutsideMovementDefinition("wall-boundary",32*60000,contact,6*60000),p);c.TickFrame(side,true,true);
+            bool apex=false,fall=false;
+            for(int i=0;i<150&&!c.IsGrounded;i++){
+                long beforeV=c.VerticalVelocity,y=c.Height;c.TickFrame(side,false,true);
+                if(beforeV>=0){Assert.IsFalse(c.IsWallSliding);Assert.GreaterOrEqual(c.Height,y);if(beforeV==0){apex=true;Assert.AreEqual(y,c.Height);}}
+                else if(!c.IsGrounded){fall=true;Assert.IsTrue(c.IsWallSliding);Assert.Less(c.Height,y);}
+            }
+            Assert.IsTrue(apex);Assert.IsTrue(fall);Assert.IsTrue(c.IsGrounded);Assert.IsFalse(c.IsWallSliding);Assert.AreEqual(0,c.WallSlideFrame);
         }
         [Test] public void 壁蹴りは離す押し直しで同壁へ反復でき押出し中だけ反対方向へ進む()
         {
@@ -88,16 +102,23 @@ namespace Olca.Tests
         [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
         public void 壁ごとの滑りと蹴りの可否を独立に使う(bool slide,bool kick)
         {
-            var c=Core(OutsideTraversalProfile.ValidationWall(true,slide,kick));ToWall(c);c.TickFrame(1,true,true);Assert.AreEqual(slide,c.IsWallSliding);
+            var c=Core(OutsideTraversalProfile.ValidationWall(true,slide,kick));ToWall(c);c.TickFrame(1,true,true);Assert.IsFalse(c.IsWallSliding);while(c.VerticalVelocity>=0)c.TickFrame(1,false,true);c.TickFrame(1,false,true);Assert.AreEqual(slide,c.IsWallSliding);
             c.TickFrame(1);c.TickFrame(1,true,true);Assert.AreEqual(kick,c.IsWallKicking);
         }
-        [Test] public void 高速で検証壁を通り抜けず壁で停止したダッシュからIdleはゼロへ戻る()
+        [Test] public void 高速で検証壁を通り抜けず実移動停止からIdleを開始し残ダッシュ中も継続する()
         {
             var p=OutsideTraversalProfile.ValidationWall(false);long wall=p.Walls[0].X-p.BodyHalfWidth;
             var c=new OutsideExplorationCore(new OutsideMovementDefinition("wall-near",32*60000,wall-1000,6*60000),p);
             c.TickFrame(1,dashDown:true,dashHeld:true);Assert.AreEqual(wall,c.Position);Assert.IsTrue(c.IsDashing);Assert.AreEqual(0,c.IdleFrame);
             for(int i=1;i<12;i++)c.TickFrame(1,dashHeld:true);
-            c.TickFrame(0);Assert.IsFalse(c.IsDashing);Assert.AreEqual(0,c.IdleFrame);c.TickFrame(0);Assert.AreEqual(1,c.IdleFrame);
+            c.TickFrame(0);Assert.IsFalse(c.IsDashing);Assert.AreEqual(11,c.IdleFrame);c.TickFrame(0);Assert.AreEqual(12,c.IdleFrame);
+        }
+        [Test] public void 接地壁でShiftダッシュしても待機時計だけは連続しダッシュ時間と再使用待ちは変わらない()
+        {
+            var c=Core(OutsideTraversalProfile.ValidationWall(true));ToWall(c);for(int i=0;i<8;i++)c.TickFrame(1);long idle=c.IdleFrame,x=c.Position;
+            for(int i=0;i<12;i++){c.TickFrame(1,dashDown:i==0,dashHeld:true);Assert.IsTrue(c.IsDashing);Assert.AreEqual(i,c.DashFrame);Assert.AreEqual(x,c.Position);Assert.IsFalse(c.IsMoving);Assert.AreEqual(idle+i+1,c.IdleFrame);}
+            c.TickFrame(1);Assert.IsFalse(c.IsDashing);Assert.AreEqual(0,c.DashCooldownRemaining);
+            for(int i=0;i<12;i++)c.TickFrame(1,dashDown:i==0,dashHeld:true);c.TickFrame(1);Assert.AreEqual(30,c.DashCooldownRemaining);
         }
         [Test] public void 残像は四つまでの論理状態で表示借用と停止中に変わらず十二frameで消える()
         {
@@ -139,6 +160,54 @@ namespace Olca.Tests
                 Assert.IsFalse(s.Core.TraversalProfile.WallActionsUnlocked);Assert.AreEqual(0,s.Core.TraversalProfile.Walls.Count);Assert.Throws<ArgumentNullException>(()=>s.TryConfigureTraversal(null));
                 Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true)));var lease=s.AttachPresentation();Assert.IsFalse(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationDash));lease.Dispose();
                 s.Core.TickFrame(0);Assert.IsFalse(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationDash));Assert.IsTrue(s.Core.TraversalProfile.WallActionsUnlocked);
+            }
+        }
+        [Test] public void 外界個体は一度だけ生成しView再生成でもHPと状態を保持する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                int made=0;Assert.IsTrue(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(100);}));var actor=s.Player;actor.SetHp(46);actor.ApplyParalysis(3);
+                using(var first=s.AttachPresentation()){Assert.AreSame(actor,first.Player);s.Core.TickFrame(0);Assert.IsTrue(s.AdvancePlayerFrame());Assert.IsFalse(s.CanPerformAttack);Assert.AreEqual(2,actor.ParalysisRemainingFrames);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(2,actor.ParalysisRemainingFrames);}
+                Assert.IsFalse(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(200);}));using(var second=s.AttachPresentation()){Assert.AreSame(actor,second.Player);Assert.AreEqual(46,second.Player.CurrentHp);Assert.AreEqual(2,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(1,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.CanPerformAttack);}
+                Assert.AreEqual(1,made);Assert.AreEqual(46,actor.CurrentHp);
+            }
+        }
+        [Test] public void 外界停止は状態時間を進めず死亡しても表示再入で全回復しない()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));using(var lease=s.AttachPresentation()){
+                    s.Player.ApplyParalysis(4);for(int i=0;i<20;i++)Assert.IsFalse(s.AdvancePlayerFrame());s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(3,s.Player.ParalysisRemainingFrames);s.Player.SetHp(0);Assert.IsFalse(s.CanPerformAttack);
+                }
+                using(var lease=s.AttachPresentation()){Assert.AreEqual(0,lease.Player.CurrentHp);Assert.IsFalse(s.CanPerformAttack);}
+            }
+        }
+        [Test] public void 外界終了は旧leaseから個体を切り離し新規世代へ状態を渡さない()
+        {
+            var s=new OutsideExplorationSession();Assert.Throws<ArgumentNullException>(()=>s.TryInitializePlayer(null));Assert.Throws<ArgumentException>(()=>s.TryInitializePlayer(()=>null));s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var old=s.AttachPresentation();s.Player.SetHp(31);s.Dispose();Assert.IsNull(old.Player);Assert.IsNull(s.Player);Assert.IsFalse(s.CanPerformAttack);Assert.IsFalse(s.AdvancePlayerFrame());Assert.Throws<ObjectDisposedException>(()=>s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100)));
+            using(var next=new OutsideExplorationSession()){next.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));Assert.AreEqual(100,next.Player.CurrentHp);}
+        }
+        [Test] public void 外界の期間防御は同じ論理時計で二frame後に終了し停止時は保持する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));using(var lease=s.AttachPresentation()){
+                    s.Player.SetAura(10,2);Assert.IsTrue(s.Player.HasAura);for(int i=0;i<5;i++)Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(2,s.Player.ProtectionRemainingFrames);
+                    s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.Player.HasAura);Assert.AreEqual(1,s.Player.ProtectionRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsFalse(s.Player.HasAura);
+                }
+            }
+        }
+        [Test] public void 回復復帰はHPと状態とゲージを戻し時間と個体と永続所持を再初期化しない()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var actor=s.Player;using(var lease=s.AttachPresentation()){
+                    for(int i=0;i<20;i++)s.Core.TickFrame(1,jumpDown:i==0,jumpHeld:true);long frame=s.Core.Frame;actor.SetHp(0);s.Core.CardGauge.TrySpend(30);actor.ApplyParalysis(60);
+                    s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.AreSame(actor,s.Player);Assert.AreEqual(100,actor.CurrentHp);Assert.IsFalse(actor.IsParalyzed);Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(OutsideTrialRoute.RecoveryX,s.Core.Position);Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(0,s.Core.Height);Assert.AreEqual(0,s.Core.VerticalVelocity);Assert.IsFalse(s.Core.IsDashing);Assert.IsFalse(s.Core.IsWallKicking);Assert.AreEqual(s.Core.CardGauge.MaximumUnits,s.Core.CardGauge.CurrentUnits);Assert.IsFalse(s.AdvancePlayerFrame());
+                    actor.SetHp(20);long x=s.Core.Position;s.RecoverOutside(OutsideTrialRoute.RecoveryPointId,false);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(100,actor.CurrentHp);
+                }
+            }
+        }
+        [Test] public void 未登録の復帰先は元のHPと位置を変更せず旧nullだけ既存開始地点へ戻す()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.Player.SetHp(33);s.Core.TickFrame(1);long x=s.Core.Position;Assert.Throws<ArgumentException>(()=>s.RecoverOutside("unknown-preserve"));Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(33,s.Player.CurrentHp);s.RecoverOutside(null);Assert.AreEqual(s.Core.Definition.Start,s.Core.Position);Assert.AreEqual(100,s.Player.CurrentHp);
             }
         }
     }

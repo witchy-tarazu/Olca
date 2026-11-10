@@ -136,6 +136,7 @@ namespace Olca.Core.Domain
         public DepartureStyleDto Style; // 旧省略/nullは既存の基本スタイル
         public int Hp, MaxHp, AttackPower, Poise;
         public int? PoiseRecoveryFrames; // 旧保存の省略/nullは自然回復未設定。残り時間ではなく定義
+        public PlayerTimedAilmentsDto TimedAilments; // 旧nullは時間状態なし。確定境界の予約も保存する。
         public PlayerPoisonDto[] Poisons; // 旧保存の省略/nullは毒なし
         public int StaggerFrames; // 旧保存の省略/0は時間付きのけぞり未設定
         public int FireResistance, WaterResistance, WindResistance, EarthResistance;
@@ -143,6 +144,8 @@ namespace Olca.Core.Domain
         public int GridX, GridY;
         public void ValidatePermanentAbilities()
         {
+            TimedAilments?.Validate();
+            if(Hp==0&&TimedAilments!=null&&!TimedAilments.IsEmpty)throw new System.ArgumentException("死亡保存に時間状態を保持できません");
             ElementResistances.ValidateAdditional(AdditionalElementResistances);
             CustomizationAbilities?.Validate();
             if(PoisonResistance<0||ParalyzeResistance<0||ConfusionResistance<0||BlindResistance<0)throw new System.ArgumentException("保存された状態耐性が不正です");
@@ -156,8 +159,27 @@ namespace Olca.Core.Domain
             var copy=(CheckpointPlayerDto)MemberwiseClone();
             copy.AdditionalElementResistances=AdditionalElementResistances==null?null:(int[])AdditionalElementResistances.Clone();
             copy.Style=Style?.Copy();copy.AttackGrowth=AttackGrowth?.Copy();copy.CustomizationAbilities=CustomizationAbilities?.Copy();
+            copy.TimedAilments=TimedAilments?.Copy();
             copy.Poisons=Poisons==null ? null : System.Array.ConvertAll(Poisons,p=>p?.Copy()); return copy;
         }
+    }
+
+    /// <summary>耐性適用後の時計と、次フレームへ送る付与/解除。復元では進めない。</summary>
+    public sealed class PlayerTimedAilmentDto
+    {
+        public long RemainingUnits;public int DisplayFrames;public int? PendingFrames;public bool ClearPending,InterruptPending;
+        public PlayerTimedAilmentDto Copy()=>(PlayerTimedAilmentDto)MemberwiseClone();
+        public bool IsEmpty=>RemainingUnits==0&&!PendingFrames.HasValue&&!ClearPending&&!InterruptPending;
+        public void Validate(){if(RemainingUnits<0||RemainingUnits>int.MaxValue*50L||DisplayFrames<0||RemainingUnits>DisplayFrames*50L||PendingFrames.HasValue&&PendingFrames.Value<=0)throw new System.ArgumentException("時間状態の時計/予約が不正です");}
+        internal bool Same(PlayerTimedAilmentDto v)=>v!=null&&RemainingUnits==v.RemainingUnits&&DisplayFrames==v.DisplayFrames&&PendingFrames==v.PendingFrames&&ClearPending==v.ClearPending&&InterruptPending==v.InterruptPending;
+    }
+    public sealed class PlayerTimedAilmentsDto
+    {
+        public int Version=1;public PlayerTimedAilmentDto Paralysis,Confusion,Blindness;
+        public bool IsEmpty=>Paralysis!=null&&Confusion!=null&&Blindness!=null&&Paralysis.IsEmpty&&Confusion.IsEmpty&&Blindness.IsEmpty;
+        public PlayerTimedAilmentsDto Copy()=>new PlayerTimedAilmentsDto{Version=Version,Paralysis=Paralysis?.Copy(),Confusion=Confusion?.Copy(),Blindness=Blindness?.Copy()};
+        public void Validate(){if(Version!=1||Paralysis==null||Confusion==null||Blindness==null||Confusion.InterruptPending||Blindness.InterruptPending)throw new System.ArgumentException("時間状態の保存形式が不正です");Paralysis.Validate();Confusion.Validate();Blindness.Validate();}
+        public static bool Same(PlayerTimedAilmentsDto a,PlayerTimedAilmentsDto b)=>a==null?b==null:b!=null&&a.Version==b.Version&&a.Paralysis.Same(b.Paralysis)&&a.Confusion.Same(b.Confusion)&&a.Blindness.Same(b.Blindness);
     }
 
     public sealed class CheckpointEnemyDto
@@ -202,6 +224,7 @@ namespace Olca.Core.Domain
     {
         public int SchemaVersion = 1;
         public string DefinitionsRevision, DungeonId, MapHash, RunId;
+        public string DepartureTermsKey; // nullは旧無料攻略。新規条件の欠落を無料と誤認しない。
         public long Sequence, PositionMilli;
         public long Currency;
         public CheckpointBoundary Boundary;
@@ -224,7 +247,7 @@ namespace Olca.Core.Domain
             Visits = Visits==null?null:System.Array.ConvertAll(Visits,v=>v?.Copy()),
             CollectedItemCells = CollectedItemCells==null?null:(int[])CollectedItemCells.Clone(),
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
-            MapHash = MapHash, RunId = RunId, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
+            MapHash = MapHash, RunId = RunId, DepartureTermsKey=DepartureTermsKey, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
             Player = Player?.Copy(), Cards = Cards == null ? null : System.Array.ConvertAll(Cards, c => c?.Copy()),
             DeckOrder = DeckOrder == null ? null : (string[])DeckOrder.Clone(),
             ObtainedOrder = ObtainedOrder == null ? null : (string[])ObtainedOrder.Clone(),
