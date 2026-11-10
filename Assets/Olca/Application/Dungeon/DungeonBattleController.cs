@@ -546,7 +546,7 @@ namespace Olca.Application.Dungeon
             if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             outsideDepartureError=null;outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
-                try{gameSystem.OutsideExploration.RestoreSavedPlayer(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
+                try{gameSystem.OutsideExploration.RestoreSavedState(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true):null);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
                     if(services.OutsideExploration.Player==null){try{Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(services.OutsideExploration.Core,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){clearReturnError=e.Message;ShowDungeonSelection();return;}}
@@ -1736,7 +1736,7 @@ namespace Olca.Application.Dungeon
                     deck=deck??CreateInitialDeck();
                     // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
                     OutsideDepartureVitals outsideEntry=null;
-                    if(outsideLandingRoute&&gameSystem?.OutsideExploration.Player!=null){try{outsideEntry=OutsideDepartureVitals.Capture(gameSystem.OutsideExploration.Player,clearReturnSession.Snapshot.ClearedDungeons.Contains(choice.Id));}catch(System.ArgumentException e){outsideDepartureError=e.Message;outsideDungeonSelection=true;outsideEntryRejected=true;return;}}
+                    if(outsideLandingRoute&&gameSystem?.OutsideExploration.Player!=null){try{outsideEntry=OutsideDepartureVitals.Capture(gameSystem.OutsideExploration.Player,clearReturnSession.Snapshot.ClearedDungeons.Contains(choice.Id));if(outsideEntry.Retry)outsideEntry.Runtime=gameSystem.OutsideExploration.CaptureRuntime(memoryCheckpoints?.Definitions);}catch(System.ArgumentException e){outsideDepartureError=e.Message;outsideDungeonSelection=true;outsideEntryRejected=true;return;}}
                     outsideDepartureError=null;
                     var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     frozen.BindDepartureTerms(terms?.Key());

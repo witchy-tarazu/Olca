@@ -1,9 +1,72 @@
+using System;
+using System.Linq;
+using Olca.Core.Domain;
+using Olca.Core.Logic.Dungeon;
+using Olca.Core.Logic.Battle;
 using NUnit.Framework;
 using Olca.Core.Logic.Integration;
 namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static OutsideExplorationSession RuntimeSession141(bool cards,int pose,out CheckpointDefinitions definitions)
+        {
+            var source=CardFixture();definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(source.ToList())).Definitions;var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));s.TryConfigureCamera(OutsideCameraPolicy.FixedAt(17*60000));var actor=new PlayerCharacter(100);actor.SetHp(37);actor.ApplyPoison("runtime141",new StatusEffect(StatusEffectType.Poison,60000,1),600);s.TryInitializePlayer(()=>actor);if(cards)Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(141),out _));s.Core.CardGauge.Configure(140,7);s.Core.CardGauge.TrySpend(70);
+            using(var lease=s.AttachPresentation()){
+                Action<float,bool,bool,bool,bool> tick=(x,j,h,d,dh)=>{s.Core.TickFrame(x,j,h,d,dh);s.AdvancePlayerFrame();};
+                if(pose==0){for(int i=0;i<7;i++)tick(1,false,false,false,false);}
+                else if(pose==1)tick(1,true,true,true,true);
+                else if(pose==2||pose==3){for(int i=0;i<400&&s.Core.Position<24*60000-31200;i++)tick(1,false,false,false,false);tick(1,true,true,false,false);for(int i=0;i<100&&!s.Core.IsWallSliding;i++)tick(1,false,true,false,false);Assert.IsTrue(s.Core.IsWallSliding);if(pose==3){tick(1,false,false,false,false);tick(1,true,true,false,false);Assert.IsTrue(s.Core.IsWallKicking);}}
+                else if(pose==4){tick(0,false,false,true,true);while(s.Core.IsDashing)tick(0,false,false,false,false);tick(0,false,false,true,true);while(s.Core.IsDashing)tick(0,false,false,false,false);while(s.Core.DashCooldownRemaining>1)tick(0,false,false,false,false);Assert.AreEqual(1,s.Core.DashCooldownRemaining);}
+                else {tick(0,false,false,true,true);while(s.Core.DashFrame<OutsideTraversalProfile.ValidationWall(true).DashFrames-1)tick(0,false,false,false,true);Assert.IsTrue(s.Core.IsDashing);}
+            }
+            if(cards)s.Cards.TrySelect(2);return s;
+        }
+        private static string CoreKey141(OutsideExplorationCore core)=>PortableCheckpointJson.Hash(PortableCheckpointJson.Serialize(core.CaptureState()));
+        [TestCase(false,0)][TestCase(true,0)][TestCase(false,1)][TestCase(true,1)][TestCase(false,2)][TestCase(true,3)][TestCase(false,4)][TestCase(true,5)]
+        public void 外界の退避は位置時計空中ダッシュゲージとカードを抽選せず復元し同じIDを再適用しない(bool cards,int pose)
+        {
+            using(var source=RuntimeSession141(cards,pose,out var defs))using(var cold=new OutsideExplorationSession()){
+                var runtime=source.CaptureRuntime(defs);runtime=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime));var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;var key=runtime.Key();var core=source.Core;var oldCards=source.Cards;var frame=core.Frame;long units=core.CardGauge.CurrentUnits;var cardKey=runtime.Cards?.Key();core.TickFrame(-1);source.Player.SetHp(1);
+                Assert.IsTrue(source.RestoreSavedState(actor,runtime,null,defs));Assert.AreSame(core,source.Core);Assert.AreSame(oldCards,source.Cards);Assert.AreEqual(frame,core.Frame);Assert.AreEqual(units,core.CardGauge.CurrentUnits);Assert.AreEqual(37,source.Player.CurrentHp);Assert.AreEqual(cardKey,source.Cards?.CaptureState(defs).Key());Assert.AreEqual(key,runtime.Key());
+                cold.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null,defs));Assert.AreEqual(CoreKey141(source.Core),CoreKey141(cold.Core));Assert.AreEqual(source.Camera.FixedCenter,cold.Camera.FixedCenter);Assert.AreEqual(cardKey,cold.Cards?.CaptureState(defs).Key());if(cards){Assert.AreEqual(17,cold.Cards.RemainingCount);Assert.AreEqual(2,cold.Cards.SelectedIndex);Assert.AreNotSame(source.Cards.Hand[0],cold.Cards.Hand[0]);}else Assert.IsNull(cold.Cards);
+                using(var a=source.AttachPresentation())using(var b=cold.AttachPresentation()){Assert.IsFalse(cold.AdvancePlayerFrame());Assert.IsFalse(cold.RestoreSavedState(actor,runtime,null,defs));for(int i=0;i<20;i++){source.Core.TickFrame(0);cold.Core.TickFrame(0);Assert.IsTrue(source.AdvancePlayerFrame());Assert.IsTrue(cold.AdvancePlayerFrame());Assert.IsFalse(cold.AdvancePlayerFrame());Assert.AreEqual(CoreKey141(source.Core),CoreKey141(cold.Core));}Assert.AreEqual(frame+20,cold.Core.Frame);Assert.IsFalse(source.RestoreSavedState(actor,runtime,null,defs));}
+                var changed=runtime.Copy();changed.Core.GaugeUnits--;Assert.Throws<ArgumentException>(()=>source.RestoreSavedState(actor,changed,null,defs));Assert.AreEqual(frame+20,core.Frame);
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)][TestCase(7)][TestCase(8)][TestCase(9)][TestCase(10)][TestCase(11)][TestCase(12)][TestCase(13)][TestCase(14)]
+        public void 不正な外界退避はActorだけでなく全Sessionを変更する前に拒否する(int invalid)
+        {
+            using(var source=RuntimeSession141(true,0,out var defs))using(var target=new OutsideExplorationSession()){
+                target.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));target.TryInitializePlayer(()=>new PlayerCharacter(120));target.TryConfigureCamera(OutsideCameraPolicy.FixedAt(60000));target.Core.CardGauge.TrySpend(7);var old=target.Player;var coreKey=CoreKey141(target.Core);var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;
+                if(invalid==0)runtime.Version=2;else if(invalid==1)actor.Id=Guid.NewGuid().ToString("N");else if(invalid==2)runtime.Core.DefinitionKey=new string('0',64);else if(invalid==3)runtime.Core.GaugeUnits=long.MaxValue;else if(invalid==4)runtime.Core.Height=long.MaxValue;else if(invalid==5)runtime.Core.SupportId="missing";else if(invalid==6)runtime.Core.Frame=long.MaxValue;else if(invalid==7)runtime.Cards.Hand[1]=runtime.Cards.Hand[0];else if(invalid==8)runtime.Cards.Random.State=0;else if(invalid==9)runtime.Cards.Cards[0].ValueHash=new string('0',64);else if(invalid==10)runtime.FixedCameraCenter=long.MaxValue;else if(invalid==11)runtime.Core.Afterimages=new[]{new OutsideAfterimageStateData{Facing=1,Frame=runtime.Core.Frame,Pose=(OutsideAfterimagePose)99}};else if(invalid==12){runtime.Core.Height=10000;runtime.Core.Velocity=1000;runtime.Core.SupportId=null;runtime.Core.DashJumping=true;runtime.Core.DashStartedAt=-1;}else if(invalid==13){runtime.Core.Height=10000;runtime.Core.Velocity=-400;runtime.Core.SupportId=null;runtime.Core.WallSliding=true;runtime.Core.WallContact=1;}else {runtime.Core.DashStartedAt=1;runtime.Core.DashEndsAt=13;runtime.Core.CooldownUntil=8;runtime.Core.ConsecutiveDashes=2;runtime.Core.LastDashAt=runtime.Core.Frame;}
+                if(invalid==10)Assert.Throws<ArgumentOutOfRangeException>(()=>target.RestoreSavedState(actor,runtime,null,defs));else Assert.Throws<ArgumentException>(()=>target.RestoreSavedState(actor,runtime,null,defs));Assert.AreSame(old,target.Player);Assert.AreEqual(coreKey,CoreKey141(target.Core));Assert.AreEqual(60000,target.Camera.FixedCenter);Assert.IsNull(target.Cards);Assert.IsFalse(target.IsPresented);
+            }
+        }
+        [Test] public void 外界cold起動の既知試走設定も全候補検証後にだけ適用する()
+        {
+            using(var source=RuntimeSession141(false,1,out var defs))using(var target=new OutsideExplorationSession()){
+                var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;target.TryInitializePlayer(()=>new PlayerCharacter(120));var old=target.Player;string before=CoreKey141(target.Core);var invalid=runtime.Copy();invalid.FixedCameraCenter=long.MaxValue;Assert.Throws<ArgumentOutOfRangeException>(()=>target.RestoreSavedState(actor,invalid,null,defs,OutsideTraversalProfile.ValidationWall(true)));Assert.AreSame(old,target.Player);Assert.AreEqual(before,CoreKey141(target.Core));Assert.AreEqual("validation-traversal-v1",target.Core.TraversalProfile.Id);Assert.IsTrue(target.RestoreSavedState(actor,runtime,null,defs,OutsideTraversalProfile.ValidationWall(true)));Assert.AreEqual(CoreKey141(source.Core),CoreKey141(target.Core));Assert.IsTrue(target.Core.TraversalProfile.WallActionsUnlocked);
+            }
+        }
+        [Test] public void 外界の固定小数点余りも復元し未定義のダッシュ状態は受け入れない()
+        {
+            var map=new OutsideMovementDefinition("fraction141",32*60000,6*60000,360017);var a=new OutsideExplorationCore(map,OutsideTraversalProfile.ValidationDash);var b=new OutsideExplorationCore(map,OutsideTraversalProfile.ValidationDash);for(int i=0;i<5;i++)a.TickFrame(1);var saved=a.CaptureState();Assert.AreNotEqual(0,saved.Remainder);var restore=typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);restore.Invoke(b,new object[]{saved});for(int i=0;i<60;i++){a.TickFrame(i<30?1:-1);b.TickFrame(i<30?1:-1);Assert.AreEqual(CoreKey141(a),CoreKey141(b));}
+            var plain=new OutsideExplorationCore(map);var invalid=plain.CaptureState();invalid.SupportId=null;invalid.Height=1000;invalid.Velocity=1000;invalid.DashJumping=true;string before=CoreKey141(plain);var error=Assert.Throws<System.Reflection.TargetInvocationException>(()=>restore.Invoke(plain,new object[]{invalid}));Assert.IsInstanceOf<ArgumentException>(error.InnerException);Assert.AreEqual(before,CoreKey141(plain));
+        }
+        [Test] public void 外界カードの使用履歴返却順と乱数継続は保存復元時に抽選を消費しない()
+        {
+            using(var source=RuntimeSession141(true,0,out var defs)){
+                var cards=source.Cards;cards.Reload();cards.TrySelect(2);var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",flags).GetValue(cards);var random=(SeededBattleRandom)typeof(OutsideExplorationCards).GetField("random",flags).GetValue(cards);var returned=deck.DrawCards(2,random);typeof(Deck).GetMethod("ReturnPreviewDraws",flags).Invoke(deck,new object[]{returned});var data=cards.CaptureState(defs);long draws=random.Draws;var restored=OutsideExplorationCards.RestoreState(data,defs);Assert.AreEqual(data.Key(),restored.CaptureState(defs).Key());Assert.AreEqual(draws,random.Draws);Assert.AreEqual(1,restored.HandRevision);var other=(Deck)typeof(OutsideExplorationCards).GetField("deck",flags).GetValue(restored);var otherRandom=(SeededBattleRandom)typeof(OutsideExplorationCards).GetField("random",flags).GetValue(restored);for(int n=0;n<4;n++){var a=deck.DrawCards(1,random).Single();var b=other.DrawCards(1,otherRandom).Single();Assert.AreEqual(Array.IndexOf(deck.GetAllCards().ToArray(),a),Array.IndexOf(other.GetAllCards().ToArray(),b));Assert.AreEqual(random.Draws,otherRandom.Draws);}Assert.AreEqual(2,restored.SelectedIndex);
+            }
+        }
+        [Test] public void 外界退避は表示中と未知乱数を拒否し回復後の古いRuntimeを再生しない()
+        {
+            using(var source=RuntimeSession141(true,0,out var defs)){
+                using(var lease=source.AttachPresentation())Assert.Throws<InvalidOperationException>(()=>source.CaptureRuntime(defs));var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;Assert.IsTrue(source.RestoreSavedState(actor,runtime,null,defs));var recovered=OutsidePlayerSaveData.ForRecovery(source.Player);source.RecoverOutside(null);source.AcknowledgeRecovery(recovered);source.Player.SetHp(56);Assert.Throws<ArgumentException>(()=>source.RestoreSavedState(actor,runtime,null,defs));Assert.AreEqual(56,source.Player.CurrentHp);Assert.IsFalse(source.RestoreSavedState(recovered,null,null,defs));Assert.AreEqual(56,source.Player.CurrentHp);
+            }
+            using(var unknown=SelectionSession()){var cards=unknown.Cards;Assert.Throws<ArgumentException>(()=>unknown.CaptureRuntime());Assert.AreSame(cards,unknown.Cards);}
+        }
         [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)] public void 不正な外界保存個体は生きた個体を置き換える前に拒否する(int invalid)
         {
             using(var session=new OutsideExplorationSession()){var actor=new Olca.Core.Domain.PlayerCharacter(100);actor.SetHp(37);if(invalid==4){actor.SetElementResistances(Olca.Core.Domain.ElementResistances.Restore(150,0,0,0,null));actor.SetDepartureAbilities(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(new Olca.Core.Logic.Customization.CustomizationAbilitiesDto{DefinitionId="raw139",Sources=System.Array.Empty<Olca.Core.Logic.Customization.CustomizationAbilitySourceDto>()}));}session.TryInitializePlayer(()=>actor);var data=Olca.Core.Domain.OutsidePlayerSaveData.Capture(actor);if(invalid==0)data.Version=2;else if(invalid==1)data.Id="unknown";else if(invalid==2)data.RawBaseElements=new int[3];else if(invalid==3)data.Player.Hp=0;else data.RawBaseElements[0]=151;Assert.Throws<System.ArgumentException>(()=>session.RestoreSavedPlayer(data,null));Assert.AreSame(actor,session.Player);Assert.AreEqual(37,actor.CurrentHp);}
