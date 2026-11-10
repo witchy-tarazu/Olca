@@ -10,6 +10,15 @@ namespace Olca.Tests
 {
     public class SettingsWriteRefactorTests
     {
+        [TestCase("South","A / ×")] [TestCase("East","B / ○")] [TestCase("West","X / □")] [TestCase("North","Y / △")]
+        [TestCase("LeftShoulder","LB")] [TestCase(null,"未割当")] [TestCase("FuturePadButton","FuturePadButton")]
+        public void パッド案内は実ボタンを併記し保存IDと既存の未割当未知値を維持する(string id,string label)
+        {
+            var profile=UnityInputProvider.CreateDefaultGamepadProfile();var before=profile.Bindings.ToDictionary(p=>p.Key,p=>p.Value);
+            Assert.AreEqual(label,UnityInputProvider.GamepadBindingLabel(id));CollectionAssert.AreEquivalent(before,profile.Bindings);Assert.AreEqual("South",profile.Bindings[("gamepad","outside","JumpPrimary")]);
+            var font=UnityEngine.Resources.Load<UnityEngine.Font>("OlcaUI/MenuText");Assert.IsNotNull(font);foreach(char c in label.Where(c=>"×○□△".Contains(c)))Assert.IsTrue(font.HasCharacter(c),"MenuTextの欠字: "+c);
+        }
+
 
         [TestCase(false,1920f)][TestCase(true,1920f)][TestCase(false,1662.77f)][TestCase(true,1662.77f)]
         public void 追加アイテムの最終設定行へfocusしても固定保存操作と重ならず列内へ追従する(bool gamepad,float width)

@@ -1366,7 +1366,7 @@ namespace Olca.Tests
             var keyboard=GameFieldView.FormatGameplayInstructionsForDevice(profile,phase,Olca.Unity.InputGuideDevice.KeyboardMouse);
             var pad=GameFieldView.FormatGameplayInstructionsForDevice(profile,phase,Olca.Unity.InputGuideDevice.Gamepad);
             StringAssert.Contains("Escape",keyboard);StringAssert.DoesNotContain("West",keyboard);StringAssert.DoesNotContain("South",keyboard);StringAssert.DoesNotContain("Escape",pad);
-            StringAssert.Contains(battle?"West":"South",pad);
+            StringAssert.Contains(battle?"X / □":"A / ×",pad);StringAssert.DoesNotContain(battle?"West":"South",pad);
             var edit=profile.BeginEdit();Assert.IsTrue(edit.TryAssign(("keyboard",battle?"battle":"exploration",battle?"AttackPrimary":"JumpPrimary"),"J",out _));
             StringAssert.Contains("J",GameFieldView.FormatGameplayInstructionsForDevice(edit.Preview(),phase,Olca.Unity.InputGuideDevice.KeyboardMouse));
             var rendered=CustomDisplay.Katakana(pad);Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(rendered,"[一-鿿]"));
