@@ -739,6 +739,23 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [Test] public async Task 外界状態HUDは既存毒の割合を読み停止再表示解除で時計と保存を変更しない()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;Assert.IsNull(view.transform.Find("OutsideCombatStatusIcons"),"無状態なら生成しない");
+                model.Player.ApplyPoison("hud149",new Olca.Core.Domain.StatusEffect(Olca.Core.Domain.StatusEffectType.Poison,10000,1),60);model.Core.TickFrame(0);model.AdvancePlayerFrame();view.Render();
+                var strip=view.GetComponentInChildren<Olca.Presentation.Battle.CombatStatusIconStrip>();Assert.IsNotNull(strip);Assert.AreEqual(1,strip.VisibleCount);Assert.IsTrue(strip.GetComponentsInChildren<Image>().All(i=>!i.raycastTarget));
+                for(int i=0;i<149;i++){model.Core.TickFrame(0);model.AdvancePlayerFrame();}view.Render();var fill=strip.GetComponentsInChildren<Image>().Single(i=>i.name=="Remaining");Assert.AreEqual(.75f,fill.fillAmount,.0001f);
+                var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Player.CapturePoisons());long frame=model.Core.Frame;int hp=model.Player.CurrentHp;
+                binding.SetCovered(true);for(int i=0;i<4;i++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(hp,model.Player.CurrentHp);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Player.CapturePoisons()));
+                views.GetLayer("return-hub").CloseCurrent();Assert.AreEqual(0,strip.VisibleCount);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);Assert.AreEqual(1,strip.VisibleCount);Assert.AreEqual(.75f,fill.fillAmount,.0001f);Assert.AreEqual(frame,model.Core.Frame);
+                model.Player.ClearPoisons();model.Core.TickFrame(0);model.AdvancePlayerFrame();frame++;view.Render();Assert.AreEqual(0,strip.VisibleCount);Assert.AreEqual(frame,model.Core.Frame);
+                model.Player.ApplyPoison("hud149b",new Olca.Core.Domain.StatusEffect(Olca.Core.Domain.StatusEffectType.Poison,10000,1),60);model.Core.TickFrame(0);model.AdvancePlayerFrame();view.Render();Assert.AreSame(strip,view.GetComponentInChildren<Olca.Presentation.Battle.CombatStatusIconStrip>());Assert.AreEqual(1,strip.VisibleCount);Assert.AreEqual(599f/600,fill.fillAmount,.0001f);
+                UnityEngine.Object.DestroyImmediate(strip.gameObject);Assert.DoesNotThrow(()=>binding.ReturnToHub());Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(1,binding.View.GetComponentInChildren<Olca.Presentation.Battle.CombatStatusIconStrip>().VisibleCount);
+            }
+        }
         [Test] public async Task 所有者の回復保存待ちだけ画面を再生成でき戻る条件と旧世代を緩めない()
         {
             bool allowed=true,pending=false;int returned=0;var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(40);

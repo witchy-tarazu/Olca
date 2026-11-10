@@ -145,10 +145,24 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearSupply(){foreach(var slot in supplySlots)if(slot!=null){slot.Claim=null;slot.CanUse=null;slot.Message=null;if(slot.Button!=null){slot.Button.onClick=new Button.ButtonClickedEvent();slot.Button.gameObject.SetActive(false);}}}
         private Text outsideHp;
+        private Olca.Presentation.Battle.CombatStatusIconStrip outsideStatusIcons;
+        // 戦闘と同じ読取/画像/残時間表示を使い、外界Viewは時計や状態を変更しない。
+        private void RefreshOutsideStatusIcons()
+        {
+            var entries=Olca.Presentation.Battle.CombatStatusIcons.ForPlayer(presentation.Player);
+            if(outsideStatusIcons==null){
+                if(entries.Count==0)return;
+                var row=new GameObject("OutsideCombatStatusIcons",typeof(RectTransform));row.transform.SetParent(transform,false);
+                var rect=(RectTransform)row.transform;rect.anchorMin=rect.anchorMax=Vector2.one;rect.pivot=new Vector2(0,1);rect.anchoredPosition=new Vector2(-470,-350);
+                outsideStatusIcons=row.AddComponent<Olca.Presentation.Battle.CombatStatusIconStrip>();outsideStatusIcons.Configure(5);
+            }
+            outsideStatusIcons.Show(entries);
+        }
         public void Render()
         {
             if(!IsOpen||player==null)return;
             RefreshItemHud();
+            RefreshOutsideStatusIcons();
             if(outsideHp!=null){var actor=presentation.Player;outsideHp.text=actor==null?"HP —":$"HP  {actor.CurrentHp} / {actor.MaxHp}";}
             var core=presentation.Core;double unit=Olca.Core.Logic.Integration.OutsideMovementDefinition.UnitsPerWorldUnit;
             float worldX=(float)(core.Position/unit),width=(float)(core.Definition.Width/unit);
@@ -204,7 +218,7 @@ namespace Olca.Presentation.Exploration
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
         private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){ClearCombatFeedback();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearCombatFeedback();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
         private void OnDisable(){ClearCombatFeedback();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;}
