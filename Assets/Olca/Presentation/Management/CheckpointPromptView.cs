@@ -89,7 +89,7 @@ namespace Olca.Presentation.Exploration
                 handCosts[slot]=factory.Label("OutsideHandCost"+slot,transform,Vector2.one,new Vector2(x+20,-209),new Vector2(138,24));handCosts[slot].fontSize=18;handCosts[slot].alignment=TextAnchor.MiddleLeft;handCosts[slot].color=new Color(.7f,.89f,1);handCosts[slot].raycastTarget=false;
             }
             selectionGuideText=factory.Label("OutsideSelectionGuide",transform,Vector2.one,new Vector2(-370,-246),new Vector2(650,26));selectionGuideText.fontSize=18;selectionGuideText.color=Color.white;selectionGuideText.raycastTarget=false;selectionGuideText.resizeTextForBestFit=true;selectionGuideText.resizeTextMinSize=16;selectionGuideText.resizeTextMaxSize=18;
-            for(int i=0;i<3;i++){var button=factory.Button(i==0?"OutsideSupplyChest":i==1?"OutsidePoisonSupplyChest":"OutsideTrialPoisonPoint","ホキュウバコ（カリ）",transform,new Vector2(0,.21f),Vector2.zero);button.GetComponent<RectTransform>().sizeDelta=new Vector2(420,140);Olca.Presentation.Dungeon.UiLook.Button(button);button.gameObject.SetActive(false);var label=button.GetComponentInChildren<Text>();label.rectTransform.offsetMin=new Vector2(18,8);label.rectTransform.offsetMax=new Vector2(-18,-8);label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;supplySlots[i]=new SupplySlot{Button=button,X=i==0?Olca.Core.Logic.Integration.OutsideTrialRoute.SupplyX:i==1?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonSupplyX:Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonTrialX};}
+            for(int i=0;i<3;i++){var button=factory.Button(i==0?"OutsideSupplyChest":i==1?"OutsidePoisonSupplyChest":"OutsideTrialPoisonPoint","ホキュウバコ（カリ）",transform,new Vector2(0,.21f),Vector2.zero);button.GetComponent<RectTransform>().sizeDelta=new Vector2(420,140);Olca.Presentation.Dungeon.UiLook.Button(button);button.gameObject.SetActive(false);var label=button.GetComponentInChildren<Text>();label.rectTransform.offsetMin=new Vector2(18,8);label.rectTransform.offsetMax=new Vector2(-18,-8);label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;supplySlots[i]=new SupplySlot{Button=button,Index=i,X=i==0?Olca.Core.Logic.Integration.OutsideTrialRoute.SupplyX:i==1?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonSupplyX:Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonTrialX};}
 
             leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
             rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
@@ -136,8 +136,18 @@ namespace Olca.Presentation.Exploration
             recoveryPoint.onClick=new Button.ButtonClickedEvent();recoveryPoint.onClick.AddListener(()=>{if(this!=null&&captured!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&lease!=null&&lease.IsCurrent&&!covered&&!captured.DialogBlocksInput&&canRecover?.Invoke()==true)recover?.Invoke();});
         }
         private void ClearRecovery(){recover=null;canRecover=null;recoveryMessage=null;if(recoveryPoint!=null)recoveryPoint.gameObject.SetActive(false);}
-        private sealed class SupplySlot{public Button Button;public long X;public Action Claim;public Func<bool> CanUse;public Func<string> Message;}
+        private sealed class SupplySlot{public Button Button;public int Index;public long X;public bool? Expanded;public string RenderedMessage;public Action Claim;public Func<bool> CanUse;public Func<string> Message;}
         private readonly SupplySlot[] supplySlots=new SupplySlot[3];
+        // 遠方は名称/概要の2行だけ。操作範囲や入力可否は既存Core/呼出側に従う。
+        private static string CompactSupplyMessage(string value,Text label)
+        {
+            var settings=label.GetGenerationSettings(Vector2.zero);settings.fontSize=18;settings.resizeTextForBestFit=false;settings.horizontalOverflow=HorizontalWrapMode.Overflow;
+            float width=Mathf.Max(0,label.rectTransform.rect.width-2);
+            float Measure(string text)=>label.cachedTextGeneratorForLayout.GetPreferredWidth(text,settings)/label.pixelsPerUnit;
+            string Fit(string line){line=line.TrimEnd('\r');if(Measure(line)<=width)return line;int n=line.Length;while(n>0){n--;if(n>0&&char.IsHighSurrogate(line[n-1])&&char.IsLowSurrogate(line[n]))n--;string candidate=line.Substring(0,n)+"...";if(Measure(candidate)<=width)return candidate;}return "...";}
+            int first=value.IndexOf('\n');if(first<0)return Fit(value);int second=value.IndexOf('\n',first+1);return Fit(value.Substring(0,first))+"\n"+Fit(second<0?value.Substring(first+1):value.Substring(first+1,second-first-1));
+        }
+
         public void ConfigureSupply(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(0,action,canUse,message);
         public void ConfigurePoisonSupply(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(1,action,canUse,message);
         public void ConfigureTrialPoison(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(2,action,canUse,message);
@@ -146,7 +156,7 @@ namespace Olca.Presentation.Exploration
             var slot=supplySlots[index];slot.Claim=action;slot.CanUse=canUse;slot.Message=message;var captured=context;var lease=presentation;
             slot.Button.onClick=new Button.ButtonClickedEvent();slot.Button.onClick.AddListener(()=>{if(this!=null&&slot.Button!=null&&slot.Button.isActiveAndEnabled&&slot.Button.IsInteractable()&&captured!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&lease!=null&&lease.IsCurrent&&CanPlay&&slot.CanUse?.Invoke()==true)slot.Claim?.Invoke();});
         }
-        private void ClearSupply(){foreach(var slot in supplySlots)if(slot!=null){slot.Claim=null;slot.CanUse=null;slot.Message=null;if(slot.Button!=null){slot.Button.onClick=new Button.ButtonClickedEvent();slot.Button.gameObject.SetActive(false);}}}
+        private void ClearSupply(){foreach(var slot in supplySlots)if(slot!=null){slot.Claim=null;slot.CanUse=null;slot.Message=null;slot.Expanded=null;slot.RenderedMessage=null;if(slot.Button!=null){slot.Button.onClick=new Button.ButtonClickedEvent();slot.Button.gameObject.SetActive(false);}}}
         private Text outsideHp,outsidePoise;private Image outsidePoiseFill;
         private Olca.Presentation.Battle.CombatStatusIconStrip outsideStatusIcons;
         // 戦闘と同じ読取/画像/残時間表示を使い、外界Viewは時計や状態を変更しない。
@@ -193,7 +203,12 @@ namespace Olca.Presentation.Exploration
             trialDoor.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true);trialDoor.rectTransform.anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),-verticalOffset*pixelsPerWorldUnit);trialRouteHint.gameObject.SetActive(trialRoute?.Invoke()==true);trialRouteHint.text=core.TraversalProfile?.WallActionsUnlocked==true?"シヨウチケイ / ミギ: ダンジョン イリグチ・カベアクション (カリカイホウ)":"シヨウチケイ / ミギ: ダンジョン イリグチ / カベハ ミカイホウ";
             if(entrance!=null){entrance.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true&&core.IsGrounded);entrance.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),340-verticalOffset*pixelsPerWorldUnit);entrance.interactable=CanPlay&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core)&&(canEnter?.Invoke()??false);var label=entrance.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("ダンジョン イリグチ"+(entrance.interactable?"\n"+(interactionHint?.Invoke()??"")+" デ シラベル":"\nチカヅイテ シラベル"));label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
 
-            foreach(var slot in supplySlots)if(slot?.Button!=null){slot.Button.gameObject.SetActive(slot.Claim!=null&&trialRoute?.Invoke()==true);slot.Button.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(slot.X/unit)),340-verticalOffset*pixelsPerWorldUnit);slot.Button.interactable=slot.CanUse?.Invoke()==true;var label=slot.Button.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(slot.Message?.Invoke()??"ホキュウバコ（カリ）");label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
+            foreach(var slot in supplySlots)if(slot?.Button!=null){
+                slot.Button.gameObject.SetActive(slot.Claim!=null&&trialRoute?.Invoke()==true);var rect=slot.Button.GetComponent<RectTransform>();rect.anchoredPosition=new Vector2(Origin((float)(slot.X/unit)),340-verticalOffset*pixelsPerWorldUnit);slot.Button.interactable=slot.CanUse?.Invoke()==true;
+                bool expanded=slot.Index==0?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(core):slot.Index==1?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(core):Olca.Core.Logic.Integration.OutsideTrialRoute.CanTryPoison(core);
+                var message=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(slot.Message?.Invoke()??"ホキュウバコ（カリ）");
+                if(slot.Expanded!=expanded||slot.RenderedMessage!=message){var label=slot.Button.GetComponentInChildren<Text>();rect.sizeDelta=expanded?new Vector2(420,140):new Vector2(320,82);label.resizeTextForBestFit=true;label.resizeTextMinSize=expanded?18:16;label.resizeTextMaxSize=expanded?24:18;label.text=expanded?message:CompactSupplyMessage(message,label);slot.Expanded=expanded;slot.RenderedMessage=message;}
+            }
 
             if(recoveryPoint!=null){recoveryPoint.gameObject.SetActive(recover!=null&&trialRoute?.Invoke()==true);recoveryPoint.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryX/unit)),340-verticalOffset*pixelsPerWorldUnit);recoveryPoint.interactable=canRecover?.Invoke()==true;var label=recoveryPoint.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(recoveryMessage?.Invoke()??"ケンショウ カイフク（カリ）");label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
             Sprite sprite=TraversalSprite(core);
