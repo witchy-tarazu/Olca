@@ -747,6 +747,15 @@ namespace Olca.Tests.Application
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var old=binding.View.GetComponentsInChildren<Button>().Single(v=>v.name=="CloseOutsideExploration").onClick;allowed=false;pending=true;var lost=binding.View;typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(lost,null);UnityEngine.Object.DestroyImmediate(lost.gameObject);Assert.IsTrue(binding.HasLostView);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(40,model.Player.CurrentHp);Assert.IsFalse(binding.ReturnToHub());old.Invoke();Assert.AreEqual(0,returned);Assert.IsTrue(binding.IsOpen);pending=false;allowed=true;Assert.IsTrue(binding.ReturnToHub());Assert.AreEqual(1,returned);
             }
         }
+        [Test] public async Task 補給表示は覆いと親終了と再表示後の旧操作を拒否する()
+        {
+            int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);binding.View.ConfigureSupply(()=>calls++,()=>true,()=>"カリのハコ");binding.View.Render();var button=binding.View.GetComponentsInChildren<Button>().Single(b=>b.name=="OutsideSupplyChest");Assert.IsTrue(button.IsInteractable());var old=button.onClick;old.Invoke();Assert.AreEqual(1,calls);
+                binding.View.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(1,calls);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);binding.View.ConfigureSupply(()=>calls++,()=>true,()=>"カリのハコ");binding.View.Render();old.Invoke();Assert.AreEqual(1,calls);binding.View.GetComponentsInChildren<Button>().Single(b=>b.name=="OutsideSupplyChest").onClick.Invoke();Assert.AreEqual(2,calls);
+            }
+        }
         [Test] public async Task 外界入口は同レイヤーを切替え旧操作を拒否しView再生成でRootSessionを失わない()
         {
             var layer=views.GetLayer("return-hub");var hub=Panel("outside-fixture-hub");var entry=Button(hub,"outside-fixture-entry");ManagedScreenContext hubContext=null;int hubCalls=0,returned=0;

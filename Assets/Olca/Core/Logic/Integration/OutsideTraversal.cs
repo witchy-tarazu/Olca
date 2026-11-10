@@ -55,6 +55,8 @@ namespace Olca.Core.Logic.Integration
         public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         public static long ResolveRecovery(OutsideExplorationCore core,string id)
         {if(core==null||core.Definition.Id!="validation-landing-32"||id!=null&&id!=RecoveryPointId)throw new ArgumentException("復帰先の外界マップ/地点が未登録です");return id==null?core.Definition.Start:RecoveryX;}
+        public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanClaimSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-SupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceX=20*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceRadius=OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanInspect(OutsideExplorationCore core)=>core!=null&&core.IsGrounded&&Math.Abs(core.Position-EntranceX)<=EntranceRadius;

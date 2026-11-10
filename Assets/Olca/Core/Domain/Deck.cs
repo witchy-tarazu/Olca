@@ -1368,12 +1368,14 @@ namespace Olca.Core.Domain
     {
         public long Currency;
         public OutsideItemCount[] Items=Array.Empty<OutsideItemCount>();
+        public string[] ClaimedSources=Array.Empty<string>(); // 旧null/未保存は未開封。未知地点も保持する。
         public string[] Shortcuts=new string[4]; // 上/右/下/左。旧nullは未登録4枠。
-        public OutsideInventoryData Copy()=>new OutsideInventoryData{Currency=Currency,Items=Items?.Select(v=>v?.Copy()).ToArray(),Shortcuts=Shortcuts?.ToArray()};
+        public OutsideInventoryData Copy()=>new OutsideInventoryData{Currency=Currency,Items=Items?.Select(v=>v?.Copy()).ToArray(),Shortcuts=Shortcuts?.ToArray(),ClaimedSources=ClaimedSources?.ToArray()};
         public static void Validate(OutsideInventoryData value)
         {
             if(value==null)return;
             if(value.Currency<0||value.Items==null||value.Items.Any(v=>v==null||string.IsNullOrWhiteSpace(v.Id)||v.Count<0)||value.Items.Select(v=>v.Id).Distinct().Count()!=value.Items.Length||value.Shortcuts==null||value.Shortcuts.Length!=4||value.Shortcuts.Any(v=>v!=null&&string.IsNullOrWhiteSpace(v)))throw new ArgumentException("探索所持欄の形式が不正です");
+            if(value.ClaimedSources!=null&&(value.ClaimedSources.Any(string.IsNullOrWhiteSpace)||value.ClaimedSources.Distinct().Count()!=value.ClaimedSources.Length))throw new ArgumentException("探索の受取済地点が不正です");
             var registered=value.Shortcuts.Where(v=>v!=null).ToArray();if(registered.Distinct().Count()!=registered.Length||registered.Any(id=>!value.Items.Any(v=>v.Id==id)))throw new ArgumentException("探索ショートカットの所有記録が一致しません");
         }
     }
@@ -1398,6 +1400,13 @@ namespace Olca.Core.Domain
         public string Id{get;} public int HealHp{get;} public int CooldownFrames{get;}
         public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames){if(string.IsNullOrWhiteSpace(id)||healHp<=0||cooldownFrames<=0)throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;}
         public static readonly OutsideRecoveryItemDefinition Provisional=new OutsideRecoveryItemDefinition("outside-recovery-sample-v1",25,180);
+    }
+    /// <summary>試用箱の配置/数量/上限は暫定データ。購入や自動配布とは区別する。</summary>
+    public sealed class OutsideSupplyDefinition
+    {
+        public string Id{get;} public string ItemId{get;} public int Count{get;} public int Maximum{get;}
+        public OutsideSupplyDefinition(string id,string itemId,int count,int maximum){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(itemId)||count<=0||maximum<=0)throw new ArgumentException("補給定義が不正です");Id=id;ItemId=itemId;Count=count;Maximum=maximum;}
+        public static readonly OutsideSupplyDefinition Provisional=new OutsideSupplyDefinition("validation-recovery-chest-v1",OutsideRecoveryItemDefinition.Provisional.Id,3,99);
     }
     public sealed class OutsideItemDisplayDefinition
     {
@@ -1432,6 +1441,22 @@ namespace Olca.Core.Domain
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out var error))return Fail(error);current=next;Error=null;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
         }
+        // 受取と開封を同じ書込で確定する。失敗を一般Retryへ残さず、次の明示操作で再評価する。
+        public bool TryClaimOutsideSupply(OutsideSupplyDefinition definition,out int received,out string error)
+        {
+            received=0;error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に調べてください";return false;}
+            if(definition==null){error="補給定義がありません";return false;}
+            try{
+                var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();var claimed=inventory.ClaimedSources??Array.Empty<string>();
+                if(claimed.Contains(definition.Id)){error="この箱は受取済みです";return false;}
+                var items=inventory.Items.ToList();var item=items.SingleOrDefault(v=>v.Id==definition.ItemId);int count=item?.Count??0;
+                int amount=(int)Math.Min(definition.Count,Math.Max(0L,(long)definition.Maximum-count));if(amount==0){error="所持上限のため箱を開けられません";return false;}
+                if(item==null){item=new OutsideItemCount{Id=definition.ItemId};items.Add(item);}item.Count=checked(count+amount);inventory.Items=items.ToArray();inventory.ClaimedSources=claimed.Concat(new[]{definition.Id}).ToArray();next.OutsideInventory=inventory;
+                next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;received=amount;return true;}finally{writing=false;}
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        public bool HasClaimedOutsideSupply(string id)=>(current?.OutsideInventory?.ClaimedSources??Array.Empty<string>()).Contains(id);
         public long InventoryRevision=>current?.Revision??-1;
         public OutsideInventoryData OutsideInventorySnapshot=>(current?.OutsideInventory??new OutsideInventoryData()).Copy();
         public bool TryAssignOutsideItem(int slot,string id,IReadOnlyList<OutsideItemDisplayDefinition> definitions)

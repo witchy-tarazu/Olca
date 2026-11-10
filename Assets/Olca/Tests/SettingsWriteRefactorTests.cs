@@ -343,5 +343,42 @@ namespace Olca.Tests
             }
             finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
         }
+        [TestCase(0,3)][TestCase(98,1)][TestCase(99,0)][TestCase(120,0)]
+        public void 仮補給箱は上限で未開封と部分受取を区別し再読込で二重取得しない(int owned,int received)
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-supply-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var store=new ClearReturnFileStore(directory);var profile=InventoryProfile();profile.OutsideInventory.Items[0].Count=owned;profile.OutsideInventory.ClaimedSources=new[]{"future-source"};File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile));var before=File.ReadAllBytes(store.ActivePath);var session=new ClearReturnSession(store);
+                Assert.AreEqual(received>0,session.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out var amount,out var error),error);Assert.AreEqual(received,amount);Assert.IsFalse(session.HasPendingSave);Assert.AreEqual(99,session.OutsideInventorySnapshot.Currency);Assert.AreEqual(2,session.OutsideInventorySnapshot.Items.Single(v=>v.Id=="future-unknown").Count);CollectionAssert.AreEqual(profile.OutsideInventory.Shortcuts,session.OutsideInventorySnapshot.Shortcuts);
+                if(received==0){CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));CollectionAssert.AreEqual(new[]{"future-source"},session.OutsideInventorySnapshot.ClaimedSources);}else{Assert.AreEqual(owned+received,session.OutsideInventorySnapshot.Items[0].Count);var bytes=File.ReadAllBytes(store.ActivePath);var cold=new ClearReturnSession(new ClearReturnFileStore(directory));Assert.IsFalse(cold.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out _,out _));CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));CollectionAssert.AreEqual(new[]{"future-source",OutsideSupplyDefinition.Provisional.Id},cold.OutsideInventorySnapshot.ClaimedSources);}
+            }finally{Directory.Delete(directory,true);}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 補給保存は失敗なら数量開封とも未確定で置換後例外なら一度だけ確定(bool after)
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-supply-fault-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var io=new ReplaceFault();var store=new ClearReturnFileStore(directory,io);File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(InventoryProfile()));var bytes=File.ReadAllBytes(store.ActivePath);var session=new ClearReturnSession(store);io.Fail=true;io.After=after;Assert.AreEqual(after,session.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out var amount,out _));Assert.AreEqual(after?3:0,amount);Assert.IsFalse(session.HasPendingSave);if(!after){CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));Assert.IsEmpty(session.OutsideInventorySnapshot.ClaimedSources);Assert.IsNull(session.Error);io.Fail=false;Assert.IsTrue(session.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out _,out _));}io.Fail=false;var done=File.ReadAllBytes(store.ActivePath);Assert.AreEqual(6,session.OutsideInventorySnapshot.Items[0].Count);Assert.IsFalse(session.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out _,out _));CollectionAssert.AreEqual(done,File.ReadAllBytes(store.ActivePath));}
+            finally{Directory.Delete(directory,true);}
+        }
+        [TestCase(0)][TestCase(1)] public void 補給開封記録は空白と重複を拒否する(int invalid){var p=InventoryProfile();p.OutsideInventory.ClaimedSources=invalid==0?new[]{" "}:new[]{"same","same"};Assert.Throws<ArgumentException>(()=>ClearReturnProfile.Validate(p));}
+
+        [System.Runtime.Serialization.DataContract] private sealed class LegacySupplyEnvelope
+        {
+            [System.Runtime.Serialization.DataMember] public int Version;
+            [System.Runtime.Serialization.DataMember] public string Payload;
+            [System.Runtime.Serialization.DataMember] public string Sha256;
+        }
+        [TestCase(false)][TestCase(true)] public void 開封欄のない旧所持保存と旧null欄はchecksumを原文検証し読取で書き換えない(bool explicitNull)
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-supply-legacy-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var profile=InventoryProfile();profile.OutsideInventory.ClaimedSources=explicitNull?null:Array.Empty<string>();var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);var payload=System.Text.Encoding.UTF8.GetString(bytes);if(!explicitNull){StringAssert.Contains("\"ClaimedSources\":[],",payload);payload=payload.Replace("\"ClaimedSources\":[],","");}var raw=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(new LegacySupplyEnvelope{Version=1,Payload=payload,Sha256=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(System.Text.Encoding.UTF8.GetBytes(payload))});var store=new ClearReturnFileStore(directory);File.WriteAllBytes(store.ActivePath,raw);var session=new ClearReturnSession(store);Assert.IsTrue(session.Ready,session.Error);Assert.IsFalse(session.HasClaimedOutsideSupply(OutsideSupplyDefinition.Provisional.Id));CollectionAssert.AreEqual(raw,File.ReadAllBytes(store.ActivePath));Assert.IsTrue(session.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out var amount,out var error),error);Assert.AreEqual(3,amount);Assert.AreEqual(6,session.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(99,session.OutsideInventorySnapshot.Currency);}
+            finally{Directory.Delete(directory,true);}
+        }
+        [Test] public void 補給は旧null所持欄だけを初期化しトークンやHPと登録枠を変えない()
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-supply-null-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);
+            try{var p=InventoryProfile();p.OutsideInventory=null;var store=new ClearReturnFileStore(directory);File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(p));var session=new ClearReturnSession(store);Assert.IsTrue(session.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out var amount,out var error),error);Assert.AreEqual(3,amount);Assert.AreEqual(3,session.Snapshot.Tokens);Assert.AreEqual(100,session.Snapshot.ReturnedHp);Assert.AreEqual(0,session.OutsideInventorySnapshot.Currency);CollectionAssert.AreEqual(new string[4],session.OutsideInventorySnapshot.Shortcuts);Assert.AreEqual(3,session.OutsideInventorySnapshot.Items.Single().Count);}
+            finally{Directory.Delete(directory,true);}
+        }
+
     }
 }

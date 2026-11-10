@@ -236,7 +236,7 @@ namespace Olca.Presentation.Management
             Text("OutsideItemsStatus",useMessage??session.Error??(unknown>0?"ミトウロク ID "+unknown+"ケンは ホゾンのままホジしています。":"ショジスウ0でも トウロクをホジします。"),0,-260,1400,44,25);
             string selectedId=data.Shortcuts[selectedSlot];int remaining=cooldown?.Invoke(selectedId)??0;
             Button("UseOutsideItem","トウロク アイテムを シヨウ"+(remaining>0?" / "+((remaining+59L)/60)+"ビョウ":""),0,-330,1240,()=>{useMessage=useItem?.Invoke(selectedId);Render();}).interactable=!pending&&useItem!=null&&selectedId!=null&&remaining==0;
-            Text("OutsideItemsScope","カリ: HP +25 / CD 3ビョウ。ニュウシュ ミセツゾク・ジドウハイフなし。",0,-200,1440,50,23);
+            Text("OutsideItemsScope","カリ: HP +"+Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.HealHp+" / CD "+((Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.CooldownFrames+59L)/60)+"ビョウ。カリのホキュウバコでニュウシュ。ジドウハイフなし。",0,-200,1440,50,23);
             Button("ClearOutsideItemSlot","ワクをカラにする",-480,-410,420,()=>{session.TryAssignOutsideItem(selectedSlot,null,definitions);Render();}).interactable=!pending;
             Button("RetryOutsideItemsSave","ホゾンをサイシコウ",0,-410,420,()=>{session.Retry();Render();}).interactable=pending;
             Button("CloseOutsideItems","モドる",480,-410,420,()=>close?.Invoke());
