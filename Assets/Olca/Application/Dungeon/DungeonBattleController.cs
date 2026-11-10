@@ -452,6 +452,7 @@ namespace Olca.Application.Dungeon
         private Olca.Application.Management.OutsideExplorationPresentationBinding outsideExploration;
         private bool outsideExplorationOpening;
         private bool outsideLandingRoute,outsideDungeonSelection,outsideEntranceRequest;
+        private string outsideDepartureError;
         private bool outsideRecoveryPending;private int outsideRecoveryAppliedFrame=-1,outsideRecoveryAttemptFrame=-1;private string outsideRecoveryError;
         private bool CanRestoreOutsideRecovery=>CustomizationUiLive&&outsideLandingRoute&&outsideRecoveryPending&&clearReturnSession?.HasPendingSave==true&&!progressStartupBlocked&&clearReturnVisible;
         private bool OutsideRecoveryReady=>outsideExploration?.IsOpen==true&&!IsUserPaused&&!outsideWheelPaused&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideRecoveryAppliedFrame&&Time.frameCount!=outsideRecoveryAttemptFrame&&(outsideRecoveryPending||OutsideHubEligible&&outsideExploration.View.CanPlay&&gameSystem.OutsideExploration.Player?.IsDead==false&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core));
@@ -538,7 +539,7 @@ namespace Olca.Application.Dungeon
         private async UniTaskVoid OpenOutsideExplorationAsync()
         {
             if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
-            outsideExplorationOpening=true;ResetOutsideRouteInput();
+            outsideDepartureError=null;outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
@@ -572,7 +573,7 @@ namespace Olca.Application.Dungeon
         private void OpenDungeonSelection()
         {
             if (exchangeOpen || !CanSelectDungeon || styleSelectionOpen || !dungeonSelectionEnabled) return;
-            selectionBeforeOpen = selectedDungeon; dungeonSelectionOpen = true; ShowDungeonSelection();
+            outsideDepartureError=null;selectionBeforeOpen = selectedDungeon; dungeonSelectionOpen = true; ShowDungeonSelection();
         }
         private void ShowDungeonSelection()
         {
@@ -587,7 +588,7 @@ namespace Olca.Application.Dungeon
                 () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
                     if(outsideDungeonSelection){outsideDungeonSelection=false;OpenOutsideExplorationAsync().Forget();return;}
                     if (initialHub) { dungeonSelectionOpen = true; ShowDungeonSelection(); } else ShowClearReturn(); },
-                !CanSelectDungeon, clearReturnError ?? clearReturnSession.Error, RetryClearReturn,
+                !CanSelectDungeon, outsideDepartureError??clearReturnError ?? clearReturnSession.Error, RetryClearReturn,
                 OpenStyleSelection, SelectedStyleDisplayName, OpenTokenExchange,
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
@@ -1703,7 +1704,7 @@ namespace Olca.Application.Dungeon
         {
             if (progressDialogOpen || exchangeOpen || styleSelectionOpen || dungeonSelectionOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
                 (!initialHub && clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned)) return;
-            departureWriting = true;
+            bool outsideEntryRejected=false;departureWriting = true;
             try {
                 if (clearReturnSession.HasPendingSave) { ShowClearReturn(); return; }
                 if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent)) {
@@ -1717,21 +1718,25 @@ namespace Olca.Application.Dungeon
                     if(deck==null&&clearReturnSession.Snapshot.EquippedDeckId!=null&&!TryResolveSavedDeck(SavedDecks.SingleOrDefault(d=>d.Id==clearReturnSession.Snapshot.EquippedDeckId),out deck,out clearReturnError)){ShowClearReturn();return;}
                     deck=deck??CreateInitialDeck();
                     // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
+                    OutsideDepartureVitals outsideEntry=null;
+                    if(outsideLandingRoute&&gameSystem?.OutsideExploration.Player!=null){try{outsideEntry=OutsideDepartureVitals.Capture(gameSystem.OutsideExploration.Player,clearReturnSession.Snapshot.ClearedDungeons.Contains(choice.Id));}catch(System.ArgumentException e){outsideDepartureError=e.Message;outsideDungeonSelection=true;outsideEntryRejected=true;return;}}
+                    outsideDepartureError=null;
                     var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     var factory = CreateCoreFactory();
                     var player = factory.CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames);
                     player.SetDepartureStyle(style);
                     ApplyDepartureCustomization(player);
+                    outsideEntry?.ApplyToStart(player);
                     factory.CreatePreview(map,player,deck,frozen);
                     var start = frozen.Store.Read();
-                    if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key)) {
+                    if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key,outsideEntry,choice.Id)) {
                         ShowClearReturn(); return;
                     }
                 }
                 if (!ActivateNextDeparture(out clearReturnError)) ShowClearReturn();
             } catch (System.ArgumentException e) { clearReturnError = e.Message; ShowClearReturn(); }
               catch (System.OverflowException e) { clearReturnError = e.Message; ShowClearReturn(); }
-            finally { departureWriting = false; }
+            finally { departureWriting = false;if(outsideEntryRejected)ShowDungeonSelection(); }
         }
         private bool ValidateDeparture(CheckpointDto start, DungeonChoice choice, out string error)
         {

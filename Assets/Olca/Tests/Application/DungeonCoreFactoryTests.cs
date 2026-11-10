@@ -13,6 +13,11 @@ namespace Olca.Tests.Application
 {
     public sealed class DungeonCoreFactoryTests
     {
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)] public void 外界持込みの未対応予約と未確定HPframeは無変更で拒否する(int kind)
+        {
+            var actor=new PlayerCharacter(100);actor.SetHp(37);if(kind==0)actor.ApplyParalysis(30);if(kind==1)actor.ApplyConfusion(30);if(kind==2)actor.ApplyBlindness(30);var flags=BindingFlags.Instance|BindingFlags.NonPublic;if(kind==3)typeof(PlayerCharacter).GetMethod("BeginHpFrame",flags).Invoke(actor,null);if(kind>=4)typeof(PlayerCharacter).GetMethod("Begin"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});
+            try{Assert.Throws<ArgumentException>(()=>OutsideDepartureVitals.Capture(actor,false));Assert.AreEqual(37,actor.CurrentHp);Assert.AreEqual(100,actor.MaxHp);}finally{if(kind==3){typeof(PlayerCharacter).GetMethod("CommitHpFrame",flags).Invoke(actor,null);typeof(PlayerCharacter).GetMethod("PublishHpFrame",flags).Invoke(actor,null);}if(kind>=4)typeof(PlayerCharacter).GetMethod("End"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});}
+        }
         [TestCase(false)] [TestCase(true)] public void 通常生成と凍結preview_既存の加工System構成を区別する(bool preview)
         {
             int definitions=0;var factory=new DungeonCoreFactory(new UnityRandomProvider(7),new UnityLogger(),()=>{definitions++;return new SimpleCardFactory();});

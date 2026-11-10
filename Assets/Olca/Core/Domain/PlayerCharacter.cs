@@ -353,6 +353,7 @@ namespace Olca.Core.Domain
         internal event Action OnDamageProcessingCompleted;
 
         /// <summary>現在HP</summary>
+        internal bool CanCaptureOutsideDeparture=>!frameHp.Active&&!paralysisFrameOpen&&!confusionFrameOpen&&!blindnessFrameOpen&&!HasParalysisState&&!HasConfusionState&&!HasBlindnessState;
         public int CurrentHp => currentHp;
 
         /// <summary>最大HP</summary>
