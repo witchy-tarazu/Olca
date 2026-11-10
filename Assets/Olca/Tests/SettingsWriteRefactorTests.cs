@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 using NUnit.Framework;
 using Olca.Unity;
 using Olca.Core.Domain;
@@ -8,6 +10,67 @@ namespace Olca.Tests
 {
     public class SettingsWriteRefactorTests
     {
+
+        [TestCase(false,1920f)][TestCase(true,1920f)][TestCase(false,1662.77f)][TestCase(true,1662.77f)]
+        public void 追加アイテムの最終設定行へfocusしても固定保存操作と重ならず列内へ追従する(bool gamepad,float width)
+        {
+            var host=new UnityEngine.GameObject("OwnedItem143Settings",typeof(UnityEngine.RectTransform));((UnityEngine.RectTransform)host.transform).sizeDelta=new UnityEngine.Vector2(width,1080);
+            UnityEngine.Rect Area(UnityEngine.RectTransform r){var points=new UnityEngine.Vector3[4];r.GetWorldCorners(points);return UnityEngine.Rect.MinMaxRect(points.Min(x=>x.x),points.Min(x=>x.y),points.Max(x=>x.x),points.Max(x=>x.y));}
+            try{var go=new UnityEngine.GameObject("Settings",typeof(UnityEngine.RectTransform));go.transform.SetParent(host.transform,false);var view=go.AddComponent<Olca.Presentation.Field.GameplayKeyboardSettingsView>();view.Initialize(UnityEngine.Resources.Load<UnityEngine.Font>("OlcaUI/MenuText"),_=>null,gamepad);view.Open(gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile());UnityEngine.Canvas.ForceUpdateCanvases();var scroll=go.GetComponentInChildren<UnityEngine.UI.ScrollRect>();Assert.NotNull(scroll);var save=go.GetComponentsInChildren<UnityEngine.UI.Button>().Single(x=>x.name=="SaveKeyboardSettings");Assert.IsFalse(save.transform.IsChildOf(scroll.content));Assert.IsFalse(Area((UnityEngine.RectTransform)save.transform).Overlaps(Area(scroll.viewport)));
+                using(var menu=new MenuPadScope(()=>true)){menu.Bind(go.transform,"Bind_outside_ItemLeft",()=>{},scroll,directionScroll:false);UnityEngine.Canvas.ForceUpdateCanvases();Assert.AreEqual("Bind_outside_ItemLeft",menu.FocusName);foreach(string name in new[]{"Bind_outside_ItemLeft","Clear_outside_ItemLeft","Action_ItemLeft"}){var row=go.GetComponentsInChildren<UnityEngine.RectTransform>().Single(x=>x.name==name);Assert.IsTrue(row.IsChildOf(scroll.content));var rect=Area(row);var viewport=Area(scroll.viewport);Assert.GreaterOrEqual(rect.yMin,viewport.yMin-.01);Assert.LessOrEqual(rect.yMax,viewport.yMax+.01);Assert.IsFalse(rect.Overlaps(Area((UnityEngine.RectTransform)save.transform)));}}
+            }finally{UnityEngine.Object.DestroyImmediate(host);}
+        }
+        [Test]
+        public void 使用不能時に触れて保持したHUDは可能後の解放でも発火せず旧世代と二重clickも拒否する()
+        {
+            var go=new UnityEngine.GameObject("Item143Press");try{var guard=go.AddComponent<Olca.Presentation.Exploration.OutsideItemPressGuard>();bool available=false;guard.BeginAllowed=()=>available;var data=new UnityEngine.EventSystems.PointerEventData(null){pointerId=1,button=UnityEngine.EventSystems.PointerEventData.InputButton.Left};guard.OnPointerDown(data);available=true;guard.OnPointerUp(data);Assert.IsFalse(guard.Consume());guard.OnPointerDown(data);guard.OnPointerUp(data);Assert.IsTrue(guard.Consume());Assert.IsFalse(guard.Consume());guard.OnPointerDown(data);guard.Clear();guard.OnPointerUp(data);Assert.IsFalse(guard.Consume());}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+        [Test]
+        public void アイテム受理は状態frameを閉じてからでも麻痺最終frameの入力を早く受け付けない()
+        {
+            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(100));world.Player.ApplyParalysis(2);using(var lease=world.AttachPresentation()){for(int i=0;i<2;i++){world.Core.TickFrame(0);Assert.IsTrue(world.AdvancePlayerFrame(out var allowed));Assert.IsFalse(allowed);}Assert.IsTrue(world.CanPerformAttack);world.Core.TickFrame(0);Assert.IsTrue(world.AdvancePlayerFrame(out var ready));Assert.IsTrue(ready);}}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 旧設定のアイテム4枠だけを補完し競合は既存を優先して未割当にし原本を変更しない(bool gamepad)
+        {
+            var defaults=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();string device=gamepad?"gamepad":"keyboard";
+            var old=defaults.Bindings.Where(p=>p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)).ToDictionary(p=>p.Key,p=>p.Value);
+            var occupied=gamepad?(device,"outside","WheelPrimary"):(device,"exploration","JumpPrimary");old[occupied]=gamepad?"DpadUp":"Digit1";var before=old.ToArray();var upgraded=UnityInputProvider.DecodeSelectionSlots(old,gamepad);
+            CollectionAssert.AreEquivalent(before,old);foreach(var pair in old)Assert.AreEqual(pair.Value,upgraded.Bindings[pair.Key]);Assert.IsNull(upgraded.Bindings[(device,"outside","ItemUp")]);Assert.AreEqual(gamepad?"DpadRight":"Digit2",upgraded.Bindings[(device,"outside","ItemRight")]);
+            var partial=upgraded.Bindings.ToDictionary(p=>p.Key,p=>p.Value);partial.Remove((device,"outside","ItemRight"));Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,gamepad));
+            string dir=Path.Combine(Path.GetTempPath(),"item143-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);
+            try{var store=gamepad?(GameplayBindingFileStore)new GamepadBindingFileStore(dir):new KeyboardBindingFileStore(dir);var rows=old.Select(p=>"{\"Context\":\""+p.Key.Context+"\",\"Action\":\""+p.Key.Action+"\",\"Key\":"+(p.Value==null?"null":"\""+p.Value+"\"")+"}");File.WriteAllText(store.ActivePath,"{\"Version\":1,\"Device\":\""+device+"\",\"Slots\":["+string.Join(",",rows)+"]}");var bytes=File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryRead(out var loaded,out var error),error);CollectionAssert.AreEquivalent(upgraded.Bindings,loaded.Bindings);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(store.ActivePath));Assert.IsTrue(store.TrySave(loaded,out error),error);Assert.IsTrue(store.TryRead(out loaded,out error),error);CollectionAssert.AreEquivalent(upgraded.Bindings,loaded.Bindings);var edit=loaded.BeginEdit();Assert.IsTrue(edit.TryAssign((device,"outside","ItemUp"),gamepad?"West":"Digit5",out error),error);var rebound=edit.Apply();foreach(var pair in old)Assert.AreEqual(pair.Value,rebound.Bindings[pair.Key]);Assert.IsTrue(store.TrySave(rebound,out error),error);Assert.IsTrue(store.TryRead(out loaded,out error),error);CollectionAssert.AreEquivalent(rebound.Bindings,loaded.Bindings);}finally{Directory.Delete(dir,true);}
+        }
+        [TestCase(false,0,false)][TestCase(false,1,false)][TestCase(false,2,false)][TestCase(false,3,false)][TestCase(true,0,false)][TestCase(true,1,false)][TestCase(true,2,false)][TestCase(true,3,false)]
+        [TestCase(false,0,true)][TestCase(true,0,true)]
+        public void アイテム押下は外界で一回だけ受付し保持とポーズ中を予約せずDungeonの移動を変えない(bool gamepad,int slot,bool rebound)
+        {
+            var original=UnityInputProvider.ActiveGamepadProfile;var device=gamepad?(UnityEngine.InputSystem.InputDevice)UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>():UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var provider=new UnityInputProvider();string context="outside";
+            var key=rebound?UnityEngine.InputSystem.Key.Digit5:new[]{UnityEngine.InputSystem.Key.Digit1,UnityEngine.InputSystem.Key.Digit2,UnityEngine.InputSystem.Key.Digit3,UnityEngine.InputSystem.Key.Digit4}[slot];var button=rebound?UnityEngine.InputSystem.LowLevel.GamepadButton.West:new[]{UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft}[slot];
+            if(rebound){var edit=(gamepad?provider.GamepadProfile:provider.KeyboardProfile).BeginEdit();Assert.IsTrue(edit.TryAssign((gamepad?"gamepad":"keyboard","outside",UnityInputProvider.OutsideItemAction(slot)),gamepad?"West":"Digit5",out var error),error);var profile=edit.Apply();Assert.IsTrue(gamepad?provider.TryRestoreGamepadProfile(profile,out error):provider.TryRestoreKeyboardProfile(profile,out error),error);}
+            void Send(bool down){if(device is UnityEngine.InputSystem.Gamepad pad){var state=new UnityEngine.InputSystem.LowLevel.GamepadState();if(down)state=state.WithButton(button);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);}else UnityEngine.InputSystem.InputSystem.QueueStateEvent((UnityEngine.InputSystem.Keyboard)device,down?new UnityEngine.InputSystem.LowLevel.KeyboardState(key):new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.Update();}
+            int Mask()=>provider.CaptureTimestamped().Where(v=>v.Input!=null).Aggregate(0,(v,x)=>v|x.Input.OutsideItemDownMask);
+            try{GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();provider.GamepadContext=()=>context;provider.GamepadGameplayActive=()=>true;provider.StartEventCapture();Send(false);provider.CaptureTimestamped();Send(true);Assert.AreEqual(1<<slot,Mask());Send(true);Assert.AreEqual(0,Mask());provider.QueueSnapshot();Assert.AreEqual(0,Mask());Send(false);Mask();Send(true);Assert.AreEqual(1<<slot,Mask());Send(false);Mask();GameplayPause.SetPaused(true);Send(true);Assert.AreEqual(0,Mask());GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();Send(true);Assert.AreEqual(0,Mask());Send(false);Mask();context="battle";Send(true);Assert.AreEqual(0,Mask());}
+            finally{provider.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(device);using(var restore=new UnityInputProvider())Assert.IsTrue(restore.TryRestoreGamepadProfile(original,out _));GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();}
+        }
+        [Test]
+        public void 同じ論理frameのアイテム押下を合流し次frameの保持にエッジを残さない()
+        {
+            var queue=new Olca.Core.Logic.Integration.LogicalInputQueue();queue.Enqueue(1,new Olca.Core.Logic.Integration.LogicalInput{OutsideItemDownMask=1});queue.Enqueue(1,new Olca.Core.Logic.Integration.LogicalInput{OutsideItemDownMask=4});Assert.AreEqual(5,queue.Take(1).OutsideItemDownMask);Assert.AreEqual(0,queue.Take(2).OutsideItemDownMask);
+        }
+        [Test]
+        public void 外界の保存I_O時間は加算せず既得論理frameを保持しDetachで未受理使用を破棄する()
+        {
+            GameplayPause.SetPaused(false);GameplayPause.UpdateInputBarrier(false);GameplayPause.AdvanceLogicalFrame();GameplayPause.AdvanceLogicalFrame();
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession())using(var input=new UnityInputProvider())using(var runtime=new Olca.Application.Management.OutsideExplorationRuntime(world)){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100));using(var lease=world.AttachPresentation()){
+                    var owner=new object();long now=0;int calls=0;runtime.Attach(owner,input,slot=>{calls++;now+=System.Diagnostics.Stopwatch.Frequency*2;});var loop=(UnityLogicalLoop)typeof(Olca.Application.Management.OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);typeof(UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));typeof(UnityLogicalLoop).GetField("observed",flags).SetValue(loop,0L);loop.StartNewTimeline();runtime.Pump(owner,true);input.CaptureTimestamped();
+                    var events=(List<TimestampedLogicalInput>)typeof(UnityInputProvider).GetField("events",flags).GetValue(input);events.Add(new TimestampedLogicalInput(now,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=false}));now+=System.Diagnostics.Stopwatch.Frequency/60+1;runtime.Pump(owner,true);long before=loop.Clock.Frame;Assert.Greater(before,0,"検証時計の起点を明示する");
+                    events.Add(new TimestampedLogicalInput(now,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,OutsideItemDownMask=1}));now+=System.Diagnostics.Stopwatch.Frequency*3;runtime.Pump(owner,true);Assert.AreEqual(1,calls);Assert.AreEqual(before+180,loop.Clock.Frame+loop.Clock.PendingFrames);runtime.Pump(owner,true);Assert.AreEqual(1,calls);
+                    events.Add(new TimestampedLogicalInput(now,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,OutsideItemDownMask=1}));runtime.Detach(owner);Assert.IsNull(typeof(Olca.Application.Management.OutsideExplorationRuntime).GetField("itemUse",flags).GetValue(runtime));runtime.Attach(owner,input,slot=>calls++);runtime.Pump(owner,true);Assert.AreEqual(1,calls);
+                }
+            }
+        }
         [TestCase(false)][TestCase(true)] public void 外界復帰地点は同じ保存計画を再試行し再起動読取と旧欄を保全する(bool after)
         {
             string dir=Path.Combine(Path.GetTempPath(),"outside-recovery-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);
@@ -63,7 +126,7 @@ namespace Olca.Tests
         [TestCase(false)][TestCase(true)] public void PCホイールの旧設定補完は旧割当と原本を守りTab競合時だけ新slotを空にする(bool collision)
         {
             var current=UnityInputProvider.CreateDefaultKeyboardProfile();var wheel=("keyboard","outside","WheelPrimary");Assert.AreEqual("Tab",current.Bindings[wheel]);
-            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel)old.Add(p.Key,p.Value);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel&&(p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)))old.Add(p.Key,p.Value);
             if(collision)old[("keyboard","exploration","DashSecondary")]="Tab";
             var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);var loaded=UnityInputProvider.DecodeSelectionSlots(old,false);
             CollectionAssert.AreEquivalent(before,old);foreach(var p in before)Assert.AreEqual(p.Value,loaded.Bindings[p.Key]);Assert.AreEqual(collision?null:"Tab",loaded.Bindings[wheel]);
@@ -191,7 +254,7 @@ namespace Olca.Tests
         [TestCase(false)][TestCase(true)] public void 外界ホイールslot追加は既存LB割当を奪わず完全な旧形式だけ補完する(bool collision)
         {
             var current=UnityInputProvider.CreateDefaultGamepadProfile();var wheel=("gamepad","outside","WheelPrimary");Assert.AreEqual("LeftShoulder",current.Bindings[wheel]);
-            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel)old.Add(p.Key,p.Value);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel&&(p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)))old.Add(p.Key,p.Value);
             if(collision)old[("gamepad","outside","DashPrimary")]="LeftShoulder";
             var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);var loaded=UnityInputProvider.DecodeSelectionSlots(old,true);
             foreach(var p in before)Assert.AreEqual(p.Value,loaded.Bindings[p.Key]);CollectionAssert.AreEquivalent(before,old);Assert.AreEqual(collision?null:"LeftShoulder",loaded.Bindings[wheel]);
@@ -199,7 +262,7 @@ namespace Olca.Tests
             var edit=current.BeginEdit();Assert.IsFalse(edit.TryAssign(wheel,"South",out _),"JumpとDecideの複数競合を原子的に拒否");CollectionAssert.AreEquivalent(current.Bindings,edit.Draft);
             Assert.IsTrue(edit.TryAssign(wheel,"RightShoulder",out var error),error);Assert.AreEqual("LeftShoulder",edit.Draft[("gamepad","outside","DashPrimary")]);Assert.AreEqual("RightShoulder",edit.Draft[("gamepad","battle","CardPrimary")]);
             edit=current.BeginEdit();Assert.IsFalse(edit.TryAssign(("gamepad","menu","Decide"),"LeftShoulder",out _));CollectionAssert.AreEquivalent(current.Bindings,edit.Draft);
-            var menu=UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();Assert.IsTrue(menu.TryAssign(("gamepad","menu","Decide"),"RightStick",out _));var customized=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(menu.Draft);customized.Remove(wheel);customized[("gamepad","menu","Decide")]="LeftShoulder";customized[("gamepad","menu","PageUp")]="RightStick";
+            var menu=UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();Assert.IsTrue(menu.TryAssign(("gamepad","menu","Decide"),"RightStick",out _));var customized=menu.Draft.Where(p=>p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)).ToDictionary(p=>p.Key,p=>p.Value);customized.Remove(wheel);customized[("gamepad","menu","Decide")]="LeftShoulder";customized[("gamepad","menu","PageUp")]="RightStick";
             loaded=UnityInputProvider.DecodeSelectionSlots(customized,true);Assert.IsNull(loaded.Bindings[wheel]);Assert.AreEqual("LeftShoulder",loaded.Bindings[("gamepad","menu","Decide")]);
         }
         [Test] public void 神依ホイールraw入力は開始Padを固定し停止snapshot中も解放と確定を読みBで確定しない()

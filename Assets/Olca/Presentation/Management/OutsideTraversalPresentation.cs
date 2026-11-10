@@ -235,7 +235,7 @@ namespace Olca.Presentation.Management
             int unknown=data.Items.Count(v=>!definitions.Any(d=>d.Id==v.Id));
             Text("OutsideItemsStatus",useMessage??session.Error??(unknown>0?"ミトウロク ID "+unknown+"ケンは ホゾンのままホジしています。":"ショジスウ0でも トウロクをホジします。"),0,-260,1400,44,25);
             string selectedId=data.Shortcuts[selectedSlot];int remaining=cooldown?.Invoke(selectedId)??0;
-            Button("UseOutsideItem","トウロク アイテムを シヨウ"+(remaining>0?" / "+((remaining+59)/60)+"ビョウ":""),0,-330,1240,()=>{useMessage=useItem?.Invoke(selectedId);Render();}).interactable=!pending&&useItem!=null&&selectedId!=null&&remaining==0;
+            Button("UseOutsideItem","トウロク アイテムを シヨウ"+(remaining>0?" / "+((remaining+59L)/60)+"ビョウ":""),0,-330,1240,()=>{useMessage=useItem?.Invoke(selectedId);Render();}).interactable=!pending&&useItem!=null&&selectedId!=null&&remaining==0;
             Text("OutsideItemsScope","カリ: HP +25 / CD 3ビョウ。ニュウシュ ミセツゾク・ジドウハイフなし。",0,-200,1440,50,23);
             Button("ClearOutsideItemSlot","ワクをカラにする",-480,-410,420,()=>{session.TryAssignOutsideItem(selectedSlot,null,definitions);Render();}).interactable=!pending;
             Button("RetryOutsideItemsSave","ホゾンをサイシコウ",0,-410,420,()=>{session.Retry();Render();}).interactable=pending;
@@ -259,22 +259,73 @@ namespace Olca.Presentation.Exploration
         private readonly UnityEngine.UI.Text[] itemMarks=new UnityEngine.UI.Text[4],itemCounts=new UnityEngine.UI.Text[4];
         private long shownItemRevision=long.MinValue;
         public void ConfigureItemInventory(System.Func<Olca.Core.Domain.OutsideInventoryData> read,System.Func<long> revision,Olca.Core.Domain.OutsideItemDisplayDefinition[] definitions){itemInventory=read;itemRevision=revision;itemDefinitions=definitions;shownItemRevision=long.MinValue;RefreshItemHud();}
+        private System.Action<int> queueItemUse;private System.Func<string,int> readItemCooldown;private System.Func<int,string> readItemKey;
+        private Olca.Core.Domain.OutsideInventoryData cachedItems;
+        private readonly UnityEngine.UI.Button[] itemButtons=new UnityEngine.UI.Button[4];
+        private readonly OutsideItemPressGuard[] itemPresses=new OutsideItemPressGuard[4];
+        private readonly UnityEngine.UI.Text[] itemSeconds=new UnityEngine.UI.Text[4],itemKeys=new UnityEngine.UI.Text[4];
+        private readonly OutsideItemCooldownRing[] itemRings=new OutsideItemCooldownRing[4];
+        private UnityEngine.UI.Text itemFeedback;
+        public void ConfigureItemUse(System.Action<int> queue,System.Func<string,int> remaining,System.Func<int,string> key){queueItemUse=queue;readItemCooldown=remaining;readItemKey=key;RefreshItemHud();}
+        public void ShowItemFeedback(string message){if(itemFeedback!=null)itemFeedback.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(message??"");}
+        private void BindItemHudUse(Olca.Presentation.Management.ManagedScreenContext owner,OutsideExplorationSession.PresentationLease lease)
+        {
+            for(int i=0;i<4;i++){int slot=i;var button=itemButtons[i];if(button==null)continue;button.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();itemPresses[i].BeginAllowed=()=>this!=null&&button!=null&&button.IsInteractable()&&ReferenceEquals(context,owner)&&owner.IsCurrent&&lease.IsCurrent&&CanPlay;button.onClick.AddListener(()=>{
+                if(itemPresses[slot].Consume()&&this!=null&&button!=null&&button.isActiveAndEnabled&&button.IsInteractable()&&ReferenceEquals(context,owner)&&owner.IsCurrent&&ReferenceEquals(presentation,lease)&&lease.IsCurrent&&CanPlay)queueItemUse?.Invoke(slot);
+            });}
+        }
         private void InitializeItemHud(Olca.Presentation.Management.GameplayPanelFactory factory)
         {
             for(int i=0;i<4;i++){
-                float x=80+i*110;var go=new UnityEngine.GameObject("OutsideItemHud_"+i,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));go.transform.SetParent(transform,false);var image=go.GetComponent<UnityEngine.UI.Image>();image.color=new UnityEngine.Color(.04f,.18f,.23f,.9f);image.raycastTarget=false;var rect=(UnityEngine.RectTransform)go.transform;rect.anchorMin=rect.anchorMax=UnityEngine.Vector2.zero;rect.anchoredPosition=new UnityEngine.Vector2(x,84);rect.sizeDelta=new UnityEngine.Vector2(88,88);
+                float x=80+i*110;var go=new UnityEngine.GameObject("OutsideItemHud_"+i,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));go.transform.SetParent(transform,false);var image=go.GetComponent<UnityEngine.UI.Image>();image.color=new UnityEngine.Color(.04f,.18f,.23f,.9f);image.raycastTarget=true;itemButtons[i]=go.AddComponent<UnityEngine.UI.Button>();itemPresses[i]=go.AddComponent<OutsideItemPressGuard>();go.AddComponent<Olca.Unity.TouchUiCancelGuard>();var rect=(UnityEngine.RectTransform)go.transform;rect.anchorMin=rect.anchorMax=UnityEngine.Vector2.zero;rect.anchoredPosition=new UnityEngine.Vector2(x,84);rect.sizeDelta=new UnityEngine.Vector2(88,88);
+                var ringGo=new UnityEngine.GameObject("OutsideItemCooldownRing_"+i,typeof(UnityEngine.RectTransform),typeof(OutsideItemCooldownRing));ringGo.transform.SetParent(go.transform,false);var ring=itemRings[i]=ringGo.GetComponent<OutsideItemCooldownRing>();ring.raycastTarget=false;ring.rectTransform.sizeDelta=new UnityEngine.Vector2(88,88);ring.enabled=false;
+                var seconds=itemSeconds[i]=factory.Label("OutsideItemCooldownSeconds_"+i,transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(x,142.5f),new UnityEngine.Vector2(90,25));seconds.fontSize=16;seconds.color=new UnityEngine.Color(.65f,1,1,1);seconds.raycastTarget=false;seconds.text="";
                 var mark=itemMarks[i]=factory.Label("OutsideItemMark_"+i,transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(x,96),new UnityEngine.Vector2(82,55));mark.fontSize=24;mark.raycastTarget=false;
                 var count=itemCounts[i]=factory.Label("OutsideItemCount_"+i,transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(x,53),new UnityEngine.Vector2(84,28));count.fontSize=22;count.resizeTextForBestFit=true;count.resizeTextMinSize=12;count.resizeTextMaxSize=22;count.raycastTarget=false;
-                var key=factory.Label("OutsideItemKey_"+i,transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(x,130),new UnityEngine.Vector2(90,32));key.text=new[]{"1 / ↑","2 / →","3 / ↓","4 / ←"}[i];key.fontSize=20;key.resizeTextForBestFit=true;key.resizeTextMinSize=16;key.resizeTextMaxSize=20;key.color=UnityEngine.Color.white;key.raycastTarget=false;
+                var key=itemKeys[i]=factory.Label("OutsideItemKey_"+i,transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(x,130),new UnityEngine.Vector2(90,32));key.text=new[]{"1 / ↑","2 / →","3 / ↓","4 / ←"}[i];key.fontSize=20;key.resizeTextForBestFit=true;key.resizeTextMinSize=12;key.resizeTextMaxSize=20;key.color=UnityEngine.Color.white;key.raycastTarget=false;
             }
-            var hint=factory.Label("OutsideItemsUnconnected",transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(250,17),new UnityEngine.Vector2(470,26));hint.text="メニューで シヨウ / キーは ミセツゾク";hint.fontSize=18;hint.color=new UnityEngine.Color(.65f,.82f,.86f,1);hint.raycastTarget=false;
+            var hint=itemFeedback=factory.Label("OutsideItemsUnconnected",transform,UnityEngine.Vector2.zero,new UnityEngine.Vector2(250,17),new UnityEngine.Vector2(470,26));hint.text="アイテム: 1〜4 / ジュウジキー / タップ";hint.resizeTextForBestFit=true;hint.resizeTextMinSize=12;hint.resizeTextMaxSize=18;hint.fontSize=18;hint.color=new UnityEngine.Color(.65f,.82f,.86f,1);hint.raycastTarget=false;
             RefreshItemHud();
         }
         private void RefreshItemHud()
         {
-            if(itemMarks[0]==null)return;long revision=itemRevision?.Invoke()??-1;if(revision==shownItemRevision)return;shownItemRevision=revision;var data=itemInventory?.Invoke()??new Olca.Core.Domain.OutsideInventoryData();
-            for(int i=0;i<4;i++){string id=data.Shortcuts[i];var definition=itemDefinitions?.FirstOrDefault(v=>v.Id==id);int count=data.Items.FirstOrDefault(v=>v.Id==id)?.Count??0;itemMarks[i].text=id==null?"—":definition?.Mark??"?";itemMarks[i].color=count==0?new UnityEngine.Color(.45f,.58f,.62f,1):UnityEngine.Color.white;itemCounts[i].text=id==null?"":count.ToString();itemCounts[i].color=UnityEngine.Color.white;}
+            if(itemMarks[0]==null)return;long revision=itemRevision?.Invoke()??-1;
+            if(cachedItems==null||revision!=shownItemRevision){if(cachedItems!=null)ClearItemPresses();shownItemRevision=revision;cachedItems=itemInventory?.Invoke()??new Olca.Core.Domain.OutsideInventoryData();}
+            for(int i=0;i<4;i++){
+                string id=cachedItems.Shortcuts[i];var definition=itemDefinitions?.FirstOrDefault(v=>v.Id==id);int count=cachedItems.Items.FirstOrDefault(v=>v.Id==id)?.Count??0;int remaining=readItemCooldown?.Invoke(id)??0;
+                itemMarks[i].text=id==null?"—":definition?.Mark??"?";itemMarks[i].color=count==0||remaining>0?new UnityEngine.Color(.45f,.58f,.62f,1):UnityEngine.Color.white;itemCounts[i].text=id==null?"":count.ToString();itemCounts[i].color=UnityEngine.Color.white;
+                itemButtons[i].interactable=CanPlay&&queueItemUse!=null&&definition!=null&&count>0&&remaining==0;
+                itemKeys[i].text=readItemKey?.Invoke(i)??new[]{"1 / ↑","2 / →","3 / ↓","4 / ←"}[i];itemKeys[i].enabled=remaining==0;
+                itemSeconds[i].text=remaining>0?((remaining+59L)/60).ToString():"";itemSeconds[i].enabled=remaining>0;
+                itemRings[i].Fraction=remaining<=0?0:UnityEngine.Mathf.Clamp01((float)remaining/Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.CooldownFrames);itemRings[i].enabled=remaining>0;
+            }
         }
-        private void ClearItemProviders(){itemInventory=null;itemRevision=null;itemDefinitions=null;shownItemRevision=long.MinValue;}
+        private void ClearItemPresses(){foreach(var press in itemPresses)if(press!=null)press.Clear();}
+        private void ClearItemProviders(){ClearItemPresses();foreach(var press in itemPresses)if(press!=null)press.BeginAllowed=null;itemInventory=null;itemRevision=null;itemDefinitions=null;queueItemUse=null;readItemCooldown=null;readItemKey=null;cachedItems=null;shownItemRevision=long.MinValue;foreach(var button in itemButtons)if(button!=null){button.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();button.interactable=false;}}
+    }
+
+    // 使用可になるまで保持した入力を、解放時のクリックとして後から受理しない。
+    public sealed class OutsideItemPressGuard : UnityEngine.MonoBehaviour,UnityEngine.EventSystems.IPointerDownHandler,UnityEngine.EventSystems.IPointerUpHandler
+    {
+        public System.Func<bool> BeginAllowed;
+        private readonly System.Collections.Generic.Dictionary<int,bool> presses=new System.Collections.Generic.Dictionary<int,bool>();
+        private bool released;private int releaseFrame=-1;
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData data){if(data==null)return;released=false;presses[data.pointerId]=data.button==UnityEngine.EventSystems.PointerEventData.InputButton.Left&&BeginAllowed?.Invoke()==true;}
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData data){if(data==null)return;released=presses.TryGetValue(data.pointerId,out var allowed)&&allowed;presses.Remove(data.pointerId);releaseFrame=UnityEngine.Time.frameCount;}
+        public bool Consume(){bool result=released&&releaseFrame==UnityEngine.Time.frameCount;released=false;return result;}
+        public void Clear(){presses.Clear();released=false;releaseFrame=-1;}
+        private void OnDisable()=>Clear();
+        private void OnDestroy(){Clear();BeginAllowed=null;}
+    }
+    [UnityEngine.RequireComponent(typeof(UnityEngine.CanvasRenderer))]
+    public sealed class OutsideItemCooldownRing : UnityEngine.UI.MaskableGraphic
+    {
+        private float fraction;
+        public float Fraction{get=>fraction;set{value=UnityEngine.Mathf.Clamp01(value);if(fraction==value)return;fraction=value;SetVerticesDirty();}}
+        protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper vh)
+        {
+            vh.Clear();if(fraction<=0)return;const int segments=64;float outer=UnityEngine.Mathf.Min(rectTransform.rect.width,rectTransform.rect.height)*.5f,inner=outer-3;var tint=new UnityEngine.Color(.55f,.95f,1,1);
+            for(int n=0;n<segments;n++){float start=(float)n/segments;if(start>=fraction)break;float end=UnityEngine.Mathf.Min((n+1f)/segments,fraction);float a=(.25f-start)*UnityEngine.Mathf.PI*2,b=(.25f-end)*UnityEngine.Mathf.PI*2;int v=vh.currentVertCount;vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a)*inner,UnityEngine.Mathf.Sin(a)*inner),tint,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a)*outer,UnityEngine.Mathf.Sin(a)*outer),tint,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(b)*outer,UnityEngine.Mathf.Sin(b)*outer),tint,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(b)*inner,UnityEngine.Mathf.Sin(b)*inner),tint,UnityEngine.Vector2.zero);vh.AddTriangle(v,v+1,v+2);vh.AddTriangle(v,v+2,v+3);}
+        }
     }
 }

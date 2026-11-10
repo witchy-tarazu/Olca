@@ -151,14 +151,16 @@ namespace Olca.Core.Logic.Integration
             if(data==null)return;data.Validate();var actual=Olca.Core.Domain.OutsidePlayerSaveData.Capture(Player);actual.Id=data.Id;
             if(actual.Key()!=data.Key())throw new System.ArgumentException("回復した個体と保存が一致しません");savedPlayerId=data.Id;savedPlayerKey=data.Key();
         }
-        public bool AdvancePlayerFrame()
+        public bool AdvancePlayerFrame()=>AdvancePlayerFrame(out _);
+        public bool AdvancePlayerFrame(out bool attackAllowed)
         {
+            attackAllowed=false;
             if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;
             playerFrame=Core.Frame;var value=Player;
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
-            try{value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            try{attackAllowed=CanPerformAttack;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
-            return true;
+            attackAllowed&=!value.IsDead;return true;
         }
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;

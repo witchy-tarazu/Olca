@@ -86,8 +86,8 @@ namespace Olca.Presentation.Exploration
                 handCosts[slot]=factory.Label("OutsideHandCost"+slot,transform,Vector2.one,new Vector2(x+20,-209),new Vector2(138,24));handCosts[slot].fontSize=18;handCosts[slot].alignment=TextAnchor.MiddleLeft;handCosts[slot].color=new Color(.7f,.89f,1);handCosts[slot].raycastTarget=false;
             }
             selectionGuideText=factory.Label("OutsideSelectionGuide",transform,Vector2.one,new Vector2(-370,-246),new Vector2(650,26));selectionGuideText.fontSize=18;selectionGuideText.color=Color.white;selectionGuideText.raycastTarget=false;selectionGuideText.resizeTextForBestFit=true;selectionGuideText.resizeTextMinSize=16;selectionGuideText.resizeTextMaxSize=18;
-            leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-45),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
-            rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-45),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
+            leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
+            rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
             pause=factory.Button("PauseOutsideExploration","ポーズ",transform,Vector2.one,new Vector2(-430,-62));Olca.Presentation.Dungeon.UiLook.Button(pause);
             back=factory.Button("CloseOutsideExploration","戻る",transform,Vector2.one,new Vector2(-160,-62));Olca.Presentation.Dungeon.UiLook.Button(back);
             var doorObject=new GameObject("OutsideTrialDungeonMarker",typeof(RectTransform),typeof(Image));doorObject.transform.SetParent(transform,false);trialDoor=doorObject.GetComponent<Image>();trialDoor.sprite=resources.GetShared<Sprite>("OlcaUI/window");trialDoor.type=Image.Type.Sliced;trialDoor.color=new Color(.15f,.45f,.55f,.92f);trialDoor.raycastTarget=false;var doorRect=trialDoor.rectTransform;doorRect.anchorMin=doorRect.anchorMax=new Vector2(0,.21f);doorRect.pivot=new Vector2(.5f,0);doorRect.sizeDelta=new Vector2(140,200);doorObject.transform.SetSiblingIndex(player.transform.GetSiblingIndex());
@@ -96,7 +96,7 @@ namespace Olca.Presentation.Exploration
         public void Show(Olca.Presentation.Management.ManagedScreenContext owner,Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Action onBack,Action onPause=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Func<string> selectionGuide=null,Func<string> movementGuide=null,Action onEntrance=null,Func<bool> canEnter=null,Func<string> interactionHint=null,Func<bool> trialRoute=null,Func<bool> inputBlocked=null)
         {
             Hide();transientInputBlocked=inputBlocked;this.trialRoute=trialRoute;this.entered=onEntrance;this.canEnter=canEnter;this.interactionHint=interactionHint;this.selectionGuide=selectionGuide;this.movementGuide=movementGuide;cardIcon=icon;renderedCards=null;handHeading.text="";covered=false;uncoveredFrame=-1;context=owner;presentation=lease;returned=onBack;gameObject.SetActive(true);transform.SetAsLastSibling();
-            var captured=owner;var capturedLease=lease;var capturedCards=lease.Cards;
+            var captured=owner;var capturedLease=lease;var capturedCards=lease.Cards;BindItemHudUse(owner,lease);
             for(int slot=0;slot<handButtons.Length;slot++){
                 int index=slot;var button=handButtons[slot];button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{
                     if(this==null||button==null||!button.isActiveAndEnabled||!button.IsInteractable()||!ReferenceEquals(context,captured)||!captured.IsCurrent||!capturedLease.IsCurrent||!ReferenceEquals(presentation?.Cards,capturedCards)||capturedCards==null||!CanPlay)return;
@@ -114,7 +114,7 @@ namespace Olca.Presentation.Exploration
         public void SetCovered(bool value)
         {
             if(covered==value)return;covered=value;
-            if(value){menu?.Suspend();ClearFocus();transform.SetAsFirstSibling();}
+            if(value){ClearItemPresses();menu?.Suspend();ClearFocus();transform.SetAsFirstSibling();}
             else if(IsOpen){uncoveredFrame=Time.frameCount;transform.SetAsLastSibling();menu?.Bind(transform,back.name,()=>back.onClick.Invoke());UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(back.gameObject);}
         }
         // 小数表示を切り捨て、整数コストの消費可能量や満量を過大表示しない。
@@ -175,7 +175,7 @@ namespace Olca.Presentation.Exploration
             {
                 float half=label.rectTransform.rect.width*.5f;bool visible=viewportPixels>=half*2&&x>=0&&x<=viewportPixels;
                 label.gameObject.SetActive(visible);
-                if(visible)label.rectTransform.anchoredPosition=new Vector2(Mathf.Clamp(x+(left?half:-half),half,viewportPixels-half),-45-verticalOffset*pixelsPerWorldUnit);
+                if(visible)label.rectTransform.anchoredPosition=new Vector2(Mathf.Clamp(x+(left?half:-half),half,viewportPixels-half),-35-verticalOffset*pixelsPerWorldUnit);
             }
             for(int i=0;i<landingViews.Count;i++){var surface=core.Definition.LandingSurfaces[i];var view=landingViews[i];float x=Origin((float)(surface.Left/unit)),y=(float)(surface.Top/unit-verticalOffset)*pixelsPerWorldUnit;view.image.rectTransform.anchoredPosition=new Vector2(x,y);view.image.rectTransform.sizeDelta=new Vector2((float)((surface.Right-surface.Left)/unit)*pixelsPerWorldUnit,18);view.label.rectTransform.anchoredPosition=new Vector2(x+150,y-42);}
             Boundary(leftEnd,Origin(0),true);Boundary(rightEnd,Origin(width),false);

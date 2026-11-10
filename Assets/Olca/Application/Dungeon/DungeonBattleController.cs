@@ -555,10 +555,10 @@ namespace Olca.Application.Dungeon
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources);panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>().ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);return System.Threading.Tasks.Task.FromResult(panel);},
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
-                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery);
+                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
                 }
                 var result=await outsideExploration.OpenAsync();
-                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);BindOutsideRecovery();}
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel);BindOutsideRecovery();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
@@ -1125,6 +1125,19 @@ namespace Olca.Application.Dungeon
         private const string ManagedOutsideItems="outside-item-registration";
         private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
         private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample};
+        private string OutsideItemKeyLabel(int slot)
+        {
+            string action=Olca.Unity.UnityInputProvider.OutsideItemAction(slot);bool pad=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad;var profile=pad?inputProvider.GamepadProfile:inputProvider.KeyboardProfile;
+            if(!profile.Bindings.TryGetValue((pad?"gamepad":"keyboard","outside",action),out var key)||key==null)return "ミワリアテ";
+            return pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(key):key.StartsWith("Digit",System.StringComparison.Ordinal)?key.Substring(5):key;
+        }
+        private void UseOutsideItemShortcut(int slot)
+        {
+            if(slot<0||slot>=4||IsUserPaused||DialogueOpen||outsideExploration?.IsOpen!=true||!isActiveAndEnabled)return;
+            var id=clearReturnSession.OutsideInventorySnapshot.Shortcuts[slot];var definition=OutsideRecoveryItemDefinition.Provisional;
+            string result=id!=definition.Id?"シヨウできる アイテムがありません":gameSystem.OutsideExploration.TryUseRecoveryItem(clearReturnSession,definition,memoryCheckpoints?.Definitions,out var error)?"HPをカイフクしました":error;
+            outsideExploration.View?.ShowItemFeedback(result);
+        }
         private string UseOutsideRecoveryItem(string id)
         {
             if(!IsUserPaused||outsideExploration?.IsOpen!=true||gameSystem==null||!isActiveAndEnabled)return "今は使用できません";

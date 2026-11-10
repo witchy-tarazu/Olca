@@ -1349,6 +1349,7 @@ namespace Olca.Presentation.Field
         private readonly List<(RectTransform Rect,int Column,float Offset)> settingsColumns=new List<(RectTransform,int,float)>();
         private RectTransform settingsHeader,settingsReading,titleRect,statusRect;
         private float layoutWidth=-1;
+        private UnityEngine.UI.ScrollRect bindingScroll;
         private void OnRectTransformDimensionsChange()=>FitSettingsLayout();
         private void FitSettingsLayout(){
             float width=((RectTransform)transform).rect.width;if(width<=0||Mathf.Approximately(width,layoutWidth))return;layoutWidth=width;
@@ -1356,14 +1357,29 @@ namespace Olca.Presentation.Field
             if(settingsReading!=null)settingsReading.sizeDelta=new Vector2(Mathf.Min(gamepad?1840:1760,width-(gamepad?20:60)),625);
             if(titleRect!=null)titleRect.sizeDelta=new Vector2(Mathf.Min(1700,width-120),75);
             if(statusRect!=null)statusRect.sizeDelta=new Vector2(Mathf.Min(1740,width-120),80);
-            float step=gamepad?Mathf.Min(450,(width-60)/4):Mathf.Min(560,width/2-320);foreach(var item in settingsColumns){var pos=item.Rect.anchoredPosition;pos.x=(item.Column-(gamepad?1.5f:1))*step+item.Offset;item.Rect.anchoredPosition=pos;}
+            float step=gamepad?Mathf.Min(450,(width-60)/4):Mathf.Min(560,width/2-320);foreach(var item in settingsColumns){var pos=item.Rect.anchoredPosition;pos.x=bindingScroll!=null&&item.Rect.parent==bindingScroll.content?item.Offset:(item.Column-(gamepad?1.5f:1))*step+item.Offset;item.Rect.anchoredPosition=pos;}
+            if(bindingScroll!=null){var viewport=(RectTransform)bindingScroll.transform;viewport.anchoredPosition=new Vector2((gamepad?-1.5f:-1)*step,-35);}
+            if(menu!=null&&!listening.HasValue)normalFocus=menu.FocusName??normalFocus;navigationDirty=true;
+        }
+        // 増えた探索/外界の列だけを切り取り、保存/取消は固定操作として外へ残す。
+        private void CreateBindingScroll(int rows)
+        {
+            var viewportGo=new GameObject("GameplayBindingScroll",typeof(RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.RectMask2D),typeof(UnityEngine.UI.ScrollRect));viewportGo.transform.SetParent(transform,false);
+            var viewport=(RectTransform)viewportGo.transform;viewport.anchoredPosition=new Vector2(gamepad?-675:-560,-35);viewport.sizeDelta=new Vector2(gamepad?414:512,560);viewportGo.GetComponent<UnityEngine.UI.Image>().color=Color.clear;
+            var contentGo=new GameObject("BindingColumnContents",typeof(RectTransform));contentGo.transform.SetParent(viewport,false);var content=(RectTransform)contentGo.transform;content.anchorMin=content.anchorMax=new Vector2(.5f,1);content.pivot=new Vector2(.5f,1);content.anchoredPosition=Vector2.zero;content.sizeDelta=new Vector2(viewport.sizeDelta.x,Mathf.Max(560,rows*(gamepad?40:70)+24));
+            foreach(var item in settingsColumns.Where(x=>x.Column==0&&x.Rect.name!="ExploreTitle"&&x.Rect.name!="Group0")){
+                var position=item.Rect.anchoredPosition;item.Rect.SetParent(content,false);item.Rect.anchorMin=item.Rect.anchorMax=new Vector2(.5f,1);item.Rect.anchoredPosition=new Vector2(item.Offset,position.y-245);
+            }
+            bindingScroll=viewportGo.GetComponent<UnityEngine.UI.ScrollRect>();bindingScroll.viewport=viewport;bindingScroll.content=content;bindingScroll.horizontal=false;bindingScroll.vertical=true;bindingScroll.inertia=false;bindingScroll.movementType=UnityEngine.UI.ScrollRect.MovementType.Clamped;bindingScroll.scrollSensitivity=gamepad?40:70;
+            var barGo=new GameObject("BindingColumnScrollbar",typeof(RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Scrollbar));barGo.transform.SetParent(viewport,false);var barRect=(RectTransform)barGo.transform;barRect.anchorMin=new Vector2(1,0);barRect.anchorMax=new Vector2(1,1);barRect.anchoredPosition=new Vector2(-4,0);barRect.sizeDelta=new Vector2(6,-20);barGo.GetComponent<UnityEngine.UI.Image>().color=new Color(.04f,.14f,.19f,.9f);
+            var handleGo=new GameObject("Handle",typeof(RectTransform),typeof(UnityEngine.UI.Image));handleGo.transform.SetParent(barRect,false);var handle=(RectTransform)handleGo.transform;handle.anchorMin=Vector2.zero;handle.anchorMax=Vector2.one;handle.offsetMin=handle.offsetMax=Vector2.zero;var graphic=handleGo.GetComponent<UnityEngine.UI.Image>();graphic.color=new Color(.45f,.88f,.95f,.85f);var bar=barGo.GetComponent<UnityEngine.UI.Scrollbar>();bar.handleRect=handle;bar.targetGraphic=graphic;bar.direction=UnityEngine.UI.Scrollbar.Direction.BottomToTop;bar.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};bindingScroll.verticalScrollbar=bar;
         }
         private RectTransform ReadingFace(string name,Transform parent,Vector2 position,Vector2 size){
             var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();image.sprite=Resources.Load<Sprite>("OlcaUI/window");image.type=Image.Type.Sliced;image.color=Color.white;image.raycastTarget=false;var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=position;rect.sizeDelta=size;return rect;
         }
         private void TrackColumn(RectTransform rect,int column,float offset){settingsColumns.Add((rect,column,offset));}
         private string ActionLabel(string action){
-            if(action=="WheelPrimary")return "カムイホイール";if(action=="SelectionPrevious")return "カード マエ";if(action=="SelectionNext")return "カード ツギ";
+            if(action=="ItemUp")return "アイテムウエ";if(action=="ItemRight")return "アイテムミギ";if(action=="ItemDown")return "アイテムシタ";if(action=="ItemLeft")return "アイテムヒダリ";if(action=="WheelPrimary")return "カムイホイール";if(action=="SelectionPrevious")return "カード マエ";if(action=="SelectionNext")return "カード ツギ";
             if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
             string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
         }
@@ -1404,7 +1420,7 @@ namespace Olca.Presentation.Field
             Refresh(confirmed?"初期配置を表示しました。保存・適用で確定します。":"初期化を取り消しました。");
         }
         private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
-        private void LateUpdate(){FitSettingsLayout();if(resetDialog!=null&&resetDialog.IsOpen||managedContext?.DialogBlocksInput==true){menu?.Suspend();navigationDirty=true;return;}if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;menu.Bind(listening.HasValue?transform.Find("CancelCapture"):transform,listening.HasValue?"CancelCapture":normalFocus,()=>{if(listening.HasValue)CancelListening();else DiscardAndClose();});}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
+        private void LateUpdate(){FitSettingsLayout();if(resetDialog!=null&&resetDialog.IsOpen||managedContext?.DialogBlocksInput==true){menu?.Suspend();navigationDirty=true;return;}if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;menu.Bind(listening.HasValue?transform.Find("CancelCapture"):transform,listening.HasValue?"CancelCapture":normalFocus,()=>{if(listening.HasValue)CancelListening();else DiscardAndClose();},listening.HasValue?null:bindingScroll,restorePosition:true,directionScroll:false);}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
         private void OnDisable(){if(resetDialog!=null)resetDialog.Abort();resetDialog=null;menu?.Suspend();managedContext?.NotifyHidden();}
         private void OnDestroy(){if(resetDialog!=null)resetDialog.Abort();resetDialog=null;menu?.Dispose();save=null;managedContext=null;}
 
@@ -1420,9 +1436,9 @@ namespace Olca.Presentation.Field
             status = MakeText("Status", "", transform, new Vector2(0, 365), new Vector2(1740, 80), 26);statusRect=status.rectTransform;
             var defaults = Defaults();
             int[] rows = { 0, 0, 0, 0 };
-            if(gamepad){string[] names={"ダンジョン","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
+            if(gamepad){string[] names={"ダンジョン / ガイカイ","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
             else {
-            TrackColumn(MakeText("ExploreTitle", "探索", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
+            TrackColumn(MakeText("ExploreTitle", "探索 / ガイカイ", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
             TrackColumn(MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28).rectTransform,1,0);
             TrackColumn(MakeText("ActionTitle", "戦闘：行動", transform, new Vector2(560, 285), new Vector2(520, 50), 28).rectTransform,2,0);
             }
@@ -1448,6 +1464,7 @@ namespace Olca.Presentation.Field
                 var clear=MakeButton("Clear_" + slot.Context + "_" + slot.Action, "解除", transform, new Vector2(x + (gamepad?154.5f:195), y), new Vector2(gamepad?85:100, gamepad?38:54));TrackColumn((RectTransform)clear.transform,column,gamepad?154.5f:195);
                 clear.onClick.AddListener(() => { listening = null; Assign(slot, null); });
             }
+            CreateBindingScroll(rows[0]);
             MakeButton("CancelCapture", gamepad?"ボタン入力を取消":"キー入力を取消", transform, new Vector2(0,-350), new Vector2(600,50))
                 .onClick.AddListener(() => { if(!CanOperate)return;listening = null; Refresh("キー入力を取り消しました。"); });
             saveButton = MakeButton("SaveKeyboardSettings", "保存・適用", transform, new Vector2(-560, -420), new Vector2(400, 70));
@@ -1461,11 +1478,11 @@ namespace Olca.Presentation.Field
 
         public void Open(InputBindingProfile profile)
         {
-            applied = profile; edit = profile.BeginEdit(); listening = null;normalFocus="CloseKeyboardSettings";
+            applied = profile; edit = profile.BeginEdit(); listening = null;normalFocus="CloseKeyboardSettings";if(bindingScroll!=null){bindingScroll.StopMovement();bindingScroll.content.anchoredPosition=Vector2.zero;}
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
             if(resetDialog!=null)resetDialog.Abort();resetDialog=null;gameObject.SetActive(true);
             transform.SetAsLastSibling(); // ポーズの遮蔽面より前へ出し、設定の操作を受け取る。
-            Refresh(gamepad?"変更するボタンを選んでください。同じ場面の割り当ては交換されます。":"変更するキーを選んでください。同じ場面の割り当ては交換されます。");
+            Refresh(gamepad?"変更するボタンを選んでください。同じ場面の割り当ては交換されます。左列はスクロールできます。":"変更するキーを選んでください。同じ場面の割り当ては交換されます。左列はスクロールできます。");
         }
         public void BeginCapture((string Device, string Context, string Action) slot)
         {
