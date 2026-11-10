@@ -749,6 +749,20 @@ namespace Olca.Tests.Application
                 for(int i=0;i<32;i++){model.Core.TickFrame(0);model.AdvancePlayerFrame();}view.Render();Assert.IsFalse(model.Player.IsStaggered);Assert.AreEqual(0,model.Player.AccumulatedDamage);Assert.AreEqual(poise==0?0:1,fill.fillAmount);Assert.AreEqual(poise==0?0:430,fill.rectTransform.rect.width,.01f);Assert.AreEqual(hp,model.Player.CurrentHp);
             }
         }
+        [Test] public async Task 外界の毒本体色は確定状態だけを読み再表示と解除と別個体で残らない()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();Assert.AreEqual(Color.white,body.color);var sprite=body.sprite;var size=body.rectTransform.sizeDelta;var pivot=body.rectTransform.pivot;
+                model.Player.ApplyPoison("tint153",new Olca.Core.Domain.StatusEffect(Olca.Core.Domain.StatusEffectType.Poison,1000,1),60);view.Render();Assert.AreEqual(Color.white,body.color,"予約だけでは未確定の毒を描かない");model.Core.TickFrame(0);model.AdvancePlayerFrame();view.Render();Assert.AreEqual(new Color(.84f,.64f,1f,1f),body.color);Assert.AreEqual(1,body.color.a);Assert.AreSame(sprite,body.sprite);Assert.AreEqual(size,body.rectTransform.sizeDelta);Assert.AreEqual(pivot,body.rectTransform.pivot);
+                long frame=model.Core.Frame;int hp=model.Player.CurrentHp;var states=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Player.CapturePoisons());view.SetCovered(true);for(int i=0;i<4;i++)view.Render();Assert.AreEqual(new Color(.84f,.64f,1f,1f),body.color);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(hp,model.Player.CurrentHp);CollectionAssert.AreEqual(states,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Player.CapturePoisons()));
+                views.GetLayer("return-hub").CloseCurrent();Assert.AreEqual(Color.white,body.color);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);Assert.AreEqual(new Color(.84f,.64f,1f,1f),body.color);
+                model.Player.ClearPoisons();model.Core.TickFrame(0);model.AdvancePlayerFrame();view.Render();Assert.AreEqual(Color.white,body.color);
+                model.Player.ApplyPoison("tint153-short",new Olca.Core.Domain.StatusEffect(Olca.Core.Domain.StatusEffectType.Poison,50,1),60);model.Core.TickFrame(0);model.AdvancePlayerFrame();view.Render();Assert.AreEqual(new Color(.84f,.64f,1f,1f),body.color);for(int i=0;i<4;i++){model.Core.TickFrame(0);model.AdvancePlayerFrame();}view.Render();Assert.AreEqual(Color.white,body.color,"自然失効でも戻る");
+                UnityEngine.Object.DestroyImmediate(view.gameObject);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(Color.white,binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>().color);
+            }
+        }
         [Test] public async Task 外界状態HUDは既存毒の割合を読み停止再表示解除で時計と保存を変更しない()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
