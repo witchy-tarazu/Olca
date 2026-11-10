@@ -95,7 +95,8 @@ namespace Olca.Application.Management
                     bool selectionChanged=selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked&&!session.IsDeckEditingLocation);
                     if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
-                    session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton,accept&&value.DashButtonDown,accept&&value.DashButton);
+                    bool move=accept&&!session.IsAttacking;
+                    session.Core.TickFrame(move?value.Horizontal:0,move&&value.JumpButtonDown,move&&value.JumpButton,move&&value.DashButtonDown,move&&value.DashButton);
                     session.AdvanceDeckLocation();
                     session.AdvancePlayerFrame(out var canAttack);
                     bool requested=value.CardUseButtonDown;
