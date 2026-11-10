@@ -9,6 +9,22 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static OutsideExplorationSession Heal158(int timing=0)
+        {
+            var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100,staggerDurationFrames:2));var f=timing==0?new Olca.Application.Battle.SimpleCardFactory():new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"heal",new PlayerAttackTiming(timing,0)}});var source=f.CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(158),out _));for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="heal");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.Hand.Any(c=>c.Id=="heal"));s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal"));return s;
+        }
+        [TestCase(50,70)] [TestCase(100,100)] public void 外界ヒールは既存二十回復と同じコストを開始時に一度だけ消費する(int hp,int expected)
+        {
+            using(var s=Heal158())using(var lease=s.AttachPresentation()){s.Player.SetHp(hp);var c=s.Cards;var selected=c.SelectedCard;var old=c.Hand.ToArray();long rev=c.HandRevision;Assert.IsTrue(s.TryUseSelectedHealingCard(selected,rev,out var error),error);Assert.AreEqual(expected,s.Player.CurrentHp);Assert.AreEqual(6000-selected.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(rev+1,c.HandRevision);Assert.IsFalse(c.Hand.Contains(selected));CollectionAssert.AreEqual(old.Where(x=>!ReferenceEquals(x,selected)).ToArray(),c.Hand.Take(2));Assert.IsFalse(s.TryUseSelectedHealingCard(c.SelectedCard,c.HandRevision,out _));Assert.AreEqual(rev+1,c.HandRevision);Assert.AreEqual(0,s.Core.Frame);}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(8)] [TestCase(9)]
+        public void 外界ヒールの不許可はHP手札ゲージと乱数を変更せず予約を作らない(int mode)
+        {
+            using(var s=Heal158(mode==7?1:0)){var lease=s.AttachPresentation();try{s.Player.SetHp(50);var c=s.Cards;var expected=mode==0?c.SelectedCard.Clone():c.SelectedCard;long rev=c.HandRevision+(mode==1?1:0);if(mode==2)s.Core.CardGauge.TrySpend(100);if(mode==3){s.Player.ApplyParalysis(2);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.Player.IsParalyzed);}if(mode==4)s.Player.TakeDamage(0,forceStagger:true);if(mode==5){int i=c.Hand.ToList().FindIndex(x=>x.Id!="heal");Assert.GreaterOrEqual(i,0);c.TrySelect(i);expected=c.SelectedCard;}if(mode==6)s.Core.TickFrame(0,true,true);if(mode==8)lease.Dispose();if(mode==9){var data=Deck155();Assert.IsTrue(s.QueueSelectedDeck("edit158",data,Owned(data),new SeededBattleRandom(158),out _));}
+                var hand=c.Hand;long units=s.Core.CardGauge.CurrentUnits;var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(c);var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;var random=PortableCheckpointJson.Serialize(c.CaptureState(defs));Assert.IsFalse(s.TryUseSelectedHealingCard(expected,rev,out _));Assert.AreSame(hand,c.Hand);Assert.AreEqual(50,s.Player.CurrentHp);Assert.AreEqual(units,s.Core.CardGauge.CurrentUnits);CollectionAssert.AreEqual(random,PortableCheckpointJson.Serialize(c.CaptureState(defs)));Assert.AreEqual(rev-(mode==1?1:0),c.HandRevision);
+            }finally{lease.Dispose();}}
+        }
+
         [TestCase(false)] [TestCase(true)] public void 枯渇した空の使用枠からは前後の実在手札へ巡回する(bool previous)
         {
             var source=Deck155();using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("cycle157",source,Owned(source),new SeededBattleRandom(157),out _));Walk155(s,10*60000);var c=s.Cards;c.TrySelect(2);for(int i=0;i<28;i++)Assert.IsTrue(c.TryConsumeSelected(c.SelectedCard,c.HandRevision,s.Core.CardGauge,out _));Assert.AreEqual(2,c.Hand.Count);Assert.AreEqual(2,c.SelectedIndex);Assert.IsNull(c.SelectedCard);var repeat=new OutsideSelectionRepeat();repeat.Queue(0,false,false,false,false,false,false,0,0);repeat.Queue(1,previous,!previous,previous,!previous,false,true,0,0);repeat.AdvanceFrame(c);Assert.AreEqual(previous?1:0,c.SelectedIndex);}

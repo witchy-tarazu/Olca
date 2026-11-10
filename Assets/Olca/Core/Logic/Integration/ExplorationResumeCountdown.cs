@@ -125,6 +125,7 @@ namespace Olca.Core.Logic.Integration
             public OutsideCameraPolicy Camera=>owner?.Camera;
             public OutsideExplorationCards Cards=>owner?.Cards;
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
+            public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
         }
@@ -132,6 +133,23 @@ namespace Olca.Core.Logic.Integration
         // 外界だけが所有する個体。DungeonのPlayerやViewへ所有権を渡さない。
         public Olca.Core.Domain.PlayerCharacter Player {get;private set;}
         private long playerFrame;
+        public string CardUseMessage {get;private set;}
+        public long CardUseMessageFrame {get;private set;}=-1;
+        private long lastCardUseAttempt=-1;
+        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=-1;}
+        /// <summary>地上試用ヒールだけの0/0発動。予約や攻撃用BattleContextを創作しない。</summary>
+        public bool TryUseSelectedHealingCard(Olca.Core.Domain.Card expected,long revision,out string error)
+        {
+            error=null;if(lastCardUseAttempt==Core.Frame){error="このフレームでは受付済みです";return false;}lastCardUseAttempt=Core.Frame;
+            if(IsEnded||!IsPresented||IsDeckEditingLocation||!CanPerformAttack){error="今はカードを使用できません";return false;}
+            if(expected==null||!ReferenceEquals(expected,Cards?.SelectedCard)||Cards.HandRevision!=revision){error="現在の手札を選択してください";return false;}
+            if(Core.Definition.Id!="validation-landing-32"||!Core.IsGrounded){error="ヒールの地上試用のみ対応しています";}
+            else if(expected.Id!="heal"||expected.Category!=CardCategory.Defense||expected.SubCategory!=CardSubCategory.Heal||expected.ExceedLevel!=ExceedLevel.Normal||expected.Power<0||(expected.StartupFrames??(int)Math.Ceiling(expected.StartupTime*60d-0.00001d))!=0||(expected.RecoveryFrames??(int)Math.Ceiling(expected.RecoveryTime*60d-0.00001d))!=0){error="このカードの外界発動は未対応です";}
+            else if(!Cards.TryConsumeSelected(expected,revision,Core.CardGauge,out _)){error="カードゲージが不足しています";}
+            if(error!=null){CardUseMessage=error;CardUseMessageFrame=Core.Frame;return false;}
+            // HealEffectと同じ既存HP反映。満タンでもカード/ゲージの消費を戻さない。
+            Player.Heal(expected.Power);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
+        }
         public bool CanPerformAttack=>!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered;
         public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
         {
@@ -140,7 +158,7 @@ namespace Olca.Core.Logic.Integration
             if(Player!=null)return false;
             if(IsPresented)throw new System.InvalidOperationException("表示前に外界個体を初期化してください");
             var value=factory();if(value==null||value.IsDead)throw new System.ArgumentException("生存する外界個体が必要です");
-            Player=value;playerFrame=Core.Frame;return true;
+            ResetCardUseFeedback();Player=value;playerFrame=Core.Frame;return true;
         }
         public void RecoverOutside(string pointId,bool relocate=true)
         {
@@ -158,7 +176,7 @@ namespace Olca.Core.Logic.Integration
             string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
             if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
             var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
-            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
+            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}ResetCardUseFeedback();Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
         }
         /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
         public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
@@ -236,7 +254,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
             return current=new PresentationLease(this);
         }
-        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;Player=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
+        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();Player=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
     }
 }
 
@@ -440,7 +458,7 @@ namespace Olca.Core.Logic.Integration
             }
             return changed;
         }
-        public void AdvanceFrame(OutsideExplorationCards cards,bool allowActions=true)
+        public bool AdvanceFrame(OutsideExplorationCards cards,bool allowActions=true)
         {
             bool inputChangedThisFrame=false;
             for(int start=0;start<pending.Count;){
@@ -457,11 +475,12 @@ namespace Olca.Core.Logic.Integration
                 inputChangedThisFrame|=groupChanged;
                 start=end;
             }
-            pending.Clear();
+            pending.Clear();bool repeated=false;
             if(!waitingForNeutral&&!waitingForResumeSample&&!inputChangedThisFrame&&repeatDirection!=0&&--framesUntilRepeat<=0){
-                if(allowActions)Move(cards,repeatDirection);
+                if(allowActions){Move(cards,repeatDirection);repeated=true;}
                 framesUntilRepeat=DefaultRepeatFrames;
             }
+            return inputChangedThisFrame||repeated;
         }
     }
 }
@@ -646,7 +665,7 @@ namespace Olca.Core.Logic.Integration
             var actor=player.Restore();var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
             var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);itemCooldowns.Clear();Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
         }
     }
 }

@@ -2217,6 +2217,23 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class InputBindingEditTests
     {
+        [TestCase(false)] [TestCase(true)] public void 外界カード専用割当は旧完全形式へ一行だけ追加し既存Dungeon値を維持する(bool gamepad)
+        {
+            var defaults=gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();var key=(Device:gamepad?"gamepad":"keyboard",Context:"outside",Action:"CardPrimary");var old=defaults.Bindings.Where(p=>p.Key!=key).ToDictionary(p=>p.Key,p=>p.Value);var before=old.ToArray();var migrated=Olca.Unity.UnityInputProvider.DecodeSelectionSlots(old,gamepad);Assert.AreEqual(gamepad?"North":"F",migrated.Bindings[key]);foreach(var p in before)Assert.AreEqual(p.Value,migrated.Bindings[p.Key]);CollectionAssert.AreEquivalent(before,old.ToArray());var again=Olca.Unity.UnityInputProvider.DecodeSelectionSlots(migrated.Bindings.ToDictionary(p=>p.Key,p=>p.Value),gamepad);CollectionAssert.AreEquivalent(migrated.Bindings,again.Bindings);
+        }
+        [TestCase(false)] [TestCase(true)] public void 外界カードの追加割当が衝突すれば新行だけ未割当にして既存値を保存する(bool gamepad)
+        {
+            var defaults=gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();var key=(Device:gamepad?"gamepad":"keyboard",Context:"outside",Action:"CardPrimary");var old=defaults.Bindings.Where(p=>p.Key!=key).ToDictionary(p=>p.Key,p=>p.Value);var conflict=gamepad?("gamepad","menu","Decide"):("keyboard","exploration","DashPrimary");old[conflict]=gamepad?"North":"F";if(gamepad)old[("gamepad","menu","Customize")]="South";var profile=Olca.Unity.UnityInputProvider.DecodeSelectionSlots(old,gamepad);Assert.IsNull(profile.Bindings[key]);Assert.AreEqual(old[conflict],profile.Bindings[conflict]);
+        }
+        [TestCase("Enter")] [TestCase("NumpadEnter")] [TestCase("Space")] [TestCase("Escape")] public void 外界カード使用へ固定の調べるとポーズのキーを重複登録しない(string value)
+        {
+            var d=Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile().Bindings.ToDictionary(p=>p.Key,p=>p.Value);d[("keyboard","outside","CardPrimary")]=value;foreach(var k in d.Keys.Where(k=>k!=("keyboard","outside","CardPrimary")&&d[k]==value).ToArray())d[k]=null;var profile=new InputBindingProfile(d,new (string,string,string)[0],Olca.Unity.UnityInputProvider.SelectionCoUse(false));Assert.IsFalse(Olca.Unity.UnityInputProvider.ValidateKeyboardProfile(profile,out _));
+        }
+        [Test] public void 外界クリックの論理要求は最後の同frame要求だけ保持し翌frameへ残留させない()
+        {
+            var q=new LogicalInputQueue();q.Enqueue(1,new LogicalInput{OutsideHandPress=0,OutsideHandRevision=3});q.Enqueue(1,new LogicalInput{OutsideHandPress=2,OutsideHandRevision=4});q.Enqueue(1,new LogicalInput{CardUseButtonDown=true});var first=q.Take(1);Assert.AreEqual(2,first.OutsideHandPress);Assert.AreEqual(4,first.OutsideHandRevision);Assert.IsTrue(first.CardUseButtonDown);var next=q.Take(2);Assert.AreEqual(-1,next.OutsideHandPress);Assert.IsNull(next.OutsideHandOwner);Assert.IsNull(next.OutsideHandLease);Assert.IsFalse(next.CardUseButtonDown);
+        }
+
         private static readonly (string,string,string) Confirm=("keyboard","menu","confirm"), Cancel=("keyboard","menu","cancel"), Optional=("keyboard","menu","detail");
         private static Dictionary<(string,string,string),string> Bindings() => new Dictionary<(string,string,string),string> {
             [Confirm]="key-a",[Cancel]="key-b",[Optional]=null,
