@@ -9,6 +9,12 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(9,false)] [TestCase(9.5,true)] [TestCase(10,true)] [TestCase(10.5,true)] [TestCase(11,false)] [TestCase(12,false)] [TestCase(6,false)]
+        public void 試用カード箱は半径と接地を守り既存操作地点と競合しない(double x,bool expected)
+        {
+            using(var s=new OutsideExplorationSession()){Walk155(s,(long)(x*60000));Assert.AreEqual(expected,OutsideTrialRoute.CanClaimCardSupply(s.Core));if(expected){Assert.IsFalse(OutsideTrialRoute.CanRecover(s.Core));Assert.IsFalse(OutsideTrialRoute.CanClaimSupply(s.Core));Assert.IsFalse(OutsideTrialRoute.CanTryPoison(s.Core));s.Core.TickFrame(0,true,true);Assert.IsFalse(OutsideTrialRoute.CanClaimCardSupply(s.Core));}}
+        }
+
         private static Card[] Deck155()=>Enumerable.Range(0,30).Select(i=>new Card("selected155-"+i,"fixture",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"")).ToArray();
         private static void Walk155(OutsideExplorationSession s,long target){for(int i=0;i<400&&s.Core.Position!=target;i++){s.Core.TickFrame(Math.Sign(target-s.Core.Position));s.AdvanceDeckLocation();}Assert.AreEqual(target,s.Core.Position);}
         [Test] public void 選択30枚は保存準備だけで抽選せず地点退出で一度だけ適用する()

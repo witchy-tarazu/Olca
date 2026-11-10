@@ -60,6 +60,10 @@ namespace Olca.Core.Logic.Integration
         {if(core==null||core.Definition.Id!="validation-landing-32"||id!=null&&id!=RecoveryPointId)throw new ArgumentException("復帰先の外界マップ/地点が未登録です");return id==null?core.Definition.Start:RecoveryX;}
         public const long PoisonTrialX=2*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanTryPoison(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonTrialX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        // 既存の地点/接触半径と重ならない試用配置。正式な入手源ではない。
+        public const string CardSupplyId="validation-exploration-card-chest-v1";
+        public const long CardSupplyX=10*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanClaimCardSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-CardSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
         public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long PoisonSupplyX=16*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;

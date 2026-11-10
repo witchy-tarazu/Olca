@@ -1512,6 +1512,31 @@ namespace Olca.Core.Domain
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;received=amount;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
         }
+        /// <summary>試用30枚への任意入手経路。スターターや保存デッキを自動変更しない。</summary>
+        public bool TryClaimTrialExplorationCards(ClearReturnSettings settings,out int received,out long overflow,out string error)
+        {
+            received=0;overflow=0;error=null;
+            if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に調べてください";return false;}
+            try{
+                if(settings==null||collectionDefinitions==null){error="カード補給の登録定義がありません";return false;}settings.Validate();
+                var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();var claimed=inventory.ClaimedSources??Array.Empty<string>();
+                if(claimed.Contains(Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId)){error="この箱は受取済みです";return false;}
+                // 既存実定義だけ。配置・4/4/2は試用値で、カード性能や超過換算率は作らない。
+                var entries=new[]{(Id:"sword",Level:ExceedLevel.Lv1,Count:4),(Id:"bomb",Level:ExceedLevel.Lv1,Count:4),(Id:"sword",Level:ExceedLevel.Lv2,Count:2)};
+                int accepted=0;long tokens=0;
+                foreach(var entry in entries){
+                    var matches=collectionDefinitions.Where(c=>c.Id==entry.Id&&c.ExceedLevel==entry.Level).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
+                    if(matches.Length!=1){error="試用カードの定義が未登録または曖昧です";return false;}var card=matches[0];string hash=CollectionDisplay.DefinitionHash(card);
+                    var owned=AcquisitionOwned(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,hash);var list=next.Owned.ToList();
+                    if(owned==null){owned=new OwnedCardCount{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,DefinitionHash=hash};list.Add(owned);}
+                    if(owned.Name!=card.Name||owned.Rarity!=card.Rarity){error="既存所持と補給定義が一致しません";return false;}
+                    int add=Math.Min(entry.Count,Math.Max(0,4-owned.Count));owned.Count=checked(owned.Count+add);accepted=checked(accepted+add);tokens=checked(tokens+(long)(entry.Count-add)*settings.Tokens(card.Rarity,card.ExceedLevel));next.Owned=list.ToArray();
+                    if(add>0)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,hash);
+                }
+                inventory.ClaimedSources=claimed.Concat(new[]{Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId}).ToArray();next.OutsideInventory=inventory;next.Tokens=checked(next.Tokens+tokens);next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;received=accepted;overflow=tokens;return true;}finally{writing=false;}
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
         public bool HasClaimedOutsideSupply(string id)=>(current?.OutsideInventory?.ClaimedSources??Array.Empty<string>()).Contains(id);
         public long InventoryRevision=>current?.Revision??-1;
         public OutsideInventoryData OutsideInventorySnapshot=>(current?.OutsideInventory??new OutsideInventoryData()).Copy();
