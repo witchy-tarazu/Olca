@@ -425,6 +425,16 @@ namespace Olca.Presentation.Dungeon
             if(dialog.Open(parent,dialogs,captured,()=>SameDialogParent(parent,captured),cover)){Canvas.ForceUpdateCanvases();if(dialog is Olca.Presentation.Management.ReadOnlyDetailsDialog reading)reading.RefreshLayout();return true;}
             activeDialog=null;return false;
         }
+        public static string FormatDepartureCost(DepartureCostData cost)
+        {cost.Validate();return "クリア時の費用: 通貨 "+cost.Currency+(cost.Items.Length==0?" / アイテムなし":" / "+string.Join(" / ",cost.Items.Select(v=>v.Name+" × "+v.Count)));}
+        public bool ConfirmDepartureCost(DepartureTermsData terms,string dungeonName,Func<OutsideInventoryData> inventory,Action<DepartureTermsData> accept,Action cancel,Action ended)
+        {
+            if(HasMenuModal||!CanOperateView)return false;var frozen=terms.Copy();frozen.Validate();var parent=content;var captured=ManagementContext;bool enough=frozen.Cost.CanAfford(inventory(),out var shortage);
+            var dialog=Olca.Presentation.Management.ConfirmationDialog.Create(transform,font,new Olca.Presentation.Management.ConfirmationContent{RootName="DepartureCostDialog",Title="出撃費用の確認",Subject=dungeonName,StatusName="DepartureCostStatus",Status=shortage??"出撃時には消費しません",Message=FormatDepartureCost(frozen.Cost)+"\n\nクリア時に報酬とまとめて保存します。\n敗北・撤退では消費しません。",ConfirmName="ConfirmDepartureCost",ConfirmLabel="この費用で出撃",CancelName="CancelDepartureCost",CancelLabel="戻る",ConfirmEnabled=enough});
+            dialog.CanConfirm=()=>{if(!SameDialogParent(parent,captured))return false;bool ok=frozen.Cost.CanAfford(inventory(),out var error);var label=dialog.GetComponentsInChildren<Text>(true).FirstOrDefault(v=>v.name=="DepartureCostStatus");if(label!=null)label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error??"出撃時には消費しません");return ok;};
+            dialog.Terminated+=()=>ended?.Invoke();dialog.Completed+=accepted=>{if(!SameDialogParent(parent,captured))return;if(accepted)accept?.Invoke(frozen.Copy());else{cancel?.Invoke();FocusCurrentContent("ConfirmDungeonSelection");}};
+            return StartDialog(dialog,parent,true);
+        }
         private void OpenDiscard(Action<bool> close,Action resume)
         {
             if(HasMenuModal||!CanOperateView)return;var parent=content;var captured=ManagementContext;var dialog=Olca.Presentation.Management.ConfirmationDialog.Create(transform,font,new Olca.Presentation.Management.ConfirmationContent{RootName="DepartureDiscardContentsDialog",BodyName="DepartureDiscardContents",TitleName="DepartureTitle",Title=explorationDeckLibrary?"探索デッキを編成":"所持から出撃デッキを編成",MessageName="DiscardDepartureHelp",Message=explorationDeckLibrary?"未確定の編成を破棄して探索デッキ一覧へ戻りますか？":"未確定の編成を破棄して帰還画面へ戻りますか？",ConfirmName="DiscardDepartureDraft",ConfirmLabel="変更を破棄",CancelName="KeepEditingDeparture",CancelLabel="編集に戻る"});
@@ -531,16 +541,17 @@ namespace Olca.Presentation.Dungeon
             content = new GameObject("ReturnContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
             UseReferenceLayout();
             gameObject.SetActive(true); profile = profile ?? new ClearReturnProfile();
+            bool settlementPending=blocked&&flow?.Stage==ClearReturnStage.Awarded&&(profile.Flow?.RunId!=flow.RunId||profile.Flow.Stage==ClearReturnStage.Choosing);
             float homeFooterY=-420,homeAuxY=-493,homePageY=-340;
             CommerceSurface();CommerceFace("ReturnHeader",0,450,1760,120,true);CommerceFace("ReturnBody",0,-30,1760,700);
             var heading=Text("Title", blocked && flow != null && flow.Outcome != RunReturnOutcome.Cleared ? "敗北・撤退の帰還を保存できません" : collectionOnly ? "所持カード・成長" : flow == null ? "進行データの確認" : flow.Stage == ClearReturnStage.Choosing ? "持ち帰りカードを選択" :
-                flow.Stage == ClearReturnStage.Awarded ? "持ち帰り・経験値を反映しました" :
+                flow.Stage == ClearReturnStage.Awarded ? (settlementPending?"クリア結果は未確定です":"持ち帰り・経験値を反映しました") :
                 flow.Outcome == RunReturnOutcome.Defeated ? "敗北して帰還しました" : flow.Outcome == RunReturnOutcome.Retreated ? "撤退して帰還しました" : "帰還しました", 0, 455, 1680, 80, 36);heading.color=Color.white;
             var status=Text("ReturnStatus",error??"",0,355,1680,60,24);status.color=Color.white;AddTrailingTextDetails(status,"ReturnStatusDetails","ホゾンのメッセージ");
             if (flow == null && !collectionOnly) {
                 Text("ReturnHelp", "進行データを確認できるまで、既存の保存を変更せず停止します。", 0, 100, 1700, 120, 28);
             } else if (!collectionOnly && flow.Stage == ClearReturnStage.Choosing) {
-                Text("SelectionRules", $"最大3枚・同じカード1枚まで・★★★不可　選択 {flow.Selected.Length}/3\n選ばなかったカードは失います。経験値予定 +{flow.ExperienceAward}", 0, 260, 1740, 110, 25);
+                var rules=Text("SelectionRules", $"最大3枚・同じカード1枚まで・★★★不可　選択 {flow.Selected.Length}/3\n選ばなかったカードは失います。経験値予定 +{flow.ExperienceAward}"+(flow.Terms==null?"":"\n"+FormatDepartureCost(flow.Terms.Cost)), 0, 260, 1740, 110, 25);AddOverflowTextDetails(rules,"持ち帰り条件・費用");
                 int pages = Math.Max(1, (flow.Candidates.Length + PageSize - 1) / PageSize); page = Math.Min(page, pages - 1);
                 for (int row = 0; row < PageSize && page * PageSize + row < flow.Candidates.Length; row++) {
                     int index = page * PageSize + row; var card = flow.Candidates[index];
@@ -554,9 +565,9 @@ namespace Olca.Presentation.Dungeon
                 Pages(profile, flow, blocked, error, pages);
                 Button("ConfirmCarryHome", $"{flow.Selected.Length}枚で確定・経験値反映", 0, -420, 900, 75, confirm).interactable = !blocked;
             } else if (!collectionOnly && flow.Stage == ClearReturnStage.Awarded) {
-                var experience=Text("AwardSummary",$"経験値 +{flow.ExperienceAward}（反映済み）\nLv {profile.Level} / 総経験値 {profile.Experience}",-425,235,760,145,30);experience.lineSpacing=1.25f;
-                var tokens=Text("AwardTokens",$"超過変換 +{flow.TokenAward} トークン\n所持トークン {profile.Tokens}",425,235,760,145,30);tokens.lineSpacing=1.25f;
-                var carryHeading=Text("AwardCardsHeading","持ち帰り確定",0,130,1600,44,24);carryHeading.alignment=TextAnchor.MiddleLeft;
+                var experience=Text("AwardSummary",$"経験値 +{flow.ExperienceAward}"+(settlementPending?"（未確定）":"（反映済み）")+$"\nLv {profile.Level} / 総経験値 {profile.Experience}",-425,235,760,145,30);experience.lineSpacing=1.25f;
+                var tokens=Text("AwardTokens",$"超過変換 +{flow.TokenAward} トークン\n所持トークン {profile.Tokens}"+(flow.Terms==null?"":(settlementPending?"\n費用（未確定）: 通貨 ":"\n費用支払済み: 通貨 ")+flow.Terms.Cost.Currency+" / アイテム "+flow.Terms.Cost.Items.Length+"シュルイ"),425,235,760,145,30);tokens.lineSpacing=1.25f;AddOverflowTextDetails(tokens,"トークンと費用");
+                var carryHeading=Text("AwardCardsHeading",settlementPending?"持ち帰り（未確定）":"持ち帰り確定",0,130,1600,44,24);carryHeading.alignment=TextAnchor.MiddleLeft;
                 int rows=Mathf.Max(1,flow.Selected.Length);
                 if(flow.Selected.Length==0)Text("AwardCards","0枚",0,60,1600,64,30).alignment=TextAnchor.MiddleLeft;
                 for(int row=0;row<flow.Selected.Length;row++){

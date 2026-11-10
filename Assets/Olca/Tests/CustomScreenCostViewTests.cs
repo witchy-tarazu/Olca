@@ -16,6 +16,11 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(false)][TestCase(true)] public void 費用結果表示は保存失敗の未確定と既存単独表示を区別する(bool blocked)
+        {
+            var root=new GameObject("CostPending137",typeof(RectTransform));try{((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var profile=new ClearReturnProfile{Flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Choosing}};var flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Awarded,Outcome=RunReturnOutcome.Cleared,ExperienceAward=100,NewLevel=2,ReturnedMaxHp=105,ReturnedAttack=11,Terms=new DepartureTermsData{DungeonId="test",DefinitionKey="display-only",Cost=new DepartureCostData{Currency=10},ReturnSettings=new ClearReturnSettings()}};view.Render(profile,flow,blocked,blocked?"ホゾンシッパイ":null);var title=root.GetComponentsInChildren<Text>().Single(t=>t.name=="Title").text;var summary=root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardSummary").text;Assert.AreEqual(blocked,title.Contains("ミカクテイ"));Assert.AreEqual(blocked,summary.Contains("ミカクテイ"));StringAssert.Contains("ヒヨウ",root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardTokens").text);}finally{Object.DestroyImmediate(root);}
+        }
+
         [Test]
         public void メニュー書体を使っても常設通貨の数字とゲームプレイ用書体を変更しない()
         {

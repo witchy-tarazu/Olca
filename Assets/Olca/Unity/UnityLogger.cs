@@ -222,7 +222,7 @@ namespace Olca.Unity
                     if (exists)
                     {
                         var previous = Decode(ActivePath);
-                        if (previous.RunId != snapshot.RunId || previous.Sequence > snapshot.Sequence)
+                        if (previous.RunId != snapshot.RunId || previous.DepartureTermsKey!=snapshot.DepartureTermsKey || previous.Sequence > snapshot.Sequence)
                             throw new System.IO.InvalidDataException("保存世代または攻略IDが競合しています");
                         if (previous.Sequence == snapshot.Sequence)
                         {
@@ -339,7 +339,7 @@ namespace Olca.Unity
                             (snapshot.FloorIndex != previous.FloorIndex &&
                              (snapshot.State.Boundary != Olca.Core.Domain.CheckpointBoundary.Departure || snapshot.State.PositionMilli != 0)))
                             throw new System.IO.InvalidDataException("階層を飛ばすか戻る保存はできません");
-                        if (previous.State.RunId != snapshot.State.RunId || previous.State.Sequence > snapshot.State.Sequence)
+                        if (previous.State.RunId != snapshot.State.RunId || previous.State.DepartureTermsKey!=snapshot.State.DepartureTermsKey || previous.State.Sequence > snapshot.State.Sequence)
                             throw new System.IO.InvalidDataException("保存世代または攻略IDが競合しています");
                         if (previous.State.Sequence == snapshot.State.Sequence)
                         {

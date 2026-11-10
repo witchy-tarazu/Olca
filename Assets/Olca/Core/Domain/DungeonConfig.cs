@@ -224,6 +224,7 @@ namespace Olca.Core.Domain
     {
         public int SchemaVersion = 1;
         public string DefinitionsRevision, DungeonId, MapHash, RunId;
+        public string DepartureTermsKey; // nullは旧無料攻略。新規条件の欠落を無料と誤認しない。
         public long Sequence, PositionMilli;
         public long Currency;
         public CheckpointBoundary Boundary;
@@ -246,7 +247,7 @@ namespace Olca.Core.Domain
             Visits = Visits==null?null:System.Array.ConvertAll(Visits,v=>v?.Copy()),
             CollectedItemCells = CollectedItemCells==null?null:(int[])CollectedItemCells.Clone(),
             SchemaVersion = SchemaVersion, DefinitionsRevision = DefinitionsRevision, DungeonId = DungeonId,
-            MapHash = MapHash, RunId = RunId, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
+            MapHash = MapHash, RunId = RunId, DepartureTermsKey=DepartureTermsKey, Sequence = Sequence, PositionMilli = PositionMilli, Currency = Currency, Boundary = Boundary,
             Player = Player?.Copy(), Cards = Cards == null ? null : System.Array.ConvertAll(Cards, c => c?.Copy()),
             DeckOrder = DeckOrder == null ? null : (string[])DeckOrder.Clone(),
             ObtainedOrder = ObtainedOrder == null ? null : (string[])ObtainedOrder.Clone(),

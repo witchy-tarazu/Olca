@@ -452,6 +452,10 @@ namespace Olca.Application.Dungeon
         private Olca.Application.Management.OutsideExplorationPresentationBinding outsideExploration;
         private bool outsideExplorationOpening;
         private bool outsideLandingRoute,outsideDungeonSelection,outsideEntranceRequest;
+        private bool departureQuoteOpen;
+        private readonly Dictionary<string,DepartureCostData> departureCosts=new Dictionary<string,DepartureCostData>(System.StringComparer.Ordinal);
+        public void ConfigureDepartureCost(string dungeonId,DepartureCostData cost){if(string.IsNullOrWhiteSpace(dungeonId)||cost==null)throw new System.ArgumentException("対象と費用が必要です");cost.Validate();departureCosts[dungeonId]=cost.Copy();}
+        private DepartureCostData DepartureCost(string id)=>departureCosts.TryGetValue(id,out var value)?value.Copy():new DepartureCostData();
         private string outsideDepartureError;
         private bool outsideRecoveryPending;private int outsideRecoveryAppliedFrame=-1,outsideRecoveryAttemptFrame=-1;private string outsideRecoveryError;
         private bool CanRestoreOutsideRecovery=>CustomizationUiLive&&outsideLandingRoute&&outsideRecoveryPending&&clearReturnSession?.HasPendingSave==true&&!progressStartupBlocked&&clearReturnVisible;
@@ -566,7 +570,7 @@ namespace Olca.Application.Dungeon
                 ()=>CustomizationUiLive&&clearReturnVisible&&!IsUserPaused&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned),()=>{outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("ExplorationDeckEntry");});
             ResetOutsideRouteInput();explorationDeckLibrary.Open();
         }
-        private bool CanSelectDungeon => explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
+        private bool CanSelectDungeon => !departureQuoteOpen && explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
             !departureWriting && !progressStartupBlocked && clearReturnSession.Ready && !clearReturnSession.HasPendingSave &&
             (initialHub || clearReturnSession.Snapshot.Flow?.Stage == ClearReturnStage.Returned) &&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent);
@@ -583,8 +587,7 @@ namespace Olca.Application.Dungeon
             clearReturnView.RenderDungeonSelection(dungeonChoices.Select(c => c.Label).ToArray(),
                 Enumerable.Range(0, dungeonChoices.Count).Select(DungeonUnlocked).ToArray(), selectedDungeon,
                 i => { if (!exchangeOpen && !styleSelectionOpen && dungeonSelectionOpen && CanSelectDungeon && DungeonUnlocked(i)) { selectedDungeon = i; ShowDungeonSelection(); } },
-                () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; dungeonSelectionOpen = false;
-                    bool depart=initialHub||outsideDungeonSelection;outsideDungeonSelection=false;if(depart)StartNextDeparture();else ShowClearReturn(); },
+                () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; bool depart=initialHub||outsideDungeonSelection;if(depart)StartNextDeparture();else{dungeonSelectionOpen=false;outsideDungeonSelection=false;ShowClearReturn();} },
                 () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
                     if(outsideDungeonSelection){outsideDungeonSelection=false;OpenOutsideExplorationAsync().Forget();return;}
                     if (initialHub) { dungeonSelectionOpen = true; ShowDungeonSelection(); } else ShowClearReturn(); },
@@ -1548,7 +1551,7 @@ namespace Olca.Application.Dungeon
         {
             if (!ownedDepartureEditing || !CanEditOwnedDeparture || editingSavedDeckId!=null) return;
             if (!TryOwnedDepartureDeck(out var deck, out ownedDepartureError)) { ShowOwnedDeparture(); return; }
-            ownedDepartureEditing = false; StartNextDepartureWithDeck(deck);
+            StartNextDepartureWithDeck(deck);
         }
 
         private bool endingRun;
@@ -1702,9 +1705,21 @@ namespace Olca.Application.Dungeon
         private void StartNextDeparture() => StartNextDepartureWithDeck(null);
         private void StartNextDepartureWithDeck(Deck ownedDeck)
         {
-            if (progressDialogOpen || exchangeOpen || styleSelectionOpen || dungeonSelectionOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
+            if(departureQuoteOpen||departureWriting||!clearReturnVisible||clearReturnSession==null||!clearReturnSession.Ready||clearReturnSession.HasPendingSave||progressStartupBlocked)return;
+            string parent=clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent;
+            if(clearReturnSession.Snapshot.NextDeparture?.ParentRunId==parent){CommitNextDepartureWithDeck(ownedDeck,null);return;}
+            if(!DungeonUnlocked(selectedDungeon))return;var choice=dungeonChoices[selectedDungeon];var terms=new DepartureTermsData{DungeonId=choice.Id,DefinitionKey=choice.Key,Cost=DepartureCost(choice.Id),ReturnSettings=ReturnSettings().Copy()};
+            // 非表示の互換呼出しは旧無料経路だけ。費用付き出撃を確認なしで通さない。
+            if(!isActiveAndEnabled){if(terms.Cost.Currency==0&&terms.Cost.Items.Length==0)CommitNextDepartureWithDeck(ownedDeck,terms);return;}
+            EnsureReturnView();var runtime=manager;int index=selectedDungeon;bool selection=dungeonSelectionOpen;var frozenDeck=ownedDeck==null?null:new Deck(ownedDeck.GetAllCards().Select(c=>c.Clone()).ToList());departureQuoteOpen=true;
+            bool opened=clearReturnView.ConfirmDepartureCost(terms,choice.Label,()=>clearReturnSession.OutsideInventorySnapshot,approved=>{if(this==null||runtimeReleased||!ReferenceEquals(runtime,manager)||selectedDungeon!=index||dungeonChoices[index].Id!=approved.DungeonId||dungeonChoices[index].Key!=approved.DefinitionKey||(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent)!=parent)return;CommitNextDepartureWithDeck(frozenDeck,approved);},()=>{if(this!=null&&selection)dungeonSelectionOpen=true;},()=>{if(this!=null)departureQuoteOpen=false;});
+            if(!opened)departureQuoteOpen=false;
+        }
+        private void CommitNextDepartureWithDeck(Deck ownedDeck,DepartureTermsData terms)
+        {
+            if (progressDialogOpen || exchangeOpen || styleSelectionOpen || departureQuoteOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
                 (!initialHub && clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned)) return;
-            bool outsideEntryRejected=false;departureWriting = true;
+            bool outsideEntryRejected=false;departureWriting = true;dungeonSelectionOpen=false;outsideDungeonSelection=false;ownedDepartureEditing=false;
             try {
                 if (clearReturnSession.HasPendingSave) { ShowClearReturn(); return; }
                 if (clearReturnSession.Snapshot.NextDeparture?.ParentRunId != (clearReturnSession.Snapshot.Flow?.RunId ?? NextDepartureData.InitialParent)) {
@@ -1722,6 +1737,7 @@ namespace Olca.Application.Dungeon
                     if(outsideLandingRoute&&gameSystem?.OutsideExploration.Player!=null){try{outsideEntry=OutsideDepartureVitals.Capture(gameSystem.OutsideExploration.Player,clearReturnSession.Snapshot.ClearedDungeons.Contains(choice.Id));}catch(System.ArgumentException e){outsideDepartureError=e.Message;outsideDungeonSelection=true;outsideEntryRejected=true;return;}}
                     outsideDepartureError=null;
                     var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
+                    frozen.BindDepartureTerms(terms?.Key());
                     var factory = CreateCoreFactory();
                     var player = factory.CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames);
                     player.SetDepartureStyle(style);
@@ -1729,7 +1745,7 @@ namespace Olca.Application.Dungeon
                     outsideEntry?.ApplyToStart(player);
                     factory.CreatePreview(map,player,deck,frozen);
                     var start = frozen.Store.Read();
-                    if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key,outsideEntry,choice.Id)) {
+                    if (!ValidateDeparture(start, choice, out clearReturnError) || !clearReturnSession.PrepareNextDeparture(start, choice.Key,outsideEntry,choice.Id,terms)) {
                         ShowClearReturn(); return;
                     }
                 }

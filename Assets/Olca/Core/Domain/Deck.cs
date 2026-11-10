@@ -302,15 +302,48 @@ namespace Olca.Core.Domain
         public int Count;
         public OwnedCardCount Copy() => (OwnedCardCount)MemberwiseClone();
     }
+    public sealed class DepartureCostItemData
+    {
+        public string Id,Name;public int Count;
+        public DepartureCostItemData Copy()=>(DepartureCostItemData)MemberwiseClone();
+    }
+    /// <summary>永続所持からクリア時だけ支払う費用。カード/攻略中通貨/tokenとは独立。</summary>
+    public sealed class DepartureCostData
+    {
+        public long Currency;public DepartureCostItemData[] Items=Array.Empty<DepartureCostItemData>();
+        public DepartureCostData Copy()=>new DepartureCostData{Currency=Currency,Items=Items?.Select(v=>v?.Copy()).ToArray()};
+        public void Validate(){if(Currency<0||Items==null||Items.Any(v=>v==null||string.IsNullOrWhiteSpace(v.Id)||string.IsNullOrWhiteSpace(v.Name)||v.Count<=0)||Items.Select(v=>v.Id).Distinct().Count()!=Items.Length)throw new ArgumentException("出撃費用の通貨/アイテムが不正です");}
+        public bool CanAfford(OutsideInventoryData source,out string error)
+        {
+            Validate();OutsideInventoryData.Validate(source);var missing=new List<string>();if((source?.Currency??0)<Currency)missing.Add("通貨 "+Currency+"（所持 "+(source?.Currency??0)+"）");foreach(var v in Items){int count=source?.Items.SingleOrDefault(i=>i.Id==v.Id)?.Count??0;if(count<v.Count)missing.Add(v.Name+" "+v.Count+"コ（所持 "+count+"）");}error=missing.Count==0?null:"費用が不足しています: "+string.Join(" / ",missing);return error==null;
+        }
+        internal bool TryDebit(OutsideInventoryData source,out OutsideInventoryData next,out string error)
+        {
+            next=null;if(!CanAfford(source,out error))return false;next=source?.Copy();if(Currency==0&&Items.Length==0)return true;next=next??new OutsideInventoryData();next.Currency=checked(next.Currency-Currency);foreach(var fee in Items)next.Items.Single(v=>v.Id==fee.Id).Count=checked(next.Items.Single(v=>v.Id==fee.Id).Count-fee.Count);return true;
+        }
+    }
+    /// <summary>確認画面で凍結する出撃条件。失敗再起動でも結果計算の設定を取り直さない。</summary>
+    public sealed class DepartureTermsData
+    {
+        public int Version=1;public string DungeonId,DefinitionKey;public DepartureCostData Cost;public ClearReturnSettings ReturnSettings;
+        public DepartureTermsData Copy()=>new DepartureTermsData{Version=Version,DungeonId=DungeonId,DefinitionKey=DefinitionKey,Cost=Cost?.Copy(),ReturnSettings=ReturnSettings?.Copy()};
+        public void Validate(){if(Version!=1||string.IsNullOrWhiteSpace(DungeonId)||string.IsNullOrWhiteSpace(DefinitionKey)||Cost==null||ReturnSettings==null)throw new ArgumentException("出撃確認条件が不正です");Cost.Validate();ReturnSettings.Validate();}
+        public string Key(){Validate();return Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write("departure-terms-v1");w.Write(DungeonId);w.Write(DefinitionKey);w.Write(Cost.Currency);w.Write(Cost.Items.Length);foreach(var v in Cost.Items.OrderBy(v=>v.Id,StringComparer.Ordinal)){w.Write(v.Id);w.Write(v.Name);w.Write(v.Count);}WriteSettings(w,ReturnSettings);});}
+        private static void WriteSettings(System.IO.BinaryWriter w,ClearReturnSettings v){w.Write(v.FirstClearExperience);w.Write(v.ExperiencePerLevel);w.Write(v.MaximumLevel);w.Write(v.BaseMaxHp);w.Write(v.BaseAttack);w.Write(v.HpPerLevel);w.Write(v.AttackPerLevel);w.Write(v.StandardTokens);w.Write(v.LimitedTokens);w.Write(v.UltimateTokens);}
+        public bool MatchesSettings(ClearReturnSettings v)=>v!=null&&Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>WriteSettings(w,ReturnSettings))==Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>WriteSettings(w,v));
+        public static bool Same(DepartureTermsData a,DepartureTermsData b)=>a==null?b==null:b!=null&&a.Key()==b.Key();
+    }
     public sealed class ClearReceipt
     {
+        public DepartureTermsData Terms; // nullは旧無料攻略。クリア確定時の費用を台帳と結合する。
         public string RunId, Fingerprint;
         public RunReturnOutcome Outcome;
         public long Experience, Tokens;
-        public ClearReceipt Copy() => (ClearReceipt)MemberwiseClone();
+        public ClearReceipt Copy(){var v=(ClearReceipt)MemberwiseClone();v.Terms=Terms?.Copy();return v;}
     }
     public sealed class ClearReturnData
     {
+        public DepartureTermsData Terms;
         public string RunId, DungeonKey, Fingerprint;
         public ClearReturnStage Stage;
         public RunReturnOutcome Outcome;
@@ -322,7 +355,7 @@ namespace Olca.Core.Domain
         public ClearReturnData Copy()
         {
             var copy = (ClearReturnData)MemberwiseClone();
-            copy.Candidates = Candidates?.Select(c => c?.Copy()).ToArray(); copy.Selected = Selected?.ToArray(); copy.Settings = Settings?.Copy(); return copy;
+            copy.Terms=Terms?.Copy();copy.Candidates = Candidates?.Select(c => c?.Copy()).ToArray(); copy.Selected = Selected?.ToArray(); copy.Settings = Settings?.Copy(); return copy;
         }
     }
     // 進行文書を先に確定し、別攻略ディレクトリへ同じ出撃スナップショットを再試行する。
@@ -331,8 +364,9 @@ namespace Olca.Core.Domain
         public const string InitialParent = "initial-departure-v1";
         public string ParentRunId, DefinitionKey;
         public CheckpointDto Start;
+        public DepartureTermsData Terms;
         public OutsideDepartureVitals OutsideEntry; // nullは旧出撃。外界状態全体の退避とは別。
-        public NextDepartureData Copy() => new NextDepartureData { ParentRunId = ParentRunId, DefinitionKey = DefinitionKey, Start = Start?.Copy(), OutsideEntry=OutsideEntry?.Copy() };
+        public NextDepartureData Copy() => new NextDepartureData { ParentRunId = ParentRunId, DefinitionKey = DefinitionKey, Start = Start?.Copy(), Terms=Terms?.Copy(), OutsideEntry=OutsideEntry?.Copy() };
     }
     /// <summary>出撃保存と同時に固定する外界HP/持越し毒。未接続の時間状態は黙って落とさない。</summary>
     public sealed class OutsideDepartureVitals
@@ -567,6 +601,9 @@ namespace Olca.Core.Domain
             if(p.EquippedDeckId!=null){var equipped=decks.SingleOrDefault(d=>d.Id==p.EquippedDeckId);
                 if(equipped==null||!SavedDepartureDeck.TryValidateEquipped(p,equipped,out _))throw new ArgumentException("装備デッキの構築条件が不正です");}
             var n = p.NextDeparture;
+            n?.Terms?.Validate();
+            if(n!=null&&(n.Terms!=null&&n.Terms.DefinitionKey!=n.DefinitionKey||n.Start?.DepartureTermsKey!=n.Terms?.Key()))throw new ArgumentException("出撃費用と定義が一致しません");
+            foreach(var r in p.Receipts){r.Terms?.Validate();if(r.Outcome!=RunReturnOutcome.Cleared&&r.Terms!=null)throw new ArgumentException("敗北撤退で費用を確定できません");}
             n?.Start?.Player?.ValidatePermanentAbilities();
             if (n != null && (string.IsNullOrWhiteSpace(n.ParentRunId) || string.IsNullOrWhiteSpace(n.DefinitionKey) ||
                 n.Start == null || !Guid.TryParseExact(n.Start.RunId, "N", out _) || n.Start.RunId == n.ParentRunId ||
@@ -578,7 +615,9 @@ namespace Olca.Core.Domain
             if (string.IsNullOrWhiteSpace(f.RunId) || string.IsNullOrWhiteSpace(f.DungeonKey) || string.IsNullOrWhiteSpace(f.Fingerprint) ||
                 !Enum.IsDefined(typeof(ClearReturnStage), f.Stage) || !Enum.IsDefined(typeof(RunReturnOutcome), f.Outcome) || f.Candidates == null || f.Selected == null || f.Settings == null || f.ExperienceAward < 0 || f.TokenAward < 0)
                 throw new ArgumentException("帰還段階が不正です");
-            f.Settings.Validate();
+            f.Settings.Validate();f.Terms?.Validate();
+            if(f.Terms!=null&&(f.Outcome!=RunReturnOutcome.Cleared||f.Terms.DungeonId!=f.DungeonKey||!f.Terms.MatchesSettings(f.Settings)))throw new ArgumentException("帰還条件と出撃条件が一致しません");
+            if(f.Outcome==RunReturnOutcome.Cleared&&n?.Start?.RunId==f.RunId&&!DepartureTermsData.Same(n.Terms,f.Terms))throw new ArgumentException("帰還費用を出撃計画から変更できません");
             if (f.Outcome != RunReturnOutcome.Cleared && (f.Stage != ClearReturnStage.Returned || f.Candidates.Length != 0 ||
                 f.Selected.Length != 0 || f.ExperienceAward != 0 || f.TokenAward != 0)) throw new ArgumentException("失敗・撤退で報酬を付与できません");
             if (f.Candidates.Any(c => c == null || string.IsNullOrWhiteSpace(c.InstanceId) || string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name) ||
@@ -588,7 +627,7 @@ namespace Olca.Core.Domain
             ValidateSelection(f);
             var receipt = p.Receipts.SingleOrDefault(r => r.RunId == f.RunId);
             if (f.Stage == ClearReturnStage.Choosing ? receipt != null : receipt == null || receipt.Fingerprint != f.Fingerprint ||
-                receipt.Outcome != f.Outcome || receipt.Experience != f.ExperienceAward || receipt.Tokens != f.TokenAward || f.NewLevel < 1 || f.ReturnedMaxHp <= 0 || f.ReturnedAttack < 0)
+                receipt.Outcome != f.Outcome || !DepartureTermsData.Same(receipt.Terms,f.Terms) || receipt.Experience != f.ExperienceAward || receipt.Tokens != f.TokenAward || f.NewLevel < 1 || f.ReturnedMaxHp <= 0 || f.ReturnedAttack < 0)
                 throw new ArgumentException("帰還と受領履歴の対応が不正です");
             if (f.Stage != ClearReturnStage.Choosing && (f.NewLevel != p.Level || f.ReturnedMaxHp != f.Settings.MaxHp(p.Level) || f.ReturnedAttack != f.Settings.Attack(p.Level)))
                 throw new ArgumentException("成長反映値が不正です");
@@ -878,11 +917,20 @@ namespace Olca.Core.Domain
             }else if(outcome==RunReturnOutcome.Defeated?dto.Boundary!=CheckpointBoundary.Terminal||dto.Player.Hp!=0:dto.Boundary==CheckpointBoundary.Terminal)
                 throw new ArgumentException("敗北境界または未終了攻略の撤退が必要です");
         }
+        private DepartureTermsData ResolveReturnTerms(string runId,string dungeonId)
+        {
+            if(string.IsNullOrWhiteSpace(runId))throw new ArgumentException("攻略IDが必要です");DepartureTermsData terms;
+            if(current.Flow?.RunId==runId)terms=current.Flow.Terms;
+            else {var receipt=current.Receipts.SingleOrDefault(v=>v.RunId==runId);if(receipt!=null)terms=receipt.Terms;
+                else if(current.NextDeparture?.Start?.RunId==runId)terms=current.NextDeparture.Terms;
+                else {if(current.NextDeparture?.Terms!=null)throw new ArgumentException("出撃費用に対応する攻略を確認できません");terms=null;}}
+            terms?.Validate();if(terms!=null&&terms.DungeonId!=dungeonId)throw new ArgumentException("出撃費用のダンジョンIDが一致しません");return terms?.Copy();
+        }
         public bool Begin(Olca.Core.Logic.Dungeon.RestoredCheckpoint source, string dungeonKey, ClearReturnSettings settings)
         {
             if (!Available()) return Fail("未保存の処理を先に再試行してください");
             try {
-                ValidateSource(source,dungeonKey,settings,RunReturnOutcome.Cleared);var dto=source.Snapshot;
+                var terms=ResolveReturnTerms(source?.Snapshot?.RunId,dungeonKey);settings=terms?.ReturnSettings.Copy()??settings;ValidateSource(source,dungeonKey,settings,RunReturnOutcome.Cleared);var dto=source.Snapshot;if(dto.DepartureTermsKey!=terms?.Key())throw new ArgumentException("攻略の出撃条件が欠落または不一致です");
                 var definitions = dto.Cards.ToDictionary(c => c.InstanceId);
                 var candidates = dto.ObtainedOrder.Select(id => {
                     var card = source.Cards[id];
@@ -892,13 +940,14 @@ namespace Olca.Core.Domain
                 string fingerprint = Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w => {
                     w.Write(dto.RunId); w.Write(dto.Sequence); w.Write(dto.MapHash); w.Write(dungeonKey);
                     foreach (var c in candidates) { w.Write(c.InstanceId); w.Write(c.ValueHash); }
+                    if(terms!=null){w.Write("departure-settlement-v1");w.Write(terms.Key());}
                 });
                 var receipt = current.Receipts.SingleOrDefault(r => r.RunId == dto.RunId);
                 if (receipt != null) return receipt.Fingerprint == fingerprint || Fail("同じ攻略IDの内容が一致しません");
                 if (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned)
                     return current.Flow.RunId == dto.RunId && current.Flow.Fingerprint == fingerprint || Fail("別の未完了帰還があります");
                 var next = current.Copy();
-                next.Flow = new ClearReturnData { RunId = dto.RunId, DungeonKey = dungeonKey, Fingerprint = fingerprint, Candidates = candidates, Settings = settings.Copy(),
+                next.Flow = new ClearReturnData { RunId = dto.RunId, DungeonKey = dungeonKey, Fingerprint = fingerprint, Terms=terms?.Copy(), Candidates = candidates, Settings = settings.Copy(),
                     ExperienceAward = current.ClearedDungeons.Contains(dungeonKey) ? settings.FirstClearExperience / 2 : settings.FirstClearExperience };
                 return Stage(next);
             } catch (Exception e) when (e is ArgumentException || e is OverflowException) { return Fail(e.Message); }
@@ -943,6 +992,7 @@ namespace Olca.Core.Domain
             if (current.Flow.Stage != ClearReturnStage.Choosing) { Error = null; return true; }
             try {
                 var next = current.Copy(); var f = next.Flow; ClearReturnProfile.ValidateSelection(f);
+                if(f.Terms!=null){if(!f.Terms.Cost.TryDebit(current.OutsideInventory,out var inventory,out var error))return Fail(error);next.OutsideInventory=inventory;}
                 NormalizeOwned(next);var owned = next.Owned.ToList(); long tokens = 0;
                 foreach (int index in f.Selected) {
                     var card = f.Candidates[index]; var entry = AcquisitionOwned(next,card.Id,card.Name,card.Rarity,card.Level,card.ValueHash);
@@ -957,7 +1007,7 @@ namespace Olca.Core.Domain
                 f.NewLevel = next.Level; f.ReturnedMaxHp = f.Settings.MaxHp(next.Level); f.ReturnedAttack = f.Settings.Attack(next.Level);
                 f.TokenAward = tokens; f.Stage = ClearReturnStage.Awarded;
                 next.ClearedDungeons = next.ClearedDungeons.Concat(new[] { f.DungeonKey }).Distinct().ToArray();
-                next.Receipts = next.Receipts.Concat(new[] { new ClearReceipt { RunId = f.RunId, Fingerprint = f.Fingerprint, Experience = f.ExperienceAward, Tokens = tokens } }).ToArray();
+                next.Receipts = next.Receipts.Concat(new[] { new ClearReceipt { RunId = f.RunId, Fingerprint = f.Fingerprint, Terms=f.Terms?.Copy(), Experience = f.ExperienceAward, Tokens = tokens } }).ToArray();
                 return Stage(next);
             } catch (Exception e) when (e is ArgumentException || e is OverflowException) { return Fail(e.Message); }
         }
@@ -968,15 +1018,15 @@ namespace Olca.Core.Domain
             var next = current.Copy(); next.ExchangeStock = null; next.Flow.Stage = ClearReturnStage.Returned; next.ExchangeStock = null;
                 next.ReturnedHp = next.Flow.ReturnedMaxHp; return Stage(next);
         }
-        public bool PrepareNextDeparture(CheckpointDto start, string definitionKey,OutsideDepartureVitals outsideEntry=null,string dungeonId=null)
+        public bool PrepareNextDeparture(CheckpointDto start, string definitionKey,OutsideDepartureVitals outsideEntry=null,string dungeonId=null,DepartureTermsData terms=null)
         {
             if (!Available() || (current.Flow != null && current.Flow.Stage != ClearReturnStage.Returned)) return Fail("拠点で出撃してください");
             string parent = current.Flow?.RunId ?? NextDepartureData.InitialParent;
             // 同じ帰還画面の再操作は、既に確定した攻略ID/能力/デッキを使う。
             if (current.NextDeparture?.ParentRunId == parent) { Error = null; return true; }
-            try{if(outsideEntry!=null){outsideEntry.ValidateStart(start?.Player);if((string.IsNullOrWhiteSpace(dungeonId)||outsideEntry.Retry!=current.ClearedDungeons.Contains(dungeonId)))return Fail("初回/再挑戦区分が進行と一致しません");}}catch(ArgumentException e){return Fail(e.Message);}
+            try{if(terms!=null){terms.Validate();if(terms.DefinitionKey!=definitionKey||terms.DungeonId!=dungeonId)return Fail("確認した出撃対象が一致しません");if(!terms.Cost.CanAfford(current.OutsideInventory,out var feeError))return Fail(feeError);}if(outsideEntry!=null){outsideEntry.ValidateStart(start?.Player);if((string.IsNullOrWhiteSpace(dungeonId)||outsideEntry.Retry!=current.ClearedDungeons.Contains(dungeonId)))return Fail("初回/再挑戦区分が進行と一致しません");}}catch(ArgumentException e){return Fail(e.Message);}
             var next = current.Copy();
-            next.NextDeparture = new NextDepartureData { ParentRunId = parent, DefinitionKey = definitionKey, Start = start?.Copy(), OutsideEntry=outsideEntry?.Copy() };
+            next.NextDeparture = new NextDepartureData { ParentRunId = parent, DefinitionKey = definitionKey, Start = start?.Copy(), Terms=terms?.Copy(), OutsideEntry=outsideEntry?.Copy() };
             return Stage(next);
         }
                 private bool ExchangeAvailable() => Available() && (current.Flow==null || current.Flow.Stage==ClearReturnStage.Returned) &&
