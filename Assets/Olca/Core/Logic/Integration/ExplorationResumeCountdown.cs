@@ -58,9 +58,21 @@ namespace Olca.Core.Logic.Integration
         public long HandRevision {get;private set;}
         public void Reload(){deck.Shuffle(random);Hand=deck.DrawCards(3,random).AsReadOnly();SelectedIndex=0;HandRevision++;}
         public int SelectedIndex {get;private set;}
-        public Olca.Core.Domain.Card SelectedCard=>Hand[SelectedIndex];
+        public Olca.Core.Domain.Card SelectedCard=>SelectedIndex<Hand.Count?Hand[SelectedIndex]:null;
         public bool TrySelect(int index)
         {if(index<0||index>=Hand.Count)return false;SelectedIndex=index;return true;}
+        /// <summary>発動が成立する境界だけから呼ぶ。効果/入力/永続保存は別の責務。</summary>
+        public bool TryConsumeSelected(Olca.Core.Domain.Card expected,long expectedRevision,OutsideCardGauge gauge,out Olca.Core.Domain.Card consumed)
+        {
+            consumed=null;if(gauge==null)throw new ArgumentNullException(nameof(gauge));
+            // 保存可能な外界専用乱数だけ。古いView/手札と不足コストは抽選前に拒否する。
+            if(expected==null||expectedRevision!=HandRevision||!ReferenceEquals(expected,SelectedCard)||!(random is Olca.Core.Logic.Battle.SeededBattleRandom))return false;
+            int cost=expected.GetFinalCost();if(cost<0||HandRevision==long.MaxValue||gauge.CurrentUnits<(long)cost*OutsideCardGauge.UnitsPerPoint)return false;
+            long revision=checked(HandRevision+1);var next=Hand.ToList();next.RemoveAt(SelectedIndex);
+            // 封じた専用RNGの同期1draw。ユーザーcallbackや効果処理を挟まない。
+            next.AddRange(deck.DrawCards(1,random));if(!gauge.TrySpend(cost))throw new InvalidOperationException("消費境界でゲージが変更されました");
+            Hand=next.AsReadOnly();HandRevision=revision;consumed=expected;return true;
+        }
         public int RemainingCount=>deck.RemainingCount;
         public int TotalCount=>deck.TotalCount;
         internal Olca.Core.Interfaces.IRandomProvider RandomProvider=>random;
@@ -362,7 +374,7 @@ namespace Olca.Core.Logic.Integration
         }
         public void Queue(long time,bool prev,bool next,bool prevDown,bool nextDown,bool snapshot,bool anyKey,long previousAt,long nextAt)
             =>pending.Add(new Sample{Time=time,Previous=prev,Next=next,PreviousDown=prevDown,NextDown=nextDown,Snapshot=snapshot,AnyKey=anyKey,PreviousAt=previousAt,NextAt=nextAt});
-        private static void Move(OutsideExplorationCards cards,int delta){if(cards!=null)cards.TrySelect((cards.SelectedIndex+delta+cards.Hand.Count)%cards.Hand.Count);}
+        private static void Move(OutsideExplorationCards cards,int delta){if(cards==null||cards.Hand.Count==0)return;int count=cards.Hand.Count;cards.TrySelect(cards.SelectedIndex>=count?(delta>0?0:count-1):(cards.SelectedIndex+delta+count)%count);}
         private void UpdateHeld(Sample sample)
         {
             if(!sample.Previous)blockedPrevious=false;
@@ -497,7 +509,8 @@ namespace Olca.Core.Logic.Integration
         public OutsideCardsStateData Copy()=>new OutsideCardsStateData{Cards=Cards?.Select(v=>v?.Copy()).ToArray(),Hand=Hand?.ToArray(),Drawn=Drawn?.ToArray(),Returned=Returned?.ToArray(),Selected=Selected,Revision=Revision,Random=Random?.Copy(),SourceKey=SourceKey};
         public void Validate()
         {
-            if(Cards==null||(Cards.Length!=20&&Cards.Length!=ExplorationDeckRules.RequiredCards)||Hand==null||Hand.Length!=3||Drawn==null||Returned==null||Selected<0||Selected>=Hand.Length||Revision<0||Random==null)throw new ArgumentException("外界カード保存が欠落しています");
+            if(Cards==null||(Cards.Length!=20&&Cards.Length!=ExplorationDeckRules.RequiredCards)||Hand==null||Hand.Length>3||Drawn==null||Returned==null||Selected<0||Selected>=3||Revision<0||Random==null)throw new ArgumentException("外界カード保存が欠落しています");
+            if(Hand.Length<3&&(Drawn.Length!=Cards.Length||Returned.Length!=0))throw new ArgumentException("未枯渇の外界手札が欠落しています");
             if(SourceKey!=null&&(Cards.Length!=ExplorationDeckRules.RequiredCards||SourceKey.Length!=64||!SourceKey.All(Uri.IsHexDigit)))throw new ArgumentException("外界デッキの選択識別が不正です");
             for(int i=0;i<Cards.Length;i++){var c=Cards[i];if(c==null||c.InstanceId!="c"+i||string.IsNullOrWhiteSpace(c.DefinitionKey)||c.ValueHash==null||c.ValueHash.Length!=64||!c.ValueHash.All(Uri.IsHexDigit)||c.GrantKeys==null||c.GrantKeys.Any(string.IsNullOrWhiteSpace)||c.TuningCount!=c.GrantKeys.Length)throw new ArgumentException("外界カード定義参照が不正です");}
             foreach(var part in new[]{Hand,Drawn,Returned})if(part.Any(v=>v<0||v>=Cards.Length)||part.Distinct().Count()!=part.Length)throw new ArgumentException("外界カード領域の個体参照が不正です");

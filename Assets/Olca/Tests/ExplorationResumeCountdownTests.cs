@@ -9,6 +9,34 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(false)] [TestCase(true)] public void 枯渇した空の使用枠からは前後の実在手札へ巡回する(bool previous)
+        {
+            var source=Deck155();using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("cycle157",source,Owned(source),new SeededBattleRandom(157),out _));Walk155(s,10*60000);var c=s.Cards;c.TrySelect(2);for(int i=0;i<28;i++)Assert.IsTrue(c.TryConsumeSelected(c.SelectedCard,c.HandRevision,s.Core.CardGauge,out _));Assert.AreEqual(2,c.Hand.Count);Assert.AreEqual(2,c.SelectedIndex);Assert.IsNull(c.SelectedCard);var repeat=new OutsideSelectionRepeat();repeat.Queue(0,false,false,false,false,false,false,0,0);repeat.Queue(1,previous,!previous,previous,!previous,false,true,0,0);repeat.AdvanceFrame(c);Assert.AreEqual(previous?1:0,c.SelectedIndex);}
+        }
+        [Test] public void 未知乱数の消費は未変更で拒否して保存可能な専用乱数の境界を維持する()
+        {
+            var data=CardFixture();Assert.IsTrue(OutsideExplorationCards.TryCreate(data,Owned(data),new Olca.Tests.Mocks.MockRandomProvider(),out var c,out _));var hand=c.Hand;var gauge=OutsideCardGauge.ValidationDefault;Assert.IsFalse(c.TryConsumeSelected(c.SelectedCard,c.HandRevision,gauge,out _));Assert.AreSame(hand,c.Hand);Assert.AreEqual(0,c.HandRevision);Assert.AreEqual(100*60,gauge.CurrentUnits);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void 探索一枚使用は選択個体だけを左詰め末尾補充し使用枠と定義を保つ(int slot)
+        {
+            var source=Deck155();using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("use157",source,Owned(source),new SeededBattleRandom(157),out _));Walk155(s,10*60000);var cards=s.Cards;cards.TrySelect(slot);var hand=cards.Hand.ToArray();long revision=cards.HandRevision,units=s.Core.CardGauge.CurrentUnits;var expected=cards.SelectedCard;Assert.IsTrue(cards.TryConsumeSelected(expected,revision,s.Core.CardGauge,out var used));Assert.AreSame(expected,used);Assert.AreEqual(slot,cards.SelectedIndex);Assert.AreEqual(revision+1,cards.HandRevision);Assert.AreEqual(3,cards.Hand.Count);Assert.AreEqual(26,cards.RemainingCount);CollectionAssert.AreEqual(hand.Where(c=>!ReferenceEquals(c,expected)).ToArray(),cards.Hand.Take(2));Assert.IsFalse(cards.Hand.Contains(expected));Assert.AreEqual(units-expected.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(30,cards.TotalCount);}
+        }
+        [Test] public void 探索一枚使用は三十回で枯渇し自動循環せず空の使用枠と再装填を保つ()
+        {
+            var source=Deck155();using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("empty157",source,Owned(source),new SeededBattleRandom(157),out _));Walk155(s,10*60000);var c=s.Cards;var used=new System.Collections.Generic.List<Card>();c.TrySelect(2);for(int i=0;i<30;i++){if(c.SelectedCard==null)c.TrySelect(c.Hand.Count-1);var expected=c.SelectedCard;int slot=c.SelectedIndex;Assert.IsTrue(c.TryConsumeSelected(expected,c.HandRevision,s.Core.CardGauge,out var taken));used.Add(taken);Assert.AreEqual(slot,c.SelectedIndex);Assert.AreEqual(Math.Min(3,29-i),c.Hand.Count);Assert.AreEqual(Math.Max(0,26-i),c.RemainingCount);}Assert.AreEqual(30,used.Distinct().Count());Assert.IsNull(c.SelectedCard);long units=s.Core.CardGauge.CurrentUnits,rev=c.HandRevision;Assert.IsFalse(c.TryConsumeSelected(null,rev,s.Core.CardGauge,out _));var repeat=new OutsideSelectionRepeat();repeat.Queue(0,false,false,false,false,false,false,0,0);repeat.Queue(1,false,true,false,true,false,true,0,0);repeat.AdvanceFrame(c);Assert.AreEqual(0,c.SelectedIndex);Assert.AreEqual(units,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(rev,c.HandRevision);c.Reload();Assert.AreEqual(3,c.Hand.Count);Assert.AreEqual(27,c.RemainingCount);Assert.AreEqual(0,c.SelectedIndex);}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void 探索一枚使用の拒否は乱数履歴ゲージ手札世代を変えない(int mode)
+        {
+            var source=Deck155();using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("reject157",source,Owned(source),new SeededBattleRandom(157),out _));Walk155(s,10*60000);var c=s.Cards;var definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(source.ToList())).Definitions;var expected=mode==0?c.SelectedCard.Clone():c.SelectedCard;long revision=c.HandRevision-(mode==1?1:0);if(mode==2)Assert.IsTrue(s.Core.CardGauge.TrySpend(100));var before=PortableCheckpointJson.Serialize(c.CaptureState(definitions));long gauge=s.Core.CardGauge.CurrentUnits;Assert.IsFalse(c.TryConsumeSelected(expected,revision,s.Core.CardGauge,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(c.CaptureState(definitions)));Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(10)]
+        public void 探索使用後の手札は枯渇までcold復元し次抽選と使用済みを維持する(int count)
+        {
+            var source=Deck155();using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("cold157",source,Owned(source),new SeededBattleRandom(157),out _));Walk155(s,10*60000);var c=s.Cards;c.TrySelect(2);for(int i=0;i<30-count;i++){if(c.SelectedCard==null)c.TrySelect(c.Hand.Count-1);Assert.IsTrue(c.TryConsumeSelected(c.SelectedCard,c.HandRevision,s.Core.CardGauge,out _));}var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(source.ToList())).Definitions;var state=c.CaptureState(defs);var restored=OutsideExplorationCards.RestoreState(state,defs);Assert.AreEqual(state.Key(),restored.CaptureState(defs).Key());Assert.AreEqual(Math.Min(3,count),restored.Hand.Count);if(count>0){c.TrySelect(0);restored.TrySelect(0);Assert.IsTrue(c.TryConsumeSelected(c.SelectedCard,c.HandRevision,s.Core.CardGauge,out _));var gauge=OutsideCardGauge.ValidationDefault;Assert.IsTrue(restored.TryConsumeSelected(restored.SelectedCard,restored.HandRevision,gauge,out _));Assert.AreEqual(c.CaptureState(defs).Key(),restored.CaptureState(defs).Key());}else Assert.IsNull(restored.SelectedCard);}
+        }
+
         [TestCase(9,false)] [TestCase(9.5,true)] [TestCase(10,true)] [TestCase(10.5,true)] [TestCase(11,false)] [TestCase(12,false)] [TestCase(6,false)]
         public void 試用カード箱は半径と接地を守り既存操作地点と競合しない(double x,bool expected)
         {

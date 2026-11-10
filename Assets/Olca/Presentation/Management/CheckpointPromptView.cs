@@ -196,13 +196,13 @@ namespace Olca.Presentation.Exploration
             float verticalOffset=ResolveVerticalViewOffset(core);
             var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
             if(!ReferenceEquals(renderedCards,cards)||renderedDeckLocation!=editingLocation||shownHandRevision!=(cards?.HandRevision??-1)||handHeading.text==""){
-                if(!ReferenceEquals(renderedCards,cards))BindHandSelection(context,presentation,cards);renderedDeckLocation=editingLocation;renderedCards=cards;shownHandRevision=cards?.HandRevision??-1;handHeading.text=editingLocation?"ヘンセイチテン（カリ）":cards==null?"テフダ  /  デッキ ミトウロク":"テフダ 3  /  ヤマフダ "+cards.RemainingCount;
+                if(!ReferenceEquals(renderedCards,cards))BindHandSelection(context,presentation,cards);renderedDeckLocation=editingLocation;renderedCards=cards;shownHandRevision=cards?.HandRevision??-1;handHeading.text=editingLocation?"ヘンセイチテン（カリ）":cards==null?"テフダ  /  デッキ ミトウロク":"テフダ "+cards.Hand.Count+"  /  ヤマフダ "+cards.RemainingCount;
                 for(int slot=0;slot<3;slot++){
-                    var card=cards?.Hand[slot];handNames[slot].text=card==null?"—":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name);handCosts[slot].text=card==null?"":"コスト "+card.GetFinalCost();handIcons[slot].sprite=card==null?null:cardIcon?.Invoke(card);handIcons[slot].enabled=handIcons[slot].sprite!=null;
+                    var card=cards!=null&&slot<cards.Hand.Count?cards.Hand[slot]:null;handNames[slot].text=card==null?"—":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name);handCosts[slot].text=card==null?"":"コスト "+card.GetFinalCost();handIcons[slot].sprite=card==null?null:cardIcon?.Invoke(card);handIcons[slot].enabled=handIcons[slot].sprite!=null;
                 }
             }
             for(int slot=0;slot<handButtons.Length;slot++){
-                handNames[slot].gameObject.SetActive(!editingLocation);handCosts[slot].gameObject.SetActive(!editingLocation);handIcons[slot].gameObject.SetActive(!editingLocation);handButtons[slot].gameObject.SetActive(cards!=null&&!editingLocation);handButtons[slot].interactable=cards!=null&&!editingLocation&&CanPlay;
+                handNames[slot].gameObject.SetActive(!editingLocation);handCosts[slot].gameObject.SetActive(!editingLocation);handIcons[slot].gameObject.SetActive(!editingLocation);handButtons[slot].gameObject.SetActive(cards!=null&&!editingLocation);handButtons[slot].interactable=cards!=null&&slot<cards.Hand.Count&&!editingLocation&&CanPlay;
                 handSelectionMarks[slot].gameObject.SetActive(cards!=null&&!editingLocation&&cards.SelectedIndex==slot);
             }
             var gauge=core.CardGauge;
