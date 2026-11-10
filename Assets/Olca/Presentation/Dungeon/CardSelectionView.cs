@@ -579,7 +579,7 @@ namespace Olca.Presentation.Dungeon
                     if(sprite!=null)CollectionIcon("ReturnCardIcon_"+row,card,-780,y,64,_=>sprite);else Text("ReturnCardIndex_"+row,(row+1).ToString(),-780,y,64,64,24);
                 }
                 float statsY=-115-(rows-1)*80;var body=(RectTransform)content.transform.Find("ReturnBody");float bodyHeight=Mathf.Min(700,540+(rows-1)*80);body.sizeDelta=new Vector2(1760,bodyHeight);body.anchoredPosition=new Vector2(0,320-bodyHeight/2);
-                var outsideReturn=flow.OutsideEnd?.Build(flow.RunId,flow.NewLevel,flow.Settings);var stats=Text("ReturnStats",$"帰還後：HP {outsideReturn?.Player.Hp??flow.ReturnedMaxHp}/{flow.ReturnedMaxHp} / 攻撃 {flow.ReturnedAttack}\n"+(outsideReturn==null?"帰還を確定すると、攻略中の状態を解除して全回復します。":"HP・ドクはシュウリョウジからヒキツギ、セイチョウブンのみカサンします。"),0,statsY,1640,120,26);stats.lineSpacing=1.2f;
+                var outsideReturn=flow.OutsideRetry?.Build(flow.RunId,flow.NewLevel,flow.Settings)??flow.OutsideEnd?.Build(flow.RunId,flow.NewLevel,flow.Settings);var stats=Text("ReturnStats",$"帰還後：HP {outsideReturn?.Player.Hp??flow.ReturnedMaxHp}/{flow.ReturnedMaxHp} / 攻撃 {flow.ReturnedAttack}\n"+(outsideReturn==null?"帰還を確定すると、攻略中の状態を解除して全回復します。":flow.OutsideRetry!=null?"ニュウジョウマエのHP・ジョウタイへモドシ、セイチョウブンのみカサンします。":"HP・ドクはシュウリョウジからヒキツギ、セイチョウブンのみカサンします。"),0,statsY,1640,120,26);stats.lineSpacing=1.2f;
                 Button("ConfirmReturn","帰還を確定",0,Mathf.Max(-420,-280-(rows-1)*80),900,75,finish).interactable=!blocked;
             } else {
                 if(profile.Owned.Length<=4){
