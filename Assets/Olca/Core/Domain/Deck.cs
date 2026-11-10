@@ -214,10 +214,13 @@ namespace Olca.Core.Domain
         public static bool TryCreate(IReadOnlyList<Card> cards,
             IReadOnlyDictionary<(string Id, ExceedLevel Level), int> ownedCounts,
             out Deck deck, out string error)
+            =>TryCreateForSize(cards,ownedCounts,20,out deck,out error);
+        // 構築制限は共通、必要枚数だけ探索の明示経路から30を渡す。
+        internal static bool TryCreateForSize(IReadOnlyList<Card> cards,IReadOnlyDictionary<(string Id,ExceedLevel Level),int> ownedCounts,int required,out Deck deck,out string error)
         {
             deck = null; error = null;
             if (cards == null || ownedCounts == null) { error = "デッキと所持枚数が必要です"; return false; }
-            if (cards.Count != 20) { error = "出撃デッキは20枚必要です"; return false; }
+            if (cards.Count != required) { error = required==20?"出撃デッキは20枚必要です":"探索デッキは30枚必要です"; return false; }
             if (cards.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) ||
                 !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.ExceedLevel)))
             { error = "カード定義が不正です"; return false; }
@@ -510,6 +513,8 @@ namespace Olca.Core.Domain
         public SavedDeckCard[] Cards = new SavedDeckCard[0];
         public SavedDepartureDeck Copy() => new SavedDepartureDeck { Id=Id, Name=Name, Cards=Cards?.Select(c=>c?.Copy()).ToArray() };
         public static bool TryValidateEquipped(ClearReturnProfile profile, SavedDepartureDeck saved, out string error)
+            =>TryValidateConstruction(profile,saved,20,out error);
+        internal static bool TryValidateConstruction(ClearReturnProfile profile,SavedDepartureDeck saved,int required,out string error)
         {
             error=null;
             if(saved?.Cards==null||saved.Cards.Any(c=>c==null)){error="デッキがありません";return false;}
@@ -521,7 +526,7 @@ namespace Olca.Core.Domain
                 if(used[key]>owned.Count){error="登録定義の所持枚数が不足しています";return false;}
                 cards.Add(new Card(owned.Id,owned.Name,0,owned.Rarity,CardCategory.Attack,ElementType.None,CardSeries.None,0,"",exceedLevel:owned.Level));
             }
-            return DepartureDeckRules.TryCreate(cards,OwnedDefinition.AggregateCounts(profile),out _,out error);
+            return DepartureDeckRules.TryCreateForSize(cards,OwnedDefinition.AggregateCounts(profile),required,out _,out error);
         }
     }
     /// <summary>個体ではなく所持定義の識別。旧行はメタデータ付きの安定キーで保持する。</summary>
@@ -1318,6 +1323,13 @@ namespace Olca.Core.Domain
 
 namespace Olca.Core.Domain
 {
+    /// <summary>探索の新規保存/編集だけに適用。旧保存の読取やDungeonを自動変換しない。</summary>
+    public static class ExplorationDeckRules
+    {
+        public const int RequiredCards=30;
+        public static bool TryValidate(ClearReturnProfile owned,SavedDepartureDeck saved,out string error)
+            =>SavedDepartureDeck.TryValidateConstruction(owned,saved,RequiredCards,out error);
+    }
     /// <summary>探索デッキだけの独立保存。所持・ダンジョン進行・装備先は複製しない。</summary>
     public sealed class ExplorationDeckProfile
     {
@@ -1359,7 +1371,7 @@ namespace Olca.Core.Domain
             if(id!=null&&previous==null)return Fail("保存デッキがありません");
             if(previous==null||name!=previous.Name){name=name?.Trim();if(!SavedDeckNameRules.IsValid(name))return Fail("デッキ名は16文字以内の一行で入力してください");}
             var deck=new SavedDepartureDeck{Id=id??Guid.NewGuid().ToString("N"),Name=name,Cards=cards?.Select(c=>c?.Copy()).ToArray()};
-            if(!SavedDepartureDeck.TryValidateEquipped(owned,deck,out var error))return Fail(error);
+            if(!ExplorationDeckRules.TryValidate(owned,deck,out var error))return Fail(error);
             var next=current.Copy();next.Decks=previous==null?next.Decks.Concat(new[]{deck}).ToArray():next.Decks.Select(d=>d.Id==id?deck:d).ToArray();return Stage(next);
         }
         public bool Delete(string id)

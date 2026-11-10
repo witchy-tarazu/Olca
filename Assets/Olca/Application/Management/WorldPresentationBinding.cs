@@ -166,7 +166,7 @@ namespace Olca.Application.Management
         {
             if(!Live||!IsOpen)return;Ensure();var source=Projection();var options=source.Owned.Select(resolve).ToArray();
             var slots=draft.ToArray();
-            bool valid=Olca.Core.Domain.SavedDepartureDeck.TryValidateEquipped(source,new Olca.Core.Domain.SavedDepartureDeck{Cards=slots},out var invalid);
+            bool valid=Olca.Core.Domain.ExplorationDeckRules.TryValidate(source,new Olca.Core.Domain.SavedDepartureDeck{Cards=slots},out var invalid);
             var cards=ResolveDraftCards(source,options,slots);
             valid&=cards.All(c=>c!=null);
             view.RenderOwnedDeparture(source,options,cards,session.Error??(valid?null:invalid??"定義未解決のカードがあります"),valid,(index,delta)=>ChangeDraft(source,options,index,delta),null,RequestCloseEditor,()=>RenderEditor(),discard,
@@ -176,7 +176,7 @@ namespace Olca.Application.Management
         {
             if(!Operate||session.HasPendingSave||index<0||index>=source.Owned.Length)return;
             var row=source.Owned[index];string key=Olca.Core.Domain.OwnedDefinition.Key(row);int count=draft.Count(c=>c.DefinitionKey==key);
-            if(delta>0){if(options[index]==null||count>=row.Count||draft.Count>=20)return;draft.Add(new Olca.Core.Domain.SavedDeckCard{Id=row.Id,Level=row.Level,DefinitionKey=key});}
+            if(delta>0){if(options[index]==null||count>=row.Count||draft.Count>=Olca.Core.Domain.ExplorationDeckRules.RequiredCards)return;draft.Add(new Olca.Core.Domain.SavedDeckCard{Id=row.Id,Level=row.Level,DefinitionKey=key});}
             else{int at=draft.FindLastIndex(c=>c.DefinitionKey==key);if(at<0)return;draft.RemoveAt(at);}dirty=true;RenderEditor();
         }
         private void RequestCloseEditor(bool force)

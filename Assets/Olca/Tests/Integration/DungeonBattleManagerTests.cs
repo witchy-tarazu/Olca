@@ -6464,7 +6464,9 @@ namespace Olca.Tests.Integration
             directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-outside-decks-"+System.Guid.NewGuid().ToString("N"));
             var permanent=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(System.IO.Path.Combine(directory,"progress")));
             Assert.IsTrue(permanent.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()));owned=permanent.Snapshot;
-            cards=owned.Owned.SelectMany(row=>Enumerable.Range(0,row.Count).Select(_=>new SavedDeckCard{Id=row.Id,Level=row.Level,DefinitionKey=OwnedDefinition.Key(row)})).ToArray();Assert.AreEqual(20,cards.Length);
+            // 30枚構築の隔離用所持。製品スターターの配布内容は変更しない。
+            owned.Owned=owned.Owned.Concat(Enumerable.Range(0,3).Select(i=>new OwnedCardCount{Id="deck30-test-"+i,Name="検証",Rarity=CardRarity.Normal,Level=ExceedLevel.Normal,Count=i==2?2:4})).ToArray();
+            cards=owned.Owned.SelectMany(row=>Enumerable.Range(0,row.Count).Select(_=>new SavedDeckCard{Id=row.Id,Level=row.Level,DefinitionKey=OwnedDefinition.Key(row)})).ToArray();Assert.AreEqual(30,cards.Length);
         }
         [TearDown] public void Cleanup(){if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
         private Olca.Unity.ExplorationDeckFileStore Store(FaultIo io=null)=>new Olca.Unity.ExplorationDeckFileStore(System.IO.Path.Combine(directory,"outside"),io);
@@ -6480,8 +6482,8 @@ namespace Olca.Tests.Integration
             using(var session=new ExplorationDeckSession(Store())){Assert.IsTrue(session.Save(null,"探索一",cards,owned),session.Error);Assert.IsTrue(session.Save(null,"探索二",cards.Reverse().ToArray(),owned));Assert.IsTrue(session.Reload());Assert.AreEqual(2,session.Snapshot.Decks.Length);CollectionAssert.AreEqual(cards.Select(c=>c.Id),session.Snapshot.Decks[0].Cards.Select(c=>c.Id));}
             CollectionAssert.AreEqual(before,PortableCheckpointJson.Encode(owned));CollectionAssert.AreEqual(disk,System.IO.File.ReadAllBytes(System.IO.Path.Combine(directory,"progress","progress.json")));
         }
-        [TestCase(19)] [TestCase(21)] public void 保存は20枚以外を拒否し無書込(int count)
-        {using(var session=new ExplorationDeckSession(Store()))Assert.IsFalse(session.Save(null,"探索",Enumerable.Range(0,count).Select(i=>cards[i%20]).ToArray(),owned));Assert.IsFalse(System.IO.Directory.Exists(Store().DirectoryPath));}
+        [TestCase(20)] [TestCase(29)] [TestCase(31)] public void 保存は30枚以外を拒否し無書込(int count)
+        {using(var session=new ExplorationDeckSession(Store()))Assert.IsFalse(session.Save(null,"探索",Enumerable.Range(0,count).Select(i=>cards[i%30]).ToArray(),owned));Assert.IsFalse(System.IO.Directory.Exists(Store().DirectoryPath));}
         [Test] public void 所持超過と未所持と不明定義は保存せず参照を自動置換しない()
         {
             using(var session=new ExplorationDeckSession(Store())){
@@ -6512,6 +6514,18 @@ namespace Olca.Tests.Integration
             var bytes=PortableCheckpointJson.Encode(value);var read=PortableCheckpointJson.DecodeExplorationDecks(bytes);Assert.AreEqual("unknown",read.Decks[0].Cards[0].Id);
             System.IO.Directory.CreateDirectory(Store().DirectoryPath);System.IO.File.WriteAllBytes(Store().ActivePath,new byte[]{1,2,3});using(var session=new ExplorationDeckSession(Store())){Assert.IsFalse(session.Ready);Assert.IsFalse(session.Save(null,"探索",cards,owned));}CollectionAssert.AreEqual(new byte[]{1,2,3},System.IO.File.ReadAllBytes(Store().ActivePath));
             value.Version=2;Assert.Throws<System.ArgumentException>(()=>PortableCheckpointJson.Encode(value));
+        }
+        [Test] public void 旧20枚保存は読取再読込失敗でも不変で手動30枚保存だけが反映される()
+        {
+            var legacy=new ExplorationDeckProfile{Revision=1,CommitId=System.Guid.NewGuid().ToString("N"),Decks=new[]{new SavedDepartureDeck{Id=System.Guid.NewGuid().ToString("N"),Name="旧20枚",Cards=cards.Take(20).ToArray()}}};
+            System.IO.Directory.CreateDirectory(Store().DirectoryPath);var bytes=PortableCheckpointJson.Encode(legacy);System.IO.File.WriteAllBytes(Store().ActivePath,bytes);
+            var io=new FaultIo();using(var session=new ExplorationDeckSession(Store(io))){Assert.AreEqual(20,session.Snapshot.Decks[0].Cards.Length);Assert.IsTrue(session.Reload());CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));Assert.IsFalse(session.Save(legacy.Decks[0].Id,"旧20枚",legacy.Decks[0].Cards,owned));Assert.IsFalse(session.HasPendingSave);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));
+                io.Before=true;Assert.IsFalse(session.Save(legacy.Decks[0].Id,"旧20枚",cards,owned));Assert.AreEqual(20,session.Snapshot.Decks[0].Cards.Length);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual(30,session.Snapshot.Decks[0].Cards.Length);Assert.AreEqual(legacy.Decks[0].Id,session.Snapshot.Decks[0].Id);Assert.IsTrue(session.Reload());Assert.AreEqual(30,session.Snapshot.Decks[0].Cards.Length);}
+        }
+        [Test] public void 探索30枚とDungeon20枚は共通制限を保ち必要枚数だけを分離する()
+        {
+            Assert.IsTrue(ExplorationDeckRules.TryValidate(owned,new SavedDepartureDeck{Cards=cards},out _));Assert.IsFalse(SavedDepartureDeck.TryValidateEquipped(owned,new SavedDepartureDeck{Cards=cards},out _));Assert.IsTrue(SavedDepartureDeck.TryValidateEquipped(owned,new SavedDepartureDeck{Cards=cards.Take(20).ToArray()},out _));
+            var duplicate=cards.ToArray();duplicate[29]=cards[0];Assert.IsFalse(ExplorationDeckRules.TryValidate(owned,new SavedDepartureDeck{Cards=duplicate},out _));var unknown=cards.Select(c=>c.Copy()).ToArray();unknown[29].Id="missing";Assert.IsFalse(ExplorationDeckRules.TryValidate(owned,new SavedDepartureDeck{Cards=unknown},out _));
         }
         [Test] public void 保存世代は別領域で新規開始と旧進行を混同しない()
         {
