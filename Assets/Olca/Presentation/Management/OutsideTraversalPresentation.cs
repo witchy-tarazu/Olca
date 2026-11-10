@@ -236,7 +236,8 @@ namespace Olca.Presentation.Management
             Text("OutsideItemsStatus",useMessage??session.Error??(unknown>0?"ミトウロク ID "+unknown+"ケンは ホゾンのままホジしています。":"ショジスウ0でも トウロクをホジします。"),0,-260,1400,44,25);
             string selectedId=data.Shortcuts[selectedSlot];int remaining=cooldown?.Invoke(selectedId)??0;
             Button("UseOutsideItem","トウロク アイテムを シヨウ"+(remaining>0?" / "+((remaining+59L)/60)+"ビョウ":""),0,-330,1240,()=>{useMessage=useItem?.Invoke(selectedId);Render();}).interactable=!pending&&useItem!=null&&selectedId!=null&&remaining==0;
-            Text("OutsideItemsScope","カリ: HP +"+Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.HealHp+" / CD "+((Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.CooldownFrames+59L)/60)+"ビョウ。カリのホキュウバコでニュウシュ。ジドウハイフなし。",0,-200,1440,50,23);
+            Text("OutsideItemsScope","カリ: HP+"+Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.HealHp+"/CD"+((Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.CooldownFrames+59L)/60)+"ビョウ・ドクケシ/CD"+((Olca.Core.Domain.OutsideRecoveryItemDefinition.PoisonProvisional.CooldownFrames+59L)/60)+"ビョウ。ホキュウバコでニュウシュ。",0,-200,1440,50,23);
+
             Button("ClearOutsideItemSlot","ワクをカラにする",-480,-410,420,()=>{session.TryAssignOutsideItem(selectedSlot,null,definitions);Render();}).interactable=!pending;
             Button("RetryOutsideItemsSave","ホゾンをサイシコウ",0,-410,420,()=>{session.Retry();Render();}).interactable=pending;
             Button("CloseOutsideItems","モドる",480,-410,420,()=>close?.Invoke());
@@ -259,14 +260,15 @@ namespace Olca.Presentation.Exploration
         private readonly UnityEngine.UI.Text[] itemMarks=new UnityEngine.UI.Text[4],itemCounts=new UnityEngine.UI.Text[4];
         private long shownItemRevision=long.MinValue;
         public void ConfigureItemInventory(System.Func<Olca.Core.Domain.OutsideInventoryData> read,System.Func<long> revision,Olca.Core.Domain.OutsideItemDisplayDefinition[] definitions){itemInventory=read;itemRevision=revision;itemDefinitions=definitions;shownItemRevision=long.MinValue;RefreshItemHud();}
-        private System.Action<int> queueItemUse;private System.Func<string,int> readItemCooldown;private System.Func<int,string> readItemKey;
+        private System.Action<int> queueItemUse;private System.Func<string,int> readItemCooldown,readItemDuration;private System.Func<int,string> readItemKey;
         private Olca.Core.Domain.OutsideInventoryData cachedItems;
         private readonly UnityEngine.UI.Button[] itemButtons=new UnityEngine.UI.Button[4];
         private readonly OutsideItemPressGuard[] itemPresses=new OutsideItemPressGuard[4];
         private readonly UnityEngine.UI.Text[] itemSeconds=new UnityEngine.UI.Text[4],itemKeys=new UnityEngine.UI.Text[4];
         private readonly OutsideItemCooldownRing[] itemRings=new OutsideItemCooldownRing[4];
         private UnityEngine.UI.Text itemFeedback;
-        public void ConfigureItemUse(System.Action<int> queue,System.Func<string,int> remaining,System.Func<int,string> key){queueItemUse=queue;readItemCooldown=remaining;readItemKey=key;RefreshItemHud();}
+        public void ConfigureItemUse(System.Action<int> queue,System.Func<string,int> remaining,System.Func<int,string> key)=>ConfigureItemUse(queue,remaining,key,null);
+        public void ConfigureItemUse(System.Action<int> queue,System.Func<string,int> remaining,System.Func<int,string> key,System.Func<string,int> duration){queueItemUse=queue;readItemCooldown=remaining;readItemKey=key;readItemDuration=duration;RefreshItemHud();}
         public void ShowItemFeedback(string message){if(itemFeedback!=null)itemFeedback.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(message??"");}
         private void BindItemHudUse(Olca.Presentation.Management.ManagedScreenContext owner,OutsideExplorationSession.PresentationLease lease)
         {
@@ -297,11 +299,11 @@ namespace Olca.Presentation.Exploration
                 itemButtons[i].interactable=CanPlay&&queueItemUse!=null&&definition!=null&&count>0&&remaining==0;
                 itemKeys[i].text=readItemKey?.Invoke(i)??new[]{"1 / ↑","2 / →","3 / ↓","4 / ←"}[i];itemKeys[i].enabled=remaining==0;
                 itemSeconds[i].text=remaining>0?((remaining+59L)/60).ToString():"";itemSeconds[i].enabled=remaining>0;
-                itemRings[i].Fraction=remaining<=0?0:UnityEngine.Mathf.Clamp01((float)remaining/Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.CooldownFrames);itemRings[i].enabled=remaining>0;
+                itemRings[i].Fraction=remaining<=0?0:UnityEngine.Mathf.Clamp01((float)remaining/Mathf.Max(1,readItemDuration?.Invoke(id)??Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.CooldownFrames));itemRings[i].enabled=remaining>0;
             }
         }
         private void ClearItemPresses(){foreach(var press in itemPresses)if(press!=null)press.Clear();}
-        private void ClearItemProviders(){ClearItemPresses();foreach(var press in itemPresses)if(press!=null)press.BeginAllowed=null;itemInventory=null;itemRevision=null;itemDefinitions=null;queueItemUse=null;readItemCooldown=null;readItemKey=null;cachedItems=null;shownItemRevision=long.MinValue;foreach(var button in itemButtons)if(button!=null){button.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();button.interactable=false;}}
+        private void ClearItemProviders(){ClearItemPresses();foreach(var press in itemPresses)if(press!=null)press.BeginAllowed=null;itemInventory=null;itemRevision=null;itemDefinitions=null;queueItemUse=null;readItemCooldown=readItemDuration=null;readItemKey=null;cachedItems=null;shownItemRevision=long.MinValue;foreach(var button in itemButtons)if(button!=null){button.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();button.interactable=false;}}
     }
 
     // 使用可になるまで保持した入力を、解放時のクリックとして後から受理しない。
@@ -326,6 +328,67 @@ namespace Olca.Presentation.Exploration
         {
             vh.Clear();if(fraction<=0)return;const int segments=64;float outer=UnityEngine.Mathf.Min(rectTransform.rect.width,rectTransform.rect.height)*.5f,inner=outer-3;var tint=new UnityEngine.Color(.55f,.95f,1,1);
             for(int n=0;n<segments;n++){float start=(float)n/segments;if(start>=fraction)break;float end=UnityEngine.Mathf.Min((n+1f)/segments,fraction);float a=(.25f-start)*UnityEngine.Mathf.PI*2,b=(.25f-end)*UnityEngine.Mathf.PI*2;int v=vh.currentVertCount;vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a)*inner,UnityEngine.Mathf.Sin(a)*inner),tint,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(a)*outer,UnityEngine.Mathf.Sin(a)*outer),tint,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(b)*outer,UnityEngine.Mathf.Sin(b)*outer),tint,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector3(UnityEngine.Mathf.Cos(b)*inner,UnityEngine.Mathf.Sin(b)*inner),tint,UnityEngine.Vector2.zero);vh.AddTriangle(v,v+1,v+2);vh.AddTriangle(v,v+2,v+3);}
+        }
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>Overlay座標だけを適応する数値View。既存World用の書体/色/軌道を借用する。</summary>
+    public sealed class OutsideCombatFeedbackCanvas:MonoBehaviour
+    {
+        private sealed class Entry{public Text Text;public Vector2 World;public float Age,Lift;public bool Active,Placed;}
+        private readonly List<Entry> entries=new List<Entry>();
+        private Olca.Core.Domain.PlayerCharacter actor;private Olca.Presentation.Effects.CombatNumberStyle style;
+        private Func<bool> live;private Func<Vector2> origin;private float pixelsPerWorldUnit;private int lastFrame=-1;
+        public int ActiveCount{get;private set;}
+        public void Bind(Olca.Core.Domain.PlayerCharacter value,Olca.Presentation.Effects.CombatNumberStyle visual,Func<bool> isLive,Func<Vector2> anchor,float scale)
+        {Unbind();if(value==null||visual==null)return;actor=value;style=visual;live=isLive;origin=anchor;pixelsPerWorldUnit=scale;actor.OnCombatFeedback+=OnFeedback;}
+        private void OnFeedback(Olca.Core.Domain.CombatFeedback feedback)
+        {
+            if(actor==null||style==null||live?.Invoke()!=true||origin==null)return;
+            var entry=entries.FirstOrDefault(e=>!e.Active);
+            if(entry==null){var go=new GameObject("OutsideCombatNumber_"+entries.Count,typeof(RectTransform),typeof(Text),typeof(Outline));go.transform.SetParent(transform,false);var text=go.GetComponent<Text>();text.raycastTarget=false;text.alignment=TextAnchor.MiddleCenter;text.horizontalOverflow=HorizontalWrapMode.Overflow;text.verticalOverflow=VerticalWrapMode.Overflow;text.supportRichText=false;text.lineSpacing=1;entry=new Entry{Text=text};entries.Add(entry);}
+            entry.Text.font=style.Font;entry.Text.fontStyle=style.FontStyle;entry.Text.fontSize=Mathf.Max(1,Mathf.RoundToInt(style.FontWorldUnits*pixelsPerWorldUnit));entry.Text.text=Olca.Presentation.Effects.CombatNumberPresentation.Format(feedback);entry.Text.color=style.Color;
+            var outline=entry.Text.GetComponent<Outline>();outline.effectColor=new Color(.02f,.04f,.06f,.9f);outline.effectDistance=Vector2.one*(style.OutlineWorldUnits*pixelsPerWorldUnit);outline.useGraphicAlpha=true;
+            entry.World=origin();entry.Age=entry.Lift=0;entry.Placed=false;entry.Active=true;entry.Text.enabled=true;ActiveCount++;entry.Text.gameObject.SetActive(true);entry.Text.transform.SetAsLastSibling();
+        }
+        public void Paint(Func<Vector2,Vector2> project,IReadOnlyList<RectTransform> obstacles)
+        {
+            if(style==null||ActiveCount==0)return;if(live?.Invoke()!=true){Unbind();return;}
+            bool advance=lastFrame!=Time.frameCount;lastFrame=Time.frameCount;var root=(RectTransform)transform;var occupied=new List<Rect>();
+            if(obstacles!=null)foreach(var obstacle in obstacles)if(obstacle!=null&&obstacle.gameObject.activeInHierarchy){var corners=new Vector3[4];obstacle.GetWorldCorners(corners);var local=corners.Select(p=>root.InverseTransformPoint(p)).ToArray();occupied.Add(Rect.MinMaxRect(local.Min(p=>p.x),local.Min(p=>p.y),local.Max(p=>p.x),local.Max(p=>p.y)));}
+            var visible=new List<(Entry Entry,Vector2 Position,Vector2 Size)>();float top=float.NegativeInfinity;
+            foreach(var entry in entries){if(!entry.Active)continue;if(advance)entry.Age+=Olca.Unity.BattleVisualClock.DeltaTime;if(entry.Age>=style.Duration){entry.Active=false;ActiveCount--;entry.Text.gameObject.SetActive(false);continue;}
+                var position=project(entry.World+Vector2.up*(Olca.Presentation.Effects.CombatNumberPresentation.Rise(style.FloatSpeed,style.Duration,entry.Age)+entry.Lift));
+                var size=new Vector2(Mathf.Max(1,entry.Text.preferredWidth+4),Mathf.Max(1,entry.Text.preferredHeight));entry.Text.rectTransform.sizeDelta=size;
+                // 地点案内と先行の数値の上へ積む。World poolと同じく過去の効果を捨てない。
+                float beforeLift=position.y;
+                if(!entry.Placed)for(int pass=0;pass<=occupied.Count;pass++){var box=new Rect(position-size*.5f,size);bool moved=false;foreach(var area in occupied)if(box.Overlaps(area)){position.y=area.yMax+size.y*.5f+6;box=new Rect(position-size*.5f,size);moved=true;}if(!moved)break;}
+                if(!entry.Placed){entry.Lift+=(position.y-beforeLift)/pixelsPerWorldUnit;entry.Placed=true;}
+                occupied.Add(new Rect(position-size*.5f,size));visible.Add((entry,position,size));top=Mathf.Max(top,position.y+size.y*.5f);
+            }
+            float shift=Mathf.Max(0,top-(root.rect.yMax-144));
+            foreach(var row in visible){var position=row.Position-Vector2.up*shift;row.Entry.Text.rectTransform.anchoredPosition=position;var color=style.Color;color.a=Olca.Presentation.Effects.CombatNumberPresentation.Alpha(style.Duration,row.Entry.Age);row.Entry.Text.color=color;row.Entry.Text.enabled=position.y-row.Size.y*.5f>=root.rect.yMin+160;}
+        }
+        public void Unbind(){if(actor!=null)actor.OnCombatFeedback-=OnFeedback;actor=null;style=null;live=null;origin=null;lastFrame=-1;ActiveCount=0;foreach(var entry in entries){entry.Active=false;entry.Age=0;if(entry.Text!=null){entry.Text.text="";entry.Text.font=null;entry.Text.gameObject.SetActive(false);}}}
+        private void OnDisable()=>Unbind();
+        private void OnDestroy(){Unbind();entries.Clear();}
+    }
+    public sealed partial class OutsideExplorationView
+    {
+        private OutsideCombatFeedbackCanvas feedbackCanvas;
+        private readonly List<RectTransform> feedbackObstacles=new List<RectTransform>();
+        public void ConfigureCombatFeedback(Olca.Presentation.Effects.CombatNumberStyle style)
+        {
+            if(feedbackCanvas==null&&style!=null)feedbackCanvas=gameObject.AddComponent<OutsideCombatFeedbackCanvas>();if(feedbackCanvas==null)return;var owner=context;var lease=presentation;
+            feedbackCanvas.Bind(lease?.Player,style,()=>this!=null&&ReferenceEquals(context,owner)&&owner?.IsCurrent==true&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)lease.Core.Position/OutsideMovementDefinition.UnitsPerWorldUnit,(float)lease.Core.Height/OutsideMovementDefinition.UnitsPerWorldUnit+player.rectTransform.rect.height/pixelsPerWorldUnit+.2f),pixelsPerWorldUnit);
+        }
+        private void ClearCombatFeedback(){feedbackCanvas?.Unbind();feedbackObstacles.Clear();}
+        private void RenderCombatFeedback(float camera,float verticalOffset)
+        {
+            if(feedbackCanvas==null||feedbackCanvas.ActiveCount==0)return;feedbackObstacles.Clear();if(recoveryPoint!=null)feedbackObstacles.Add((RectTransform)recoveryPoint.transform);if(entrance!=null)feedbackObstacles.Add((RectTransform)entrance.transform);foreach(var slot in supplySlots)if(slot?.Button!=null)feedbackObstacles.Add((RectTransform)slot.Button.transform);
+            float floor=-((RectTransform)transform).rect.height*.29f;feedbackCanvas.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,floor+(world.y-verticalOffset)*pixelsPerWorldUnit),feedbackObstacles);
         }
     }
 }

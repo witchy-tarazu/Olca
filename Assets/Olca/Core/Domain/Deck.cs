@@ -1395,17 +1395,22 @@ namespace Olca.Core.Domain
         }
     }
     /// <summary>効果量と種類別CDの暫定データ。表示定義や未知所持IDとは分離する。</summary>
+    public enum OutsideRecoveryEffect { Hp, Poison }
     public sealed class OutsideRecoveryItemDefinition
     {
-        public string Id{get;} public int HealHp{get;} public int CooldownFrames{get;}
-        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames){if(string.IsNullOrWhiteSpace(id)||healHp<=0||cooldownFrames<=0)throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;}
+        public string Id{get;} public int HealHp{get;} public int CooldownFrames{get;} public OutsideRecoveryEffect Effect{get;}
+        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames):this(id,healHp,cooldownFrames,OutsideRecoveryEffect.Hp){}
+        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames,OutsideRecoveryEffect effect){if(string.IsNullOrWhiteSpace(id)||cooldownFrames<=0||!Enum.IsDefined(typeof(OutsideRecoveryEffect),effect)||(effect==OutsideRecoveryEffect.Hp?healHp<=0:healHp!=0))throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;Effect=effect;}
         public static readonly OutsideRecoveryItemDefinition Provisional=new OutsideRecoveryItemDefinition("outside-recovery-sample-v1",25,180);
+        // 毒だけを解除する仮データ。麻痺等の使用禁止や他状態を変更しない。
+        public static readonly OutsideRecoveryItemDefinition PoisonProvisional=new OutsideRecoveryItemDefinition("outside-poison-recovery-sample-v1",0,120,OutsideRecoveryEffect.Poison);
     }
     /// <summary>試用箱の配置/数量/上限は暫定データ。購入や自動配布とは区別する。</summary>
     public sealed class OutsideSupplyDefinition
     {
         public string Id{get;} public string ItemId{get;} public int Count{get;} public int Maximum{get;}
         public OutsideSupplyDefinition(string id,string itemId,int count,int maximum){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(itemId)||count<=0||maximum<=0)throw new ArgumentException("補給定義が不正です");Id=id;ItemId=itemId;Count=count;Maximum=maximum;}
+        public static readonly OutsideSupplyDefinition PoisonProvisional=new OutsideSupplyDefinition("validation-poison-chest-v1",OutsideRecoveryItemDefinition.PoisonProvisional.Id,2,99);
         public static readonly OutsideSupplyDefinition Provisional=new OutsideSupplyDefinition("validation-recovery-chest-v1",OutsideRecoveryItemDefinition.Provisional.Id,3,99);
     }
     public sealed class OutsideItemDisplayDefinition
@@ -1413,6 +1418,7 @@ namespace Olca.Core.Domain
         public string Id{get;}public string Name{get;}public string Mark{get;}
         public OutsideItemDisplayDefinition(string id,string name,string mark){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(name)||string.IsNullOrWhiteSpace(mark))throw new ArgumentException("表示用アイテム定義が必要です");Id=id;Name=name;Mark=mark;}
         // 表示候補だけ。入手・効果量・価格・CDを仮決めした実用品として登録しない。
+        public static readonly OutsideItemDisplayDefinition PoisonSample=new OutsideItemDisplayDefinition("outside-poison-recovery-sample-v1","ドクケシ（カリ）","ドク");
         public static readonly OutsideItemDisplayDefinition RecoverySample=new OutsideItemDisplayDefinition("outside-recovery-sample-v1","HPカイフク（カリ）","HP");
     }
     public sealed partial class ClearReturnSession
@@ -1431,15 +1437,15 @@ namespace Olca.Core.Domain
             try{var next=current.Copy();next.OutsidePlayerSave=OutsidePlayerSaveData.ForRecovery(player);next.OutsideRuntimeSave=null;next.OutsideItemState=null;return Stage(next);}catch(Exception e)when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
         }
         // 失敗した使用計画を一般Retryへ残さない。押し直し時に現在の生存個体から再計画する。
-        internal bool TryCommitOutsideItem(string id,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState)
+        internal bool TryCommitOutsideItem(string id,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
         {
-            if(!Available()||customizationRunActive?.Invoke()==true)return Fail("探索中の保存完了後に使用してください");
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索中の保存完了後に使用してください";return false;}
             try{
-                actor.Validate();runtime.Validate();if(actor.Id!=runtime.Id)return Fail("使用個体と外界状態が一致しません");
-                var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();var count=inventory.Items.SingleOrDefault(v=>v.Id==id);if(count==null||count.Count==0)return Fail("所持数がありません");count.Count--;
+                actor.Validate();runtime.Validate();if(actor.Id!=runtime.Id){error="使用個体と外界状態が一致しません";return false;}
+                var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();var count=inventory.Items.SingleOrDefault(v=>v.Id==id);if(count==null||count.Count==0){error="所持数がありません";return false;}count.Count--;
                 next.OutsideInventory=inventory;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=itemState.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
-                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out var error))return Fail(error);current=next;Error=null;return true;}finally{writing=false;}
-            }catch(Exception e)when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
+                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;return true;}finally{writing=false;}
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
         }
         // 受取と開封を同じ書込で確定する。失敗を一般Retryへ残さず、次の明示操作で再評価する。
         public bool TryClaimOutsideSupply(OutsideSupplyDefinition definition,out int received,out string error)

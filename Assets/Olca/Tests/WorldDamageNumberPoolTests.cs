@@ -712,3 +712,27 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public class OutsideCombatNumberTests
+    {
+        [TestCase(Olca.Core.Domain.CombatFeedbackKind.Damage,"7")][TestCase(Olca.Core.Domain.CombatFeedbackKind.Healing,"+7")][TestCase(Olca.Core.Domain.CombatFeedbackKind.Immune,"ムコウ")][TestCase(Olca.Core.Domain.CombatFeedbackKind.Guard,"ガード")][TestCase(Olca.Core.Domain.CombatFeedbackKind.BarrierDamage,"7")]
+        public void WorldとCanvasは同じ効果表記を用いる(Olca.Core.Domain.CombatFeedbackKind kind,string expected)=>Assert.AreEqual(expected,CombatNumberPresentation.Format(new Olca.Core.Domain.CombatFeedback(kind,7)));
+        [TestCase(0f,0f,1f)][TestCase(.4f,.36f,.5f)][TestCase(.8f,.48f,0f)][TestCase(2f,.48f,0f)]
+        public void 共通上昇と透明度は従来の境界とeaseを保つ(float elapsed,float rise,float alpha){Assert.AreEqual(rise,CombatNumberPresentation.Rise(.6f,.8f,elapsed),.000001f);Assert.AreEqual(alpha,CombatNumberPresentation.Alpha(.8f,elapsed),.000001f);}
+        private static CombatNumberStyle Style()=>new CombatNumberStyle(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),FontStyle.Normal,Color.white,.35f,.01225f,.6f,.8f);
+        [Test] public void WorldPrefabの書体寸法色と秒数を変更せずCanvasへ借用できる()
+        {
+            var go=new GameObject("BorrowedNumberPrefab",typeof(TextMesh));try{var text=go.GetComponent<TextMesh>();text.font=Style().Font;text.fontSize=100;text.characterSize=.035f;text.color=Color.white;var view=go.AddComponent<WorldDamageNumberView>();var f=BindingFlags.Instance|BindingFlags.NonPublic;typeof(WorldDamageNumberView).GetField("textMesh",f).SetValue(view,text);typeof(WorldDamageNumberView).GetField("floatSpeed",f).SetValue(view,.6f);var style=view.FeedbackStyle;Assert.AreSame(text.font,style.Font);Assert.AreEqual(.35f,style.FontWorldUnits,.000001f);Assert.AreEqual(.01225f,style.OutlineWorldUnits,.000001f);Assert.AreEqual(.8f,style.Duration,.000001f);Assert.AreEqual(100,text.fontSize);Assert.AreEqual(.035f,text.characterSize);Assert.AreEqual(Color.white,text.color);}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+        [Test] public void Canvasは実回復量だけを一度表示し再Bind親終了と旧個体の通知を残さない()
+        {
+            var go=new GameObject("OutsideFeedbackTest",typeof(RectTransform));try{((RectTransform)go.transform).sizeDelta=new Vector2(1920,1080);var view=go.AddComponent<Olca.Presentation.Exploration.OutsideCombatFeedbackCanvas>();var actor=new Olca.Core.Domain.PlayerCharacter(100);actor.SetHp(90);bool live=true;var style=Style();view.Bind(actor,style,()=>live,()=>Vector2.zero,120);view.Bind(actor,style,()=>live,()=>Vector2.zero,120);actor.Heal(25);Assert.AreEqual(1,view.ActiveCount);var label=go.GetComponentsInChildren<UnityEngine.UI.Text>().Single();Assert.AreEqual("+10",label.text);Assert.AreSame(style.Font,label.font);Assert.IsFalse(label.raycastTarget);live=false;view.Paint(p=>p,Array.Empty<RectTransform>());Assert.AreEqual(0,view.ActiveCount);actor.SetHp(50);actor.Heal(5);Assert.AreEqual(0,view.ActiveCount);var next=new Olca.Core.Domain.PlayerCharacter(100);next.SetHp(50);live=true;view.Bind(next,style,()=>live,()=>Vector2.zero,120);actor.Heal(5);Assert.AreEqual(0,view.ActiveCount);next.Heal(25);Assert.AreEqual(1,view.ActiveCount);view.Unbind();Assert.AreEqual(0,view.ActiveCount);next.Heal(5);Assert.AreEqual(0,view.ActiveCount);Assert.IsTrue(style.Font!=null);}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+        [Test] public void 先行数値の終了で後続数値を下へ戻さず地点案内の上へ表示する()
+        {
+            var go=new GameObject("FeedbackStack",typeof(RectTransform));var marker=new GameObject("Marker",typeof(RectTransform));try{((RectTransform)go.transform).sizeDelta=new Vector2(1920,1080);marker.transform.SetParent(go.transform,false);((RectTransform)marker.transform).sizeDelta=new Vector2(420,140);var view=go.AddComponent<Olca.Presentation.Exploration.OutsideCombatFeedbackCanvas>();var actor=new Olca.Core.Domain.PlayerCharacter(100);actor.SetHp(50);var style=Style();view.Bind(actor,style,()=>true,()=>Vector2.zero,120);actor.Heal(5);view.Paint(p=>p*120,new[]{(RectTransform)marker.transform});actor.Heal(5);view.Paint(p=>p*120,new[]{(RectTransform)marker.transform});var labels=go.GetComponentsInChildren<UnityEngine.UI.Text>();Assert.AreEqual(2,labels.Length);Assert.Greater(labels[0].rectTransform.anchoredPosition.y-labels[0].preferredHeight*.5f,70);float before=labels[1].rectTransform.anchoredPosition.y;var entries=(System.Collections.IList)typeof(Olca.Presentation.Exploration.OutsideCombatFeedbackCanvas).GetField("entries",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view);entries[0].GetType().GetField("Age").SetValue(entries[0],style.Duration);view.Paint(p=>p*120,new[]{(RectTransform)marker.transform});Assert.AreEqual(before,labels[1].rectTransform.anchoredPosition.y,.001f);Assert.AreEqual(1,view.ActiveCount);}finally{UnityEngine.Object.DestroyImmediate(marker);UnityEngine.Object.DestroyImmediate(go);}
+        }
+    }
+}

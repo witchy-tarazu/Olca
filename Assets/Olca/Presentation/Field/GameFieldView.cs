@@ -196,6 +196,7 @@ namespace Olca.Presentation.Field
 
         [Header("ダメージ数値プール（World Space）")]
         [SerializeField] private Olca.Presentation.Effects.WorldDamageNumberPool worldDamageNumberPool;
+        public Olca.Presentation.Effects.CombatNumberStyle FeedbackNumberStyle=>worldDamageNumberPool!=null?worldDamageNumberPool.FeedbackStyle:null;
 
         [Header("敵スプライトのデフォルト設定（prefab未設定時のフォールバック）")]
         [SerializeField] private Color defaultEnemyColor = new Color(0.9f, 0.2f, 0.2f);

@@ -43,10 +43,10 @@ namespace Olca.Presentation.Effects
         /// <summary>合算前の一効果を表示する。同一対象の同時表示をずらし、一時的な連続ヒットは破棄しない。</summary>
         public void ShowFeedback(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner=null)
             =>ShowFeedbackAsync(feedback,position,ct,owner).Forget();
+        public CombatNumberStyle FeedbackStyle=>prefab!=null?prefab.FeedbackStyle:null;
         private UniTask ShowFeedbackAsync(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner)
         {
-            string text=feedback.Kind==CombatFeedbackKind.Immune?"ムコウ":feedback.Kind==CombatFeedbackKind.Guard?"ガード":
-                feedback.Kind==CombatFeedbackKind.Healing?"+"+feedback.Amount:feedback.Amount.ToString();
+            string text=CombatNumberPresentation.Format(feedback);
             return ShowOwnedTextAsync(text,position,ct,owner,true);
         }
 

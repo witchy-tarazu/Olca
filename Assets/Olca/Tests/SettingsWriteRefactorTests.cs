@@ -380,5 +380,17 @@ namespace Olca.Tests
             finally{Directory.Delete(directory,true);}
         }
 
+        [Test] public void 毒消箱はHP箱と別に取得し両方の数量と開封を保持する()
+        {
+            string directory=Path.Combine(Path.GetTempPath(),"olca-poison-box-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(directory);try{var store=new ClearReturnFileStore(directory);File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(InventoryProfile()));var save=new ClearReturnSession(store);Assert.IsTrue(save.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out var hp,out _));Assert.AreEqual(3,hp);Assert.IsTrue(save.TryClaimOutsideSupply(OutsideSupplyDefinition.PoisonProvisional,out var poison,out _));Assert.AreEqual(2,poison);var cold=new ClearReturnSession(new ClearReturnFileStore(directory));Assert.AreEqual(6,cold.OutsideInventorySnapshot.Items.Single(v=>v.Id==OutsideRecoveryItemDefinition.Provisional.Id).Count);Assert.AreEqual(2,cold.OutsideInventorySnapshot.Items.Single(v=>v.Id==OutsideRecoveryItemDefinition.PoisonProvisional.Id).Count);Assert.IsTrue(cold.HasClaimedOutsideSupply(OutsideSupplyDefinition.Provisional.Id));Assert.IsTrue(cold.HasClaimedOutsideSupply(OutsideSupplyDefinition.PoisonProvisional.Id));Assert.AreEqual(99,cold.OutsideInventorySnapshot.Currency);}
+            finally{Directory.Delete(directory,true);}
+        }
+        [Test] public void 仮地点の利用範囲は歩行で到達でき回復二箱入口の候補は重複しない()
+        {
+            var core=new Olca.Core.Logic.Integration.OutsideExplorationCore(Olca.Core.Logic.Integration.OutsideMovementDefinition.ValidationLandingTerrain);for(int frame=0;frame<50;frame++)core.TickFrame(-1);bool heal=false,poison=false,entrance=false,recovery=false;
+            for(int frame=0;frame<320;frame++){bool h=Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(core),p=Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(core),e=Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core),r=Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(core);Assert.LessOrEqual((h?1:0)+(p?1:0)+(e?1:0)+(r?1:0),1);heal|=h;poison|=p;entrance|=e;recovery|=r;core.TickFrame(1);}
+            Assert.IsTrue(heal&&poison&&entrance&&recovery);
+        }
+
     }
 }

@@ -472,16 +472,19 @@ namespace Olca.Application.Dungeon
         private void BindOutsideRecovery()
         {outsideExploration.View.ConfigureRecovery(UseOutsideRecovery,()=>OutsideRecoveryReady,()=>outsideRecoveryPending?"ホゾン シッパイ / オシテ サイシコウ":outsideRecoveryError!=null?outsideRecoveryError:"ケンショウ カイフク（カリ）\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ カイフク・ホゾン":"チカヅイテ シラベル"));}
 
-        private string outsideSupplyMessage;private int outsideSupplyAttemptFrame=-1;
-        private bool OutsideSupplyReady=>OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideSupplyAttemptFrame&&gameSystem.OutsideExploration.Player?.IsDead==false&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(gameSystem.OutsideExploration.Core)&&!clearReturnSession.HasClaimedOutsideSupply(OutsideSupplyDefinition.Provisional.Id);
-        private void ClaimOutsideSupply()
+        private readonly System.Collections.Generic.Dictionary<string,string> outsideSupplyMessages=new System.Collections.Generic.Dictionary<string,string>();private int outsideSupplyAttemptFrame=-1;
+        private static readonly OutsideSupplyDefinition[] outsideSupplies={OutsideSupplyDefinition.Provisional,OutsideSupplyDefinition.PoisonProvisional};
+        private bool NearOutsideSupply(OutsideSupplyDefinition definition)=>definition==OutsideSupplyDefinition.PoisonProvisional?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(gameSystem.OutsideExploration.Core):Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(gameSystem.OutsideExploration.Core);
+        private bool OutsideSupplyReady(OutsideSupplyDefinition definition)=>OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideSupplyAttemptFrame&&gameSystem.OutsideExploration.Player?.IsDead==false&&NearOutsideSupply(definition)&&!clearReturnSession.HasClaimedOutsideSupply(definition.Id);
+        private void ClaimOutsideSupply(OutsideSupplyDefinition definition)
         {
-            if(!OutsideSupplyReady)return;outsideSupplyAttemptFrame=Time.frameCount;outsideExploration.Pump(false);
-            outsideSupplyMessage=clearReturnSession.TryClaimOutsideSupply(OutsideSupplyDefinition.Provisional,out var amount,out var error)?"カイフクヤク "+amount+"コを ウケトリました / メニューでトウロク":error;
+            if(!OutsideSupplyReady(definition))return;outsideSupplyAttemptFrame=Time.frameCount;outsideExploration.Pump(false);
+            outsideSupplyMessages[definition.Id]=clearReturnSession.TryClaimOutsideSupply(definition,out var amount,out var error)?(definition==OutsideSupplyDefinition.PoisonProvisional?"ドクケシ ":"カイフクヤク ")+amount+"コを ウケトリました / メニューでトウロク":error;
             ResetOutsideRouteInput();outsideExploration.View.Render();
         }
-        private void BindOutsideSupply(){outsideSupplyMessage=null;outsideExploration.View.ConfigureSupply(ClaimOutsideSupply,()=>OutsideSupplyReady,()=>"ホキュウバコ（カリ）\n"+(outsideSupplyMessage??(clearReturnSession.HasClaimedOutsideSupply(OutsideSupplyDefinition.Provisional.Id)?"ウケトリズミ":Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(gameSystem.OutsideExploration.Core)?"カイフク"+OutsideSupplyDefinition.Provisional.Count+"コ / ジョウゲン"+OutsideSupplyDefinition.Provisional.Maximum+"\n"+inputProvider.OutsideInteractionLabel+" デ ウケトル":"カイフク"+OutsideSupplyDefinition.Provisional.Count+"コ / ジョウゲン"+OutsideSupplyDefinition.Provisional.Maximum+"\nチカヅイテ シラベル")));}
-
+        private string OutsideSupplyMessage(OutsideSupplyDefinition definition)
+        {string title=definition==OutsideSupplyDefinition.PoisonProvisional?"ドクケシバコ（カリ）":"ホキュウバコ（カリ）";string body=outsideSupplyMessages.TryGetValue(definition.Id,out var message)?message:clearReturnSession.HasClaimedOutsideSupply(definition.Id)?"ウケトリズミ":(definition==OutsideSupplyDefinition.PoisonProvisional?"ドクケシ":"カイフク")+definition.Count+"コ / ジョウゲン"+definition.Maximum+"\n"+(NearOutsideSupply(definition)?inputProvider.OutsideInteractionLabel+" デ ウケトル":"チカヅイテ シラベル");return title+"\n"+body;}
+        private void BindOutsideSupply(){outsideSupplyMessages.Clear();var heal=OutsideSupplyDefinition.Provisional;var poison=OutsideSupplyDefinition.PoisonProvisional;outsideExploration.View.ConfigureSupply(()=>ClaimOutsideSupply(heal),()=>OutsideSupplyReady(heal),()=>OutsideSupplyMessage(heal));outsideExploration.View.ConfigurePoisonSupply(()=>ClaimOutsideSupply(poison),()=>OutsideSupplyReady(poison),()=>OutsideSupplyMessage(poison));}
 
         /// <summary>通常Bootstrapだけの導線。旧直起動/明示fixtureは従来の入口を維持する。</summary>
         public void ConfigureOutsideLandingRoute(){if(manager!=null)throw new System.InvalidOperationException("起動前に導線を設定してください");outsideLandingRoute=true;}
@@ -569,7 +572,7 @@ namespace Olca.Application.Dungeon
                         ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
                 }
                 var result=await outsideExploration.OpenAsync();
-                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel);BindOutsideRecovery();BindOutsideSupply();}
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
@@ -1135,7 +1138,10 @@ namespace Olca.Application.Dungeon
 
         private const string ManagedOutsideItems="outside-item-registration";
         private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
-        private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample};
+        private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample,OutsideItemDisplayDefinition.PoisonSample};
+        private static readonly OutsideRecoveryItemDefinition[] outsideUseDefinitions={OutsideRecoveryItemDefinition.Provisional,OutsideRecoveryItemDefinition.PoisonProvisional};
+        private static OutsideRecoveryItemDefinition OutsideUseDefinition(string id)=>outsideUseDefinitions.FirstOrDefault(value=>value.Id==id);
+        private string ApplyOutsideRecoveryItem(string id){var definition=OutsideUseDefinition(id);if(definition==null)return "使用定義が未登録です";return gameSystem.OutsideExploration.TryUseRecoveryItem(clearReturnSession,definition,memoryCheckpoints?.Definitions,out var error)?definition.Effect==OutsideRecoveryEffect.Poison?"ドクをカイジョしました":"HPをカイフクしました":error;}
         private string OutsideItemKeyLabel(int slot)
         {
             string action=Olca.Unity.UnityInputProvider.OutsideItemAction(slot);bool pad=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad;var profile=pad?inputProvider.GamepadProfile:inputProvider.KeyboardProfile;
@@ -1145,16 +1151,14 @@ namespace Olca.Application.Dungeon
         private void UseOutsideItemShortcut(int slot)
         {
             if(slot<0||slot>=4||IsUserPaused||DialogueOpen||outsideExploration?.IsOpen!=true||!isActiveAndEnabled)return;
-            var id=clearReturnSession.OutsideInventorySnapshot.Shortcuts[slot];var definition=OutsideRecoveryItemDefinition.Provisional;
-            string result=id!=definition.Id?"シヨウできる アイテムがありません":gameSystem.OutsideExploration.TryUseRecoveryItem(clearReturnSession,definition,memoryCheckpoints?.Definitions,out var error)?"HPをカイフクしました":error;
-            outsideExploration.View?.ShowItemFeedback(result);
+            var id=clearReturnSession.OutsideInventorySnapshot.Shortcuts[slot];outsideExploration.View?.ShowItemFeedback(ApplyOutsideRecoveryItem(id));
         }
         private string UseOutsideRecoveryItem(string id)
         {
             if(!IsUserPaused||outsideExploration?.IsOpen!=true||gameSystem==null||!isActiveAndEnabled)return "今は使用できません";
-            var definition=OutsideRecoveryItemDefinition.Provisional;if(id!=definition.Id)return "使用定義が未登録です";
-            return gameSystem.OutsideExploration.TryUseRecoveryItem(clearReturnSession,definition,memoryCheckpoints?.Definitions,out var error)?"HPをカイフクしました":error;
+            return ApplyOutsideRecoveryItem(id);
         }
+
         private void OpenOutsideItems(){if(!IsUserPaused||outsideExploration?.IsOpen!=true||gameSystem==null||gameSystem.Dialogs.ActiveCount!=0)return;ShowOutsideItemsAsync().Forget();}
         private async UniTaskVoid ShowOutsideItemsAsync(){var owner=gameSystemSession;var result=await gameSystem.Views.ShowAsync(ManagedOutsideItems);if(this!=null&&ReferenceEquals(owner,gameSystemSession)&&!result.Succeeded&&!result.Cancelled){logger?.LogWarning(result.Error);SetPausePanelVisible(IsUserPaused);}}
         private void CloseOutsideItems(){outsideItemRegistrationView?.Hide();SetPausePanelVisible(IsUserPaused);if(IsUserPaused&&pauseOverlay!=null)pauseOverlay.transform.SetAsLastSibling();}
@@ -2219,7 +2223,7 @@ namespace Olca.Application.Dungeon
                 bool inspect=inputProvider.OutsideInteractionPressed(outsideExploration?.Context);
                 if(gameSystem.OutsideExploration.Player?.IsDead==true&&!outsideRecoveryPending&&!progressStartupBlocked&&!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0){outsideExploration.Pump(false);outsideRecoveryRelocate=true;try{bool saved=clearReturnSession.TrySaveOutsideDeathRecovery(gameSystem.OutsideExploration.Player);outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;}else if(!outsideRecoveryPending)progressStartupBlocked=true;}catch(System.ArgumentException e){outsideRecoveryError=e.Message;progressStartupBlocked=true;}outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();outsideExploration.View.Render();return;}
                 if(OutsideRecoveryReady&&inspect){UseOutsideRecovery();return;}
-                if(OutsideSupplyReady&&inspect){ClaimOutsideSupply();return;}
+                if(inspect)foreach(var supply in outsideSupplies)if(OutsideSupplyReady(supply)){ClaimOutsideSupply(supply);return;}
                 if(OutsideEntranceReady&&inspect){EnterOutsideDungeon();return;}
                 outsideExploration?.Pump(!IsUserPaused&&!outsideWheelPaused&&!outsideRecoveryPending&&!progressStartupBlocked&&Time.timeScale>0);
                 if(IsUserPaused)RefreshSystemMenu();else{systemMenu?.Suspend();systemMenuRoot=null;}
