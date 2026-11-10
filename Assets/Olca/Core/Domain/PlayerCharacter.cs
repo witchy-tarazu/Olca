@@ -582,6 +582,8 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>拘束障害物の確定量。被弾無敵・防御・強靭度を経由せず、毒のHP1制限も付けない。</summary>
+        internal void TakeFallDamage(int damage)=>TakeObstacleDamage(damage);
+
         internal void TakeObstacleDamage(int damage)
         {
             if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));

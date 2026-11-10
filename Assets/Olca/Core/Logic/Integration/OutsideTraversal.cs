@@ -104,6 +104,7 @@ namespace Olca.Core.Logic.Integration
         public IReadOnlyList<OutsideAfterimage> Afterimages=>afterimageView??(afterimageView=afterimages.AsReadOnly());
         internal void ConfigureTraversal(OutsideTraversalProfile profile)
         {profile?.ValidateFor(Definition);TraversalProfile=profile;}
+        internal void StopTraversalForLanding(){EndDash();IsDashJumping=false;wallKickAt=-1;kickAway=0;}
         private void EndDash()
         {if(dashEndsAt<0)return;dashEndsAt=-1;if(consecutiveDashes>=2)cooldownUntil=Frame+TraversalProfile.DashCooldownFrames;}
         private void BeginTraversalFrame(bool dashDown,bool dashHeld)

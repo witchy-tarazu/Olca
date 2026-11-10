@@ -561,7 +561,7 @@ namespace Olca.Application.Dungeon
             if(outsideWheel==null)outsideWheel=panelFactory.Component<Olca.Presentation.Management.OutsideKamuiWheelDialog>("OutsideKamuiWheelDialog",v=>v.Initialize(panelFactory.Font));
             var owner=context;long epoch=++outsideWheelEpoch;
             System.Func<bool> alive=()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner);
-            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen;
+            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen&&!gameSystem.OutsideExploration.IsLandingLocked;
             if(pcOpen){outsideWheelInputOwner=OutsideWheelInputOwner.Pc;outsideWheelKeyboard=keyboard;
                 string label=inputProvider.KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null?key:"ミワリアテ";
                 outsideWheel.OpenPc(gameSystem.Dialogs,owner,alive,allowed,value=>SetOutsideWheelPaused(epoch,value),pc,label);
