@@ -1781,7 +1781,7 @@ namespace Olca.Application.Dungeon
                     deck=deck??CreateInitialDeck();
                     // 同じ固定カタログで捕捉し、編成枚数だけで定義hashを変更しない。
                     OutsideDepartureVitals outsideEntry=null;
-                    if(outsideLandingRoute&&gameSystem?.OutsideExploration.Player!=null){try{outsideEntry=OutsideDepartureVitals.Capture(gameSystem.OutsideExploration.Player,clearReturnSession.Snapshot.ClearedDungeons.Contains(choice.Id));if(outsideEntry.Retry)outsideEntry.Runtime=gameSystem.OutsideExploration.CaptureRuntime(memoryCheckpoints?.Definitions);}catch(System.ArgumentException e){outsideDepartureError=e.Message;outsideDungeonSelection=true;outsideEntryRejected=true;return;}}
+                    if(outsideLandingRoute&&gameSystem?.OutsideExploration.Player!=null){try{outsideEntry=OutsideDepartureVitals.Capture(gameSystem.OutsideExploration.Player,clearReturnSession.Snapshot.ClearedDungeons.Contains(choice.Id));outsideEntry.Runtime=gameSystem.OutsideExploration.CaptureRuntime(memoryCheckpoints?.Definitions);}catch(System.ArgumentException e){outsideDepartureError=e.Message;outsideDungeonSelection=true;outsideEntryRejected=true;return;}}
                     outsideDepartureError=null;
                     var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     frozen.BindDepartureTerms(terms?.Key());
