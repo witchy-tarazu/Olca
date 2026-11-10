@@ -528,6 +528,7 @@ namespace Olca.Application.Dungeon
             try{
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
+                    services.OutsideExploration.TryInitializePlayer(()=>CreateCoreFactory().CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames));
                     if(outsideLandingRoute&&services.OutsideExploration.Core.Frame==0&&!services.OutsideExploration.IsPresented)services.OutsideExploration.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true));
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources);panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>().ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);return System.Threading.Tasks.Task.FromResult(panel);},

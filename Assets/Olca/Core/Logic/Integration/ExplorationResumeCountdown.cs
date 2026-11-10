@@ -98,12 +98,35 @@ namespace Olca.Core.Logic.Integration
             private OutsideExplorationSession owner;
             internal PresentationLease(OutsideExplorationSession owner){this.owner=owner;}
             public OutsideExplorationCore Core=>owner?.Core;
+            public Olca.Core.Domain.PlayerCharacter Player=>owner?.Player;
             public OutsideCameraPolicy Camera=>owner?.Camera;
             public OutsideExplorationCards Cards=>owner?.Cards;
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
         }
         private PresentationLease current;
+        // 外界だけが所有する個体。DungeonのPlayerやViewへ所有権を渡さない。
+        public Olca.Core.Domain.PlayerCharacter Player {get;private set;}
+        private long playerFrame;
+        public bool CanPerformAttack=>!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered;
+        public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
+        {
+            if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            if(factory==null)throw new System.ArgumentNullException(nameof(factory));
+            if(Player!=null)return false;
+            if(IsPresented)throw new System.InvalidOperationException("表示前に外界個体を初期化してください");
+            var value=factory();if(value==null||value.IsDead)throw new System.ArgumentException("生存する外界個体が必要です");
+            Player=value;playerFrame=Core.Frame;return true;
+        }
+        public bool AdvancePlayerFrame()
+        {
+            if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;
+            playerFrame=Core.Frame;var value=Player;
+            value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
+            try{value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
+            return true;
+        }
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
         public OutsideExplorationCards Cards {get;private set;}
@@ -138,7 +161,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
             return current=new PresentationLease(this);
         }
-        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;}
+        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;Player=null;}
     }
 }
 

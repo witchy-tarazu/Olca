@@ -96,6 +96,7 @@ namespace Olca.Application.Management
                     if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
                     session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton,accept&&value.DashButtonDown,accept&&value.DashButton);
+                    session.AdvancePlayerFrame();
                 },()=>session.IsPresented&&!session.IsEnded);
             }finally{pumping=false;}
         }

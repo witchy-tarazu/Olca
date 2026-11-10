@@ -68,6 +68,7 @@ namespace Olca.Presentation.Exploration
             var header=Picture("OutsideHeadingSurface",resources.GetShared<Sprite>("OlcaUI/window"),new Vector2(0,1),Vector2.one);header.type=Image.Type.Sliced;header.rectTransform.pivot=new Vector2(.5f,1);header.rectTransform.sizeDelta=new Vector2(0,120);
             var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);var title=factory.Label("OutsideExplorationTitle",transform,new Vector2(0,1),new Vector2(630,-62),new Vector2(1180,70));title.text="ガイカイ タンサク  /  ケンショウ チケイ";title.alignment=TextAnchor.MiddleLeft;title.fontSize=28;title.color=Olca.Presentation.Dungeon.UiLook.Ink;title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.offsetMin=new Vector2(40,-97);title.rectTransform.offsetMax=new Vector2(-580,-27);
             InitializeItemHud(factory);
+            outsideHp=factory.Label("OutsidePlayerHp",transform,new Vector2(1,1),new Vector2(-255,-320),new Vector2(470,42));outsideHp.fontSize=24;outsideHp.color=Color.white;outsideHp.resizeTextForBestFit=true;outsideHp.resizeTextMinSize=18;outsideHp.resizeTextMaxSize=24;outsideHp.raycastTarget=false;
             gaugeLabel=factory.Label("OutsideCardGaugeLabel",transform,new Vector2(0,1),new Vector2(240,-148),new Vector2(400,28));gaugeLabel.fontSize=22;gaugeLabel.alignment=TextAnchor.MiddleLeft;gaugeLabel.color=Color.white;gaugeLabel.raycastTarget=false;gaugeLabel.horizontalOverflow=HorizontalWrapMode.Wrap;gaugeLabel.verticalOverflow=VerticalWrapMode.Truncate;gaugeLabel.resizeTextForBestFit=true;gaugeLabel.resizeTextMinSize=18;gaugeLabel.resizeTextMaxSize=22;
             var track=new GameObject("OutsideCardGaugeTrack",typeof(RectTransform),typeof(Image));track.transform.SetParent(transform,false);var trackImage=track.GetComponent<Image>();trackImage.color=new Color(.05f,.14f,.2f,.94f);trackImage.raycastTarget=false;var trackRect=track.GetComponent<RectTransform>();trackRect.anchorMin=trackRect.anchorMax=new Vector2(0,1);trackRect.pivot=new Vector2(0,.5f);trackRect.anchoredPosition=new Vector2(40,-174);trackRect.sizeDelta=new Vector2(400,10);
             var fill=new GameObject("OutsideCardGaugeFill",typeof(RectTransform),typeof(Image));fill.transform.SetParent(track.transform,false);var fillImage=fill.GetComponent<Image>();fillImage.color=new Color(.55f,.88f,1,1);fillImage.raycastTarget=false;gaugeFill=fill.GetComponent<RectTransform>();gaugeFill.anchorMin=gaugeFill.anchorMax=new Vector2(0,.5f);gaugeFill.pivot=new Vector2(0,.5f);gaugeFill.anchoredPosition=new Vector2(2,0);gaugeFill.sizeDelta=new Vector2(396,6);
@@ -122,10 +123,12 @@ namespace Olca.Presentation.Exploration
             decimal shown=(gauge.CurrentUnits*10/Olca.Core.Logic.Integration.OutsideCardGauge.UnitsPerPoint)/10m;
             return "カードゲージ  "+shown.ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+" / "+gauge.Maximum.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
+        private Text outsideHp;
         public void Render()
         {
             if(!IsOpen||player==null)return;
             RefreshItemHud();
+            if(outsideHp!=null){var actor=presentation.Player;outsideHp.text=actor==null?"HP —":$"HP  {actor.CurrentHp} / {actor.MaxHp}";}
             var core=presentation.Core;double unit=Olca.Core.Logic.Integration.OutsideMovementDefinition.UnitsPerWorldUnit;
             float worldX=(float)(core.Position/unit),width=(float)(core.Definition.Width/unit);
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;

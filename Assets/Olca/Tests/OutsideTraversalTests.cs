@@ -162,5 +162,37 @@ namespace Olca.Tests
                 s.Core.TickFrame(0);Assert.IsFalse(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationDash));Assert.IsTrue(s.Core.TraversalProfile.WallActionsUnlocked);
             }
         }
+        [Test] public void 外界個体は一度だけ生成しView再生成でもHPと状態を保持する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                int made=0;Assert.IsTrue(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(100);}));var actor=s.Player;actor.SetHp(46);actor.ApplyParalysis(3);
+                using(var first=s.AttachPresentation()){Assert.AreSame(actor,first.Player);s.Core.TickFrame(0);Assert.IsTrue(s.AdvancePlayerFrame());Assert.IsFalse(s.CanPerformAttack);Assert.AreEqual(2,actor.ParalysisRemainingFrames);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(2,actor.ParalysisRemainingFrames);}
+                Assert.IsFalse(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(200);}));using(var second=s.AttachPresentation()){Assert.AreSame(actor,second.Player);Assert.AreEqual(46,second.Player.CurrentHp);Assert.AreEqual(2,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(1,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.CanPerformAttack);}
+                Assert.AreEqual(1,made);Assert.AreEqual(46,actor.CurrentHp);
+            }
+        }
+        [Test] public void 外界停止は状態時間を進めず死亡しても表示再入で全回復しない()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));using(var lease=s.AttachPresentation()){
+                    s.Player.ApplyParalysis(4);for(int i=0;i<20;i++)Assert.IsFalse(s.AdvancePlayerFrame());s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(3,s.Player.ParalysisRemainingFrames);s.Player.SetHp(0);Assert.IsFalse(s.CanPerformAttack);
+                }
+                using(var lease=s.AttachPresentation()){Assert.AreEqual(0,lease.Player.CurrentHp);Assert.IsFalse(s.CanPerformAttack);}
+            }
+        }
+        [Test] public void 外界終了は旧leaseから個体を切り離し新規世代へ状態を渡さない()
+        {
+            var s=new OutsideExplorationSession();Assert.Throws<ArgumentNullException>(()=>s.TryInitializePlayer(null));Assert.Throws<ArgumentException>(()=>s.TryInitializePlayer(()=>null));s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var old=s.AttachPresentation();s.Player.SetHp(31);s.Dispose();Assert.IsNull(old.Player);Assert.IsNull(s.Player);Assert.IsFalse(s.CanPerformAttack);Assert.IsFalse(s.AdvancePlayerFrame());Assert.Throws<ObjectDisposedException>(()=>s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100)));
+            using(var next=new OutsideExplorationSession()){next.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));Assert.AreEqual(100,next.Player.CurrentHp);}
+        }
+        [Test] public void 外界の期間防御は同じ論理時計で二frame後に終了し停止時は保持する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));using(var lease=s.AttachPresentation()){
+                    s.Player.SetAura(10,2);Assert.IsTrue(s.Player.HasAura);for(int i=0;i<5;i++)Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(2,s.Player.ProtectionRemainingFrames);
+                    s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.Player.HasAura);Assert.AreEqual(1,s.Player.ProtectionRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsFalse(s.Player.HasAura);
+                }
+            }
+        }
     }
 }
