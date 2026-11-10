@@ -582,19 +582,30 @@ namespace Olca.Application.Dungeon
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
                         ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
                 }
+                try{PrepareSelectedExplorationDeck();}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){outsideDepartureError=e.Message;outsideExplorationOpening=false;ShowDungeonSelection();return;}
                 var result=await outsideExploration.OpenAsync();
                 if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideTrialPoison();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
+        private bool CanManageExplorationDeck=>gameSystem!=null&&OutsideHubEligible&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanEditDeck(gameSystem.OutsideExploration.Core);
+        private void PrepareSelectedExplorationDeck()
+        {
+            using(var decks=new ExplorationDeckSession(gameSystemSession.Storage.ExplorationDecks(clearReturnSession.Snapshot.CheckpointGeneration))){
+                if(!decks.Ready)throw new System.ArgumentException(decks.Error??"探索デッキ保存を確認できません");
+                var profile=decks.Snapshot;var selected=profile.Decks.SingleOrDefault(d=>d.Id==profile.SelectedDeckId);var owned=clearReturnSession.Snapshot;Card[] cards=null;string key=null;
+                if(profile.SelectedDeckId!=null){if(selected==null)throw new System.ArgumentException("使用中デッキがありません");if(!ExplorationDeckRules.TryValidate(owned,selected,out var error))throw new System.ArgumentException(error);cards=selected.Cards.Select(slot=>{var row=OwnedDefinition.Resolve(owned,slot);if(row==null||!ResolveOwnedDefinition(row,out var card))throw new System.ArgumentException("使用中デッキのカード定義が未解決です");return card;}).ToArray();key=selected.Id;}
+                if(!gameSystem.OutsideExploration.QueueSelectedDeck(key,cards,owned==null?null:OwnedDefinition.AggregateCounts(owned),new Olca.Core.Logic.Battle.SeededBattleRandom(unchecked((uint)System.Guid.NewGuid().GetHashCode())),out var failure))throw new System.ArgumentException(failure);
+            }
+        }
         private Olca.Application.Management.ExplorationDeckLibrary explorationDeckLibrary;
         private void OpenExplorationDeckLibrary()
         {
-            if(gameSystem==null||!CanSelectDungeon||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
+            if(!CanManageExplorationDeck||!CanSelectDungeon||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             if(explorationDeckLibrary==null)explorationDeckLibrary=new Olca.Application.Management.ExplorationDeckLibrary(hostPanels,gameSystem.Views,gameSystem.Dialogs,panelFactory,
                 ()=>gameSystemSession.Storage.ExplorationDecks(clearReturnSession.Snapshot.CheckpointGeneration),()=>clearReturnSession.Snapshot,
                 row=>ResolveOwnedDefinition(row,out var card)?card:null,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,
-                ()=>CustomizationUiLive&&clearReturnVisible&&!IsUserPaused&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned),()=>{outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("ExplorationDeckEntry");});
+                ()=>CustomizationUiLive&&CanManageExplorationDeck&&clearReturnVisible&&!IsUserPaused&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned),()=>{outsideDepartureError=null;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("ExplorationDeckEntry");});
             ResetOutsideRouteInput();explorationDeckLibrary.Open();
         }
         private bool CanSelectDungeon => !departureQuoteOpen && explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
@@ -623,7 +634,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,gameSystem!=null?(System.Action)OpenExplorationDeckLibrary:null);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>

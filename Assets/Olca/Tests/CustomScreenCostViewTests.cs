@@ -60,6 +60,11 @@ namespace Olca.Tests
                 Render(required-1);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());Render(required);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());StringAssert.Contains(required.ToString(),root.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureDraftCount").text);if(exploration)StringAssert.Contains("30",root.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureValidation").text);
             }finally{UnityEngine.Object.DestroyImmediate(root);}
         }
+        [Test] public void 探索使用中は使用ボタンに表示し削除を無効化して旧20枚の選択も拒否する()
+        {
+            var root=new GameObject("SelectedDeckFixture",typeof(RectTransform));try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});view.ConfigureExplorationDeckLibrary();var profile=new ClearReturnProfile{EquippedDeckId="active",SavedDecks=new[]{new SavedDepartureDeck{Id="active",Name="使用中",Cards=new SavedDeckCard[30]},new SavedDepartureDeck{Id="legacy",Name="旧20",Cards=new SavedDeckCard[20]}}};int calls=0;view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},null,_=>calls++,_=>calls++,()=>{},()=>{});Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="DeleteDeck_active").IsInteractable());Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="EquipDeck_active").IsInteractable());Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="EquipDeck_legacy").IsInteractable());Assert.AreEqual(0,calls);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
         [Test]
         public void メニュー書体を使っても常設通貨の数字とゲームプレイ用書体を変更しない()
         {

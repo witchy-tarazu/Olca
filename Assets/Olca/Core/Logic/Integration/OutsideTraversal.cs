@@ -50,6 +50,9 @@ namespace Olca.Core.Logic.Integration
     /// <summary>導線確認専用の仮配置。製品Map/能力解放/永続座標とは区別する。</summary>
     public static class OutsideTrialRoute
     {
+        // 通常導線の仮拠点と既存回復地点。空中で同じ範囲にいるだけでは再装填しない。
+        public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit);
+        public static bool CanEditDeck(OutsideExplorationCore core)=>IsDeckEditingZone(core)&&core.IsGrounded&&core.Height==0;
         public const string RecoveryPointId="validation-recovery-left-v1";
         public const long RecoveryX=6*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;

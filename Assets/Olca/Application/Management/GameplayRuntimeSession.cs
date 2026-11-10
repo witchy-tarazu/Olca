@@ -92,10 +92,11 @@ namespace Olca.Application.Management
                     samples.Add(new Olca.Unity.TimestampedLogicalInput(time,null,()=>selection.Queue(time,value.SelectionPreviousHeld,value.SelectionNextHeld,value.SelectionPreviousDown,value.SelectionNextDown,value.SelectionSnapshot,value.AnyKey,value.SelectionPreviousAt,value.SelectionNextAt)));
                 }
                 loop.PumpTimestamped(true,samples,(frame,ms,value)=>{
-                    selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked);
+                    selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked&&!session.IsDeckEditingLocation);
                     if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
                     session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton,accept&&value.DashButtonDown,accept&&value.DashButton);
+                    session.AdvanceDeckLocation();
                     session.AdvancePlayerFrame(out var canAttack);
                     if(accept&&canAttack&&itemUse!=null)for(int slot=0;slot<4;slot++)if((value.OutsideItemDownMask&(1<<slot))!=0){
                         // 既得frameは保持し、同期保存の待ち時間だけを次の観測から除外する。

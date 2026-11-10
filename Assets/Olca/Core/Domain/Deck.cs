@@ -1336,14 +1336,15 @@ namespace Olca.Core.Domain
         public int Version=1;
         public long Revision;
         public string CommitId;
+        public string SelectedDeckId;
         public SavedDepartureDeck[] Decks=Array.Empty<SavedDepartureDeck>();
-        public ExplorationDeckProfile Copy()=>new ExplorationDeckProfile{Version=Version,Revision=Revision,CommitId=CommitId,Decks=Decks?.Select(d=>d?.Copy()).ToArray()};
+        public ExplorationDeckProfile Copy()=>new ExplorationDeckProfile{Version=Version,Revision=Revision,CommitId=CommitId,SelectedDeckId=SelectedDeckId,Decks=Decks?.Select(d=>d?.Copy()).ToArray()};
         public static void Validate(ExplorationDeckProfile value)
         {
             if(value==null||value.Version!=1||value.Revision<0||(value.Revision>0&&!Guid.TryParseExact(value.CommitId,"N",out _))||value.Decks==null||
                 value.Decks.Any(d=>d==null||!Guid.TryParseExact(d.Id,"N",out _)||string.IsNullOrWhiteSpace(d.Name)||d.Cards==null||
                     d.Cards.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||!Enum.IsDefined(typeof(ExceedLevel),c.Level)||c.Level==ExceedLevel.Lv3))||
-                value.Decks.Select(d=>d.Id).Distinct().Count()!=value.Decks.Length)throw new ArgumentException("探索デッキ保存の形式が不正です");
+                value.Decks.Select(d=>d.Id).Distinct().Count()!=value.Decks.Length||value.SelectedDeckId!=null&&!value.Decks.Any(d=>d.Id==value.SelectedDeckId&&d.Cards.Length==ExplorationDeckRules.RequiredCards))throw new ArgumentException("探索デッキ保存の形式が不正です");
         }
     }
     public interface IExplorationDeckStore
@@ -1374,10 +1375,19 @@ namespace Olca.Core.Domain
             if(!ExplorationDeckRules.TryValidate(owned,deck,out var error))return Fail(error);
             var next=current.Copy();next.Decks=previous==null?next.Decks.Concat(new[]{deck}).ToArray():next.Decks.Select(d=>d.Id==id?deck:d).ToArray();return Stage(next);
         }
+        public bool Select(string id,ClearReturnProfile owned)
+        {
+            if(!Ready||writing||pending!=null)return false;
+            var deck=current.Decks.SingleOrDefault(d=>d.Id==id);if(deck==null)return Fail("保存デッキがありません");
+            if(!ExplorationDeckRules.TryValidate(owned,deck,out var error))return Fail(error);
+            if(current.SelectedDeckId==id){Error=null;return true;}
+            var next=current.Copy();next.SelectedDeckId=id;return Stage(next);
+        }
         public bool Delete(string id)
         {
             if(!Ready||writing||pending!=null)return false;
             if(!current.Decks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
+            if(current.SelectedDeckId==id)return Fail("使用中の探索デッキは削除できません");
             var next=current.Copy();next.Decks=next.Decks.Where(d=>d.Id!=id).ToArray();return Stage(next);
         }
         private bool Stage(ExplorationDeckProfile next){next.Revision=checked(current.Revision+1);next.CommitId=Guid.NewGuid().ToString("N");ExplorationDeckProfile.Validate(next);pending=next;return Retry();}

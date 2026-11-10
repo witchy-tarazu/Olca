@@ -697,7 +697,7 @@ namespace Olca.Presentation.Dungeon
             gameObject.SetActive(true);CommerceSurface();
             var heading=Text("DungeonSelectionTitle","シュツゲキサキをエラぶ",-245,390,1250,60,36);heading.color=Color.white;heading.alignment=TextAnchor.MiddleLeft;
             if(outsideExploration!=null&&!blocked&&error==null)QuietDepartureAction(Button("OutsideExplorationEntry","ガイカイ タンサク",150,390,340,60,outsideExploration));
-            if(explorationDecks!=null&&!blocked&&error==null)QuietDepartureAction(Button("ExplorationDeckEntry","タンサク デッキ",150,305,340,60,explorationDecks));
+            if(explorationDecks!=null&&!blocked)QuietDepartureAction(Button("ExplorationDeckEntry","タンサク デッキ",150,305,340,60,explorationDecks));
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             int shown=Math.Min(rows,Math.Max(0,names.Length-dungeonPage*rows));float bottom=shown>0?208-(shown-1)*95-69:120;bool preview=shown<=3;
             float actionY=Mathf.Max(-400,bottom-(preview?(pages>1?285:245):150)),auxiliaryY=actionY-93,pageY=actionY+115;
@@ -1126,6 +1126,7 @@ namespace Olca.Presentation.Dungeon
                     TextDetailsButton("SavedDeckName_"+d.Id+"Details",row.text,"デッキのナマエ",-210,y,140,50);
                 }
                 if(!explorationDeckLibrary)Button("EquipDeck_"+d.Id,"装備",30,y,160,60,()=>equip(d.Id)).interactable=!pending&&!active;
+                else if(equip!=null)Button("EquipDeck_"+d.Id,active?"シヨウチュウ":"シヨウ",450,y,160,60,()=>equip(d.Id)).interactable=!pending&&!active&&d.Cards.Length==ExplorationDeckRules.RequiredCards;
                 Button("EditDeck_"+d.Id,"編集",240,y,160,60,()=>edit(d.Id)).interactable=!pending;
                 if(!explorationDeckLibrary)Button("CloneDeck_"+d.Id,"複製",450,y,160,60,()=>clone(d.Id)).interactable=!pending;
                 Button("DeleteDeck_"+d.Id,"削除",660,y,160,60,()=>delete(d.Id)).interactable=!pending&&!active;}

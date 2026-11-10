@@ -63,8 +63,10 @@ namespace Olca.Core.Logic.Integration
         {if(index<0||index>=Hand.Count)return false;SelectedIndex=index;return true;}
         public int RemainingCount=>deck.RemainingCount;
         public int TotalCount=>deck.TotalCount;
-        private OutsideExplorationCards(Olca.Core.Domain.Deck deck,Olca.Core.Interfaces.IRandomProvider random)
-        {this.deck=deck;this.random=random;Hand=deck.DrawCards(3,random).AsReadOnly();}
+        internal Olca.Core.Interfaces.IRandomProvider RandomProvider=>random;
+        internal string SourceKey {get;private set;}
+        internal OutsideExplorationCards(Olca.Core.Domain.Deck deck,Olca.Core.Interfaces.IRandomProvider random,string sourceKey=null)
+        {this.deck=deck;this.random=random;SourceKey=sourceKey;Hand=deck.DrawCards(3,random).AsReadOnly();}
         public static bool TryCreate(System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> cards,System.Collections.Generic.IReadOnlyDictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out OutsideExplorationCards result,out string error)
         {
             if(random==null)throw new System.ArgumentNullException(nameof(random));
@@ -110,6 +112,7 @@ namespace Olca.Core.Logic.Integration
             public Olca.Core.Domain.PlayerCharacter Player=>owner?.Player;
             public OutsideCameraPolicy Camera=>owner?.Camera;
             public OutsideExplorationCards Cards=>owner?.Cards;
+            public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this))prior.current=null;}
         }
@@ -132,7 +135,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
             long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);itemCooldowns.Clear();
-            if(relocate)Core.RestoreRecoveryPosition(position);Cards?.Reload();Core.CardGauge.RestoreFull();
+            if(relocate){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}Cards?.Reload();Core.CardGauge.RestoreFull();
             Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;
         }
         private string savedPlayerId,savedPlayerKey;
@@ -143,7 +146,7 @@ namespace Olca.Core.Logic.Integration
             string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
             if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
             var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
-            if(Player==null)Core.RestoreRecoveryPosition(position);Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
+            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;savedPlayerId=data.Id;savedPlayerKey=key;return true;
         }
         /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
         public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
@@ -165,6 +168,31 @@ namespace Olca.Core.Logic.Integration
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
         public OutsideExplorationCards Cards {get;private set;}
+        private bool managedDeckLocations,deckLocationArmed;
+        private Deck pendingLocationDeck;private Olca.Core.Interfaces.IRandomProvider pendingLocationRandom;private string queuedDeckKey;
+        public bool IsDeckEditingLocation=>managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);
+        /// <summary>保存済み選択だけを準備する。手札はここで抽選せず、地点退出の論理境界で反映する。</summary>
+        public bool QueueSelectedDeck(string key,IReadOnlyList<Card> cards,IReadOnlyDictionary<(string Id,ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out string error)
+        {
+            if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));error=null;
+            if(key==null){if(cards!=null)throw new ArgumentException("選択IDが必要です");EnableDeckLocations();pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;return true;}
+            if(string.IsNullOrWhiteSpace(key)||random==null)throw new ArgumentException("選択と専用乱数が必要です");
+            if(!DepartureDeckRules.TryCreateForSize(cards,owned,ExplorationDeckRules.RequiredCards,out var deck,out error))return false;
+            key=CheckpointValues.Hash(w=>{w.Write(key);w.Write(cards.Count);foreach(var card in cards)w.Write(CollectionDisplay.DefinitionHash(card));});
+            if(Cards?.SourceKey==key){EnableDeckLocations();pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=key;return true;}
+            if(pendingLocationDeck!=null&&queuedDeckKey==key)return true;
+            EnableDeckLocations();pendingLocationDeck=deck;pendingLocationRandom=random;queuedDeckKey=key;return true;
+        }
+        private void EnableDeckLocations(){if(!managedDeckLocations){managedDeckLocations=true;deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);}}
+        public bool AdvanceDeckLocation()
+        {
+            if(!managedDeckLocations||IsEnded)return false;
+            if(IsDeckEditingLocation){deckLocationArmed=true;return false;}
+            if(!deckLocationArmed)return false;deckLocationArmed=false;
+            if(pendingLocationDeck!=null){var random=Cards?.RandomProvider??pendingLocationRandom;pendingLocationDeck.Shuffle(random);Cards=new OutsideExplorationCards(pendingLocationDeck,random,queuedDeckKey);pendingLocationDeck=null;pendingLocationRandom=null;return true;}
+            if(Cards?.TotalCount!=ExplorationDeckRules.RequiredCards)return false;
+            Cards.Reload();return true;
+        }
         // 入場前の初回登録だけ。再表示で再抽選せず、製品デッキの保存/切替は別接続とする。
         public bool TryInitializeCards(System.Collections.Generic.IReadOnlyList<Olca.Core.Domain.Card> cards,System.Collections.Generic.IReadOnlyDictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out string error)
         {
@@ -196,7 +224,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
             return current=new PresentationLease(this);
         }
-        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;Player=null;}
+        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;Player=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
     }
 }
 
@@ -456,13 +484,21 @@ namespace Olca.Core.Logic.Integration
         }
     }
     /// <summary>カードは参照番号で各領域を結合し、復元で抽選しない。未登録は外側のnullで表す。</summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class OutsideCardsStateData
     {
-        public CheckpointCardDto[] Cards;public int[] Hand,Drawn,Returned;public int Selected;public long Revision;public BattleRandomStateDto Random;
-        public OutsideCardsStateData Copy()=>new OutsideCardsStateData{Cards=Cards?.Select(v=>v?.Copy()).ToArray(),Hand=Hand?.ToArray(),Drawn=Drawn?.ToArray(),Returned=Returned?.ToArray(),Selected=Selected,Revision=Revision,Random=Random?.Copy()};
+        [System.Runtime.Serialization.DataMember] public CheckpointCardDto[] Cards;
+        [System.Runtime.Serialization.DataMember] public int[] Hand,Drawn,Returned;
+        [System.Runtime.Serialization.DataMember] public int Selected;
+        [System.Runtime.Serialization.DataMember] public long Revision;
+        [System.Runtime.Serialization.DataMember] public BattleRandomStateDto Random;
+        // 旧20枚のserialize/hashを保つため、未設定の新項目は出力しない。
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public string SourceKey;
+        public OutsideCardsStateData Copy()=>new OutsideCardsStateData{Cards=Cards?.Select(v=>v?.Copy()).ToArray(),Hand=Hand?.ToArray(),Drawn=Drawn?.ToArray(),Returned=Returned?.ToArray(),Selected=Selected,Revision=Revision,Random=Random?.Copy(),SourceKey=SourceKey};
         public void Validate()
         {
-            if(Cards==null||Cards.Length!=20||Hand==null||Hand.Length!=3||Drawn==null||Returned==null||Selected<0||Selected>=Hand.Length||Revision<0||Random==null)throw new ArgumentException("外界カード保存が欠落しています");
+            if(Cards==null||(Cards.Length!=20&&Cards.Length!=ExplorationDeckRules.RequiredCards)||Hand==null||Hand.Length!=3||Drawn==null||Returned==null||Selected<0||Selected>=Hand.Length||Revision<0||Random==null)throw new ArgumentException("外界カード保存が欠落しています");
+            if(SourceKey!=null&&(Cards.Length!=ExplorationDeckRules.RequiredCards||SourceKey.Length!=64||!SourceKey.All(Uri.IsHexDigit)))throw new ArgumentException("外界デッキの選択識別が不正です");
             for(int i=0;i<Cards.Length;i++){var c=Cards[i];if(c==null||c.InstanceId!="c"+i||string.IsNullOrWhiteSpace(c.DefinitionKey)||c.ValueHash==null||c.ValueHash.Length!=64||!c.ValueHash.All(Uri.IsHexDigit)||c.GrantKeys==null||c.GrantKeys.Any(string.IsNullOrWhiteSpace)||c.TuningCount!=c.GrantKeys.Length)throw new ArgumentException("外界カード定義参照が不正です");}
             foreach(var part in new[]{Hand,Drawn,Returned})if(part.Any(v=>v<0||v>=Cards.Length)||part.Distinct().Count()!=part.Length)throw new ArgumentException("外界カード領域の個体参照が不正です");
             if(Hand.Any(v=>!Drawn.Contains(v))||Returned.Any(Drawn.Contains))throw new ArgumentException("外界カード履歴が矛盾しています");Random.Validate();
@@ -471,18 +507,18 @@ namespace Olca.Core.Logic.Integration
     }
     public sealed partial class OutsideExplorationCards
     {
-        private OutsideExplorationCards(Deck restored,Olca.Core.Interfaces.IRandomProvider random,IReadOnlyList<Card> hand,int selected,long revision)
-        {deck=restored;this.random=random;Hand=Array.AsReadOnly(hand.ToArray());SelectedIndex=selected;HandRevision=revision;}
+        private OutsideExplorationCards(Deck restored,Olca.Core.Interfaces.IRandomProvider random,IReadOnlyList<Card> hand,int selected,long revision,string sourceKey)
+        {deck=restored;this.random=random;Hand=Array.AsReadOnly(hand.ToArray());SelectedIndex=selected;HandRevision=revision;SourceKey=sourceKey;}
         public OutsideCardsStateData CaptureState(CheckpointDefinitions definitions)
         {
             if(definitions==null||!(random is Olca.Core.Logic.Battle.SeededBattleRandom seeded))throw new ArgumentException("外界カードの既知定義と保存可能な専用乱数が必要です");
-            var all=deck.GetAllCards().ToArray();if(all.Length!=20||all.Distinct().Count()!=20)throw new ArgumentException("外界デッキ個体が不正です");var ids=all.Select((c,i)=>(c,i)).ToDictionary(v=>v.c,v=>v.i);
-            var value=new OutsideCardsStateData{Cards=all.Select((c,i)=>definitions.CaptureKnownCard("c"+i,c)).ToArray(),Hand=Hand.Select(c=>ids[c]).ToArray(),Drawn=deck.CaptureDrawn().Select(c=>ids[c]).ToArray(),Returned=deck.CaptureReturnedDraws().Select(c=>ids[c]).ToArray(),Selected=SelectedIndex,Revision=HandRevision,Random=seeded.CaptureState()};value.Validate();return value;
+            var all=deck.GetAllCards().ToArray();if((all.Length!=20&&all.Length!=ExplorationDeckRules.RequiredCards)||all.Distinct().Count()!=all.Length)throw new ArgumentException("外界デッキ個体が不正です");var ids=all.Select((c,i)=>(c,i)).ToDictionary(v=>v.c,v=>v.i);
+            var value=new OutsideCardsStateData{Cards=all.Select((c,i)=>definitions.CaptureKnownCard("c"+i,c)).ToArray(),Hand=Hand.Select(c=>ids[c]).ToArray(),Drawn=deck.CaptureDrawn().Select(c=>ids[c]).ToArray(),Returned=deck.CaptureReturnedDraws().Select(c=>ids[c]).ToArray(),Selected=SelectedIndex,Revision=HandRevision,Random=seeded.CaptureState(),SourceKey=SourceKey};value.Validate();return value;
         }
         public static OutsideExplorationCards RestoreState(OutsideCardsStateData value,CheckpointDefinitions definitions)
         {
             value.Validate();if(definitions==null)throw new ArgumentException("外界カード定義が未登録です");var all=value.Cards.Select(v=>definitions.RestoreCard(v.Copy())).ToArray();var deck=new Deck(all.ToList());deck.RestoreDrawHistory(value.Drawn.Select(i=>all[i]).ToArray(),value.Returned.Select(i=>all[i]).ToArray());
-            return new OutsideExplorationCards(deck,value.Random.Restore(),value.Hand.Select(i=>all[i]).ToArray(),value.Selected,value.Revision);
+            return new OutsideExplorationCards(deck,value.Random.Restore(),value.Hand.Select(i=>all[i]).ToArray(),value.Selected,value.Revision,value.SourceKey);
         }
     }
     public sealed partial class OutsideExplorationCore
@@ -597,7 +633,7 @@ namespace Olca.Core.Logic.Integration
             var actor=player.Restore();var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
             var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);itemCooldowns.Clear();Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);itemCooldowns.Clear();Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
         }
     }
 }

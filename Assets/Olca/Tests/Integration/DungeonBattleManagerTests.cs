@@ -6450,6 +6450,7 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public sealed class ExplorationDeckPersistenceTests
     {
+        [System.Runtime.Serialization.DataContract] private sealed class LegacyDeckEnvelope155{[System.Runtime.Serialization.DataMember] public int Version;[System.Runtime.Serialization.DataMember] public string Payload;[System.Runtime.Serialization.DataMember] public string Sha256;}
         private string directory;
         private ClearReturnProfile owned;
         private SavedDeckCard[] cards;
@@ -6526,6 +6527,22 @@ namespace Olca.Tests.Integration
         {
             Assert.IsTrue(ExplorationDeckRules.TryValidate(owned,new SavedDepartureDeck{Cards=cards},out _));Assert.IsFalse(SavedDepartureDeck.TryValidateEquipped(owned,new SavedDepartureDeck{Cards=cards},out _));Assert.IsTrue(SavedDepartureDeck.TryValidateEquipped(owned,new SavedDepartureDeck{Cards=cards.Take(20).ToArray()},out _));
             var duplicate=cards.ToArray();duplicate[29]=cards[0];Assert.IsFalse(ExplorationDeckRules.TryValidate(owned,new SavedDepartureDeck{Cards=duplicate},out _));var unknown=cards.Select(c=>c.Copy()).ToArray();unknown[29].Id="missing";Assert.IsFalse(ExplorationDeckRules.TryValidate(owned,new SavedDepartureDeck{Cards=unknown},out _));
+        }
+        [Test] public void 使用中選択は独立保存し旧20拒否と使用中削除禁止を維持する()
+        {
+            using(var session=new ExplorationDeckSession(Store())){Assert.IsTrue(session.Save(null,"一",cards,owned));Assert.IsTrue(session.Save(null,"二",cards.Reverse().ToArray(),owned));string id=session.Snapshot.Decks[0].Id;Assert.IsNull(session.Snapshot.SelectedDeckId);Assert.IsTrue(session.Select(id,owned));long rev=session.Snapshot.Revision;var bytes=System.IO.File.ReadAllBytes(Store().ActivePath);Assert.IsTrue(session.Select(id,owned));Assert.AreEqual(rev,session.Snapshot.Revision);Assert.IsFalse(session.Delete(id));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));Assert.IsTrue(session.Reload());Assert.AreEqual(id,session.Snapshot.SelectedDeckId);Assert.IsTrue(session.Select(session.Snapshot.Decks[1].Id,owned));Assert.IsTrue(session.Delete(id));Assert.AreEqual(1,session.Snapshot.Decks.Length);}
+        }
+        [Test] public void 選択保存失敗は旧選択を保持し同じ計画だけを再試行する()
+        {
+            var io=new FaultIo();using(var session=new ExplorationDeckSession(Store(io))){Assert.IsTrue(session.Save(null,"一",cards,owned));Assert.IsTrue(session.Save(null,"二",cards.Reverse().ToArray(),owned));var ids=session.Snapshot.Decks.Select(d=>d.Id).ToArray();Assert.IsTrue(session.Select(ids[0],owned));var bytes=System.IO.File.ReadAllBytes(Store().ActivePath);io.Before=true;Assert.IsFalse(session.Select(ids[1],owned));Assert.AreEqual(ids[0],session.Snapshot.SelectedDeckId);Assert.IsFalse(session.Delete(ids[0]));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));using(var cold=new ExplorationDeckSession(Store()))Assert.AreEqual(ids[0],cold.Snapshot.SelectedDeckId);io.Before=false;Assert.IsTrue(session.Retry());Assert.AreEqual(ids[1],session.Snapshot.SelectedDeckId);Assert.IsFalse(session.Retry());}
+        }
+        [Test] public void 旧payloadに使用中IDがなくても読み選択を自動生成しない()
+        {
+            var old=new ExplorationDeckProfile{Decks=new[]{new SavedDepartureDeck{Id=System.Guid.NewGuid().ToString("N"),Name="旧20",Cards=cards.Take(20).ToArray()}}};var text=System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(old));Assert.IsTrue(text.Contains("\"SelectedDeckId\":null"));text=text.Replace("\"SelectedDeckId\":null,","").Replace(",\"SelectedDeckId\":null","");var payload=System.Text.Encoding.UTF8.GetBytes(text);var bytes=PortableCheckpointJson.Serialize(new LegacyDeckEnvelope155{Version=1,Payload=text,Sha256=PortableCheckpointJson.Hash(payload)});System.IO.Directory.CreateDirectory(Store().DirectoryPath);System.IO.File.WriteAllBytes(Store().ActivePath,bytes);using(var session=new ExplorationDeckSession(Store())){Assert.IsTrue(session.Ready);Assert.IsNull(session.Snapshot.SelectedDeckId);Assert.IsFalse(session.Select(old.Decks[0].Id,owned));Assert.IsFalse(session.HasPendingSave);Assert.IsTrue(session.Reload());}CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(Store().ActivePath));
+        }
+        [Test] public void 欠損使用中IDは別デッキへ置換せず拒否する()
+        {
+            var profile=new ExplorationDeckProfile{SelectedDeckId=System.Guid.NewGuid().ToString("N")};Assert.Throws<System.ArgumentException>(()=>ExplorationDeckProfile.Validate(profile));
         }
         [Test] public void 保存世代は別領域で新規開始と旧進行を混同しない()
         {

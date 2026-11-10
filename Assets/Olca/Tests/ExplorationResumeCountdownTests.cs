@@ -9,6 +9,58 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static Card[] Deck155()=>Enumerable.Range(0,30).Select(i=>new Card("selected155-"+i,"fixture",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"")).ToArray();
+        private static void Walk155(OutsideExplorationSession s,long target){for(int i=0;i<400&&s.Core.Position!=target;i++){s.Core.TickFrame(Math.Sign(target-s.Core.Position));s.AdvanceDeckLocation();}Assert.AreEqual(target,s.Core.Position);}
+        [Test] public void 選択30枚は保存準備だけで抽選せず地点退出で一度だけ適用する()
+        {
+            var data=Deck155();var rng=new SeededBattleRandom(155);using(var s=new OutsideExplorationSession()){Assert.IsTrue(s.QueueSelectedDeck("one",data,Owned(data),rng,out _));Assert.IsTrue(s.IsDeckEditingLocation);Assert.IsNull(s.Cards);Assert.AreEqual(0,rng.Draws);using(var lease=s.AttachPresentation()){for(int i=0;i<4;i++)Assert.IsFalse(s.AdvanceDeckLocation());}Assert.IsTrue(s.QueueSelectedDeck("one",data,Owned(data),rng,out _));Assert.AreEqual(0,rng.Draws);Walk155(s,10*60000);var cards=s.Cards;Assert.AreEqual(30,cards.TotalCount);Assert.AreEqual(27,cards.RemainingCount);Assert.AreEqual(0,cards.SelectedIndex);long draws=rng.Draws;Assert.Greater(draws,0);Assert.IsFalse(s.AdvanceDeckLocation());using(var lease=s.AttachPresentation())Assert.IsFalse(s.AdvanceDeckLocation());Assert.AreSame(cards,s.Cards);Assert.AreEqual(draws,rng.Draws);
+                Walk155(s,8*60000);Assert.IsTrue(s.IsDeckEditingLocation);Assert.IsTrue(s.QueueSelectedDeck("one",data.Reverse().ToArray(),Owned(data),rng,out _));Assert.AreSame(cards,s.Cards);Assert.AreEqual(draws,rng.Draws);Walk155(s,10*60000);Assert.AreNotSame(cards,s.Cards);Assert.AreEqual(30,s.Cards.TotalCount);Assert.Greater(rng.Draws,draws);}
+        }
+        [Test] public void 地点内のジャンプや無効選択では再装填も乱数進行もない()
+        {
+            var data=Deck155();var rng=new SeededBattleRandom(156);using(var s=new OutsideExplorationSession()){Assert.IsFalse(s.QueueSelectedDeck("bad",data.Take(20).ToArray(),Owned(data),rng,out _));Assert.IsFalse(s.IsDeckEditingLocation);Assert.IsTrue(s.QueueSelectedDeck("one",data,Owned(data),rng,out _));for(int i=0;i<65;i++){s.Core.TickFrame(0,i==0,true);Assert.IsFalse(s.AdvanceDeckLocation());}Assert.IsTrue(s.Core.IsGrounded);Assert.IsNull(s.Cards);Assert.AreEqual(0,rng.Draws);Assert.IsTrue(OutsideTrialRoute.CanEditDeck(s.Core));Walk155(s,10*60000);Assert.IsFalse(OutsideTrialRoute.CanEditDeck(s.Core));}
+        }
+        [Test] public void 三十枚Runtimeはcold復元と通常再入で個体順序と乱数を保持する()
+        {
+            var data=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;using(var s=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){s.TryInitializePlayer(()=>new PlayerCharacter(100));s.QueueSelectedDeck("one",data,Owned(data),new SeededBattleRandom(157),out _);Walk155(s,10*60000);s.Cards.TrySelect(2);var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;Assert.AreEqual(30,runtime.Cards.Cards.Length);Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null,defs));var before=cold.Cards.CaptureState(defs).Key();Assert.IsTrue(cold.QueueSelectedDeck("one",data,Owned(data),new SeededBattleRandom(999),out _));Assert.IsFalse(cold.AdvanceDeckLocation());Assert.AreEqual(before,cold.Cards.CaptureState(defs).Key());using(var lease=cold.AttachPresentation())Assert.IsFalse(cold.AdvanceDeckLocation());Assert.AreEqual(before,cold.Cards.CaptureState(defs).Key());}
+        }
+        [Test] public void 回復操作と地点退出は別々に一回ずつ再装填し再表示では増えない()
+        {
+            var data=Deck155();var rng=new SeededBattleRandom(158);using(var s=new OutsideExplorationSession()){s.TryInitializePlayer(()=>new PlayerCharacter(100));s.QueueSelectedDeck("one",data,Owned(data),rng,out _);Walk155(s,10*60000);Walk155(s,6*60000);long before=rng.Draws;s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.Greater(rng.Draws,before);long recovered=rng.Draws;using(var lease=s.AttachPresentation())s.AdvanceDeckLocation();Assert.AreEqual(recovered,rng.Draws);Walk155(s,10*60000);Assert.Greater(rng.Draws,recovered);long exited=rng.Draws;Assert.IsFalse(s.AdvanceDeckLocation());Assert.AreEqual(exited,rng.Draws);}
+        }
+        [Test] public void pending選択の前にRuntimeが復元されても最新乱数を使いwarmとcoldで一致する()
+        {
+            var data=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;using(var warm=new OutsideExplorationSession())using(var recovered=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){
+                warm.TryInitializePlayer(()=>new PlayerCharacter(100));warm.QueueSelectedDeck("a",data,Owned(data),new SeededBattleRandom(159),out _);Walk155(warm,10*60000);var original=warm.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(warm.Player);actor.Id=original.Id;recovered.RestoreSavedState(actor,original,null,defs);warm.QueueSelectedDeck("b",data.Reverse().ToArray(),Owned(data),new SeededBattleRandom(160),out _);recovered.RecoverOutside(OutsideTrialRoute.RecoveryPointId);var restored=recovered.CaptureRuntime(defs);var next=OutsidePlayerSaveData.Capture(recovered.Player);next.Id=restored.Id;warm.RestoreSavedState(next,restored,OutsideTrialRoute.RecoveryPointId,defs);cold.RestoreSavedState(next,restored,OutsideTrialRoute.RecoveryPointId,defs);cold.QueueSelectedDeck("b",data.Reverse().ToArray(),Owned(data),new SeededBattleRandom(999),out _);Walk155(warm,10*60000);Walk155(cold,10*60000);Assert.AreEqual(warm.Cards.CaptureState(defs).Key(),cold.Cards.CaptureState(defs).Key());
+            }
+        }
+        [Test] public void 同じ選択の回復保存から再開してもwarmとcoldの退出抽選が一致する()
+        {
+            var data=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;using(var warm=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){
+                warm.TryInitializePlayer(()=>new PlayerCharacter(100));var rng=new SeededBattleRandom(160);warm.QueueSelectedDeck("same",data,Owned(data),rng,out _);Walk155(warm,10*60000);Assert.AreEqual(32,rng.Draws,"新planも全30枚Shuffle29回とDraw3回");Walk155(warm,6*60000);warm.RecoverOutside(OutsideTrialRoute.RecoveryPointId);var runtime=warm.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(warm.Player);actor.Id=runtime.Id;var bytes=PortableCheckpointJson.Serialize(runtime);var decoded=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes);Assert.AreEqual(runtime.Key(),decoded.Key());cold.RestoreSavedState(actor,decoded,OutsideTrialRoute.RecoveryPointId,defs);warm.QueueSelectedDeck("same",data,Owned(data),new SeededBattleRandom(888),out _);cold.QueueSelectedDeck("same",data,Owned(data),new SeededBattleRandom(999),out _);Walk155(warm,10*60000);Walk155(cold,10*60000);Assert.AreEqual(warm.Cards.CaptureState(defs).Key(),cold.Cards.CaptureState(defs).Key());
+            }
+        }
+        [TestCase("bad")] [TestCase("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ")]
+        public void 三十枚の選択識別が不正なら復元せず既存状態を保持する(string key)
+        {
+            var data=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;using(var s=new OutsideExplorationSession()){s.QueueSelectedDeck("a",data,Owned(data),new SeededBattleRandom(161),out _);Walk155(s,10*60000);var value=s.Cards.CaptureState(defs);var before=value.Key();value.SourceKey=key;Assert.Throws<ArgumentException>(()=>OutsideExplorationCards.RestoreState(value,defs));Assert.AreEqual(before,s.Cards.CaptureState(defs).Key());}
+        }
+        [Test] public void A適用後にBを復元してもA再選択のpendingを作りwarmとcoldの退出で一致する()
+        {
+            var data=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;using(var warm=new OutsideExplorationSession())using(var replacement=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){
+                warm.TryInitializePlayer(()=>new PlayerCharacter(100));warm.QueueSelectedDeck("a",data,Owned(data),new SeededBattleRandom(162),out _);Walk155(warm,10*60000);replacement.TryInitializePlayer(()=>new PlayerCharacter(100));replacement.QueueSelectedDeck("b",data.Reverse().ToArray(),Owned(data),new SeededBattleRandom(163),out _);Walk155(replacement,10*60000);var runtime=replacement.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(replacement.Player);actor.Id=runtime.Id;warm.RestoreSavedState(actor,runtime,null,defs);cold.RestoreSavedState(actor,runtime,null,defs);warm.QueueSelectedDeck("a",data,Owned(data),new SeededBattleRandom(164),out _);cold.QueueSelectedDeck("a",data,Owned(data),new SeededBattleRandom(165),out _);Walk155(warm,8*60000);Walk155(cold,8*60000);Walk155(warm,10*60000);Walk155(cold,10*60000);Assert.AreEqual(warm.Cards.CaptureState(defs).Key(),cold.Cards.CaptureState(defs).Key());
+            }
+        }
+        [Test] public void 未選択を読み戻した場合は未適用planを破棄し自動登録しない()
+        {
+            var data=Deck155();var rng=new SeededBattleRandom(166);using(var s=new OutsideExplorationSession()){s.QueueSelectedDeck("a",data,Owned(data),rng,out _);s.QueueSelectedDeck(null,null,null,null,out _);Walk155(s,10*60000);Assert.IsNull(s.Cards);Assert.AreEqual(0,rng.Draws);}
+        }
+        [Test] public void 地点内から地点外Runtimeへ復元しても歩行退出と誤認して再抽選しない()
+        {
+            var data=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;using(var source=new OutsideExplorationSession())using(var warm=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){
+                source.TryInitializePlayer(()=>new PlayerCharacter(100));source.QueueSelectedDeck("same",data,Owned(data),new SeededBattleRandom(167),out _);Walk155(source,10*60000);var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;warm.QueueSelectedDeck("same",data,Owned(data),new SeededBattleRandom(168),out _);Assert.IsTrue(warm.IsDeckEditingLocation);warm.RestoreSavedState(actor,runtime,null,defs);cold.RestoreSavedState(actor,runtime,null,defs);warm.QueueSelectedDeck("same",data,Owned(data),new SeededBattleRandom(169),out _);cold.QueueSelectedDeck("same",data,Owned(data),new SeededBattleRandom(170),out _);string key=source.Cards.CaptureState(defs).Key();warm.Core.TickFrame(0);cold.Core.TickFrame(0);Assert.IsFalse(warm.AdvanceDeckLocation());Assert.IsFalse(cold.AdvanceDeckLocation());Assert.AreEqual(key,warm.Cards.CaptureState(defs).Key());Assert.AreEqual(key,cold.Cards.CaptureState(defs).Key());
+            }
+        }
         private static OutsideExplorationSession RuntimeSession141(bool cards,int pose,out CheckpointDefinitions definitions)
         {
             var source=CardFixture();definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(source.ToList())).Definitions;var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));s.TryConfigureCamera(OutsideCameraPolicy.FixedAt(17*60000));var actor=new PlayerCharacter(100);actor.SetHp(37);actor.ApplyPoison("runtime141",new StatusEffect(StatusEffectType.Poison,60000,1),600);s.TryInitializePlayer(()=>actor);if(cards)Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(141),out _));s.Core.CardGauge.Configure(140,7);s.Core.CardGauge.TrySpend(70);

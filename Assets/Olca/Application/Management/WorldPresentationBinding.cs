@@ -147,12 +147,12 @@ namespace Olca.Application.Management
         private bool Operate=>Live&&IsOpen&&view!=null&&view.gameObject.activeInHierarchy&&view.ManagementContext?.DialogBlocksInput!=true;
         public void Open(){if(disposed||!alive())return;if(generation!=owned().CheckpointGeneration){session.Dispose();generation=owned().CheckpointGeneration;session=new Olca.Core.Domain.ExplorationDeckSession(store());}IsOpen=true;editing=false;RenderList();}
         private Olca.Core.Domain.ClearReturnProfile Projection()
-        {var source=owned().Copy();source.SavedDecks=session.Snapshot?.Decks??Array.Empty<Olca.Core.Domain.SavedDepartureDeck>();source.EquippedDeckId=null;return source;}
+        {var source=owned().Copy();source.SavedDecks=session.Snapshot?.Decks??Array.Empty<Olca.Core.Domain.SavedDepartureDeck>();source.EquippedDeckId=session.Snapshot?.SelectedDeckId;return source;}
         private void Ensure(){view=panels.Show(Key).GetComponent<Olca.Presentation.Dungeon.ClearReturnView>();}
         private void RenderList(string deleting=null)
         {
             if(!Live||!IsOpen)return;editing=false;Ensure();
-            view.RenderSavedDeckMenu(Projection(),session.Error,session.HasPendingSave,()=>Edit(null),id=>Edit(id),null,null,id=>{
+            view.RenderSavedDeckMenu(Projection(),session.Error,session.HasPendingSave,()=>Edit(null),id=>Edit(id),null,id=>{if(!Operate||session.HasPendingSave)return;var latest=owned();var selected=session.Snapshot.Decks.SingleOrDefault(d=>d.Id==id);if(selected==null||selected.Cards.Any(c=>{var row=Olca.Core.Domain.OwnedDefinition.Resolve(latest,c);return row==null||resolve(row)==null;}))return;session.Select(id,latest);RenderList();},id=>{
                 if(!Operate||session.HasPendingSave)return;RenderList(id);
             },Close,Retry,deleting,()=>{if(!Live||!IsOpen||session.HasPendingSave)return;session.Delete(deleting);RenderList();},()=>{if(!Operate)return;session.Reload();RenderList();});
         }
