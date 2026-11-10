@@ -70,6 +70,9 @@ namespace Olca.Presentation.Exploration
             InitializeItemHud(factory);
             recoveryPoint=factory.Button("OutsideRecoveryPoint","ケンショウ カイフク（カリ）",transform,new Vector2(0,.21f),Vector2.zero);recoveryPoint.GetComponent<RectTransform>().sizeDelta=new Vector2(350,104);Olca.Presentation.Dungeon.UiLook.Button(recoveryPoint);recoveryPoint.gameObject.SetActive(false);
             outsideHp=factory.Label("OutsidePlayerHp",transform,new Vector2(1,1),new Vector2(-255,-320),new Vector2(470,42));outsideHp.fontSize=24;outsideHp.color=Color.white;outsideHp.resizeTextForBestFit=true;outsideHp.resizeTextMinSize=18;outsideHp.resizeTextMaxSize=24;outsideHp.raycastTarget=false;
+            outsidePoise=factory.Label("OutsidePlayerPoise",transform,Vector2.one,new Vector2(-255,-278),new Vector2(470,32));outsidePoise.fontSize=18;outsidePoise.color=Color.white;outsidePoise.raycastTarget=false;
+            var poiseTrack=new GameObject("OutsidePlayerPoiseTrack",typeof(RectTransform),typeof(Image));poiseTrack.transform.SetParent(transform,false);var poiseRect=(RectTransform)poiseTrack.transform;poiseRect.anchorMin=poiseRect.anchorMax=Vector2.one;poiseRect.pivot=new Vector2(0,.5f);poiseRect.anchoredPosition=new Vector2(-470,-300);poiseRect.sizeDelta=new Vector2(430,6);var poiseBack=poiseTrack.GetComponent<Image>();poiseBack.color=new Color(.12f,.13f,.08f,1);poiseBack.raycastTarget=false;
+            var poiseFill=new GameObject("OutsidePlayerPoiseFill",typeof(RectTransform),typeof(Image));poiseFill.transform.SetParent(poiseTrack.transform,false);outsidePoiseFill=poiseFill.GetComponent<Image>();outsidePoiseFill.color=new Color(.95f,.8f,.27f,1);outsidePoiseFill.raycastTarget=false;var poiseFillRect=(RectTransform)poiseFill.transform;poiseFillRect.anchorMin=poiseFillRect.anchorMax=new Vector2(0,.5f);poiseFillRect.pivot=new Vector2(0,.5f);poiseFillRect.anchoredPosition=Vector2.zero;poiseFillRect.sizeDelta=new Vector2(430,6);
             gaugeLabel=factory.Label("OutsideCardGaugeLabel",transform,new Vector2(0,1),new Vector2(240,-148),new Vector2(400,28));gaugeLabel.fontSize=22;gaugeLabel.alignment=TextAnchor.MiddleLeft;gaugeLabel.color=Color.white;gaugeLabel.raycastTarget=false;gaugeLabel.horizontalOverflow=HorizontalWrapMode.Wrap;gaugeLabel.verticalOverflow=VerticalWrapMode.Truncate;gaugeLabel.resizeTextForBestFit=true;gaugeLabel.resizeTextMinSize=18;gaugeLabel.resizeTextMaxSize=22;
             var track=new GameObject("OutsideCardGaugeTrack",typeof(RectTransform),typeof(Image));track.transform.SetParent(transform,false);var trackImage=track.GetComponent<Image>();trackImage.color=new Color(.05f,.14f,.2f,.94f);trackImage.raycastTarget=false;var trackRect=track.GetComponent<RectTransform>();trackRect.anchorMin=trackRect.anchorMax=new Vector2(0,1);trackRect.pivot=new Vector2(0,.5f);trackRect.anchoredPosition=new Vector2(40,-174);trackRect.sizeDelta=new Vector2(400,10);
             var fill=new GameObject("OutsideCardGaugeFill",typeof(RectTransform),typeof(Image));fill.transform.SetParent(track.transform,false);var fillImage=fill.GetComponent<Image>();fillImage.color=new Color(.55f,.88f,1,1);fillImage.raycastTarget=false;gaugeFill=fill.GetComponent<RectTransform>();gaugeFill.anchorMin=gaugeFill.anchorMax=new Vector2(0,.5f);gaugeFill.pivot=new Vector2(0,.5f);gaugeFill.anchoredPosition=new Vector2(2,0);gaugeFill.sizeDelta=new Vector2(396,6);
@@ -144,7 +147,7 @@ namespace Olca.Presentation.Exploration
             slot.Button.onClick=new Button.ButtonClickedEvent();slot.Button.onClick.AddListener(()=>{if(this!=null&&slot.Button!=null&&slot.Button.isActiveAndEnabled&&slot.Button.IsInteractable()&&captured!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&lease!=null&&lease.IsCurrent&&CanPlay&&slot.CanUse?.Invoke()==true)slot.Claim?.Invoke();});
         }
         private void ClearSupply(){foreach(var slot in supplySlots)if(slot!=null){slot.Claim=null;slot.CanUse=null;slot.Message=null;if(slot.Button!=null){slot.Button.onClick=new Button.ButtonClickedEvent();slot.Button.gameObject.SetActive(false);}}}
-        private Text outsideHp;
+        private Text outsideHp,outsidePoise;private Image outsidePoiseFill;
         private Olca.Presentation.Battle.CombatStatusIconStrip outsideStatusIcons;
         // 戦闘と同じ読取/画像/残時間表示を使い、外界Viewは時計や状態を変更しない。
         private void RefreshOutsideStatusIcons()
@@ -163,6 +166,9 @@ namespace Olca.Presentation.Exploration
             if(!IsOpen||player==null)return;
             RefreshItemHud();
             RefreshOutsideStatusIcons();
+            // Custom詳細と同じ残強靭度の読取。のけぞり/回復の計算は既存Playerが所有する。
+            var poiseActor=presentation.Player;int remainingPoise=poiseActor==null||poiseActor.IsStaggered?0:System.Math.Max(0,poiseActor.Poise-poiseActor.AccumulatedDamage);
+            outsidePoise.text=poiseActor==null?"キョウジン —":$"キョウジン {remainingPoise} / {poiseActor.Poise}";outsidePoiseFill.fillAmount=poiseActor==null||poiseActor.Poise<=0?0:Mathf.Clamp01(remainingPoise/(float)poiseActor.Poise);outsidePoiseFill.rectTransform.sizeDelta=new Vector2(430*outsidePoiseFill.fillAmount,6);
             if(outsideHp!=null){var actor=presentation.Player;outsideHp.text=actor==null?"HP —":$"HP  {actor.CurrentHp} / {actor.MaxHp}";}
             var core=presentation.Core;double unit=Olca.Core.Logic.Integration.OutsideMovementDefinition.UnitsPerWorldUnit;
             float worldX=(float)(core.Position/unit),width=(float)(core.Definition.Width/unit);
