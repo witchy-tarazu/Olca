@@ -1841,6 +1841,19 @@ namespace Olca.Core.Logic.Dungeon
             RouteId = routeId; Revision = revision;
             RouteHash = ComputeRouteHash();
         }
+        /// <summary>別マップでも既存カードのキー・登録順を保つ。外界退避との往復で再採番しない。</summary>
+        public static FloorSequenceDefinitions WithSharedCardCatalog(string routeId,string revision,IEnumerable<DungeonConfig> maps,CheckpointDefinitions cardCatalog)
+        {
+            if(maps==null||cardCatalog==null)throw new ArgumentNullException();
+            var list=maps.ToArray();if(list.Length==0||list.Any(m=>m==null))throw new ArgumentException("階層列のマップが必要です");
+            var definitions=list.Select(map=>{
+                var next=new CheckpointDefinitions(cardCatalog.Revision,map);
+                foreach(var card in cardCatalog.PortableCards)next.RegisterCard(card.Key,card.Value);
+                foreach(var grant in cardCatalog.PortableGrants)next.RegisterGrant(grant.Key,grant.Value);
+                return next;
+            }).ToArray();
+            return new FloorSequenceDefinitions(routeId,revision,definitions);
+        }
         // 正規カタログを値DTOから戻す入口。階層ごとの定義キーを再採番しない。
         internal FloorSequenceDefinitions(string routeId,string revision,CheckpointDefinitions[] definitions)
         {

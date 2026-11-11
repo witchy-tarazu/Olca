@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Olca.Application.Battle;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
@@ -57,6 +58,24 @@ namespace Olca.Application.Management
         {
             var p=CreateProcessing();
             return DungeonBattleManager.TryRestoreCheckpoint(checkpoint,random,logger,out manager,out error,p.Exceed,p.Tuning,p.Fusion,p.Cards,enemyAIProvider:enemies,evaluationRewards:rewards);
+        }
+        /// <summary>通常入口で試せる暫定配置。既存SingleのID/hash/性能を置換しない。</summary>
+        public static FloorSequenceDefinitions CreateTrialRoute(CheckpointDefinitions cardCatalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            if(cardCatalog==null||cards==null)throw new ArgumentNullException();
+            DungeonConfig Floor(int index,int count,bool final){
+                var cells=new List<MapCell>();
+                for(int i=0;i<count;i++){
+                    Enemy enemy=null;
+                    if(final&&i==count-1)enemy=new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(i,0),poiseDefinition:boss);
+                    else if(i==3||i==9)enemy=new Enemy("enemy_"+i,"スライム",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal);
+                    cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+                }
+                // 階層数・配置は試用。回復量と敵性能は既存定義を借用する。
+                var recovery=new DungeonVisitDefinition(6,false,new[]{new DungeonVisitOption("recover",0,heal:cards.CreateById(SimpleCardFactory.Heal).Power)},1);
+                return new DungeonConfig("trial-floor-"+index,"シヨウ "+index+"/2（カリ）",count,cells,visits:new[]{recovery});
+            }
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-two-floor-v1","trial-v1",new[]{Floor(1,14,false),Floor(2,18,true)},cardCatalog);
         }
         public DungeonBattleManager CreateFloor(FloorSequenceSession route,FloorSequenceDefinitions definitions,out DungeonCheckpointSession checkpoint)
         {

@@ -208,3 +208,68 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class TrialDungeonRouteTests
+    {
+        private static string CatalogHash(CheckpointDefinitions value)=>(string)typeof(CheckpointDefinitions).GetProperty("CardCatalogHash",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(value);
+        private static CheckpointDefinitions LegacyCatalog(SimpleCardFactory cards,Deck deck){var map=DungeonConfig.CreateTestDungeon(8,100,100);var shop=new DungeonVisitDefinition(1,true,new[]{SimpleCardFactory.Sword,SimpleCardFactory.Bomb,SimpleCardFactory.Heal}.Select(id=>new DungeonVisitOption(id,10,cards.CreateById(id))).ToArray(),3);map=new DungeonConfig(map.DungeonId,map.DungeonName,map.TotalCellCount,map.MapCells,visits:new[]{shop});var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;var hashes=new System.Collections.Generic.HashSet<string>(defs.CollectionDefinitions.Select(CollectionDisplay.DefinitionHash));foreach(var card in cards.CollectionCards)if(hashes.Add(CollectionDisplay.DefinitionHash(card)))defs.RegisterCard("product/catalog/v1/"+CollectionDisplay.DefinitionHash(card),card);return defs;}
+        private static FloorSequenceDefinitions Definitions(SimpleCardFactory cards,Deck deck)=>DungeonCoreFactory.CreateTrialRoute(LegacyCatalog(cards,deck),cards,new EnemyPoiseDefinition(30,18,180),new EnemyPoiseDefinition(60,18,180));
+        [Test] public void 試用二階層は既存敵性能と固定配置で最終階層だけボスを持つ()
+        {
+            var cards=new SimpleCardFactory();var deck=cards.CreateStarterDeck();var before=deck.GetAllCards().Select(CollectionDisplay.DefinitionHash).ToArray();var route=Definitions(cards,deck);
+            Assert.AreEqual(2,route.FloorCount);Assert.AreEqual("trial-two-floor-v1",route.RouteId);Assert.AreEqual("trial-v1",route.Revision);
+            for(int i=0;i<2;i++){var map=route.CreateInitialMap(i);Assert.AreEqual(i==0?14:18,map.TotalCellCount);StringAssert.Contains("カリ",map.DungeonName);CollectionAssert.AreEqual(i==0?new[]{3,9}:new[]{3,9,17},map.MapCells.Where(c=>c.Enemy!=null).Select(c=>c.Index));foreach(var cell in map.MapCells.Where(c=>c.Enemy!=null)){Assert.AreEqual(cell.Type==CellType.Boss?200:50,cell.Enemy.MaxHp);Assert.AreEqual(ElementType.None,cell.Enemy.Element);}Assert.AreEqual(6,map.Visits.Single().Cell);Assert.AreEqual(cards.CreateById(SimpleCardFactory.Heal).Power,map.Visits.Single().Options.Single().Heal);}
+            Assert.Throws<ArgumentException>(()=>route.CreateInitialMap(0).ValidateFinalFloorForDeparture());Assert.DoesNotThrow(()=>route.CreateInitialMap(1).ValidateFinalFloorForDeparture());Assert.AreEqual(route.RouteHash,Definitions(cards,deck).RouteHash);CollectionAssert.AreEqual(before,deck.GetAllCards().Select(CollectionDisplay.DefinitionHash));var copy=route.CreateInitialMap(0);copy.MapCells[3].Enemy.TakeDamage(50,ElementType.None);Assert.AreEqual(50,route.CreateInitialMap(0).MapCells[3].Enemy.CurrentHp);
+        }
+        [TestCase(false)] [TestCase(true)] public void 旧外界三十枚の全領域とwarm個体は試用階層往復とcoldで再採番再抽選しない(bool returnedFixture)
+        {
+            var factory=new SimpleCardFactory();var initial=factory.CreateStarterDeck();var legacy=LegacyCatalog(factory,initial);string oldMap=legacy.MapHash,oldCatalog=CatalogHash(legacy);var defs=DungeonCoreFactory.CreateTrialRoute(legacy,factory,new EnemyPoiseDefinition(30,18,180),new EnemyPoiseDefinition(60,18,180));
+            var first=new[]{SimpleCardFactory.Sword,SimpleCardFactory.Bomb,SimpleCardFactory.Heal}.Select(id=>factory.CreateById(id)).ToArray();var source=first.Concat(factory.CollectionCards.Where(c=>c.Rarity==CardRarity.Normal&&c.ExceedLevel!=ExceedLevel.Lv3&&!first.Any(f=>f.Id==c.Id&&f.ExceedLevel==c.ExceedLevel))).SelectMany(c=>Enumerable.Range(0,4).Select(_=>c.Clone())).Take(30).ToArray();Assert.AreEqual(30,source.Length);var owned=source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"catalog172-"+Guid.NewGuid().ToString("N"));try{var route=new FloorSequenceSession(defs,new FloorSequenceFileStore(defs,dir));for(int floor=0;floor<2;floor++){
+                var shared=defs.CreateCheckpointSession(floor,route).Definitions;Assert.AreEqual(oldCatalog,CatalogHash(shared));foreach(var card in factory.CollectionCards)Assert.AreEqual(legacy.CaptureKnownCard("same",card).DefinitionKey,shared.CaptureKnownCard("same",card).DefinitionKey);
+                using(var warm=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){
+                    warm.TryInitializePlayer(()=>new PlayerCharacter(100));warm.Player.SetHp(73);Assert.IsTrue(warm.QueueSelectedDeck("legacy-catalog",source,owned,new SeededBattleRandom(172),out var error),error);for(int i=0;i<400&&warm.Core.Position!=600000;i++){warm.Core.TickFrame(1);warm.AdvanceDeckLocation();}Assert.AreEqual(600000,warm.Core.Position);warm.Cards.TrySelect(2);Assert.IsTrue(warm.Cards.TryConsumeSelected(warm.Cards.SelectedCard,warm.Cards.HandRevision,warm.Core.CardGauge,out _));var runtime=warm.CaptureRuntime(legacy);if(returnedFixture)runtime.Cards.Returned=new[]{Enumerable.Range(0,30).First(i=>!runtime.Cards.Drawn.Contains(i))};runtime.Validate();Assert.IsTrue(runtime.Cards.Cards.Any(c=>c.DefinitionKey.StartsWith("visit/v1/")));var original=PortableCheckpointJson.Serialize(runtime);var actor=OutsidePlayerSaveData.Capture(warm.Player);actor.Id=runtime.Id;warm.RestoreSavedState(actor,runtime,null,legacy);var cards=warm.Cards;var transfer=runtime.Copy();transfer.Id=Guid.NewGuid().ToString("N");var transferred=actor.Copy();transferred.Id=transfer.Id;
+                    Assert.IsTrue(warm.RestoreSavedState(transferred,transfer,null,shared));Assert.AreSame(cards,warm.Cards);Assert.AreEqual(runtime.Cards.Key(),warm.Cards.CaptureState(shared).Key());Assert.IsFalse(warm.RestoreSavedState(transferred,transfer,null,shared));Assert.AreSame(cards,warm.Cards);Assert.IsTrue(cold.RestoreSavedState(transferred,transfer,null,shared));Assert.AreEqual(runtime.Cards.Key(),cold.Cards.CaptureState(shared).Key());
+                    var back=warm.CaptureRuntime(shared);var backActor=OutsidePlayerSaveData.Capture(warm.Player);backActor.Id=back.Id;Assert.IsTrue(warm.RestoreSavedState(backActor,back,null,legacy));Assert.AreSame(cards,warm.Cards);Assert.AreEqual(runtime.Cards.Key(),warm.Cards.CaptureState(legacy).Key());Assert.IsTrue(warm.Cards.TryConsumeSelected(warm.Cards.SelectedCard,warm.Cards.HandRevision,warm.Core.CardGauge,out _));Assert.IsTrue(cold.Cards.TryConsumeSelected(cold.Cards.SelectedCard,cold.Cards.HandRevision,cold.Core.CardGauge,out _));Assert.AreEqual(warm.Cards.CaptureState(legacy).Key(),cold.Cards.CaptureState(shared).Key());Assert.AreEqual(warm.Core.CardGauge.CurrentUnits,cold.Core.CardGauge.CurrentUnits);var bad=runtime.Cards.Copy();bad.Cards[29].DefinitionKey="visit/v1/unknown";Assert.Throws<ArgumentException>(()=>OutsideExplorationCards.RestoreState(bad,shared));CollectionAssert.AreEqual(original,PortableCheckpointJson.Serialize(runtime));
+                }
+            }Assert.AreEqual(oldMap,legacy.MapHash);Assert.AreEqual(oldCatalog,CatalogHash(legacy));}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        private sealed class TransferIo:CheckpointFileIo
+        {
+            public string Fault;public int Attempts;public byte[] Before,Plan;
+            public override void Replace(string temporary,string destination,string backup){var bytes=System.IO.File.ReadAllBytes(temporary);if(PortableCheckpointJson.DecodeFloor(bytes).FloorIndex==1){Attempts++;Before=System.IO.File.ReadAllBytes(destination);Plan=bytes;if(Fault=="before")throw new System.IO.IOException("試用階層保存失敗fixture");base.Replace(temporary,destination,backup);if(Fault=="after")throw new System.IO.IOException("試用階層保存応答喪失fixture");return;}base.Replace(temporary,destination,backup);}
+        }
+        private static void CompleteByExplicitFixture(DungeonBattleManager manager)
+        {
+            // 配置と境界を通す試験。通常の攻撃入力・敵攻略を実証するfixtureとは区別する。
+            manager.OnCardRewardPresented+=_=>manager.SelectCardReward(null);
+            for(int i=0;i<2000&&!manager.Dungeon.IsFloorCompleted&&!manager.Dungeon.IsCheckpointBlocked&&manager.CurrentPhase!=GamePhase.DungeonCleared;i++){
+                manager.TickFrame(17);if(manager.CurrentBattle!=null){var battle=manager.CurrentBattle;if(battle.CustomScreen.IsOpen){battle.CustomScreen.Confirm();battle.CustomScreen.Close();battle.Resume(BattlePauseReason.CustomScreen);}foreach(var e in battle.Enemies.ToArray())if(!e.IsDead)e.TakeDamage(e.MaxHp,ElementType.None);}
+                if(manager.Dungeon.ActiveVisit!=null){if(manager.Dungeon.CanChooseVisit(0))Assert.IsTrue(manager.Dungeon.ChooseVisit(0));if(manager.Dungeon.CanExitVisit)manager.Dungeon.ExitVisit();}
+                if(manager.Dungeon.PendingCurrencyReward>0)manager.SelectCurrencyReward(true);if(manager.Dungeon.PendingItemReward!=null)manager.SelectItemReward(false);
+                if(manager.CurrentPhase==GamePhase.Dungeon&&manager.Dungeon.ActiveVisit==null&&!manager.Dungeon.IsInBattle)manager.ResumeAfterBattle();
+            }
+            Assert.IsTrue(manager.Dungeon.IsFloorCompleted||manager.Dungeon.IsCheckpointBlocked||manager.CurrentPhase==GamePhase.DungeonCleared,"fixture停止: "+manager.CurrentPhase+" / "+manager.Dungeon.PlayerPosition+" / "+manager.Dungeon.CheckpointError);
+        }
+        [TestCase(null)] [TestCase("before")] [TestCase("after")] public void 試用実配置の終端から次階層保存と再試行とcoldを経て最終ボスへ進める(string fault)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"trial172-"+Guid.NewGuid().ToString("N"));
+            try{var cards=new SimpleCardFactory();var deck=cards.CreateStarterDeck();var defs=Definitions(cards,deck);var io=new TransferIo{Fault=fault};var store=new FloorSequenceFileStore(defs,dir,io);var run=new FloorSequenceSession(defs,store);var checkpoint=defs.CreateCheckpointSession(0,run);var player=new PlayerCharacter(100);player.SetHp(40);var factory=new DungeonCoreFactory(new SeededBattleRandom(172),new Olca.Tests.Mocks.MockLogger(),()=>cards);var first=factory.Create(new DungeonCoreFactory.Launch{Map=defs.CreateInitialMap(0),Player=player,Deck=deck,Checkpoints=checkpoint,HasNextFloor=true});string runId=run.Current.Snapshot.State.RunId;
+                CompleteByExplicitFixture(first);Assert.AreEqual(60,player.CurrentHp,"既存20回復だけで階層間の自動全回復なし");
+                if(fault=="before"){Assert.IsTrue(first.Dungeon.IsCheckpointBlocked);Assert.AreEqual(0,run.Current.FloorIndex);Assert.IsTrue(run.HasPendingSave);CollectionAssert.AreEqual(io.Before,System.IO.File.ReadAllBytes(store.ActivePath));io.Fault=null;Assert.IsTrue(first.RetryCheckpoint());}
+                Assert.IsFalse(first.Dungeon.IsCheckpointBlocked);Assert.IsTrue(first.Dungeon.IsFloorCompleted);Assert.AreEqual(1,run.Current.FloorIndex);Assert.AreEqual(fault=="before"?2:1,io.Attempts);Assert.IsFalse(run.HasPendingSave);Assert.AreEqual(60,run.Current.State.Player.CurrentHp);Assert.AreEqual(runId,run.Current.Snapshot.State.RunId);Assert.IsFalse(first.RetryCheckpoint());
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);var cold=new FloorSequenceSession(defs,new FloorSequenceFileStore(defs,dir));Assert.IsTrue(cold.TryLoad(out var error),error);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(1,cold.Current.FloorIndex);var final=factory.CreateFloor(cold,defs,out _);final.ActivateCheckpoint();CompleteByExplicitFixture(final);Assert.AreEqual(GamePhase.DungeonCleared,final.CurrentPhase);Assert.AreEqual(80,cold.Current.State.Player.CurrentHp);Assert.AreEqual(CheckpointBoundary.Terminal,cold.Current.Snapshot.State.Boundary);Assert.AreEqual(runId,cold.Current.Snapshot.State.RunId);Assert.IsFalse(final.RetryCheckpoint());
+            }finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [TestCase("floors.active.json")] [TestCase("floors.backup.json")] public void 計画欠損のrun別階層保存は検出し受領済みrunは書き換えず除外する(string file)
+        {
+            string root=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"orphan172-"+Guid.NewGuid().ToString("N")),id=Guid.NewGuid().ToString("N");try{string dir=System.IO.Path.Combine(root,"runs",id);System.IO.Directory.CreateDirectory(dir);string path=System.IO.Path.Combine(dir,file);var bytes=new byte[]{1,2,3};System.IO.File.WriteAllBytes(path,bytes);Assert.IsTrue(FloorSequenceFileStore.TryFindUnclaimedRunFloors(root,Array.Empty<string>(),out var found,out var error),error);Assert.IsTrue(found);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(path));Assert.IsTrue(FloorSequenceFileStore.TryFindUnclaimedRunFloors(root,new[]{id},out found,out error),error);Assert.IsFalse(found);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(path));}finally{if(System.IO.Directory.Exists(root))System.IO.Directory.Delete(root,true);}
+        }
+        [Test] public void 階層保存先がファイルなら探索せず安全に拒否する()
+        {
+            string root=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"bad-runs172-"+Guid.NewGuid().ToString("N"));try{System.IO.Directory.CreateDirectory(root);System.IO.File.WriteAllText(System.IO.Path.Combine(root,"runs"),"fixture");Assert.IsFalse(FloorSequenceFileStore.TryFindUnclaimedRunFloors(root,Array.Empty<string>(),out var found,out var error));Assert.IsFalse(found);Assert.IsNotEmpty(error);Assert.AreEqual("fixture",System.IO.File.ReadAllText(System.IO.Path.Combine(root,"runs")));}finally{if(System.IO.Directory.Exists(root))System.IO.Directory.Delete(root,true);}
+        }
+    }
+}

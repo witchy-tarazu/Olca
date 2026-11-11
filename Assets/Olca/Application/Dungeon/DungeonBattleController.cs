@@ -357,9 +357,10 @@ namespace Olca.Application.Dungeon
         {
             public FloorSequenceDefinitions Floors;
             public CheckpointDefinitions Single;
+            public string DisplayName;
             public string Id => Floors?.RouteId ?? Single.DungeonId;
             public string Key => Floors?.RouteHash ?? Single.MapHash;
-            public string Label => Map().DungeonName + (Floors == null ? "" : " / " + Id);
+            public string Label => DisplayName ?? Map().DungeonName + (Floors == null ? "" : " / " + Id);
             public DungeonConfig Map() => Floors?.CreateInitialMap(0) ?? Single.CreateInitialMap();
         }
                 private bool exchangeOpen;
@@ -2108,7 +2109,23 @@ namespace Olca.Application.Dungeon
             var cardFactory = processing.Cards;
 
             var initialDeck = CreateInitialDeck();
+            CheckpointDefinitions preparedSingle=null;
+            // 保存ストアを選ぶ前に全候補を登録する。旧Singleを階層列で包み直さない。
+            if(dungeonChoices==null&&configuredDungeon==null&&floorDefinitions==null&&configuredDepartureDeck==null){
+                preparedSingle=CreateSingleDefinitions(dungeonConfig,initialDeck);
+                var trial=Olca.Application.Management.DungeonCoreFactory.CreateTrialRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"}};
+                var selected=savedPlan==null?null:dungeonChoices.FirstOrDefault(c=>c.Key==savedPlan.DefinitionKey);
+                if(selected?.Floors!=null){floorDefinitions=selected.Floors;dungeonConfig=floorDefinitions.CreateInitialMap(0);selectedDungeon=dungeonChoices.IndexOf(selected);}
+
+            }
             RegisterLegacyDeparture(initialDeck);
+            if(preparedSingle!=null){
+                if(savedPlan!=null&&!dungeonChoices.Concat(knownLegacyDungeons).Any(c=>c.Key==savedPlan.DefinitionKey&&ValidateDeparture(savedPlan.Start,c,out _))){progressStartupBlocked=true;clearReturnError="シュツゲキケイカクのテイギがイッチしません。キゾンデータはヘンコウしていません。";}
+                if(savedPlan==null){bool unclaimed;string routeError;if(!FloorSequenceFileStore.TryFindUnclaimedRunFloors(ProgressCheckpointRoot,clearReturnSession.Snapshot.Receipts.Select(v=>v.RunId),out unclaimed,out routeError)||unclaimed){progressStartupBlocked=true;clearReturnError=routeError??"カイソウのホゾンにタイオウするシュツゲキケイカクがありません。キゾンデータはヘンコウしていません。";}}
+            }
             if (floorDefinitions != null)
             {
                 floorStore = new FloorSequenceFileStore(floorDefinitions, ActiveCheckpointDirectory);
@@ -2118,7 +2135,7 @@ namespace Olca.Application.Dungeon
             }
             else
             {
-                var definitions = CreateSingleDefinitions(dungeonConfig, initialDeck);
+                var definitions = preparedSingle ?? CreateSingleDefinitions(dungeonConfig, initialDeck);
                 nextDepartureDefinitions = definitions; // 旧攻略の再開定義と、新規出撃の現在定義を分ける。
                 var store = new FileCheckpointStore(definitions, ActiveCheckpointDirectory);
                 if (store.HasExistingData && store.Read() == null)
