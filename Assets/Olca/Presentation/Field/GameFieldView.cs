@@ -1382,7 +1382,7 @@ namespace Olca.Presentation.Field
         }
         private void TrackColumn(RectTransform rect,int column,float offset){settingsColumns.Add((rect,column,offset));}
         private string ActionLabel(string action){
-            if(action=="ItemUp")return "アイテムウエ";if(action=="ItemRight")return "アイテムミギ";if(action=="ItemDown")return "アイテムシタ";if(action=="ItemLeft")return "アイテムヒダリ";if(action=="WheelPrimary")return "カムイホイール";if(action=="SelectionPrevious")return "カード マエ";if(action=="SelectionNext")return "カード ツギ";
+            if(action=="InteractionPrimary")return "シラベル / ハナす";if(action=="ItemUp")return "アイテムウエ";if(action=="ItemRight")return "アイテムミギ";if(action=="ItemDown")return "アイテムシタ";if(action=="ItemLeft")return "アイテムヒダリ";if(action=="WheelPrimary")return "カムイホイール";if(action=="SelectionPrevious")return "カード マエ";if(action=="SelectionNext")return "カード ツギ";
             if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
             string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
         }

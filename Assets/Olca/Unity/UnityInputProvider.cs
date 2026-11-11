@@ -170,7 +170,7 @@ namespace Olca.Unity
             Add("battle", "DownPrimary", Key.DownArrow); Add("battle", "DownSecondary", Key.S);
             Add("battle", "AttackPrimary", Key.Z); Add("battle", "CardPrimary", Key.Space);
             Add("battle", "CustomPrimary", Key.LeftAlt); Add("battle", "CustomSecondary", Key.RightAlt);
-            Add("outside","WheelPrimary",Key.Tab);if(cardSlot)Add("outside","CardPrimary",Key.F);
+            Add("outside","InteractionPrimary",Key.Enter);Add("outside","WheelPrimary",Key.Tab);if(cardSlot)Add("outside","CardPrimary",Key.F);
             for(int i=0;i<4;i++)Add("outside",itemActions[i],new[]{Key.Digit1,Key.Digit2,Key.Digit3,Key.Digit4}[i]);
             return new Olca.Core.Domain.InputBindingProfile(slots, new (string, string, string)[0],SelectionCoUse(false));
         }
@@ -185,7 +185,7 @@ namespace Olca.Unity
                 foreach(var action in new[]{"JumpPrimary","DashPrimary","DashSecondary","SelectionPrevious","SelectionNext"})pairs.Add(("keyboard","outside","WheelPrimary","exploration",action));
                 foreach(var action in new[]{"LeftPrimary","LeftSecondary","RightPrimary","RightSecondary"})pairs.Add(("keyboard","outside","WheelPrimary","battle",action));
             }
-            if(!gamepad)foreach(var item in itemActions.Concat(new[]{"CardPrimary"})){
+            if(!gamepad)foreach(var item in itemActions.Concat(new[]{"CardPrimary","InteractionPrimary"})){
                 foreach(var action in new[]{"JumpPrimary","DashPrimary","DashSecondary","SelectionPrevious","SelectionNext"})pairs.Add(("keyboard","outside",item,"exploration",action));
                 foreach(var action in new[]{"LeftPrimary","LeftSecondary","RightPrimary","RightSecondary"})pairs.Add(("keyboard","outside",item,"battle",action));
             }
@@ -197,6 +197,8 @@ namespace Olca.Unity
         {
             if(slots==null)throw new System.ArgumentNullException(nameof(slots));var defaults=gamepad?CreateDefaultGamepadProfile():CreateDefaultKeyboardProfile();var key=(Device:gamepad?"gamepad":"keyboard",Context:"outside",Action:"CardPrimary");
             var copy=slots.ToDictionary(p=>p.Key,p=>p.Value);
+            var interaction=(Device:gamepad?"gamepad":"keyboard",Context:"outside",Action:"InteractionPrimary");
+            if(!copy.ContainsKey(interaction)){string value=defaults.Bindings[interaction];if(copy.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,interaction)))value=null;copy.Add(interaction,value);}
             if(!copy.ContainsKey(key)){copy=DecodeBeforeOutsideCard(copy,gamepad).Bindings.ToDictionary(p=>p.Key,p=>p.Value);string value=defaults.Bindings[key];if(copy.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,key)))value=null;copy.Add(key,value);}
             if(copy.Count!=defaults.Bindings.Count||!defaults.Bindings.Keys.All(copy.ContainsKey))throw new System.IO.InvalidDataException();
             var result=new Olca.Core.Domain.InputBindingProfile(copy,gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));if(!(gamepad?ValidateGamepadProfile(result,out _):ValidateKeyboardProfile(result,out _)))throw new System.IO.InvalidDataException();return result;
@@ -215,7 +217,10 @@ namespace Olca.Unity
         private static Olca.Core.Domain.InputBindingProfile DecodeBeforeItemSlots(Dictionary<(string Device,string Context,string Action),string> slots,bool gamepad)
         {
             if(slots==null)throw new System.ArgumentNullException(nameof(slots));slots=slots.ToDictionary(p=>p.Key,p=>p.Value);
-            var full=gamepad?CreateDefaultGamepadProfile(false):CreateDefaultKeyboardProfile(false);var defaults=new Olca.Core.Domain.InputBindingProfile(full.Bindings.Where(p=>!IsItemSlot(p.Key)).ToDictionary(p=>p.Key,p=>p.Value),gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
+            var interaction=(Device:gamepad?"gamepad":"keyboard",Context:"outside",Action:"InteractionPrimary");
+            bool hadInteraction=slots.TryGetValue(interaction,out var interactionValue);slots.Remove(interaction);
+            var full=gamepad?CreateDefaultGamepadProfile(false):CreateDefaultKeyboardProfile(false);var defaults=new Olca.Core.Domain.InputBindingProfile(full.Bindings.Where(p=>!IsItemSlot(p.Key)&&p.Key!=interaction).ToDictionary(p=>p.Key,p=>p.Value),gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
+            void RestoreInteraction(){if(hadInteraction){if(interactionValue!=null&&slots.Any(p=>p.Value==interactionValue&&full.Conflicts(p.Key,interaction)))interactionValue=null;slots.Add(interaction,interactionValue);}}
             if(!gamepad){
                 var wheelKey=(Device:"keyboard",Context:"outside",Action:"WheelPrimary");
                 bool SelectKey((string Device,string Context,string Action) k)=>k.Context=="exploration"&&(k.Action=="SelectionPrevious"||k.Action=="SelectionNext");
@@ -223,7 +228,7 @@ namespace Olca.Unity
                 if(slots.Count==oldest.Length&&oldest.All(slots.ContainsKey))foreach(var item in defaults.Bindings.Where(p=>SelectKey(p.Key))){string value=item.Value;if(slots.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,item.Key)))value=null;slots.Add(item.Key,value);}
                 if(slots.Count==previous.Length&&previous.All(slots.ContainsKey)){string value=defaults.Bindings[wheelKey];if(slots.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,wheelKey)))value=null;slots.Add(wheelKey,value);}
                 if(slots.Count!=defaults.Bindings.Count||slots.Keys.Any(k=>!defaults.Bindings.ContainsKey(k)))throw new System.IO.InvalidDataException();
-                var migrated=new Olca.Core.Domain.InputBindingProfile(slots,new (string,string,string)[0],SelectionCoUse(false));return migrated;
+                RestoreInteraction();var migrated=new Olca.Core.Domain.InputBindingProfile(slots,new (string,string,string)[0],SelectionCoUse(false));return migrated;
             }
             bool Selection((string Device,string Context,string Action) k)=>k.Context=="exploration"&&(k.Action=="SelectionPrevious"||k.Action=="SelectionNext");
             var legacy=defaults.Bindings.Keys.Where(k=>!Selection(k)).ToArray();
@@ -253,7 +258,7 @@ namespace Olca.Unity
                 }
             }
             if(slots.Count!=defaults.Bindings.Count||slots.Keys.Any(k=>!defaults.Bindings.ContainsKey(k)))throw new System.IO.InvalidDataException();
-            return new Olca.Core.Domain.InputBindingProfile(slots,gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
+            RestoreInteraction();return new Olca.Core.Domain.InputBindingProfile(slots,gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
         }
         public static readonly GamepadButton[] BindingButtons = { GamepadButton.DpadUp,GamepadButton.DpadDown,GamepadButton.DpadLeft,GamepadButton.DpadRight,GamepadButton.North,GamepadButton.East,GamepadButton.South,GamepadButton.West,GamepadButton.LeftStick,GamepadButton.RightStick,GamepadButton.LeftShoulder,GamepadButton.RightShoulder,GamepadButton.Start,GamepadButton.Select,GamepadButton.LeftTrigger,GamepadButton.RightTrigger };
         // 列挙型の同値別名（A/X等）は実行系依存なので、保存IDは位置名に固定する。
@@ -268,7 +273,7 @@ namespace Olca.Unity
             void Add(string context,string action,GamepadButton key)=>slots.Add(("gamepad",context,action),GamepadButtonId(key));
             Add("exploration","JumpPrimary",GamepadButton.South);Add("exploration","DashPrimary",GamepadButton.LeftStick);Add("exploration","Pause",GamepadButton.Start);
             Add("exploration","SelectionPrevious",GamepadButton.LeftTrigger);Add("exploration","SelectionNext",GamepadButton.RightTrigger);
-            Add("outside","JumpPrimary",GamepadButton.South);Add("outside","DashPrimary",GamepadButton.RightShoulder);Add("outside","Pause",GamepadButton.Start);
+            Add("outside","InteractionPrimary",GamepadButton.East);Add("outside","JumpPrimary",GamepadButton.South);Add("outside","DashPrimary",GamepadButton.RightShoulder);Add("outside","Pause",GamepadButton.Start);
             Add("outside","SelectionPrevious",GamepadButton.LeftTrigger);Add("outside","SelectionNext",GamepadButton.RightTrigger);Add("outside","WheelPrimary",GamepadButton.LeftShoulder);if(cardSlot)Add("outside","CardPrimary",GamepadButton.North);
             for(int i=0;i<4;i++)Add("outside",itemActions[i],new[]{GamepadButton.DpadUp,GamepadButton.DpadRight,GamepadButton.DpadDown,GamepadButton.DpadLeft}[i]);
             Add("battle","LeftPrimary",GamepadButton.DpadLeft);Add("battle","RightPrimary",GamepadButton.DpadRight);Add("battle","UpPrimary",GamepadButton.DpadUp);Add("battle","DownPrimary",GamepadButton.DpadDown);
@@ -330,6 +335,7 @@ namespace Olca.Unity
                 if (value != null && (!System.Enum.TryParse<Key>(value, out var key) || key == Key.None ||
                     !System.Enum.IsDefined(typeof(Key), key) || key.ToString() != value))
                 { error = "キー識別子が不正です"; return false; }
+            if(profile.Bindings.TryGetValue(("keyboard","outside","InteractionPrimary"),out var interaction)&&new[]{Key.Space.ToString(),Key.Escape.ToString()}.Contains(interaction)){error="調べるにはジャンプ・取消の固定キーを重複できません";return false;}
             if(profile.Bindings.TryGetValue(("keyboard","outside","CardPrimary"),out var card)&&card!=null&&new[]{Key.Enter,Key.NumpadEnter,Key.Escape,Key.Space}.Any(k=>k.ToString()==card)){error="カード使用には調べる・ポーズの固定キーを重複できません";return false;}
             if(profile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var wheel)&&wheel!=null&&new[]{Key.W,Key.A,Key.S,Key.D,Key.Enter,Key.NumpadEnter,Key.Escape,Key.Space}.Any(k=>k.ToString()==wheel)){error="ホイールの開閉には選択・決定・取消・調べるの固定キーを重複できません";return false;}
             try{NormalizeSelectionProfile(profile,false);return true;}catch(System.ArgumentException e){error=e.Message;return false;}
@@ -483,7 +489,9 @@ namespace Olca.Unity
             var value=new OutsidePcWheelInput(available,!fresh&&context!=null&&available&&state.Toggle,!fresh&&available&&state.Enter,!fresh&&pcWheelClick,available?PcDirection(state.Mask):Vector2.zero,pcWheelPointer,pcWheelMouse!=null&&pcWheelMouse.enabled,!fresh&&available&&state.DirectionOrder>state.ReadOrder,!fresh&&pcWheelMouseOrder>pcWheelMouseReadOrder,available?state.DirectionOrder:0,pcWheelMouseOrder,available&&(PcKey(keyboard,Key.Enter)||PcKey(keyboard,Key.NumpadEnter)),pcWheelMouse!=null&&buttons.TryGetValue(pcWheelMouse.leftButton,out var clickHeld)&&clickHeld);
             foreach(var item in pcWheelKeys.Values){item.Toggle=item.Enter=false;item.ReadOrder=item.DirectionOrder;}pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;return value;
         }
-        public string OutsideInteractionLabel => InputGuideActivity.Current==InputGuideDevice.Gamepad&&GamepadProfile.Bindings.TryGetValue(("gamepad","menu","Decide"),out var key)&&key!=null?GamepadBindingLabel(key):"Enter / Space";
+        public string OutsideInteractionLabel {
+            get{bool pad=InputGuideActivity.Current==InputGuideDevice.Gamepad;var profile=pad?GamepadProfile:KeyboardProfile;return profile.Bindings.TryGetValue((pad?"gamepad":"keyboard","outside","InteractionPrimary"),out var key)&&key!=null?(pad?GamepadBindingLabel(key):key):"ミワリアテ";}
+        }
         private object outsideInteractionContext;private bool outsideInteractionPending;
         public bool OutsideInteractionPressed(object context)
         {
@@ -493,8 +501,8 @@ namespace Olca.Unity
         }
         private bool IsOutsideInteractionControl(ButtonControl control)
         {
-            if(control.device is Keyboard&&control is KeyControl key)return key.keyCode==Key.Enter||key.keyCode==Key.NumpadEnter||key.keyCode==Key.Space;
-            return control.device is Gamepad pad&&pad.enabled&&!blockedGamepads.Contains(pad)&&GamepadProfile.Bindings.TryGetValue(("gamepad","menu","Decide"),out var value)&&value!=null&&ReferenceEquals(control,pad[System.Enum.Parse<GamepadButton>(value)]);
+            if(control.device is Keyboard keyboard&&control is KeyControl key&&KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","InteractionPrimary"),out var bound)&&bound!=null){var assigned=System.Enum.Parse<Key>(bound);return key.keyCode==assigned||assigned==Key.Enter&&key.keyCode==Key.NumpadEnter;}
+            return control.device is Gamepad pad&&pad.enabled&&!blockedGamepads.Contains(pad)&&GamepadProfile.Bindings.TryGetValue(("gamepad","outside","InteractionPrimary"),out var value)&&value!=null&&ReferenceEquals(control,pad[System.Enum.Parse<GamepadButton>(value)]);
         }
         private bool KeyHeld(Key key) => buttons.Any(pair => pair.Value && pair.Key is KeyControl control && control.keyCode == key);
         // Wheelは時間停止中も読む。開始Padを固定し、切断/無効化は保持解除として扱う。
@@ -1015,6 +1023,7 @@ namespace Olca.Unity
         public string FocusName=>focused!=null?focused.name:null;
         /// <summary>ゲーム操作を併用する表示では、メニュー決定/方向を採用せず取消だけ受ける。</summary>
         public bool CancelOnly {get;set;}
+        public bool SuppressPadCancel {get;set;}
         public static bool IsTopmost(Transform root)
         {
             if(root==null||!root.gameObject.activeInHierarchy)return false;var es=UnityEngine.EventSystems.EventSystem.current;if(es==null)return true;
@@ -1067,7 +1076,7 @@ namespace Olca.Unity
             if(Input.GetKeyDown(KeyCode.Escape)&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
             int current=version;
             foreach(var e in commands){if(current!=version||e.Epoch!=input.Epoch||!Usable())break;
-                if(e.Command==CustomPadCommand.Cancel){cancel?.Invoke();continue;}
+                if(e.Command==CustomPadCommand.Cancel){if(!SuppressPadCancel)cancel?.Invoke();continue;}
                 if(CancelOnly)continue;
                 if(scroll!=null&&(e.Command==CustomPadCommand.PageUp||e.Command==CustomPadCommand.PageDown||directionScroll&&(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.Down))){scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+(e.Command==CustomPadCommand.Up||e.Command==CustomPadCommand.PageUp?.2f:-.2f));continue;}
                 if(e.Command==CustomPadCommand.Decide){if(focused!=null&&focused.IsInteractable()){if(focused is UnityEngine.UI.Button button)button.onClick.Invoke();else if(focused is UnityEngine.UI.Toggle toggle)toggle.isOn=!toggle.isOn;}continue;}

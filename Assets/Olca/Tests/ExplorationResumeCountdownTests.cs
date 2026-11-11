@@ -282,10 +282,10 @@ namespace Olca.Tests
         }
         [TestCase(false)] [TestCase(true)] public void 外界の壁滑りと壁蹴りはそれまでの落下距離をリセットする(bool kick)
         {
-            using(var s=Fall164(240000,true))using(var view=s.AttachPresentation()){
+            using(var s=Fall164(420000,true))using(var view=s.AttachPresentation()){
                 typeof(OutsideExplorationSession).GetField("fallPeak",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(s,20L*60000);
                 if(kick){FallTick164(s,1,true);Assert.IsTrue(s.Core.IsWallKicking);}else{FallTick164(s,1);FallTick164(s,1);Assert.IsTrue(s.Core.IsWallSliding);for(int n=0;n<40;n++)FallTick164(s,1);}
-                // 蹴り後は次frameにボタンを離す。新頂点から4.56worldの落下は10ダメージ。旧20world分は加算しない。
+                // 蹴り後は次frameにボタンを離す。新頂点から7.56worldの落下は10ダメージ。旧20world分は加算しない。
                 Land164(s);Assert.AreEqual(kick?90:100,s.Player.CurrentHp);Assert.AreEqual(kick,s.IsLandingLocked);
             }
         }
@@ -298,26 +298,40 @@ namespace Olca.Tests
         {
             string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"fall164-"+Guid.NewGuid().ToString("N"));try{using(var s=Fall164()){
                 using(var v=s.AttachPresentation()){if(landed)Land164(s);else for(int i=0;i<10;i++)FallTick164(s);}
-                var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var plan=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=actor,OutsideRuntimeSave=runtime,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};int hp=s.Player.CurrentHp;long frame=s.Core.Frame;var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,plan,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));Assert.AreEqual(hp,s.Player.CurrentHp);Assert.AreEqual(frame,s.Core.Frame);io.Fail=false;Assert.IsTrue(store.TryWrite(0,plan,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,plan,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var loaded=store.Read(out error);using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null);using(var v=cold.AttachPresentation()){if(!landed)Land164(cold);else FallTick164(cold);Assert.AreEqual(95,cold.Player.CurrentHp);}}
+                var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var plan=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=actor,OutsideRuntimeSave=runtime,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};int hp=s.Player.CurrentHp;long frame=s.Core.Frame;var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,plan,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));Assert.AreEqual(hp,s.Player.CurrentHp);Assert.AreEqual(frame,s.Core.Frame);io.Fail=false;Assert.IsTrue(store.TryWrite(0,plan,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,plan,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var loaded=store.Read(out error);using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null,null,s.Core.TraversalProfile);using(var v=cold.AttachPresentation()){if(!landed)Land164(cold);else FallTick164(cold);Assert.AreEqual(95,cold.Player.CurrentHp);}}
             }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
         }
         [TestCase(0)] [TestCase(1)] public void 外界落下の頂点上限と硬直期限の不正保存を拒否する(int mode)
         {
-            using(var s=Fall164()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;if(mode==0)data.Fall.Peak=long.MaxValue;else data.Fall.LockedUntil=100;var old=s.Player;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null));Assert.AreSame(old,s.Player);}
+            using(var s=Fall164()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;if(mode==0)data.Fall.Peak=long.MaxValue;else data.Fall.LockedUntil=100;var old=s.Player;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,null,s.Core.TraversalProfile));Assert.AreSame(old,s.Player);}
         }
-        [TestCase(210000L,100,0)] [TestCase(215999L,100,0)] [TestCase(216000L,100,1)]
-        [TestCase(240000L,100,5)] [TestCase(270000L,101,10)] [TestCase(long.MaxValue,int.MaxValue,int.MaxValue)]
+        [TestCase(390000L,100,0)] [TestCase(395999L,100,0)] [TestCase(396000L,100,1)]
+        [TestCase(420000L,100,5)] [TestCase(450000L,101,10)] [TestCase(long.MaxValue,int.MaxValue,int.MaxValue)]
         public void 外界落下は安全高度超過分を最大HP比で切り捨て最低一補正しない(long distance,int hp,int expected)
         {Assert.AreEqual(expected,OutsideFallRules.Damage(distance,hp));}
-        private static OutsideExplorationSession Fall164(long height=240000,bool wall=false)
+        [TestCase(1)] [TestCase(15)] [TestCase(29)] [TestCase(40)]
+        public void 平地の通常二段ジャンプは押し直す時点によらず落下ダメージと硬直を発生させない(int secondAt)
         {
-            var s=new OutsideExplorationSession();if(wall)s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));var state=s.Core.CaptureState();if(wall)state.Position=24*60000-31200;state.Height=height;state.SupportId=null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;
+            using(var s=new OutsideExplorationSession()){
+                Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationDoubleJump));s.TryInitializePlayer(()=>new PlayerCharacter(100));
+                using(var lease=s.AttachPresentation()){
+                    s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();
+                    for(int n=0;n<secondAt;n++){s.Core.TickFrame(0,jumpHeld:true);s.AdvancePlayerFrame();}
+                    s.Core.TickFrame(0);s.AdvancePlayerFrame();s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();Assert.IsTrue(s.Core.AirJumpUsed);
+                    long peak=s.Core.Height;for(int n=0;n<200&&!s.Core.IsGrounded;n++){s.Core.TickFrame(0,jumpHeld:true);s.AdvancePlayerFrame();peak=Math.Max(peak,s.Core.Height);}
+                    Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsFalse(s.IsLandingLocked);Assert.LessOrEqual(peak,372000L);
+                }
+            }
+        }
+        private static OutsideExplorationSession Fall164(long height=420000,bool wall=false)
+        {
+            var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(wall));var state=s.Core.CaptureState();if(wall)state.Position=24*60000-31200;state.Height=height;state.SupportId=null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;
         }
         private static void FallTick164(OutsideExplorationSession s,float horizontal=0,bool jump=false,bool dash=false)
         {s.Core.TickFrame(horizontal,jump,jump,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
         private static void Land164(OutsideExplorationSession s)
         {for(int i=0;i<200&&!s.Core.IsGrounded;i++)FallTick164(s);Assert.IsTrue(s.Core.IsGrounded);}
-        [TestCase(210000L,100,0)] [TestCase(215999L,100,0)] [TestCase(240000L,95,12)]
+        [TestCase(390000L,100,0)] [TestCase(395999L,100,0)] [TestCase(420000L,95,12)]
         public void 外界落下は接地で一度だけ集計し正ダメージだけ十二フレーム拘束する(long height,int hp,int locked)
         {
             using(var s=Fall164(height))using(var view=s.AttachPresentation()){
@@ -332,7 +346,7 @@ namespace Olca.Tests
                 using(var view=s.AttachPresentation()){if(landed)Land164(s);else for(int i=0;i<10;i++)FallTick164(s);}
                 var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
                 var json=PortableCheckpointJson.Serialize(runtime);var copy=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(json);Assert.AreEqual(runtime.Key(),copy.Key());
-                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,copy,null));using(var view=cold.AttachPresentation()){
+                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,copy,null,null,s.Core.TraversalProfile));using(var view=cold.AttachPresentation()){
                     Assert.AreEqual(s.LandingFramesRemaining,cold.LandingFramesRemaining);if(!landed)Land164(cold);else FallTick164(cold);Assert.AreEqual(95,cold.Player.CurrentHp);
                 }}
             }
@@ -342,13 +356,13 @@ namespace Olca.Tests
             using(var s=Fall164()){
                 using(var v=s.AttachPresentation())for(int i=0;i<25;i++)FallTick164(s);
                 var data=s.CaptureRuntime();data.Fall=null;var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;
-                using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(actor,data,null);using(var v=cold.AttachPresentation()){Land164(cold);Assert.AreEqual(100,cold.Player.CurrentHp);}}
+                using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(actor,data,null,null,s.Core.TraversalProfile);using(var v=cold.AttachPresentation()){Land164(cold);Assert.AreEqual(100,cold.Player.CurrentHp);}}
             }
             using(var s=new OutsideExplorationSession()){s.TryInitializePlayer(()=>new PlayerCharacter(100));var data=s.CaptureRuntime();Assert.IsNull(data.Fall);Assert.IsFalse(System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(data)).Contains("Fall"));Assert.AreEqual(s.Core.StateDefinitionKey(),data.Core.DefinitionKey);}
         }
         [Test] public void 外界の不正落下保存は旧個体と時計を部分置換しない()
         {
-            using(var s=Fall164()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;data.Fall.Peak=-1;var old=s.Player;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null));Assert.AreSame(old,s.Player);Assert.AreEqual(0,s.Core.Frame);}
+            using(var s=Fall164()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;data.Fall.Peak=-1;var old=s.Player;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,null,s.Core.TraversalProfile));Assert.AreSame(old,s.Player);Assert.AreEqual(0,s.Core.Frame);}
         }
 
 
@@ -507,6 +521,40 @@ namespace Olca.Tests
         {
             using(var s=Heal158(3,4)){var lease=s.AttachPresentation();s.Player.SetHp(50);s.TryUseSelectedHealingCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _);lease.Dispose();var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;if(applied)runtime.Attack.EffectApplied=true;else runtime.Attack.StartupFrames++;using(var target=new OutsideExplorationSession()){target.TryInitializePlayer(()=>new PlayerCharacter(123));var before=target.Player;Assert.Throws<ArgumentException>(()=>target.RestoreSavedState(actor,runtime,null,defs));Assert.AreSame(before,target.Player);Assert.AreEqual(123,target.Player.CurrentHp);Assert.AreEqual(0,target.Core.Frame);Assert.IsNull(target.Cards);}}
         }
+        [TestCase(false)] [TestCase(true)]
+        public void 行動不能の最終フレームは移動と同様カードも禁止し次フレームから受け付ける(bool stagger)
+        {
+            using(var s=stagger?Heal158():Sword161())using(var lease=s.AttachPresentation()){
+                var card=s.Cards.SelectedCard;long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;
+                if(stagger)s.Player.TakeDamage(0,forceStagger:true);else s.Player.ApplyParalysis(1);
+                int frames=stagger?2:1;
+                for(int n=0;n<frames;n++){
+                    s.Core.TickFrame(0);s.AdvancePlayerFrame(out var allowed);Assert.IsFalse(allowed);
+                    Assert.IsFalse(s.CanPerformAttack,"同じフレームの入力段階でも禁止を保持する");
+                    Assert.IsFalse(s.ProcessCardUseInput(true,false,false,0,0,out _));Assert.IsNull(s.AttackState);
+                    Assert.AreEqual(revision,s.Cards.HandRevision);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);
+                }
+                Assert.IsFalse(s.AdvancePlayerFrame());Assert.IsFalse(s.CanPerformAttack);
+                Assert.IsFalse(s.TryUseSelectedCard(card,revision,out _));Assert.AreEqual(revision,s.Cards.HandRevision);
+                lease.Dispose();
+                var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);
+                var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                using(var cold=new OutsideExplorationSession()){
+                    Assert.IsTrue(cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime)),null,defs));
+                    using(var coldLease=cold.AttachPresentation()){
+                        cold.Core.TickFrame(0);cold.AdvancePlayerFrame(out var available);Assert.IsTrue(available);
+                        Assert.IsTrue(cold.ProcessCardUseInput(true,false,false,0,0,out _));Assert.AreEqual(revision+1,cold.Cards.HandRevision);
+                    }
+                }
+                using(var replacement=s.AttachPresentation()){
+                    Assert.IsFalse(s.CanPerformAttack,"再表示は当該フレームの禁止を解除しない");
+                    s.Core.TickFrame(0);s.AdvancePlayerFrame(out var resumed);Assert.IsTrue(resumed);Assert.IsTrue(s.CanPerformAttack);
+                    Assert.IsTrue(s.ProcessCardUseInput(true,false,false,0,0,out var error),error);Assert.AreEqual(revision+1,s.Cards.HandRevision);
+                }
+            }
+        }
+
         private static OutsideExplorationSession Heal158(int timing=0,int recovery=0)
         {
             var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100,staggerDurationFrames:2));var f=timing==0&&recovery==0?new Olca.Application.Battle.SimpleCardFactory():new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"heal",new PlayerAttackTiming(timing,recovery)}});var source=f.CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(158),out _));for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="heal");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.Hand.Any(c=>c.Id=="heal"));s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal"));return s;

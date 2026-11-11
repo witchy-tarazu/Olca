@@ -177,9 +177,9 @@ namespace Olca.Tests.Application
                 input.GamepadContext=()=>"outside";input.GamepadGameplayActive=()=>true;input.StartEventCapture();
                 void State(UnityEngine.InputSystem.LowLevel.GamepadState value){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,value);UnityEngine.InputSystem.InputSystem.Update();}
                 State(new UnityEngine.InputSystem.LowLevel.GamepadState());var a=new object();Assert.IsFalse(input.OutsideInteractionPressed(a));
-                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.OutsideInteractionPressed(a),"近接前にsample済みなら最初の決定を捨てない");Assert.IsFalse(input.OutsideInteractionPressed(a),"同edgeは一回だけ消費");
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));Assert.IsTrue(input.OutsideInteractionPressed(a),"近接前にsample済みなら最初の決定を捨てない");Assert.IsFalse(input.OutsideInteractionPressed(a),"同edgeは一回だけ消費");
                 var b=new object();Assert.IsFalse(input.OutsideInteractionPressed(b),"再入時の既保持は新決定にしない");State(new UnityEngine.InputSystem.LowLevel.GamepadState());Assert.IsFalse(input.OutsideInteractionPressed(b));
-                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
             }}finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
         [Test] public void 近接入口は通常移動の範囲だけで接地を要求し空中ではJump入力を奪わない()

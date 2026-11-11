@@ -201,7 +201,7 @@ namespace Olca.Tests
             using(var s=new OutsideExplorationSession()){
                 int made=0;Assert.IsTrue(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(100);}));var actor=s.Player;actor.SetHp(46);actor.ApplyParalysis(3);
                 using(var first=s.AttachPresentation()){Assert.AreSame(actor,first.Player);s.Core.TickFrame(0);Assert.IsTrue(s.AdvancePlayerFrame());Assert.IsFalse(s.CanPerformAttack);Assert.AreEqual(2,actor.ParalysisRemainingFrames);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(2,actor.ParalysisRemainingFrames);}
-                Assert.IsFalse(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(200);}));using(var second=s.AttachPresentation()){Assert.AreSame(actor,second.Player);Assert.AreEqual(46,second.Player.CurrentHp);Assert.AreEqual(2,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(1,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.CanPerformAttack);}
+                Assert.IsFalse(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(200);}));using(var second=s.AttachPresentation()){Assert.AreSame(actor,second.Player);Assert.AreEqual(46,second.Player.CurrentHp);Assert.AreEqual(2,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(1,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsFalse(s.CanPerformAttack,"麻痺最終frameは移動と同様に禁止");s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.CanPerformAttack);}
                 Assert.AreEqual(1,made);Assert.AreEqual(46,actor.CurrentHp);
             }
         }

@@ -156,6 +156,8 @@ namespace Olca.Core.Logic.Integration
         public string CardUseMessage {get;private set;}
         public long CardUseMessageFrame {get;private set;}=-1;
         private long lastCardUseAttempt=-1;
+        // 終盤にタイマーが0になっても、そのframe序盤の行動禁止を入力段階まで維持する。
+        private long bodyPreventedFrame=-1;
         private OutsideAttackStateData attackState;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
@@ -209,7 +211,7 @@ namespace Olca.Core.Logic.Integration
         public bool IsAttacking=>attackState!=null;
         private static int Startup(Card card)=>card.StartupFrames??(int)Math.Ceiling(card.StartupTime*60d-0.00001d);
         private static int Recovery(Card card)=>card.RecoveryFrames??(int)Math.Ceiling(card.RecoveryTime*60d-0.00001d);
-        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;CancelAttackReservation();}
+        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=bodyPreventedFrame=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;CancelAttackReservation();}
         // Viewと独立した論理時計で一度だけ効果を確定する。停止/同frame再読込では進めない。
         private void AdvanceAttack(bool bodyAllowed)
         {
@@ -239,7 +241,7 @@ namespace Olca.Core.Logic.Integration
             attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected)};AdvanceAttack(true);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
         public bool CanPerformAttack=>BodyCanAttack&&attackState==null;
-        private bool BodyCanAttack=>!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
+        private bool BodyCanAttack=>Core.Frame!=bodyPreventedFrame&&!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
         public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
@@ -280,7 +282,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;
             playerFrame=Core.Frame;var value=Player;
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
-            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;AdvanceAttack(bodyAllowed);attackAllowed=bodyAllowed&&attackState==null;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed)bodyPreventedFrame=Core.Frame;AdvanceAttack(bodyAllowed);attackAllowed=bodyAllowed&&attackState==null;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
             attackAllowed&=!value.IsDead;return true;
         }
@@ -838,7 +840,7 @@ namespace Olca.Core.Logic.Integration
     /// <summary>仕様で調整を許された試用値。移動定義・旧Core hashとは独立。</summary>
     public static class OutsideFallRules
     {
-        public const long SafeHeight=210000; // 3.5 world。平地の通常ジャンプ頂点3.1を上回る。
+        public const long SafeHeight=390000; // 調整用6.5 world。平地の通常二段ジャンプ最大6.2を上回る。
         public const int PercentPerWorld=10, LandingFrames=12;
         public static int Damage(long distance,int maximumHp)
         {
