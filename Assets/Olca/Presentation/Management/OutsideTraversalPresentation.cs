@@ -386,7 +386,7 @@ namespace Olca.Presentation.Exploration
     /// <summary>Overlay座標だけを適応する数値View。既存World用の書体/色/軌道を借用する。</summary>
     public sealed class OutsideCombatFeedbackCanvas:MonoBehaviour
     {
-        private sealed class Entry{public Text Text;public Vector2 World;public float Age,Lift;public bool Active,Placed;}
+        private sealed class Entry{public Text Text;public Vector2 World;public float Age,Lift,OverlayDrop;public bool Active,Placed;}
         private readonly List<Entry> entries=new List<Entry>();
         private Olca.Core.Domain.PlayerCharacter actor;private Olca.Core.Domain.Enemy enemy;private Olca.Presentation.Effects.CombatNumberStyle style;
         private Func<bool> live;private Func<Vector2> origin;private float pixelsPerWorldUnit;private int lastFrame=-1;
@@ -401,9 +401,9 @@ namespace Olca.Presentation.Exploration
             if(entry==null){var go=new GameObject("OutsideCombatNumber_"+entries.Count,typeof(RectTransform),typeof(Text),typeof(Outline));go.transform.SetParent(transform,false);var text=go.GetComponent<Text>();text.raycastTarget=false;text.alignment=TextAnchor.MiddleCenter;text.horizontalOverflow=HorizontalWrapMode.Overflow;text.verticalOverflow=VerticalWrapMode.Overflow;text.supportRichText=false;text.lineSpacing=1;entry=new Entry{Text=text};entries.Add(entry);}
             entry.Text.font=style.Font;entry.Text.fontStyle=style.FontStyle;entry.Text.fontSize=Mathf.Max(1,Mathf.RoundToInt(style.FontWorldUnits*pixelsPerWorldUnit));entry.Text.text=Olca.Presentation.Effects.CombatNumberPresentation.Format(feedback);entry.Text.color=style.Color;
             var outline=entry.Text.GetComponent<Outline>();outline.effectColor=new Color(.02f,.04f,.06f,.9f);outline.effectDistance=Vector2.one*(style.OutlineWorldUnits*pixelsPerWorldUnit);outline.useGraphicAlpha=true;
-            entry.World=origin();entry.Age=entry.Lift=0;entry.Placed=false;entry.Active=true;entry.Text.enabled=true;ActiveCount++;entry.Text.gameObject.SetActive(true);entry.Text.transform.SetAsLastSibling();
+            entry.World=origin();entry.Age=entry.Lift=entry.OverlayDrop=0;entry.Placed=false;entry.Active=true;entry.Text.enabled=true;ActiveCount++;entry.Text.gameObject.SetActive(true);entry.Text.transform.SetAsLastSibling();
         }
-        public void Paint(Func<Vector2,Vector2> project,IReadOnlyList<RectTransform> obstacles)
+        public void Paint(Func<Vector2,Vector2> project,IReadOnlyList<RectTransform> obstacles,RectTransform protectedOverlay=null)
         {
             if(style==null||ActiveCount==0)return;if(live?.Invoke()!=true){Unbind();return;}
             bool advance=lastFrame!=Time.frameCount;lastFrame=Time.frameCount;var root=(RectTransform)transform;var occupied=new List<Rect>();
@@ -419,9 +419,16 @@ namespace Olca.Presentation.Exploration
                 occupied.Add(new Rect(position-size*.5f,size));visible.Add((entry,position,size));top=Mathf.Max(top,position.y+size.y*.5f);
             }
             float shift=Mathf.Max(0,top-(root.rect.yMax-144));
-            foreach(var row in visible){var position=row.Position-Vector2.up*shift;row.Entry.Text.rectTransform.anchoredPosition=position;var color=style.Color;color.a=Olca.Presentation.Effects.CombatNumberPresentation.Alpha(style.Duration,row.Entry.Age);row.Entry.Text.color=color;row.Entry.Text.enabled=position.y-row.Size.y*.5f>=root.rect.yMin+160;}
+            // 上端補正後も表示中の地名を保護する。補正を保持し、地名の消失で数値を戻さない。
+            bool protect=protectedOverlay!=null&&protectedOverlay.gameObject.activeInHierarchy;
+            var finalOccupied=new List<Rect>();
+            if(protect&&obstacles!=null)foreach(var obstacle in obstacles)if(obstacle!=null&&obstacle.gameObject.activeInHierarchy){var corners=new Vector3[4];obstacle.GetWorldCorners(corners);var local=corners.Select(p=>root.InverseTransformPoint(p)).ToArray();finalOccupied.Add(Rect.MinMaxRect(local.Min(p=>p.x),local.Min(p=>p.y),local.Max(p=>p.x),local.Max(p=>p.y)));}
+            bool adjusted=protect||visible.Any(row=>row.Entry.OverlayDrop>0);
+            foreach(var row in adjusted?visible.OrderByDescending(row=>row.Position.y).ToList():visible){var position=row.Position-Vector2.up*(shift+row.Entry.OverlayDrop);
+                if(adjusted){float before=position.y;for(int pass=0;pass<=finalOccupied.Count;pass++){var box=new Rect(position-row.Size*.5f,row.Size);bool moved=false;foreach(var area in finalOccupied)if(box.Overlaps(area)){position.y=area.yMin-row.Size.y*.5f-6;box=new Rect(position-row.Size*.5f,row.Size);moved=true;}if(!moved)break;}row.Entry.OverlayDrop+=before-position.y;finalOccupied.Add(new Rect(position-row.Size*.5f,row.Size));}
+                row.Entry.Text.rectTransform.anchoredPosition=position;var color=style.Color;color.a=Olca.Presentation.Effects.CombatNumberPresentation.Alpha(style.Duration,row.Entry.Age);row.Entry.Text.color=color;row.Entry.Text.enabled=position.y-row.Size.y*.5f>=root.rect.yMin+160;}
         }
-        public void Unbind(){if(actor!=null)actor.OnCombatFeedback-=OnFeedback;if(enemy!=null)enemy.OnCombatFeedback-=OnFeedback;actor=null;enemy=null;style=null;live=null;origin=null;lastFrame=-1;ActiveCount=0;foreach(var entry in entries){entry.Active=false;entry.Age=0;if(entry.Text!=null){entry.Text.text="";entry.Text.font=null;entry.Text.gameObject.SetActive(false);}}}
+        public void Unbind(){if(actor!=null)actor.OnCombatFeedback-=OnFeedback;if(enemy!=null)enemy.OnCombatFeedback-=OnFeedback;actor=null;enemy=null;style=null;live=null;origin=null;lastFrame=-1;ActiveCount=0;foreach(var entry in entries){entry.Active=false;entry.Age=entry.OverlayDrop=0;if(entry.Text!=null){entry.Text.text="";entry.Text.font=null;entry.Text.gameObject.SetActive(false);}}}
         private void OnDisable()=>Unbind();
         private void OnDestroy(){Unbind();entries.Clear();}
     }
@@ -438,8 +445,8 @@ namespace Olca.Presentation.Exploration
         private void ClearCombatFeedback(){feedbackCanvas?.Unbind();feedbackObstacles.Clear();}
         private void RenderCombatFeedback(float camera,float verticalOffset)
         {
-            if(feedbackCanvas==null||feedbackCanvas.ActiveCount==0)return;feedbackObstacles.Clear();if(recoveryPoint!=null)feedbackObstacles.Add((RectTransform)recoveryPoint.transform);if(entrance!=null)feedbackObstacles.Add((RectTransform)entrance.transform);foreach(var slot in supplySlots)if(slot?.Button!=null)feedbackObstacles.Add((RectTransform)slot.Button.transform);
-            if(trialTargetName!=null)feedbackObstacles.Add(trialTargetPlate);if(trialTargetGauge!=null&&trialTargetGauge.enabled)feedbackObstacles.Add(trialTargetGauge.rectTransform);float floor=-((RectTransform)transform).rect.height*.29f;feedbackCanvas.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,floor+(world.y-verticalOffset)*pixelsPerWorldUnit),feedbackObstacles);
+            if(feedbackCanvas==null||feedbackCanvas.ActiveCount==0)return;feedbackObstacles.Clear();if(mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0)feedbackObstacles.Add(mapNameLabel.rectTransform);if(recoveryPoint!=null)feedbackObstacles.Add((RectTransform)recoveryPoint.transform);if(entrance!=null)feedbackObstacles.Add((RectTransform)entrance.transform);foreach(var slot in supplySlots)if(slot?.Button!=null)feedbackObstacles.Add((RectTransform)slot.Button.transform);
+            if(trialTargetName!=null)feedbackObstacles.Add(trialTargetPlate);if(trialTargetGauge!=null&&trialTargetGauge.enabled)feedbackObstacles.Add(trialTargetGauge.rectTransform);float floor=-((RectTransform)transform).rect.height*.29f;feedbackCanvas.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,floor+(world.y-verticalOffset)*pixelsPerWorldUnit),feedbackObstacles,mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0?mapNameLabel.rectTransform:null);
         }
     }
 }

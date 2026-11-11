@@ -739,6 +739,18 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [TestCase(1920,1080)] [TestCase(1440,1080)] [TestCase(3840,2160)] public async Task 外界回復数値は表示中マップ名を避け終了後は不可視領域を使わない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(50);
+            var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,font,resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var style=new Olca.Presentation.Effects.CombatNumberStyle(font,FontStyle.Normal,Color.white,.2f,.01f,1,1);view.ConfigureCombatFeedback(style);model.Player.Heal(1);view.Render();
+                var obstacles=(List<RectTransform>)typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("feedbackObstacles",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view);var name=view.transform.Find("OutsideMapName").GetComponent<RectTransform>();Assert.Contains(name,obstacles);
+                var canvas=view.GetComponent<Olca.Presentation.Exploration.OutsideCombatFeedbackCanvas>();canvas.Unbind();canvas.Bind(model.Player,style,()=>true,()=>Vector2.zero,100);model.Player.Heal(5);canvas.Paint(_=>name.anchoredPosition,obstacles);var number=view.GetComponentsInChildren<Text>().Single(x=>x.name.StartsWith("OutsideCombatNumber_")&&x.gameObject.activeInHierarchy);var corners=new Vector3[4];name.GetWorldCorners(corners);float top=corners.Select(p=>view.transform.InverseTransformPoint(p).y).Max();Assert.Greater(number.rectTransform.anchoredPosition.y-number.preferredHeight*.5f,top);Assert.AreSame(font,number.font);Assert.AreEqual("+5",number.text);
+                for(int i=0;i<180;i++)model.Core.TickFrame(0);view.Render();Assert.IsFalse(name.gameObject.activeSelf);Assert.IsFalse(obstacles.Contains(name));Assert.AreEqual(56,model.Player.CurrentHp);
+            }
+        }
+
         [Test] public async Task 試用穴の負高度は描画カメラへ渡さず死亡保存直前もRenderが例外にならない()
         {
             var model=system.OutsideExploration;model.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationPit);model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
