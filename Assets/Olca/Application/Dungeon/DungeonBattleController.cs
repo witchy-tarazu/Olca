@@ -358,6 +358,7 @@ namespace Olca.Application.Dungeon
             public FloorSequenceDefinitions Floors;
             public CheckpointDefinitions Single;
             public string DisplayName;
+            public IEvaluationRewardProvider Rewards;
             public string Id => Floors?.RouteId ?? Single.DungeonId;
             public string Key => Floors?.RouteHash ?? Single.MapHash;
             public string Label => DisplayName ?? Map().DungeonName + (Floors == null ? "" : " / " + Id);
@@ -1802,7 +1803,7 @@ namespace Olca.Application.Dungeon
                     outsideDepartureError=null;
                     var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     frozen.BindDepartureTerms(terms?.Key());
-                    var factory = CreateCoreFactory();
+                    var factory = CreateCoreFactory(rewardChoice:choice);
                     var player = factory.CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames);
                     player.SetDepartureStyle(style);
                     ApplyDepartureCustomization(player);
@@ -1841,14 +1842,14 @@ namespace Olca.Application.Dungeon
                 route = new FloorSequenceSession(choice.Floors, routeStore);
                 if (!route.TryLoad(out error) || route.Current.State.Snapshot.RunId != plan.Start.RunId) { error = error ?? "攻略IDが一致しません"; return false; }
                 if (route.Current.State.Snapshot.Boundary == CheckpointBoundary.Terminal) { error = "終了済み攻略を上書きしません"; return false; }
-                next = CreateFloorManager(route, out session, choice.Floors);
+                next = CreateFloorManager(route, out session, choice.Floors,choice);
             } else {
                 var defs = choice.Single;
                 var store = new FileCheckpointStore(defs, ActiveCheckpointDirectory, nextDepartureIo);
                 if (!store.HasExistingData && !store.TryWrite(plan.Start, out error)) return false;
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store);
-                if (!CreateCoreFactory().TryRestore(session,out next,out error)) return false;
+                if (!CreateCoreFactory(rewardChoice:choice).TryRestore(session,out next,out error)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
@@ -2121,7 +2122,10 @@ namespace Olca.Application.Dungeon
                 var cardTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialCardRoute(preparedSingle,cardFactory,
                     new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
                     new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
-                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"}};
+                var rewardTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"},new DungeonChoice{Floors=rewardTrial,DisplayName="シヨウ カードホウシュウ（カリ）",Rewards=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardProvider(cardFactory)}};
                 var selected=savedPlan==null?null:dungeonChoices.FirstOrDefault(c=>c.Key==savedPlan.DefinitionKey);
                 if(selected?.Floors!=null){floorDefinitions=selected.Floors;dungeonConfig=floorDefinitions.CreateInitialMap(0);selectedDungeon=dungeonChoices.IndexOf(selected);}
 
@@ -2183,7 +2187,7 @@ namespace Olca.Application.Dungeon
             if(!awaitingCheckpointChoice&&savedPlan==null&&!waitingReturn&&!HasIncompleteReturn&&!progressStartupBlocked){
                 try{ApplyDepartureCustomization(playerCharacter);}catch(System.ArgumentException e){progressStartupBlocked=true;clearReturnError=e.Message;}
             }
-            var launchFactory = CreateCoreFactory(waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null);
+            var launchFactory = CreateCoreFactory(waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null,RewardChoiceFor(floorDefinitions?.RouteHash??memoryCheckpoints?.Definitions.MapHash));
             manager = runtimeSession.CreateDungeon(() => launchFactory.Create(new Olca.Application.Management.DungeonCoreFactory.Launch {
                 Map=dungeonConfig,Player=playerCharacter,Deck=initialDeck,ProcessingSystems=processing,
                 Checkpoints=waitingReturn || initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
@@ -2781,8 +2785,9 @@ namespace Olca.Application.Dungeon
             _ = new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: timings);
             configuredCardTimings = timings.ToDictionary(entry => entry.Key, entry => entry.Value);
         }
-        private Olca.Application.Management.DungeonCoreFactory CreateCoreFactory(bool suppressEvaluation=false)
-            => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider);
+        private DungeonChoice RewardChoiceFor(string key)=>key==null||dungeonChoices==null?null:dungeonChoices.Concat(knownLegacyDungeons).FirstOrDefault(c=>c.Key==key);
+        private Olca.Application.Management.DungeonCoreFactory CreateCoreFactory(bool suppressEvaluation=false,DungeonChoice rewardChoice=null)
+            => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider??rewardChoice?.Rewards);
         private SimpleCardFactory CreateCardFactory()
             => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 
@@ -2851,9 +2856,9 @@ namespace Olca.Application.Dungeon
         }
         private void OnFloorCompleted() { floorSwapPending = true; }
 
-        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session, FloorSequenceDefinitions definitions = null)
+        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session, FloorSequenceDefinitions definitions = null,DungeonChoice rewardChoice=null)
         {
-            return CreateCoreFactory().CreateFloor(route,definitions??floorDefinitions,out session);
+            return CreateCoreFactory(rewardChoice:rewardChoice??RewardChoiceFor((definitions??floorDefinitions)?.RouteHash)).CreateFloor(route,definitions??floorDefinitions,out session);
         }
 
         private void ApplyPendingFloor()
@@ -2872,7 +2877,7 @@ namespace Olca.Application.Dungeon
             error = null;
             if (manager == null || memoryCheckpoints == null || manager.Dungeon.IsCheckpointBlocked)
             { error = "保存が未完了です"; return false; }
-            var flow=new Olca.Application.Management.DungeonCheckpointFlow(CreateCoreFactory());
+            var flow=new Olca.Application.Management.DungeonCheckpointFlow(CreateCoreFactory(rewardChoice:RewardChoiceFor(floorDefinitions?.RouteHash??memoryCheckpoints.Definitions.MapHash)));
             if(!flow.TryPrepare(memoryCheckpoints,floorDefinitions,floorStore,()=>clearReturnSession?.Snapshot?.Receipts,out var prepared,out error))return false;
             var restored=prepared.Core;var candidate=prepared.Checkpoint;var loadedRoute=prepared.Route;
             if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }

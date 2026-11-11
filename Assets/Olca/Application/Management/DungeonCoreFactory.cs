@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Olca.Application.Battle;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
@@ -101,6 +102,33 @@ namespace Olca.Application.Management
             var recovery=new DungeonVisitDefinition(6,false,new[]{new DungeonVisitOption("recover",0,heal:cards.CreateById(SimpleCardFactory.Heal).Power)},1);
             var map=new DungeonConfig("trial-card-floor-v1","シヨウ テキカード（カリ）",14,cells,visits:new[]{recovery});
             return FloorSequenceDefinitions.WithSharedCardCatalog("trial-card-actions-v1","trial-card-v1",new[]{map},cardCatalog);
+        }
+        public const string TrialRewardMapId="trial-reward-floor-v1";
+        /// <summary>旧試用を上書きしない、新しい実カード入手表の試走。</summary>
+        public static FloorSequenceDefinitions CreateTrialRewardRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            var source=CreateTrialCardRoute(catalog,cards,normal,boss).CreateInitialMap(0);
+            var map=new DungeonConfig(TrialRewardMapId,"シヨウ カードホウシュウ（カリ）",source.TotalCellCount,source.MapCells,visits:source.Visits);
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-card-rewards-v1","trial-reward-v1",new[]{map},catalog);
+        }
+        public static IEvaluationRewardProvider CreateTrialRewardProvider(SimpleCardFactory cards)=>new TrialRewardProvider(cards);
+        private sealed class TrialRewardProvider:IEvaluationRewardProvider
+        {
+            private readonly ICardPool pool;
+            public TrialRewardProvider(SimpleCardFactory cards){pool=new TrialCardPool(cards??throw new ArgumentNullException(nameof(cards)));}
+            public EvaluationRewardDefinition Resolve(BattleRewardContext context)
+            {
+                if(context==null||context.DungeonId!=TrialRewardMapId||context.HasNextFloor)throw new ArgumentException("試用報酬の対象マップが一致しません");
+                // 製品の評価差を仮決定しない。全帯を既存50%/同額・等重みの暫定入手表に揃える。
+                return new EvaluationRewardDefinition("trial-card-rewards-v1",Enumerable.Range(0,4).Select(_=>new EvaluationRewardBand(pool,5000,0,Array.Empty<int>(),context.BaseCurrencyAmounts)));
+            }
+        }
+        private sealed class TrialCardPool:ICardPool
+        {
+            private readonly Card[] normal,limited;
+            public TrialCardPool(SimpleCardFactory cards){normal=new[]{SimpleCardFactory.Sword,SimpleCardFactory.Bomb,SimpleCardFactory.Heal,SimpleCardFactory.Shield,SimpleCardFactory.Tuning}.Select(cards.CreateById).ToArray();limited=new[]{cards.CreateById(SimpleCardFactory.FireSword)};}
+            public IReadOnlyList<Card> GetCandidates(CardRarity rarity)=>(rarity==CardRarity.Normal?normal:rarity==CardRarity.Limited?limited:Array.Empty<Card>()).Select(c=>c.Clone()).ToArray();
+            public Card GetRandomCard(CardRarity rarity,IRandomProvider random){if(random==null)throw new ArgumentNullException(nameof(random));var values=GetCandidates(rarity);if(values.Count==0)throw new ArgumentException("試用報酬の候補がありません");return values[random.Range(0,values.Count)].Clone();}
         }
         public DungeonBattleManager CreateFloor(FloorSequenceSession route,FloorSequenceDefinitions definitions,out DungeonCheckpointSession checkpoint)
         {
