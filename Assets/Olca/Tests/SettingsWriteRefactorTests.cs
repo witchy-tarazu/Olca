@@ -54,6 +54,25 @@ namespace Olca.Tests
                 using(var menu=new MenuPadScope(()=>true)){menu.Bind(go.transform,"Bind_outside_ItemLeft",()=>{},scroll,directionScroll:false);UnityEngine.Canvas.ForceUpdateCanvases();Assert.AreEqual("Bind_outside_ItemLeft",menu.FocusName);foreach(string name in new[]{"Bind_outside_ItemLeft","Clear_outside_ItemLeft","Action_ItemLeft"}){var row=go.GetComponentsInChildren<UnityEngine.RectTransform>().Single(x=>x.name==name);Assert.IsTrue(row.IsChildOf(scroll.content));var rect=Area(row);var viewport=Area(scroll.viewport);Assert.GreaterOrEqual(rect.yMin,viewport.yMin-.01);Assert.LessOrEqual(rect.yMax,viewport.yMax+.01);Assert.IsFalse(rect.Overlaps(Area((UnityEngine.RectTransform)save.transform)));}}
             }finally{UnityEngine.Object.DestroyImmediate(host);}
         }
+        [TestCase(false)] [TestCase(true)]
+        public void フォーカス同期の保持入力は方向だけ維持し古い押下を破棄して解放後の再押下を受付する(bool syncBeforeCallback)
+        {
+            var keyboard=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            using(var provider=new UnityInputProvider())try {
+                provider.GamepadContext=()=>"outside";provider.GamepadGameplayActive=()=>true;provider.StartEventCapture();
+                void Keys(params UnityEngine.InputSystem.Key[] keys){UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard,new UnityEngine.InputSystem.LowLevel.KeyboardState(keys));UnityEngine.InputSystem.InputSystem.Update();}
+                Keys();provider.CaptureTimestamped();
+                if(syncBeforeCallback)Keys(UnityEngine.InputSystem.Key.D,UnityEngine.InputSystem.Key.F,UnityEngine.InputSystem.Key.Space,UnityEngine.InputSystem.Key.LeftShift,UnityEngine.InputSystem.Key.Digit1);
+                provider.ResetCapturedInput();
+                Keys(UnityEngine.InputSystem.Key.D,UnityEngine.InputSystem.Key.F,UnityEngine.InputSystem.Key.Space,UnityEngine.InputSystem.Key.LeftShift,UnityEngine.InputSystem.Key.Digit1);
+                var snapshot=provider.CaptureTimestamped().Single(v=>v.Input!=null).Input;
+                Assert.AreEqual(1,snapshot.Horizontal);Assert.IsTrue(snapshot.JumpButton&&snapshot.DashButton);
+                Assert.IsFalse(snapshot.CardUseButtonDown||snapshot.JumpButtonDown||snapshot.DashButtonDown);Assert.AreEqual(0,snapshot.OutsideItemDownMask);
+                Keys(UnityEngine.InputSystem.Key.D,UnityEngine.InputSystem.Key.F,UnityEngine.InputSystem.Key.Space,UnityEngine.InputSystem.Key.LeftShift,UnityEngine.InputSystem.Key.Digit1);
+                Assert.IsFalse(provider.CaptureTimestamped().Where(v=>v.Input!=null).Any(v=>v.Input.CardUseButtonDown||v.Input.JumpButtonDown||v.Input.DashButtonDown||v.Input.OutsideItemDownMask!=0));
+                Keys();provider.CaptureTimestamped();Keys(UnityEngine.InputSystem.Key.F);Assert.IsTrue(provider.CaptureTimestamped().Any(v=>v.Input?.CardUseButtonDown==true));
+            } finally {UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);}
+        }
         [Test]
         public void 使用不能時に触れて保持したHUDは可能後の解放でも発火せず旧世代と二重clickも拒否する()
         {

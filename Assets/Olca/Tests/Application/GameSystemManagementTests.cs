@@ -1184,6 +1184,22 @@ namespace Olca.Tests.Application
             Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);load.onClick.Invoke();Assert.AreEqual(1,loaded);Assert.IsFalse(resume.interactable);
         }
 
+        [TestCase(false)] [TestCase(true)] public void 外界フォーカス入力破棄は現ownerの未消化edgeだけを捨て時計と方向受付を保つ(bool currentOwner)
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            bool paused=Olca.Unity.GameplayPause.IsPaused;var pt=typeof(Olca.Unity.GameplayPause);var release=pt.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pt.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);release.SetValue(null,false);resume.SetValue(null,0);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                var driver=new object();runtime.Attach(driver,input);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);long frequency=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",flags).GetValue(input);
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true}));now+=frequency/60+1;runtime.Pump(driver,true);
+                long frame=runtime.Frame,x=model.Core.Position;int oldCommand=0;
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now+frequency/10,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,JumpButtonDown=true,JumpButton=true}));loop.QueueTimestampedCommand(now+frequency/10,()=>oldCommand++);runtime.Pump(driver,true);
+                runtime.ResetInputForFocus(currentOwner?driver:new object());Assert.AreEqual(frame,runtime.Frame);Assert.AreEqual(x,model.Core.Position);
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,Horizontal=1}));now+=frequency/10+frequency/60+1;runtime.Pump(driver,true);
+                Assert.Greater(runtime.Frame,frame);Assert.Greater(model.Core.Position,x);Assert.AreEqual(currentOwner?0:1,oldCommand);
+                if(currentOwner)Assert.AreEqual(0,model.Core.Height,"既にruntimeへ取り込んだ旧ジャンプを再生しない");else Assert.Greater(model.Core.Height,0,"旧ownerからの破棄要求では現入力を変えない");
+            }}finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);resume.SetValue(null,priorResume);model.Dispose();}
+        }
+
         [TestCase(false)] [TestCase(true)] public void 外界行動不能は移動前に判定し自走と保持再発動を止め重力時計は進む(bool stagger)
         {
             var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100,staggerDurationFrames:3));

@@ -66,6 +66,7 @@ namespace Olca.Application.Management
         private bool disposed,active,armed,pumping,covered,resumeSelection;
         private readonly Olca.Core.Logic.Integration.OutsideSelectionRepeat selection=new Olca.Core.Logic.Integration.OutsideSelectionRepeat();
         public void SetCovered(object owner,bool value){if(!ReferenceEquals(driver,owner)||covered==value)return;if(covered&&!value)resumeSelection=true;covered=value;if(value)session.CancelAttackReservation();}
+        public void ResetInputForFocus(object owner){if(!disposed&&ReferenceEquals(driver,owner))loop?.ReleaseInput();}
         public long Frame=>loop?.Clock.Frame??0;
         public OutsideExplorationRuntime(Olca.Core.Logic.Integration.OutsideExplorationSession session){this.session=session??throw new System.ArgumentNullException(nameof(session));}
         public void Attach(object owner,Olca.Unity.UnityInputProvider provider,System.Action<int> useItem=null)

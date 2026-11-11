@@ -150,7 +150,14 @@ namespace Olca.Application.Dungeon
             uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackHud?.CancelAttackPointer();
             queuedBasicAttackTap=false;TouchUiCancelGuard.CancelAll();logicalLoop.ReleaseInput();inputProvider?.QueueSnapshot();
         }
-        private void OnApplicationFocus(bool focused) { if(!focused){StopGamepadVibration();ResetTouchInput();} }
+        private void OnApplicationFocus(bool focused)
+        {
+            if(!focused)StopGamepadVibration();
+            ResetTouchInput();
+            // PCは継続するが、復帰同期で到着した古い押下edgeは再生しない。
+            outsideExploration?.ResetInputForFocus();
+            inputProvider?.ResetCapturedInput();
+        }
         private bool applicationInactive;
         private void OnApplicationPause(bool paused)
         {

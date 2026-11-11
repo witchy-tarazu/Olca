@@ -125,7 +125,7 @@ namespace Olca.Unity
                 if(touchMovement.Direction!=previous&&touchMovement.Direction!=0) down=touchMovement.Direction;
             }
         }
-        private bool capturing;
+        private bool capturing,focusResnapshotPending;
         private double eventClockOffset;
         private long pointerReleaseTimestamp;
         private int pointerReleaseRenderFrame = -1;
@@ -399,7 +399,7 @@ namespace Olca.Unity
             InputGuideActivity.EnsureInitialized();
             if (capturing) return;
             eventClockOffset = System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency - Time.realtimeSinceStartupAsDouble;
-            capturing = true; InputSystem.onEvent += CaptureEvent; InputSystem.onDeviceChange += DeviceChanged;
+            capturing = true; InputSystem.onAfterUpdate += FinishFocusResnapshot; InputSystem.onEvent += CaptureEvent; InputSystem.onDeviceChange += DeviceChanged;
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.pauseStateChanged += EditorPauseChanged;
 #endif
@@ -409,11 +409,11 @@ namespace Olca.Unity
         {
             outsideInteractionPending=false;outsideInteractionContext=null;pcWheelKeys.Clear();pcWheelMouse=null;pcWheelContext=null;pcWheelClick=false;OutsidePcWheelInputOwned=null;
             if (!capturing) return;
-            InputSystem.onEvent -= CaptureEvent; InputSystem.onDeviceChange -= DeviceChanged;
+            InputSystem.onAfterUpdate -= FinishFocusResnapshot; InputSystem.onEvent -= CaptureEvent; InputSystem.onDeviceChange -= DeviceChanged;
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.pauseStateChanged -= EditorPauseChanged;
 #endif
-            capturing = false;selectionPressedAt.Clear(); blockedGamepads.Clear(); events.Clear(); touchMovement.Clear(); physicalTouches.Clear(); blockedTouches.Clear();
+            capturing = false;focusResnapshotPending=false;selectionPressedAt.Clear(); blockedGamepads.Clear(); events.Clear(); touchMovement.Clear(); physicalTouches.Clear(); blockedTouches.Clear();
         }
 #if UNITY_EDITOR
         private void EditorPauseChanged(UnityEditor.PauseState state)
@@ -425,6 +425,14 @@ namespace Olca.Unity
         private static IEnumerable<ButtonControl> Buttons(InputDevice device)
             => device is Touchscreen ? System.Array.Empty<ButtonControl>() : device.allControls.OfType<ButtonControl>().Where(button => !(button.parent is StickControl));
         private static StickControl Stick(InputDevice device) => device is Gamepad pad ? pad.leftStick : (device as Joystick)?.stick;
+        // 復帰時のデバイス同期を新しい押下へ変換しない。方向のlevelはsnapshotに保持する。
+        public void ResetCapturedInput() { events.Clear(); QueueSnapshot(); focusResnapshotPending=capturing; }
+        private void FinishFocusResnapshot()
+        {
+            if(!focusResnapshotPending)return;
+            // Focus通知の後に届く機器同期も含め、更新完了時のlevelから次の押下を判定する。
+            events.Clear();QueueSnapshot();focusResnapshotPending=false;
+        }
         public void QueueSnapshot()
         {
             gamepadPausePending=false;outsideInteractionPending=false;
@@ -545,7 +553,7 @@ namespace Olca.Unity
         }
         private void CaptureEvent(InputEventPtr evt, InputDevice device)
         {
-            if (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>()) return;
+            if (focusResnapshotPending || (!evt.IsA<StateEvent>() && !evt.IsA<DeltaStateEvent>())) return;
             // 実ゲーム中のSouthを、以前フォーカスしたUIのSubmitへ重ねて送らない。
             if((device is Gamepad&&GamepadGameplayActive?.Invoke()==true)||(device is Keyboard&&OutsideGamepad&&(GamepadGameplayActive?.Invoke()==true||OutsidePcWheelInputOwned?.Invoke()==true)))
                 UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);

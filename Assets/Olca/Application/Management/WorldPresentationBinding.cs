@@ -107,6 +107,7 @@ namespace Olca.Application.Management
         public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
         {if(disposed||(!allowed()&&restoreAllowed?.Invoke()!=true))return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
         public bool ReturnToHub(){if(disposed||!allowed()||!IsOpen)return false;layer.CloseCurrent();returned?.Invoke();return true;}
+        public void ResetInputForFocus(){if(!disposed)runtime?.ResetInputForFocus(this);}
         public void SetCovered(bool covered){runtime?.SetCovered(this,covered);if(View!=null)View.SetCovered(covered);}
         public void Pump(bool active){runtime?.Pump(this,active&&IsOpen&&View.CanPlay);if(View!=null)View.Render();}
         public void Dispose(){if(disposed)return;disposed=true;runtime?.Detach(this);layer.UnregisterOwner(registrationOwner);Context=null;View=null;allowed=null;restoreAllowed=null;returned=null;paused=null;icon=null;}
