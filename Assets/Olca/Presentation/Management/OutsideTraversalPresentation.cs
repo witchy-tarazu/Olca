@@ -15,6 +15,29 @@ namespace Olca.Presentation.Exploration
         private OutsideTraversalProfile renderedTraversal;
         private readonly List<Image> wallImages=new List<Image>();
         private readonly List<Image> gapImages=new List<Image>();
+        private readonly Dictionary<Image,List<Image>> waterSurfaces=new Dictionary<Image,List<Image>>();private Button[] waterOccluders;private readonly Vector3[] waterCorners=new Vector3[4];private readonly List<Vector2> waterBlocked=new List<Vector2>();private readonly List<Vector2> waterVisible=new List<Vector2>();
+        private readonly List<Image> waterImages=new List<Image>();private Image breathPanel,breathFill;private Text breathLabel;
+        private void DestroyWaterImages(){foreach(var image in waterImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}waterImages.Clear();waterSurfaces.Clear();waterOccluders=null;}
+        private void RenderWaterSurface(Image area)
+        {
+            // 水位は動かさず、既存POIの読取面だけで高輝度の線を遮る。背景の透明感は保つ。
+            float width=area.rectTransform.rect.width,top=area.rectTransform.rect.height;waterBlocked.Clear();waterVisible.Clear();
+            if(waterOccluders==null)waterOccluders=GetComponentsInChildren<Button>(true);
+            foreach(var button in waterOccluders){if(button==null||!button.gameObject.activeInHierarchy)continue;var rect=button.transform as RectTransform;if(rect==null)continue;rect.GetWorldCorners(waterCorners);float left=float.PositiveInfinity,right=float.NegativeInfinity,bottom=float.PositiveInfinity,high=float.NegativeInfinity;foreach(var corner in waterCorners){var local=area.rectTransform.InverseTransformPoint(corner);left=Mathf.Min(left,local.x);right=Mathf.Max(right,local.x);bottom=Mathf.Min(bottom,local.y);high=Mathf.Max(high,local.y);}if(high<top-2||bottom>top||right<0||left>width)continue;waterBlocked.Add(new Vector2(Mathf.Max(0,left-2),Mathf.Min(width,right+2)));}
+            waterBlocked.Sort((a,b)=>a.x.CompareTo(b.x));float cursor=0;foreach(var block in waterBlocked){if(block.x>cursor)waterVisible.Add(new Vector2(cursor,block.x));cursor=Mathf.Max(cursor,block.y);}if(cursor<width)waterVisible.Add(new Vector2(cursor,width));
+            var lines=waterSurfaces[area];for(int i=0;i<waterVisible.Count;i++){if(i>=lines.Count){var go=new GameObject("WaterSurface"+i,typeof(RectTransform),typeof(Image));go.transform.SetParent(area.transform,false);var line=go.GetComponent<Image>();line.color=new Color(.45f,.95f,1,.9f);line.raycastTarget=false;line.rectTransform.anchorMin=line.rectTransform.anchorMax=new Vector2(0,1);line.rectTransform.pivot=new Vector2(0,1);lines.Add(line);}var image=lines[i];image.gameObject.SetActive(true);image.rectTransform.anchoredPosition=new Vector2(waterVisible[i].x,0);image.rectTransform.sizeDelta=new Vector2(waterVisible[i].y-waterVisible[i].x,2);}for(int i=waterVisible.Count;i<lines.Count;i++)lines[i].gameObject.SetActive(false);
+        }
+        private void RenderBreath()
+        {
+            bool visible=presentation!=null&&presentation.ShouldShowBreath;
+            if(visible&&breathPanel==null){
+                var go=new GameObject("OutsideBreathGauge",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);breathPanel=go.GetComponent<Image>();breathPanel.color=new Color(.015f,.055f,.08f,.95f);breathPanel.raycastTarget=false;var rect=breathPanel.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-150);rect.sizeDelta=new Vector2(220,14);
+                var fill=new GameObject("BreathRemaining",typeof(RectTransform),typeof(Image));fill.transform.SetParent(go.transform,false);breathFill=fill.GetComponent<Image>();breathFill.color=new Color(.3f,.9f,1,1);breathFill.raycastTarget=false;breathFill.rectTransform.anchorMin=breathFill.rectTransform.anchorMax=new Vector2(0,.5f);breathFill.rectTransform.pivot=new Vector2(0,.5f);breathFill.rectTransform.anchoredPosition=new Vector2(2,0);breathFill.rectTransform.sizeDelta=new Vector2(216,10);
+                var text=new GameObject("OutsideBreathLabel",typeof(RectTransform),typeof(Text));text.transform.SetParent(go.transform,false);breathLabel=text.GetComponent<Text>();breathLabel.font=movementGuideText.font;breathLabel.fontSize=18;breathLabel.verticalOverflow=VerticalWrapMode.Overflow;breathLabel.color=Color.white;breathLabel.alignment=TextAnchor.LowerCenter;breathLabel.raycastTarget=false;var tr=text.GetComponent<RectTransform>();tr.anchorMin=new Vector2(0,1);tr.anchorMax=Vector2.one;tr.pivot=new Vector2(.5f,0);tr.anchoredPosition=new Vector2(0,4);tr.sizeDelta=new Vector2(0,26);
+            }
+            if(breathPanel==null)return;breathPanel.gameObject.SetActive(visible);if(!visible)return;
+            float fraction=(float)presentation.BreathFramesRemaining/presentation.BreathMaximumFrames;breathFill.rectTransform.sizeDelta=new Vector2(216*Mathf.Clamp01(fraction),10);breathLabel.text="コキュウ（カリ） "+(Math.Ceiling(presentation.BreathFramesRemaining/6d)/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
+        }
         private void DestroyGapImages(){foreach(var image in gapImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}gapImages.Clear();}
         private readonly Image[] afterimageImages=new Image[4];
         private void InitializeTraversal(Olca.Unity.ResourceManager resources,Olca.Presentation.Field.GameFieldView field)
@@ -52,7 +75,7 @@ namespace Olca.Presentation.Exploration
             float Origin(long x)=>(x/unit-camera+viewport*.5f)*pixelsPerWorldUnit;
             var profile=core.TraversalProfile;
             if(!ReferenceEquals(renderedTraversal,profile)){
-                foreach(var image in wallImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}wallImages.Clear();DestroyGapImages();renderedTraversal=profile;
+                foreach(var image in wallImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}wallImages.Clear();DestroyGapImages();DestroyWaterImages();renderedTraversal=profile;
                 if(profile!=null)foreach(var wall in profile.Walls){
                     var go=new GameObject("OutsideValidationWall-"+wall.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=terrain.sprite;image.type=Image.Type.Tiled;image.color=new Color(.6f,.85f,.94f,.8f);image.raycastTarget=false;
                     image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=new Vector2(.5f,0);go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());wallImages.Add(image);
@@ -61,6 +84,8 @@ namespace Olca.Presentation.Exploration
                     var go=new GameObject("OutsideTrialFloorGap-"+gap.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.color=new Color(.015f,.035f,.055f,1);image.raycastTarget=false;image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=new Vector2(0,1);go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());gapImages.Add(image);
                     for(int side=0;side<2;side++){var edge=new GameObject("VoidEdge"+side,typeof(RectTransform),typeof(Image));edge.transform.SetParent(go.transform,false);var line=edge.GetComponent<Image>();line.color=new Color(.3f,.85f,.9f,.85f);line.raycastTarget=false;line.rectTransform.anchorMin=line.rectTransform.anchorMax=new Vector2(side,1);line.rectTransform.pivot=new Vector2(side,1);line.rectTransform.sizeDelta=new Vector2(2,8);}
                 }
+                if(profile!=null)foreach(var area in profile.Waters){var go=new GameObject("OutsideTrialWater-"+area.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.color=new Color(.08f,.55f,.75f,.26f);image.raycastTarget=false;image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=Vector2.zero;go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());waterImages.Add(image);waterSurfaces[image]=new List<Image>();}
+
                 var title=transform.Find("OutsideExplorationTitle")?.GetComponent<Text>();
                 if(title!=null)title.text=profile!=null&&profile.Walls.Count>0?"ガイカイ タンサク / ケンショウ カベ（"+(profile.WallActionsUnlocked?"ノウリョク カリカイホウ":"ノウリョク ミカイホウ")+"）":"ガイカイ タンサク  /  ケンショウ チケイ";
             }
@@ -77,6 +102,8 @@ namespace Olca.Presentation.Exploration
             for(int i=0;i<gapImages.Count;i++){
                 var gap=profile.FloorGaps[i];var image=gapImages[i];image.gameObject.SetActive(true);image.rectTransform.anchoredPosition=new Vector2(Origin(gap.Left),-verticalOffset*pixelsPerWorldUnit);image.rectTransform.sizeDelta=new Vector2((gap.Right-gap.Left)/unit*pixelsPerWorldUnit,profile.VoidDepth/unit*pixelsPerWorldUnit+8);
             }
+            for(int i=0;i<waterImages.Count;i++){var area=profile.Waters[i];var image=waterImages[i];image.gameObject.SetActive(true);image.rectTransform.anchoredPosition=new Vector2(Origin(area.Left),(area.Bottom/unit-verticalOffset)*pixelsPerWorldUnit);image.rectTransform.sizeDelta=new Vector2((area.Right-area.Left)/unit*pixelsPerWorldUnit,(area.Top-area.Bottom)/unit*pixelsPerWorldUnit);RenderWaterSurface(image);}
+            RenderBreath();
             var samples=core.Afterimages;
             for(int i=0;i<afterimageImages.Length;i++){
                 var image=afterimageImages[i];if(i>=samples.Count){image.enabled=false;image.sprite=null;continue;}
@@ -89,13 +116,14 @@ namespace Olca.Presentation.Exploration
             if(movementGuideText.text.Length>0){
                 if(profile!=null&&profile.WallActionsUnlocked&&profile.Walls.Count>0)movementGuideText.text+="\nタイオウするカベ: ホウコウホジでスベル / ジャンプでケる";
                 if(profile?.DoubleJumpUnlocked==true)movementGuideText.text+="\nニダンジャンプ: クウチュウでオシナオシ（カリ カイホウ）";
+                if(profile?.Water!=null)movementGuideText.text+="\nアナのサラにヒダリ: ミズ（カリ） / コキュウ0でフッキ";
                 if(profile?.FloorGaps.Count>0)movementGuideText.text+="\nカイフクのヒダリ: ラッカ フッキのシヨウアナ（カリ）";
                 if(core.DashCooldownRemaining>0)movementGuideText.text+="\nダッシュ マチ: "+(Math.Ceiling(core.DashCooldownRemaining/6d)/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
             }
         }
         private void ClearTraversalDisplay()
-        {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){ClearTraversalDisplay();DestroyGapImages();wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
+        private void ReleaseTraversalReferences(){ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 

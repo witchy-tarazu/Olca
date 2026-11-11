@@ -38,6 +38,8 @@ namespace Olca.Tests
         {
             long top=long.MaxValue-135000-OutsideExplorationCore.ValidationMaximumRise;var p=new OutsideTraversalProfile("overflow",720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12,true,new OutsideValidationWall("high",24*60000,0,top));Assert.Throws<ArgumentException>(()=>Core(p.WithDoubleJump("double-overflow")));
         }
+        [Test] public void 水域の追加は旧地形キーを変えず不正範囲と設定を拒否する()
+        {var old=Core(OutsideTraversalProfile.ValidationDoubleJump);string key=old.StateDefinitionKey();var wet=Core(OutsideTraversalProfile.ValidationWater);Assert.AreEqual(key,old.StateDefinitionKey());Assert.AreNotEqual(key,wet.StateDefinitionKey());Assert.Throws<ArgumentException>(()=>new OutsideWaterProfile(0,50,75,600));Assert.Throws<ArgumentException>(()=>new OutsideWaterArea("bad",0,1,5,5));Assert.Throws<ArgumentException>(()=>Core(OutsideTraversalProfile.ValidationDoubleJump.WithWater("bad",OutsideWaterProfile.Validation,new OutsideWaterArea("outside",0,long.MaxValue,0,1))));}
         private static OutsideExplorationCore Core(OutsideTraversalProfile p=null)=>new OutsideExplorationCore(OutsideMovementDefinition.ValidationTerrain,p??OutsideTraversalProfile.ValidationDash);
         private static void ToWall(OutsideExplorationCore c)
         {long x=c.TraversalProfile.Walls[0].X-c.TraversalProfile.BodyHalfWidth;for(int i=0;i<300&&c.Position<x;i++)c.TickFrame(1);Assert.AreEqual(x,c.Position);}
