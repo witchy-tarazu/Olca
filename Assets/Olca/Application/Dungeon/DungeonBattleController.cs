@@ -578,7 +578,7 @@ namespace Olca.Application.Dungeon
             if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             outsideDepartureError=null;outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
-                try{gameSystem.OutsideExploration.RestoreSavedState(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveTraversal(clearReturnSession.Snapshot.OutsideRuntimeSave):null);gameSystem.OutsideExploration.RestoreItemCooldowns(clearReturnSession.Snapshot.OutsideItemState,clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
+                try{gameSystem.OutsideExploration.RestoreForPresentation(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveTraversal(clearReturnSession.Snapshot.OutsideRuntimeSave):null,clearReturnSession.Snapshot.OutsideItemState);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
                     if(services.OutsideExploration.Player==null){try{Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(services.OutsideExploration.Core,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){clearReturnError=e.Message;ShowDungeonSelection();return;}}
@@ -2183,6 +2183,8 @@ namespace Olca.Application.Dungeon
             initialHub = dungeonSelectionEnabled && clearReturnSession.Ready && clearReturnSession.Snapshot.Flow == null &&
                 savedPlan == null && !awaitingCheckpointChoice;
             bool waitingReturn=clearReturnSession.Snapshot?.Flow?.Stage==ClearReturnStage.Returned&&(clearReturnSession.Snapshot.NextDeparture==null||outsideLandingRoute&&!HasPreparedOutsideDeparture);
+            if(outsideLandingRoute&&clearReturnSession.Ready)gameSystem?.OutsideExploration.ClassifyStartupRestore(
+                (initialHub||waitingReturn)&&!HasPreparedOutsideDeparture&&!HasIncompleteReturn&&!progressStartupBlocked&&!clearReturnSession.HasPendingSave&&clearReturnSession.Snapshot.OutsidePlayerSave!=null);
             // 既存攻略は保存済み能力を復元する。現在の製品登録を遡及適用しない。
             if(!awaitingCheckpointChoice&&savedPlan==null&&!waitingReturn&&!HasIncompleteReturn&&!progressStartupBlocked){
                 try{ApplyDepartureCustomization(playerCharacter);}catch(System.ArgumentException e){progressStartupBlocked=true;clearReturnError=e.Message;}

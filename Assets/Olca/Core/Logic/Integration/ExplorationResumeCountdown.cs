@@ -784,6 +784,29 @@ namespace Olca.Core.Logic.Integration
         {
             var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),Fall=CaptureFall(),Water=CaptureWater()};value.Validate();return value;
         }
+        private bool startupClassified,startupRecoveryPending;
+        // 起動時の行き先を一度だけ記録する。host再生成や帰還後の再表示で分類し直さない。
+        public void ClassifyStartupRestore(bool continueOutside)
+        {if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));if(startupClassified)return;startupClassified=true;startupRecoveryPending=continueOutside&&Player==null;}
+        /// <summary>通常continueだけ復帰地点へ回復する。codecの厳密復元や攻略中の帰還とは分ける。</summary>
+        public bool RestoreForPresentation(OutsidePlayerSaveData player,OutsideRuntimeSaveData runtime,string recoveryPoint,CheckpointDefinitions definitions=null,OutsideTraversalProfile initializationProfile=null,OutsideItemStateData itemState=null)
+        {
+            if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));itemState?.Validate(player,runtime);
+            if(!startupRecoveryPending||Player!=null){bool changed=RestoreSavedState(player,runtime,recoveryPoint,definitions,initializationProfile);RestoreItemCooldowns(itemState,player,runtime);return changed;}
+            if(player==null)throw new ArgumentException("通常再開には保存個体が必要です");
+            string actorKey=player.Key(),runtimeKey=runtime?.Key();OutsidePlayerSaveData recovered;OutsideRuntimeSaveData recoveredRuntime;
+            // 定義・地点・状態・専用乱数を別Sessionで検証し、再装填結果を一度だけ採用する。
+            using(var candidate=new OutsideExplorationSession()){
+                candidate.TryConfigureTraversal(initializationProfile??Core.TraversalProfile);
+                candidate.RestoreSavedState(player,runtime,recoveryPoint,definitions);
+                candidate.RecoverOutside(recoveryPoint);recovered=OutsidePlayerSaveData.Capture(candidate.Player);recoveredRuntime=candidate.CaptureRuntime(definitions);recoveredRuntime.Id=recovered.Id;
+            }
+            RestoreSavedState(recovered,recoveredRuntime,recoveryPoint,definitions,initializationProfile);
+            // 元保存のIDと内容をackし、再表示で旧HP/手札へ戻したり再抽選したりしない。
+            savedPlayerId=player.Id;savedPlayerKey=actorKey;savedRuntimeId=runtime?.Id;savedRuntimeKey=runtimeKey;
+            // 通常continueのCDは既存の保存復元契約を維持する。再表示で残秒を戻さない。
+            RestoreItemCooldowns(itemState,player,runtime);startupRecoveryPending=false;return true;
+        }
         private string savedRuntimeId,savedRuntimeKey;
         public OutsideRuntimeSaveData CaptureRuntime(CheckpointDefinitions definitions=null)
         {

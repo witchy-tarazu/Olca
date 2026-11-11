@@ -10,6 +10,51 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        private static void Startup187(bool thirty,out OutsidePlayerSaveData actor,out OutsideRuntimeSaveData runtime,out CheckpointDefinitions definitions)
+        {
+            var data=thirty?Deck155():CardFixture();definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;
+            using(var source=new OutsideExplorationSession()){
+                source.TryConfigureTraversal(OutsideTraversalProfile.ValidationWater);source.TryInitializePlayer(()=>new PlayerCharacter(100));source.Player.SetHp(37);source.Player.ApplyPoison("startup187",new StatusEffect(StatusEffectType.Poison,60000,1),600);
+                if(thirty){Assert.IsTrue(source.QueueSelectedDeck("startup187",data,Owned(data),new SeededBattleRandom(187),out _));Walk155(source,10*60000);}else Assert.IsTrue(source.TryInitializeCards(data,Owned(data),new SeededBattleRandom(187),out _));
+                source.Core.CardGauge.Configure(140,7);source.Core.CardGauge.TrySpend(70);for(int n=0;n<2;n++)Assert.IsTrue(source.Cards.TryConsumeSelected(source.Cards.SelectedCard,source.Cards.HandRevision,source.Core.CardGauge,out _));
+                using(var lease=source.AttachPresentation())source.AdvancePlayerFrame();runtime=source.CaptureRuntime(definitions);runtime.Core.Position=20*60000;runtime.Core.Moving=false;runtime.Core.MovementFrame=runtime.Core.IdleFrame=0;runtime.TrialTarget=new OutsideTrialTargetData{Hp=90,Hits=1};runtime.Validate();actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;
+            }
+        }
+        private static OutsideItemStateData StartupItems187(OutsidePlayerSaveData actor,OutsideRuntimeSaveData runtime)=>new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=new[]{new OutsideItemCooldownData{Id="startup187",RemainingFrames=120}}};
+        [TestCase(false)][TestCase(true)] public void 通常cold再開だけ復帰地点で全快再装填し元保存と再表示の個体乱数を保つ(bool thirty)
+        {
+            Startup187(thirty,out var actor,out var runtime,out var defs);var items=StartupItems187(actor,runtime);var bytes=PortableCheckpointJson.Serialize(runtime);using(var cold=new OutsideExplorationSession()){
+                cold.ClassifyStartupRestore(true);Assert.IsTrue(cold.RestoreForPresentation(actor,runtime,OutsideTrialRoute.RecoveryPointId,defs,OutsideTraversalProfile.ValidationWater,items));Assert.AreEqual(100,cold.Player.CurrentHp);Assert.IsEmpty(cold.Player.CapturePoisons());Assert.AreEqual(OutsideTrialRoute.RecoveryX,cold.Core.Position);Assert.AreEqual(runtime.Core.Frame,cold.Core.Frame);Assert.AreEqual(140*OutsideCardGauge.UnitsPerPoint,cold.Core.CardGauge.CurrentUnits);Assert.AreEqual(thirty?30:20,cold.Cards.TotalCount);Assert.AreEqual(cold.Cards.TotalCount-3,cold.Cards.RemainingCount);Assert.AreEqual(0,cold.Cards.SelectedIndex);Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.ItemCooldownRemaining("startup187"));
+                var player=cold.Player;var cards=cold.Cards;string deck=cards.CaptureState(defs).Key();using(var lease=cold.AttachPresentation()){for(int n=0;n<10;n++){cold.Core.TickFrame(1);cold.AdvancePlayerFrame();}}cold.Player.SetHp(56);long x=cold.Core.Position;int cd=cold.ItemCooldownRemaining("startup187");cold.ClassifyStartupRestore(true);Assert.IsFalse(cold.RestoreForPresentation(actor,runtime,OutsideTrialRoute.RecoveryPointId,defs,null,items));Assert.AreSame(player,cold.Player);Assert.AreSame(cards,cold.Cards);Assert.AreEqual(56,player.CurrentHp);Assert.AreEqual(x,cold.Core.Position);Assert.AreEqual(deck,cards.CaptureState(defs).Key());Assert.AreEqual(cd,cold.ItemCooldownRemaining("startup187"));
+                var changed=runtime.Copy();changed.Core.GaugeUnits--;Assert.Throws<ArgumentException>(()=>cold.RestoreForPresentation(actor,changed,OutsideTrialRoute.RecoveryPointId,defs));Assert.AreEqual(x,cold.Core.Position);CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(runtime));
+            }
+        }
+        [Test] public void 攻略再開や同プロセスの帰還は通常continueへ再分類せず厳密復元する()
+        {
+            Startup187(true,out var actor,out var runtime,out var defs);using(var session=new OutsideExplorationSession()){
+                session.ClassifyStartupRestore(false);session.ClassifyStartupRestore(true);Assert.IsTrue(session.RestoreForPresentation(actor,runtime,OutsideTrialRoute.RecoveryPointId,defs,OutsideTraversalProfile.ValidationWater,StartupItems187(actor,runtime)));Assert.AreEqual(37,session.Player.CurrentHp);Assert.IsNotEmpty(session.Player.CapturePoisons());Assert.AreEqual(20*60000,session.Core.Position);Assert.AreEqual(25,session.Cards.RemainingCount);Assert.AreEqual(90,session.TrialTarget.CurrentHp);Assert.AreEqual(runtime.Cards.Key(),session.Cards.CaptureState(defs).Key());
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)] public void 通常continueの候補不正はliveと分類と乱数を変えず修正後だけ採用する(int invalid)
+        {
+            Startup187(true,out var actor,out var runtime,out var defs);var bad=runtime.Copy();var person=actor.Copy();var items=StartupItems187(actor,runtime);string point=OutsideTrialRoute.RecoveryPointId;
+            if(invalid==0)point="missing";if(invalid==1)bad.Core.DefinitionKey=new string('0',64);if(invalid==2)bad.Cards.Cards[0].ValueHash=new string('0',64);if(invalid==3)items.ActorKey=new string('0',64);if(invalid==4)bad.FixedCameraCenter=long.MaxValue;if(invalid==5)bad.TrialTarget.Id="missing";if(invalid==6)person.Player.Hp=0;
+            using(var target=new OutsideExplorationSession()){
+                target.ClassifyStartupRestore(true);string before=CoreKey141(target.Core);Assert.Catch<ArgumentException>(()=>target.RestoreForPresentation(person,bad,point,defs,OutsideTraversalProfile.ValidationWater,invalid==3?items:null));Assert.IsNull(target.Player);Assert.IsNull(target.Cards);Assert.AreEqual(before,CoreKey141(target.Core));Assert.IsTrue(target.RestoreForPresentation(actor,runtime,OutsideTrialRoute.RecoveryPointId,defs,OutsideTraversalProfile.ValidationWater,StartupItems187(actor,runtime)));Assert.AreEqual(100,target.Player.CurrentHp);Assert.AreEqual(27,target.Cards.RemainingCount);
+            }
+        }
+        [Test] public void 旧Runtimeなしの通常continueも所持や形式を書き換えず保存個体を全回復する()
+        {
+            Startup187(false,out var actor,out _,out var defs);using(var target=new OutsideExplorationSession()){target.ClassifyStartupRestore(true);Assert.IsTrue(target.RestoreForPresentation(actor,null,OutsideTrialRoute.RecoveryPointId,defs,OutsideTraversalProfile.ValidationWater));Assert.AreEqual(100,target.Player.CurrentHp);Assert.IsEmpty(target.Player.CapturePoisons());Assert.AreEqual(OutsideTrialRoute.RecoveryX,target.Core.Position);Assert.IsNull(target.Cards);target.Player.SetHp(42);Assert.IsFalse(target.RestoreForPresentation(actor,null,OutsideTrialRoute.RecoveryPointId,defs));Assert.AreEqual(42,target.Player.CurrentHp);}
+        }
+
+        [TestCase(false)][TestCase(true)] public void 水中保存の通常continueは乾いた復帰地点で呼吸を全快し無制限設定を保つ(bool unlimited)
+        {
+            using(var source=Water167())using(var cold=new OutsideExplorationSession()){
+                source.SetWaterBreathingUnlimited(unlimited);using(var lease=source.AttachPresentation())for(int n=0;n<10;n++)WaterTick167(source);Assert.AreEqual(unlimited?600:590,source.BreathFramesRemaining);source.Player.SetHp(37);var runtime=source.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;cold.ClassifyStartupRestore(true);Assert.IsTrue(cold.RestoreForPresentation(actor,runtime,OutsideTrialRoute.RecoveryPointId,null,OutsideTraversalProfile.ValidationWater));Assert.AreEqual(100,cold.Player.CurrentHp);Assert.IsFalse(cold.Core.IsInWater);Assert.AreEqual(600,cold.BreathFramesRemaining);Assert.AreEqual(unlimited,cold.CaptureRuntime().Water.Unlimited);
+            }
+        }
+
         private static OutsideExplorationSession Water167(long x=60000,long y=0,long velocity=0,OutsideTraversalProfile profile=null)
         {var s=new OutsideExplorationSession();s.TryConfigureTraversal(profile??OutsideTraversalProfile.ValidationWater);var data=s.Core.CaptureState();data.Position=x;data.Height=y;data.Velocity=velocity;data.SupportId=y==0?"floor":null;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{data});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;}
         private static void WaterTick167(OutsideExplorationSession s,float x=0,bool down=false,bool held=false,bool dash=false){s.Core.TickFrame(x,down,held,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
