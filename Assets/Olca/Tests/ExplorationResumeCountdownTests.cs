@@ -13,6 +13,39 @@ namespace Olca.Tests
         private static OutsideExplorationSession Water167(long x=60000,long y=0,long velocity=0,OutsideTraversalProfile profile=null)
         {var s=new OutsideExplorationSession();s.TryConfigureTraversal(profile??OutsideTraversalProfile.ValidationWater);var data=s.Core.CaptureState();data.Position=x;data.Height=y;data.Velocity=velocity;data.SupportId=y==0?"floor":null;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{data});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;}
         private static void WaterTick167(OutsideExplorationSession s,float x=0,bool down=false,bool held=false,bool dash=false){s.Core.TickFrame(x,down,held,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
+        [Test] public void 空中ヒールの共有予約は期限内に同じ空中判定で二枚目を開始する()
+        {
+            using(var s=Buffer160())using(var lease=s.AttachPresentation()){
+                s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();Start160(s);long revision=s.Cards.HandRevision;
+                for(int i=1;i<=11;i++){int facing=s.Core.Facing;bool grounded=s.Core.IsGrounded;s.Core.TickFrame(0,false,true);s.ObserveAttackBoundary(facing,grounded);s.AdvancePlayerFrame();s.ProcessCardUseInput(i==6,false,false,0,0,out _);if(i==6)Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);}
+                Assert.IsFalse(s.Core.IsGrounded);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(s.Core.Frame,s.AttackState.StartedAt);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);for(int i=0;i<12;i++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}Assert.AreEqual(50,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 水中の空中ヒールは軌道と呼吸と水域境界を変更しない()
+        {
+            using(var s=Heal158())using(var control=Heal158()){
+                foreach(var model in new[]{s,control}){Assert.IsTrue(model.TryConfigureTraversal(OutsideTraversalProfile.ValidationWater));var state=model.Core.CaptureState();state.Position=60000;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(model.Core,new object[]{state});}
+                s.Player.SetHp(50);using(var a=s.AttachPresentation())using(var b=control.AttachPresentation())for(int i=0;i<100;i++){foreach(var model in new[]{s,control}){model.Core.TickFrame(0,i==0,i<8);model.AdvancePlayerFrame();}if(i==1){Assert.IsTrue(s.Core.IsInWater);Assert.IsFalse(s.Core.IsGrounded);Assert.IsTrue(s.TryUseSelectedHealingCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);}Assert.AreEqual(control.Core.Height,s.Core.Height);Assert.AreEqual(control.Core.VerticalVelocity,s.Core.VerticalVelocity);Assert.AreEqual(control.Core.IsInWater,s.Core.IsInWater);Assert.AreEqual(control.BreathFramesRemaining,s.BreathFramesRemaining);}Assert.AreEqual(70,s.Player.CurrentHp);
+            }
+        }
+
+        [Test] public void 外界空中使用は明示した通常ヒールだけを許可し未知とソードを自動登録しない()
+        {
+            Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().First(c=>c.Id=="heal")));
+            using(var s=Sword161()){Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(s.Cards.SelectedCard));using(var view=s.AttachPresentation()){s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsFalse(s.TryUseSelectedCard(s.Cards.SelectedCard,revision,out _));Assert.AreEqual(revision,s.Cards.HandRevision);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);}}
+            Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.AreEqual(1,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir));
+        }
+        [TestCase(50,70)] [TestCase(100,100)] public void 空中ヒールは一度だけ消費し未使用と同じ軌道と着地になる(int hp,int expected)
+        {
+            using(var s=Heal158())using(var control=Heal158())using(var view=s.AttachPresentation())using(var other=control.AttachPresentation()){
+                s.Player.SetHp(hp);for(int i=0;i<120;i++){bool down=i==0,held=i<8;s.Core.TickFrame(0,down,held);s.AdvancePlayerFrame();control.Core.TickFrame(0,down,held);control.AdvancePlayerFrame();if(i==1){long revision=s.Cards.HandRevision;var card=s.Cards.SelectedCard;long gauge=s.Core.CardGauge.CurrentUnits;Assert.IsFalse(s.Core.IsGrounded);Assert.IsTrue(s.TryUseSelectedHealingCard(card,revision,out var error),error);Assert.AreEqual(expected,s.Player.CurrentHp);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(gauge-card.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.IsFalse(s.TryUseSelectedHealingCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));}Assert.AreEqual(control.Core.Height,s.Core.Height);Assert.AreEqual(control.Core.VerticalVelocity,s.Core.VerticalVelocity);Assert.AreEqual(control.Core.IsGrounded,s.Core.IsGrounded);}Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(expected,s.Player.CurrentHp);
+            }
+        }
+        [TestCase(0)] [TestCase(2)] [TestCase(3)] [TestCase(6)] public void 空中開始したヒールは保存失敗再試行とcold復元でも二重回復消費しない(int saveAt)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"air170-"+Guid.NewGuid().ToString("N"));try{using(var s=Heal158(3,4)){var view=s.AttachPresentation();s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();s.Player.SetHp(50);long revision=s.Cards.HandRevision;Assert.IsTrue(s.TryUseSelectedHealingCard(s.Cards.SelectedCard,revision,out _));for(int i=0;i<saveAt;i++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}Assert.IsFalse(s.Core.IsGrounded);view.Dispose();var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var plan=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsideRuntimeSave=runtime,OutsidePlayerSave=actor,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,plan,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(0,plan,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,plan,out error),error);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var saved=store.Read(out error);using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,null,defs);Assert.AreEqual(revision+1,cold.Cards.HandRevision);using(var lease=cold.AttachPresentation())for(int i=0;i<10;i++){cold.Core.TickFrame(0);cold.AdvancePlayerFrame();}Assert.AreEqual(70,cold.Player.CurrentHp);Assert.AreEqual(revision+1,cold.Cards.HandRevision);Assert.IsNull(cold.AttackState);}}}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+
         [Test] public void 外界名称は論理百二十と六十で消えView再生成と同じ保存の再適用では戻らない()
         {
             using(var s=new OutsideExplorationSession()){
@@ -322,7 +355,7 @@ namespace Olca.Tests
         {
             using(var s=Heal158())using(var lease=s.AttachPresentation()){s.Player.SetHp(hp);var c=s.Cards;var selected=c.SelectedCard;var old=c.Hand.ToArray();long rev=c.HandRevision;Assert.IsTrue(s.TryUseSelectedHealingCard(selected,rev,out var error),error);Assert.AreEqual(expected,s.Player.CurrentHp);Assert.AreEqual(6000-selected.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(rev+1,c.HandRevision);Assert.IsFalse(c.Hand.Contains(selected));CollectionAssert.AreEqual(old.Where(x=>!ReferenceEquals(x,selected)).ToArray(),c.Hand.Take(2));Assert.IsFalse(s.TryUseSelectedHealingCard(c.SelectedCard,c.HandRevision,out _));Assert.AreEqual(rev+1,c.HandRevision);Assert.AreEqual(0,s.Core.Frame);}
         }
-        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(8)] [TestCase(9)]
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(8)] [TestCase(9)]
         public void 外界ヒールの不許可はHP手札ゲージと乱数を変更せず予約を作らない(int mode)
         {
             using(var s=Heal158(mode==7?1:0)){var lease=s.AttachPresentation();try{s.Player.SetHp(50);var c=s.Cards;var expected=mode==0?c.SelectedCard.Clone():c.SelectedCard;long rev=c.HandRevision+(mode==1?1:0);if(mode==2)s.Core.CardGauge.TrySpend(100);if(mode==3){s.Player.ApplyParalysis(2);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.Player.IsParalyzed);}if(mode==4)s.Player.TakeDamage(0,forceStagger:true);if(mode==5){int i=c.Hand.ToList().FindIndex(x=>x.Id!="heal");Assert.GreaterOrEqual(i,0);c.TrySelect(i);expected=c.SelectedCard;}if(mode==6)s.Core.TickFrame(0,true,true);if(mode==8)lease.Dispose();if(mode==9){var data=Deck155();Assert.IsTrue(s.QueueSelectedDeck("edit158",data,Owned(data),new SeededBattleRandom(158),out _));}

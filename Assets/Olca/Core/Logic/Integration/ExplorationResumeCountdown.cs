@@ -115,6 +115,19 @@ namespace Olca.Core.Logic.Integration
             return width<=viewport?width*.5f:System.Math.Max(viewport*.5f-1,System.Math.Min(target,width-viewport*.5f+1));
         }
     }
+    /// <summary>外界での開始可否だけを持つ試用登録。カード性能/hashやDungeonの設定は変更しない。</summary>
+    public sealed class OutsideCardUseDefinition
+    {
+        public string CardId {get;}public ExceedLevel Level {get;}public bool CanUseInAir {get;}
+        public OutsideCardUseDefinition(string cardId,ExceedLevel level,bool canUseInAir)
+        {if(string.IsNullOrWhiteSpace(cardId)||!Enum.IsDefined(typeof(ExceedLevel),level))throw new ArgumentException("外界使用定義が不正です");CardId=cardId;Level=level;CanUseInAir=canUseInAir;}
+        // 空中ヒールだけの暫定指定。未登録カードや上位を自動的に許可しない。
+        public static IReadOnlyList<OutsideCardUseDefinition> TrialDefinitions {get;}=Array.AsReadOnly(new[]{
+            new OutsideCardUseDefinition("heal",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Normal,false),
+            new OutsideCardUseDefinition("sword",ExceedLevel.Lv1,false),new OutsideCardUseDefinition("sword",ExceedLevel.Lv2,false)});
+        public static bool AllowsAir(Card card)=>card!=null&&TrialDefinitions.Any(d=>d.CardId==card.Id&&d.Level==card.ExceedLevel&&d.CanUseInAir);
+    }
+
     /// <summary>Root所有の外界状態。現在は製品登録と分けた検証地形のみを扱う。</summary>
     public sealed partial class OutsideExplorationSession : System.IDisposable
     {
@@ -163,7 +176,7 @@ namespace Olca.Core.Logic.Integration
         public Olca.Core.Logic.Battle.AttackReservationKind PendingAttack=>attackReservation.Kind;
         public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
         public void ObserveAttackBoundary(int facing,bool grounded){if(Core.Facing!=facing||Core.IsGrounded!=grounded)CancelAttackReservation();}
-        private bool SupportedCard(Card card)=>Core.Definition.Id=="validation-landing-32"&&Core.IsGrounded&&(HealDefinition(card)||SwordDefinition(card));
+        private bool SupportedCard(Card card)=>Core.Definition.Id=="validation-landing-32"&&(HealDefinition(card)||SwordDefinition(card))&&(Core.IsGrounded||OutsideCardUseDefinition.AllowsAir(card));
         private bool CanCancelAttack()=>attackState!=null&&attackState.EffectApplied&&Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.HasValue&&Core.Frame-attackState.StartedAt>=attackState.StartupFrames+(long)Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.Value;
         // 予約入力は保存しない。Sessionの行動開始と同じ境界で最後に再検証する。
         public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error)
@@ -208,15 +221,15 @@ namespace Olca.Core.Logic.Integration
             if(action==null)return;var card=cards.ActionCard(action.CardIndex);
             if(!(HealDefinition(card)||SwordDefinition(card))||Startup(card)!=action.StartupFrames||Recovery(card)!=action.RecoveryFrames)throw new ArgumentException("探索行動の定義と時間が一致しません");
         }
-        /// <summary>地上試用ヒールの開始。消費と前隙/発動済/後隙はSessionが所有する。</summary>
+        /// <summary>試用ヒールの開始。地上/空中の登録判定と消費・前隙/発動済/後隙はSessionが所有する。</summary>
         public bool TryUseSelectedHealingCard(Card expected,long revision,out string error){if(!HealDefinition(expected)){error="ヒールではありません";return false;}return TryUseSelectedCard(expected,revision,out error);}
         public bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error)
         {
             error=null;if(lastCardUseAttempt==Core.Frame){error="このフレームでは受付済みです";return false;}lastCardUseAttempt=Core.Frame;
             if(IsEnded||!IsPresented||IsDeckEditingLocation||!CanPerformAttack){error="今はカードを使用できません";return false;}
             if(expected==null||!ReferenceEquals(expected,Cards?.SelectedCard)||Cards.HandRevision!=revision){error="現在の手札を選択してください";return false;}
-            if(Core.Definition.Id!="validation-landing-32"||!Core.IsGrounded){error="ヒールとソードの地上試用のみ対応しています";}
-            else if(!(HealDefinition(expected)||SwordDefinition(expected))){error="このカードの外界発動は未対応です";}
+            if(!(HealDefinition(expected)||SwordDefinition(expected))){error="このカードの外界発動は未対応です";}
+            else if(!SupportedCard(expected)){error=Core.Definition.Id=="validation-landing-32"?"このカードはクウチュウでシヨウできません":"このバショではシヨウできません";}
             else if(!Cards.TryConsumeSelected(expected,revision,Core.CardGauge,out _)){error="カードゲージが不足しています";}
             if(error!=null){CardUseMessage=error;CardUseMessageFrame=Core.Frame;return false;}
             // HealEffectと同じ既存HP反映。満タンでもカード/ゲージの消費を戻さない。
