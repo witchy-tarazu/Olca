@@ -39,6 +39,40 @@ namespace Olca.Presentation.Management
             return target.Name==null?null:actions.Keys.First(b=>b!=null&&b.name==target.Name);
         }
 
+        private bool outsidePresentation;
+        private Text inputGuide;
+        private readonly Dictionary<Button,GameObject> focusFrames=new Dictionary<Button,GameObject>();
+        // 操作は変更せず、メニューが実際に読む割当だけを案内する。
+        public static string InputGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad)
+        {
+            if(!gamepad)return "Enter : ケッテイ    Esc : モドる";
+            string Label(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(profile!=null&&profile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null);
+            return Label("Decide")+" : ケッテイ    "+Label("Cancel")+" : モドる";
+        }
+        public void SetOutsidePresentation(bool value)
+        {
+            outsidePresentation=value;
+            if(value&&inputGuide==null){
+                var obj=new GameObject("OutsidePauseInputGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);inputGuide=obj.GetComponent<Text>();
+                inputGuide.font=actions.Keys.First().GetComponentInChildren<Text>().font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
+                inputGuide.rectTransform.sizeDelta=new Vector2(1300,48);inputGuide.rectTransform.anchoredPosition=new Vector2(0,-350);
+                foreach(var button in actions.Keys){
+                    var frame=new GameObject("OutsidePauseFocusFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-4,-4);rect.offsetMax=new Vector2(4,4);
+                    void Edge(string name,Vector2 min,Vector2 max,Vector2 size){var edge=new GameObject(name,typeof(RectTransform),typeof(Image));edge.transform.SetParent(frame.transform,false);var image=edge.GetComponent<Image>();image.color=new Color(.3f,.95f,1f,1f);image.raycastTarget=false;var area=(RectTransform)edge.transform;area.anchorMin=min;area.anchorMax=max;area.anchoredPosition=Vector2.zero;area.sizeDelta=size;}
+                    Edge("Top",new Vector2(0,1),Vector2.one,new Vector2(0,4));Edge("Bottom",Vector2.zero,new Vector2(1,0),new Vector2(0,4));Edge("Left",Vector2.zero,new Vector2(0,1),new Vector2(4,0));Edge("Right",new Vector2(1,0),Vector2.one,new Vector2(4,0));frame.SetActive(false);focusFrames.Add(button,frame);
+                }
+            }
+            RefreshOutsidePresentation();
+        }
+        public void RefreshOutsidePresentation()
+        {
+            bool visible=outsidePresentation&&gameObject.activeInHierarchy&&!covered&&(inputAllowed?.Invoke()??false);
+            if(inputGuide!=null){inputGuide.gameObject.SetActive(visible);if(visible)inputGuide.text=InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);}
+            var selected=EventSystem.current?.currentSelectedGameObject;
+            foreach(var pair in focusFrames)if(pair.Key!=null&&pair.Value!=null)pair.Value.SetActive(visible&&pair.Key.gameObject==selected&&pair.Key.gameObject.activeInHierarchy&&pair.Key.IsInteractable());
+        }
+        private void LateUpdate()=>RefreshOutsidePresentation();
+
         public bool BlocksInput=>context?.DialogBlocksInput==true;
         public void Initialize(Func<bool> allowed)
         {
@@ -61,7 +95,7 @@ namespace Olca.Presentation.Management
             foreach(var button in actions.Keys)if(button!=null&&unavailable.Contains(button.name)){restricted.Add(button,button.interactable);button.interactable=false;}
         }
         private void RestoreRestrictedControls(){foreach(var pair in restricted)if(pair.Key!=null)pair.Key.interactable=pair.Value;restricted.Clear();}
-        public void Hide(){RestoreRestrictedControls();context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
+        public void Hide(){SetOutsidePresentation(false);RestoreRestrictedControls();context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
         public void CoverForDialog()
         {
             previousFocus=EventSystem.current?.currentSelectedGameObject;covered=true;presentation.alpha=0;presentation.blocksRaycasts=false;
@@ -73,7 +107,7 @@ namespace Olca.Presentation.Management
             var focus=previousFocus;previousFocus=null;
             if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){EventSystem.current?.SetSelectedGameObject(focus);restoredFocus=focus.name;}
         }
-        private void OnDisable(){RestoreRestrictedControls();context?.NotifyHidden();context=null;}
+        private void OnDisable(){outsidePresentation=false;RefreshOutsidePresentation();RestoreRestrictedControls();context?.NotifyHidden();context=null;}
         private void OnDestroy(){RestoreRestrictedControls();context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
     }
 }
