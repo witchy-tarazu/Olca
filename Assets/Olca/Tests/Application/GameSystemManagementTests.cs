@@ -882,6 +882,26 @@ namespace Olca.Tests.Application
             Assert.IsFalse(model.IsPresented);
         }
 
+        [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)]
+        public async Task リロード案内は移動と高度と再表示でもHP強靭HUDを覆わず状態を変えない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var session=system.OutsideExploration;
+            Assert.IsTrue(session.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true)));session.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;
+                Rect Area(RectTransform rect){var corners=new Vector3[4];rect.GetWorldCorners(corners);return Rect.MinMaxRect(corners.Min(v=>v.x),corners.Min(v=>v.y),corners.Max(v=>v.x),corners.Max(v=>v.y));}
+                foreach(int x in new[]{17,18,20,214,215,22,225,23})foreach(long y in new[]{0L,34800L,70000L}){
+                    var state=session.Core.CaptureState();state.Position=(x>100?x*6000L:x*60000L);state.Height=y;state.Velocity=0;state.SupportId=y==0?"floor":null;
+                    typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(session.Core,new object[]{state});
+                    long frame=session.Core.Frame,gauge=session.Core.CardGauge.CurrentUnits;view.Render();var point=view.transform.Find("OutsideReloadPoint").GetComponent<RectTransform>();Assert.IsTrue(point.gameObject.activeSelf);
+                    foreach(string label in new[]{"OutsidePlayerHp","OutsidePlayerPoise"})Assert.IsFalse(Area(point).Overlaps(Area(view.transform.Find(label).GetComponent<RectTransform>())),label+" x="+x+" y="+y);
+                    var position=point.anchoredPosition;view.Render();Assert.AreEqual(position,point.anchoredPosition,"再描画で位置が累積しない");Assert.AreEqual(frame,session.Core.Frame);Assert.AreEqual(state.Position,session.Core.Position);Assert.AreEqual(y,session.Core.Height);Assert.AreEqual(gauge,session.Core.CardGauge.CurrentUnits);Assert.AreEqual(100,session.Player.CurrentHp);Assert.IsFalse(point.GetComponent<Image>().raycastTarget);
+                }
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);view.Render();var marker=view.transform.Find("OutsideReloadPoint").GetComponent<RectTransform>();Assert.IsFalse(Area(marker).Overlaps(Area(view.transform.Find("OutsidePlayerHp").GetComponent<RectTransform>())));
+            }
+        }
+
         [TestCase(-1)][TestCase(1)] public async Task 外界壁ずりは下降二コマで壁蹴りは通常上昇姿勢を同尺度アンカーで表示し閉鎖で参照を返す(int side)
         {
             var session=system.OutsideExploration;var p=Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true);
