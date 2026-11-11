@@ -288,7 +288,7 @@ namespace Olca.Core.Logic.Integration
         public OutsideExplorationCards Cards {get;private set;}
         private bool managedDeckLocations,deckLocationArmed,reloadGaugeOnExit;
         private Deck pendingLocationDeck;private Olca.Core.Interfaces.IRandomProvider pendingLocationRandom;private string queuedDeckKey;
-        public bool IsDeckEditingLocation=>managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);
+        public bool IsDeckEditingLocation=>managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core)&&(deckLocationArmed||OutsideTrialRoute.CanEditDeck(Core));
         /// <summary>保存済み選択だけを準備する。手札はここで抽選せず、地点退出の論理境界で反映する。</summary>
         public bool QueueSelectedDeck(string key,IReadOnlyList<Card> cards,IReadOnlyDictionary<(string Id,ExceedLevel Level),int> owned,Olca.Core.Interfaces.IRandomProvider random,out string error)
         {
@@ -301,7 +301,7 @@ namespace Olca.Core.Logic.Integration
             if(pendingLocationDeck!=null&&queuedDeckKey==key)return true;
             EnableDeckLocations();pendingLocationDeck=deck;pendingLocationRandom=random;queuedDeckKey=key;return true;
         }
-        private void EnableDeckLocations(){if(!managedDeckLocations){managedDeckLocations=true;deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=OutsideTrialRoute.IsReloadZone(Core);}}
+        private void EnableDeckLocations(){if(!managedDeckLocations){managedDeckLocations=true;deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core)&&(deckLocationArmed||OutsideTrialRoute.CanEditDeck(Core));reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);}}
         public bool AdvanceDeckLocation()
         {
             if(!managedDeckLocations||IsEnded)return false;
@@ -826,7 +826,8 @@ namespace Olca.Core.Logic.Integration
             ValidateWater(runtime.Water,candidateCore);
             if(runtime.Fall!=null&&runtime.Fall.Peak>candidateCore.MaximumReachableHeight())throw new ArgumentException("落下頂点が外界地形の上限を超えています");
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();attackState=runtime.Attack?.Copy();trialTarget=target;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
+            // Runtimeに地点利用履歴はないため、復元時の旧横範囲推定は管理開始前も保持する。
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();attackState=runtime.Attack?.Copy();trialTarget=target;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
         }
     }
 }

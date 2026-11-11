@@ -105,7 +105,7 @@ namespace Olca.Core.Logic.Integration
     /// <summary>導線確認専用の仮配置。製品Map/能力解放/永続座標とは区別する。</summary>
     public static class OutsideTrialRoute
     {
-        // 通常導線の仮拠点と既存回復地点。空中で同じ範囲にいるだけでは再装填しない。
+        // 通常導線の仮拠点と既存回復地点の横範囲。新規利用はCanEditDeckの接地が必要で、利用後の地点内ジャンプはSessionで保持する。
         public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit||IsReloadZone(core));
         public static bool CanEditDeck(OutsideExplorationCore core)=>IsDeckEditingZone(core)&&core.IsGrounded&&core.Height==0;
         public static OutsideTraversalProfile ResolveTraversal(OutsideRuntimeSaveData runtime)

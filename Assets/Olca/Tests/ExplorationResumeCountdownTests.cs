@@ -10,6 +10,61 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        private static OutsideExplorationSession Deck188(out CheckpointDefinitions definitions)
+        {
+            var data=Deck155();definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;var session=new OutsideExplorationSession();session.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.IsTrue(session.QueueSelectedDeck("reload188",data,Owned(data),new SeededBattleRandom(188),out _));Walk155(session,10*60000);session.Core.CardGauge.Configure(100,0);Assert.IsTrue(session.Cards.TryConsumeSelected(session.Cards.SelectedCard,session.Cards.HandRevision,session.Core.CardGauge,out _));return session;
+        }
+        private static void Position188(OutsideExplorationSession session,long x,long height)
+        {
+            var state=session.Core.CaptureState();state.Position=x;state.Height=height;state.Velocity=0;state.SupportId=height==0?"floor":null;state.Moving=false;state.MovementFrame=state.IdleFrame=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(session.Core,new object[]{state});using(var lease=session.AttachPresentation()){session.Core.TickFrame(0);session.AdvancePlayerFrame();}
+        }
+        private static void PointTick188(OutsideExplorationSession session,float direction=0,bool jump=false,bool held=false){session.Core.TickFrame(direction,jump,held);session.AdvancePlayerFrame();session.AdvanceDeckLocation();}
+        [TestCase(-1)][TestCase(1)] public void 地上利用していない空中通過は手札乱数ゲージとHUD状態を変更しない(int direction)
+        {
+            using(var session=Deck188(out var defs)){
+                long start=direction>0?214*6000:226*6000,end=direction>0?226*6000:214*6000;Position188(session,start,120000);string key=session.Cards.CaptureState(defs).Key();long gauge=session.Core.CardGauge.CurrentUnits,revision=session.Cards.HandRevision;bool seen=false;
+                using(var lease=session.AttachPresentation()){for(int n=0;n<30&&(direction>0?session.Core.Position<end:session.Core.Position>end);n++){PointTick188(session,direction);if(OutsideTrialRoute.IsReloadZone(session.Core)){seen=true;Assert.IsFalse(session.Core.IsGrounded);Assert.IsFalse(session.IsDeckEditingLocation);Assert.IsFalse(lease.IsDeckEditingLocation);}}Assert.IsTrue(seen);Assert.IsFalse(session.Core.IsGrounded);}
+                Assert.AreEqual(26,session.Cards.RemainingCount);Assert.AreEqual(revision,session.Cards.HandRevision);Assert.AreEqual(key,session.Cards.CaptureState(defs).Key());Assert.AreEqual(gauge,session.Core.CardGauge.CurrentUnits);
+            }
+        }
+        [Test] public void 地上利用後のジャンプと再表示と空中退出では一度だけ再装填する()
+        {
+            using(var session=Deck188(out var defs)){
+                Position188(session,22*60000,0);session.AdvanceDeckLocation();using(var lease=session.AttachPresentation()){PointTick188(session,0,true,true);Assert.IsFalse(session.Core.IsGrounded);Assert.IsTrue(session.IsDeckEditingLocation);Assert.AreEqual(26,session.Cards.RemainingCount);}
+                using(var lease=session.AttachPresentation()){Assert.IsTrue(lease.IsDeckEditingLocation);for(int n=0;n<20&&session.Core.Position<226*6000;n++)PointTick188(session,1,false,true);Assert.IsFalse(session.Core.IsGrounded);Assert.AreEqual(27,session.Cards.RemainingCount);Assert.AreEqual(session.Core.CardGauge.MaximumUnits,session.Core.CardGauge.CurrentUnits);string key=session.Cards.CaptureState(defs).Key();for(int n=0;n<5;n++)PointTick188(session);Assert.AreEqual(key,session.Cards.CaptureState(defs).Key());}
+            }
+        }
+        [Test] public void 地点内で地上へ着地した後だけ利用状態となり退出で補充する()
+        {
+            using(var session=Deck188(out _)){
+                Position188(session,22*60000,1000);Assert.IsFalse(session.IsDeckEditingLocation);using(var lease=session.AttachPresentation()){for(int n=0;n<10&&!session.Core.IsGrounded;n++)PointTick188(session);Assert.IsTrue(session.Core.IsGrounded);Assert.IsTrue(session.IsDeckEditingLocation);Assert.AreEqual(26,session.Cards.RemainingCount);for(int n=0;n<20&&session.Core.Position<226*6000;n++)PointTick188(session,1);Assert.AreEqual(27,session.Cards.RemainingCount);}
+            }
+        }
+        [Test] public void 初回の地点管理を空中で有効化しても無料のゲージ全回復を起こさない()
+        {
+            using(var session=new OutsideExplorationSession()){
+                session.TryInitializePlayer(()=>new PlayerCharacter(100));var cards=CardFixture();Assert.IsTrue(session.TryInitializeCards(cards,Owned(cards),new SeededBattleRandom(188),out _));Position188(session,22*60000,120000);session.Core.CardGauge.Configure(100,0);session.Core.CardGauge.TrySpend(30);Assert.IsTrue(session.QueueSelectedDeck(null,null,null,null,out _));Assert.IsFalse(session.IsDeckEditingLocation);long gauge=session.Core.CardGauge.CurrentUnits;using(var lease=session.AttachPresentation())for(int n=0;n<20&&session.Core.Position<226*6000;n++)PointTick188(session,1);Assert.AreEqual(gauge,session.Core.CardGauge.CurrentUnits);Assert.AreEqual(20,session.Cards.TotalCount);
+            }
+        }
+        [Test] public void 履歴のない空中Runtimeの地点推定は管理開始前から従来互換を保持する()
+        {
+            using(var source=Deck188(out var defs))using(var restored=new OutsideExplorationSession()){
+                Position188(source,22*60000,120000);Assert.IsFalse(source.IsDeckEditingLocation);var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;restored.RestoreSavedState(actor,runtime,null,defs);Assert.IsFalse(restored.IsDeckEditingLocation);restored.QueueSelectedDeck(null,null,null,null,out _);Assert.IsTrue(restored.IsDeckEditingLocation,"保存に利用履歴がないため旧横範囲推定を残す");using(var lease=restored.AttachPresentation())for(int n=0;n<20&&restored.Core.Position<226*6000;n++)PointTick188(restored,1);Assert.AreEqual(27,restored.Cards.RemainingCount);
+            }
+        }
+        [Test] public void 地点外Runtimeの復元は以前の利用ラッチを解除する()
+        {
+            using(var source=Deck188(out var defs))using(var target=Deck188(out _)){
+                Position188(target,22*60000,0);target.AdvanceDeckLocation();Assert.IsTrue(target.IsDeckEditingLocation);Position188(source,23*60000,0);var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;target.RestoreSavedState(actor,runtime,null,defs);Position188(target,22*60000,120000);Assert.IsFalse(target.IsDeckEditingLocation);using(var lease=target.AttachPresentation())for(int n=0;n<20&&target.Core.Position<226*6000;n++)PointTick188(target,1);Assert.AreEqual(26,target.Cards.RemainingCount);
+            }
+        }
+        [Test] public void 新規空中通過の範囲内でも許可済みカードと六フレーム予約は地点取消されない()
+        {
+            using(var session=Buffer160()){
+                Position188(session,22*60000,120000);session.QueueSelectedDeck(null,null,null,null,out _);using(var lease=session.AttachPresentation()){Start160(session);Tick160(session,true);Assert.AreEqual(AttackReservationKind.Card,session.PendingAttack);session.AdvanceDeckLocation();Assert.IsTrue(session.IsAttacking);Assert.AreEqual(AttackReservationKind.Card,session.PendingAttack);Assert.IsFalse(session.IsDeckEditingLocation);}
+            }
+        }
+
         private static void Startup187(bool thirty,out OutsidePlayerSaveData actor,out OutsideRuntimeSaveData runtime,out CheckpointDefinitions definitions)
         {
             var data=thirty?Deck155():CardFixture();definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;
