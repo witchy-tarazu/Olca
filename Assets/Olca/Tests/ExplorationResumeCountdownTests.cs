@@ -381,6 +381,49 @@ namespace Olca.Tests
         {using(var s=Sword161(x,facing))using(var view=s.AttachPresentation()){var state=s.Core.CaptureState();state.Height=height;state.SupportId=null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});long rev=s.Cards.HandRevision;Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,rev,out _));Assert.AreEqual(hit?90:120,s.TrialTarget.CurrentHp);Assert.AreEqual(hit,s.TrialStrike.Hit);Assert.AreEqual(height,s.TrialStrike.Y);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.IsFalse(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Assert.AreEqual(hit?90:120,s.TrialTarget.CurrentHp);}}
         [Test] public void 空中通常ソードは落下を停止せず未使用と同じ軌道で着地する()
         {using(var s=Sword161())using(var control=Sword161())using(var a=s.AttachPresentation())using(var b=control.AttachPresentation()){for(int i=0;i<120;i++){foreach(var model in new[]{s,control}){model.Core.TickFrame(0,i==0,i<8);model.AdvancePlayerFrame();}if(i==1){Assert.IsFalse(s.Core.IsGrounded);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));}Assert.AreEqual(control.Core.Height,s.Core.Height);Assert.AreEqual(control.Core.VerticalVelocity,s.Core.VerticalVelocity);}Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(90,s.TrialTarget.CurrentHp);}}
+        [TestCase(1,0)] [TestCase(-1,0)] [TestCase(1,3)] [TestCase(-1,3)]
+        public void 壁ずりからの通常ソードは壁と反対を向いて開始する(int side,int startup)
+        {
+            using(var s=new OutsideExplorationSession()){
+                Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true)));
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));
+                var f=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(startup,8)}});
+                var cards=f.CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(s.TryInitializeCards(cards,Owned(cards),new SeededBattleRandom(191),out _));
+                while(!s.Cards.Hand.Any(c=>c.Id=="sword"))s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword"));
+                var state=s.Core.CaptureState();state.Position=24*60000-side*31200;state.Height=60000;state.Velocity=-1800;state.SupportId=null;state.Frame=100;state.Facing=side;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+                using(var lease=s.AttachPresentation()){
+                    s.Core.TickFrame(side);s.AdvancePlayerFrame();Assert.IsTrue(s.Core.IsWallSliding);Assert.AreEqual(side,s.Core.WallContactDirection);
+                    long x=s.Core.Position,revision=s.Cards.HandRevision;
+                    Assert.IsFalse(s.TryUseSelectedCard(null,revision,out _));Assert.AreEqual(side,s.Core.Facing);Assert.AreEqual(revision,s.Cards.HandRevision);
+                    s.Core.TickFrame(side);s.AdvancePlayerFrame();Assert.IsTrue(s.Core.CardGauge.TrySpend(100));
+                    Assert.IsFalse(s.TryUseSelectedCard(s.Cards.SelectedCard,revision,out _));Assert.AreEqual(side,s.Core.Facing);Assert.AreEqual(revision,s.Cards.HandRevision);
+                    s.Core.CardGauge.RestoreFull();s.Core.TickFrame(side);s.AdvancePlayerFrame();
+                    Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,revision,out var error),error);
+                    Assert.AreEqual(-side,s.Core.Facing);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(revision+1,s.Cards.HandRevision);
+                    if(startup>0){
+                        var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);
+                        var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;
+                        lease.Dispose();var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                        var bytes=PortableCheckpointJson.Serialize(runtime);var restored=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes);Assert.AreEqual(runtime.Key(),restored.Key());
+                        using(var cold=new OutsideExplorationSession()){
+                            Assert.IsTrue(cold.RestoreSavedState(actor,restored,null,defs,OutsideTraversalProfile.ValidationWall(true)));
+                            using(var coldLease=cold.AttachPresentation()){
+                                Assert.AreEqual(-side,cold.Core.Facing);Assert.AreEqual(revision+1,cold.Cards.HandRevision);
+                                for(int n=0;n<startup;n++){cold.Core.TickFrame(0);cold.AdvancePlayerFrame();}
+                                Assert.AreEqual(-side,cold.TrialStrike.Facing);Assert.AreEqual(revision+1,cold.Cards.HandRevision);
+                            }
+                        }
+                    }
+                    var resumed=startup>0?s.AttachPresentation():null;
+                    try{
+                        for(int n=0;n<startup+8;n++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}
+                        Assert.AreEqual(-side,s.TrialStrike.Facing);Assert.IsFalse(s.IsAttacking);
+                        s.Core.TickFrame(side);Assert.AreEqual(side,s.Core.Facing);
+                    }finally{resumed?.Dispose();}
+                }
+            }
+        }
+
         private static OutsideExplorationSession Sword161(int tenths=170,int facing=1,int startup=0,int recovery=0,ExceedLevel level=ExceedLevel.Normal)
         {
             var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(startup,recovery)}});var source=factory.CreateStarterDeck().GetAllCards().ToArray();if(level!=ExceedLevel.Normal){int index=Array.FindIndex(source,c=>c.Id=="sword");source[index]=factory.CreateExceeded(source[index],level);}Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(161),out _));for(int n=0;n<1000&&(s.Cards.Hand.Count(c=>c.Id=="sword")<2||!s.Cards.Hand.Any(c=>c.Id=="sword"&&c.ExceedLevel==level));n++)s.Cards.Reload();Assert.GreaterOrEqual(s.Cards.Hand.Count(c=>c.Id=="sword"),2);s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword"&&c.ExceedLevel==level));long x=tenths*6000L+(facing<0?6000:0);while(s.Core.Position<x)s.Core.TickFrame(1);if(facing<0)s.Core.TickFrame(-1);Assert.AreEqual(tenths*6000L,s.Core.Position);return s;
