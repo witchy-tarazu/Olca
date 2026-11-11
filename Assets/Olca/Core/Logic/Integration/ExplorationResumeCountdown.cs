@@ -235,6 +235,7 @@ namespace Olca.Core.Logic.Integration
             else if(!Cards.TryConsumeSelected(expected,revision,Core.CardGauge,out _)){error="カードゲージが不足しています";}
             if(error!=null){CardUseMessage=error;CardUseMessageFrame=Core.Frame;return false;}
             // HealEffectと同じ既存HP反映。満タンでもカード/ゲージの消費を戻さない。
+            if(SwordDefinition(expected))Core.FaceAwayFromWallForAttack();
             attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected)};AdvanceAttack(true);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
         public bool CanPerformAttack=>BodyCanAttack&&attackState==null;

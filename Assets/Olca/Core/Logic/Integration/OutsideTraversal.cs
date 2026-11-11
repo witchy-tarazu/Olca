@@ -168,6 +168,8 @@ namespace Olca.Core.Logic.Integration
         private readonly List<OutsideAfterimage> afterimages=new List<OutsideAfterimage>();
         private IReadOnlyList<OutsideAfterimage> afterimageView;
         public IReadOnlyList<OutsideAfterimage> Afterimages=>afterimageView??(afterimageView=afterimages.AsReadOnly());
+        // 発動開始時の向きは既存Core状態に残し、前隙中やcold復元でも保持する。
+        internal void FaceAwayFromWallForAttack(){if(IsWallSliding)Facing=-WallContactDirection;}
         internal void ConfigureTraversal(OutsideTraversalProfile profile)
         {profile?.ValidateFor(Definition);TraversalProfile=profile;}
         internal void StopTraversalForLanding(){EndDash();IsDashJumping=false;wallKickAt=-1;kickAway=0;}
