@@ -2423,6 +2423,8 @@ namespace Olca.Application.Dungeon
                     break;
 
                 case GamePhase.CardReward:
+                    // 戦闘で変化したHPを報酬中にも反映し、接敵前の値を残さない。
+                    RefreshDungeonHud();
                     break;
             }
         }

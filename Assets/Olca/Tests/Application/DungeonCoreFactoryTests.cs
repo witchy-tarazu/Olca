@@ -82,6 +82,29 @@ namespace Olca.Tests.Application
             var fused=fusion.Execute(new[]{sword,p.Cards.CreateById(SimpleCardFactory.Bomb)});Assert.IsTrue(fused.IsSuccess,fused.ErrorMessage);Assert.AreEqual(60,fused.ResultCard.GetFinalPower());Assert.AreEqual(CollectionDisplay.DefinitionHash(expected.CreateById(SimpleCardFactory.FireSword)),CollectionDisplay.DefinitionHash(fused.ResultCard));
             Assert.IsTrue(exceed.HasResultDefinition(p.Cards.CreateById(SimpleCardFactory.Bomb)));Assert.IsFalse(exceed.HasResultDefinition(p.Cards.CreateById(SimpleCardFactory.Heal)));Assert.IsFalse(fusion.Validate(new[]{p.Cards.CreateById(SimpleCardFactory.Bomb),p.Cards.CreateById(SimpleCardFactory.Shield)}).IsValid);
         }
+        [TestCase(37)] [TestCase(83)] public void 報酬表示は確定済みHPを更新し枚数非表示と保存と進行を変えない(int hp)
+        {
+            var host=new UnityEngine.GameObject("reward-hud-test");host.SetActive(false);
+            var controller=host.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var hudObject=new UnityEngine.GameObject("hud",typeof(UnityEngine.RectTransform));hudObject.transform.SetParent(host.transform,false);
+            var hud=hudObject.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>();
+            var countObject=new UnityEngine.GameObject("deck",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));countObject.transform.SetParent(hud.transform,false);
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            try {
+                typeof(Olca.Presentation.Dungeon.DungeonHudView).GetField("deckCountText",flags).SetValue(hud,countObject.GetComponent<UnityEngine.UI.Text>());
+                var cards=new SimpleCardFactory();var deck=cards.CreateStarterDeck();var map=DungeonConfig.CreateTestDungeon(8,1,3);var checkpoint=DungeonCheckpointSession.CreateDefault(map,deck);
+                var factory=new DungeonCoreFactory(new SeededBattleRandom(173),new Olca.Tests.Mocks.MockLogger(),()=>cards);var actor=new PlayerCharacter(100);var core=factory.CreatePreview(map,actor,deck,checkpoint);
+                typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("manager",flags).SetValue(controller,core);
+                typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("dungeonHudView",flags).SetValue(controller,hud);
+                var update=typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("UpdateViews",flags);update.Invoke(controller,null);
+                var label=(UnityEngine.UI.Text)typeof(Olca.Presentation.Dungeon.DungeonHudView).GetField("hpText",flags).GetValue(hud);Assert.AreEqual("HP: 100 / 100",label.text);
+                // 状態変更は表示だけを検証するfixture。通常撃破の実証には使わない。
+                actor.SetHp(hp);typeof(DungeonBattleManager).GetField("currentPhase",flags).SetValue(core,GamePhase.CardReward);
+                var before=PortableCheckpointJson.Serialize(checkpoint.Store.Read());float position=core.Dungeon.PlayerPosition;
+                update.Invoke(controller,null);update.Invoke(controller,null);
+                Assert.AreEqual($"HP: {hp} / 100",label.text);Assert.IsFalse(countObject.activeSelf);Assert.AreEqual(hp,actor.CurrentHp);Assert.AreEqual(GamePhase.CardReward,core.CurrentPhase);Assert.AreEqual(position,core.Dungeon.PlayerPosition);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(checkpoint.Store.Read()));
+            } finally { controller.StopManagedHost();UnityEngine.Object.DestroyImmediate(host); }
+        }
         [TestCase(false)] [TestCase(true)] public void 復帰候補作成_現Coreと保存を変えず確定済み敗北は拒否する(bool ended)
         {
             var cards=new SimpleCardFactory();var deck=cards.CreateStarterDeck();var map=DungeonConfig.CreateTestDungeon(6,1,2);
