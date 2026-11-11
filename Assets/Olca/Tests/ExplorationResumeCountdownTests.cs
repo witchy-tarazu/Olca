@@ -13,6 +13,17 @@ namespace Olca.Tests
         private static OutsideExplorationSession Water167(long x=60000,long y=0,long velocity=0,OutsideTraversalProfile profile=null)
         {var s=new OutsideExplorationSession();s.TryConfigureTraversal(profile??OutsideTraversalProfile.ValidationWater);var data=s.Core.CaptureState();data.Position=x;data.Height=y;data.Velocity=velocity;data.SupportId=y==0?"floor":null;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{data});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;}
         private static void WaterTick167(OutsideExplorationSession s,float x=0,bool down=false,bool held=false,bool dash=false){s.Core.TickFrame(x,down,held,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
+        [Test] public void 外界移動制限照会は付与解除予約と残一frameを副作用なく判定する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));using(var view=s.AttachPresentation()){var p=s.Player;p.ApplyParalysis(1);
+                Assert.IsTrue(s.IsMovementLockedForNextFrame);Assert.IsTrue(s.IsMovementLockedForNextFrame);Assert.AreEqual(0,p.ParalysisRemainingFrames,"照会だけで予約をcommitしない");
+                s.Core.TickFrame(1,movementLocked:s.IsMovementLockedForNextFrame);s.AdvancePlayerFrame();Assert.AreEqual(s.Core.Definition.Start,s.Core.Position);Assert.AreEqual(0,p.ParalysisRemainingFrames);Assert.IsFalse(s.IsMovementLockedForNextFrame);
+                p.ApplyParalysis(30);Assert.IsTrue(s.IsMovementLockedForNextFrame);p.ClearParalysis();Assert.IsFalse(s.IsMovementLockedForNextFrame,"次frameの解除予約を優先する");
+                s.Core.TickFrame(1,movementLocked:s.IsMovementLockedForNextFrame);s.AdvancePlayerFrame();Assert.Greater(s.Core.Position,s.Core.Definition.Start);Assert.IsFalse(p.IsParalyzed);
+            }}
+        }
+
         [Test] public void 水中呼吸は六百論理frameだけで死亡し非表示と同frameは減らさない()
         {
             using(var s=Water167()){Assert.AreEqual(600,s.BreathFramesRemaining);using(var view=s.AttachPresentation()){for(int n=0;n<599;n++)WaterTick167(s);Assert.AreEqual(1,s.BreathFramesRemaining);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(1,s.BreathFramesRemaining);int deaths=0;s.Player.OnDeath+=()=>deaths++;WaterTick167(s);Assert.IsTrue(s.Player.IsDead);Assert.AreEqual(1,deaths);}Assert.IsFalse(s.AdvancePlayerFrame());Assert.Throws<ArgumentException>(()=>s.CaptureRuntime());s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(600,s.BreathFramesRemaining);Assert.IsFalse(s.ShouldShowBreath);}

@@ -810,6 +810,7 @@ namespace Olca.Core.Logic.Integration
         private long fallPeak,landingLockedUntil;private bool fallGrounded=true;
         public bool IsLandingLocked=>Core.Frame<landingLockedUntil;
         public bool IsLandingLockedForNextFrame=>Core.Frame<landingLockedUntil-1;
+        public bool IsMovementLockedForNextFrame=>IsLandingLockedForNextFrame||Player?.IsMovementPreventedNextFrame==true;
         public int LandingFramesRemaining=>(int)Math.Max(0,landingLockedUntil-Core.Frame);
         private void ResetFall(){fallPeak=Core.Height;fallGrounded=Core.IsGrounded;landingLockedUntil=0;ResetWater();}
         private void RestoreFall(OutsideFallStateData value)

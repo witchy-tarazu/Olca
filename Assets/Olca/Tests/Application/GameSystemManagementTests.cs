@@ -1128,6 +1128,22 @@ namespace Olca.Tests.Application
             Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);load.onClick.Invoke();Assert.AreEqual(1,loaded);Assert.IsFalse(resume.interactable);
         }
 
+        [TestCase(false)] [TestCase(true)] public void 外界行動不能は移動前に判定し自走と保持再発動を止め重力時計は進む(bool stagger)
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100,staggerDurationFrames:3));
+            bool paused=Olca.Unity.GameplayPause.IsPaused;var pt=typeof(Olca.Unity.GameplayPause);var release=pt.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pt.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);release.SetValue(null,false);resume.SetValue(null,0);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                var driver=new object();runtime.Attach(driver,input);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);long frequency=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",flags).GetValue(input);
+                void Step(bool held=false){events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=held,Horizontal=held?1:0,JumpButtonDown=held,JumpButton=held,DashButtonDown=held,DashButton=held}));now+=frequency/60+1;runtime.Pump(driver,true);}
+                Step();Step(true);Assert.IsTrue(model.Core.IsDashing||model.Core.IsDashJumping);long x=model.Core.Position,y=model.Core.Height,frame=model.Core.Frame;
+                if(stagger)model.Player.TakeDamage(1,forceStagger:true);else model.Player.ApplyParalysis(3);
+                Assert.IsTrue(model.IsMovementLockedForNextFrame);Step(true);Assert.AreEqual(x,model.Core.Position);Assert.Greater(model.Core.Height,y,"空中の重力時計は停止しない");Assert.AreEqual(frame+1,model.Core.Frame);Assert.IsFalse(model.Core.IsDashing);Assert.IsFalse(model.Core.IsDashJumping);Assert.AreEqual(model.Core.Frame,runtime.Frame);
+                int remain=stagger?model.Player.StaggerRemainingFrames:Math.Max(model.Player.ParalysisRemainingFrames,model.Player.StaggerRemainingFrames);
+                for(int i=0;i<remain;i++){Step(true);Assert.AreEqual(x,model.Core.Position);}
+                Assert.IsFalse(model.IsMovementLockedForNextFrame);Step(true);Assert.Greater(model.Core.Position,x);Assert.IsFalse(model.Core.IsDashing,"保持中は解除後に自動ダッシュしない");
+            }}finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);resume.SetValue(null,priorResume);model.Dispose();}
+        }
+
         [Test] public void 外界巡回は採用済み時刻だけを使い選択保持が移動neutralを妨げない()
         {
             var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();bool paused=Olca.Unity.GameplayPause.IsPaused;var pauseType=typeof(Olca.Unity.GameplayPause);var release=pauseType.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pauseType.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);

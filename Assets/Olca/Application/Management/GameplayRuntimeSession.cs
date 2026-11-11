@@ -97,7 +97,7 @@ namespace Olca.Application.Management
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
                     int facing=session.Core.Facing;bool grounded=session.Core.IsGrounded;
                     bool move=accept&&!session.IsAttacking;
-                    session.Core.TickFrame(move?value.Horizontal:0,move&&value.JumpButtonDown,move&&value.JumpButton,move&&value.DashButtonDown,move&&value.DashButton,session.IsLandingLockedForNextFrame);
+                    session.Core.TickFrame(move?value.Horizontal:0,move&&value.JumpButtonDown,move&&value.JumpButton,move&&value.DashButtonDown,move&&value.DashButton,session.IsMovementLockedForNextFrame);
                     session.ObserveAttackBoundary(facing,grounded);
                     session.AdvanceDeckLocation();
                     session.AdvancePlayerFrame(out var canAttack);
