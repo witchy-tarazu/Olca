@@ -882,6 +882,20 @@ namespace Olca.Tests.Application
             Assert.IsFalse(model.IsPresented);
         }
 
+        [Test] public async Task 補給四種は操作不可でも文字を明瞭にし可否と素材と旧callbackを維持する()
+        {
+            bool usable=false;int calls=0;var session=system.OutsideExploration;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;Action claim=()=>calls++;Func<bool> allowed=()=>usable;Func<string> message=()=>"シヨウ カリ\nウケトリズミ";
+                view.ConfigureSupply(claim,allowed,message);view.ConfigurePoisonSupply(claim,allowed,message);view.ConfigureTrialPoison(claim,allowed,message);view.ConfigureCardSupply(claim,allowed,message);
+                var buttons=new[]{"OutsideSupplyChest","OutsidePoisonSupplyChest","OutsideTrialPoisonPoint","OutsideCardSupplyChest"}.Select(n=>view.transform.Find(n).GetComponent<Button>()).ToArray();var fonts=buttons.Select(b=>b.GetComponentInChildren<Text>().font).ToArray();var sprites=buttons.Select(b=>b.spriteState).ToArray();long frame=session.Core.Frame,gauge=session.Core.CardGauge.CurrentUnits;
+                view.Render();foreach(var button in buttons){Assert.IsFalse(button.IsInteractable());Assert.AreEqual(Color.white,button.GetComponentInChildren<Text>().color);button.onClick.Invoke();}Assert.AreEqual(0,calls);
+                usable=true;view.Render();for(int i=0;i<buttons.Length;i++){var button=buttons[i];Assert.IsTrue(button.IsInteractable());Assert.AreEqual(Olca.Presentation.Dungeon.UiLook.Ink,button.GetComponentInChildren<Text>().color);Assert.AreSame(fonts[i],button.GetComponentInChildren<Text>().font);Assert.AreEqual(sprites[i],button.spriteState);button.onClick.Invoke();}Assert.AreEqual(4,calls);
+                var old=buttons[0].onClick;usable=false;view.Render();foreach(var button in buttons){Assert.IsFalse(button.IsInteractable());Assert.AreEqual(Color.white,button.GetComponentInChildren<Text>().color);}Assert.AreEqual(frame,session.Core.Frame);Assert.AreEqual(gauge,session.Core.CardGauge.CurrentUnits);views.GetLayer("return-hub").CloseCurrent();old.Invoke();Assert.AreEqual(4,calls);
+            }
+        }
+
         [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)]
         public async Task リロード案内は移動と高度と再表示でもHP強靭HUDを覆わず状態を変えない(int width,int height)
         {

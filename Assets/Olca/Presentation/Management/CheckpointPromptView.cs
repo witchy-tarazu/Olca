@@ -227,6 +227,8 @@ namespace Olca.Presentation.Exploration
 
             foreach(var slot in supplySlots)if(slot?.Button!=null){
                 slot.Button.gameObject.SetActive(slot.Claim!=null&&trialRoute?.Invoke()==true);var rect=slot.Button.GetComponent<RectTransform>();rect.anchoredPosition=new Vector2(Origin((float)(slot.X/unit)),(slot.Index==3?510:340)-verticalOffset*pixelsPerWorldUnit);slot.Button.interactable=slot.CanUse?.Invoke()==true;
+                // 遠方・使用済みでも案内を読めるようにする。操作可能時の既存配色は維持する。
+                slot.Button.GetComponentInChildren<Text>().color=slot.Button.interactable?Olca.Presentation.Dungeon.UiLook.Ink:Color.white;
                 bool expanded=slot.Index==0?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(core):slot.Index==1?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(core):slot.Index==2?Olca.Core.Logic.Integration.OutsideTrialRoute.CanTryPoison(core):Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(core);
                 var message=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(slot.Message?.Invoke()??"ホキュウバコ（カリ）");
                 if(slot.Expanded!=expanded||slot.RenderedMessage!=message){var label=slot.Button.GetComponentInChildren<Text>();rect.sizeDelta=expanded?new Vector2(420,140):new Vector2(320,82);label.resizeTextForBestFit=true;label.resizeTextMinSize=expanded?18:16;label.resizeTextMaxSize=expanded?24:18;label.text=expanded?message:CompactSupplyMessage(message,label);slot.Expanded=expanded;slot.RenderedMessage=message;}
