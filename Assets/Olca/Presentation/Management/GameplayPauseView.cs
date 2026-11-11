@@ -23,11 +23,11 @@ namespace Olca.Presentation.Management
         public string TakeRestoredFocus(){var value=restoredFocus;restoredFocus=null;return value;}
         public ManagedScreenContext Context=>context;
         public bool Covered=>covered;
-        // LayoutPauseMenuの行・列。横長アイテム行は設定2列を占め、上へは左列を優先する。
+        // 外界Pauseの行・列。ゲーム操作を左、設定を右2列へ配置する。
         private static readonly (string Name,int Row,int First,int Last)[] navigationCells={
-            ("ResumeButton",0,0,0),("LoadCheckpointButton",1,0,0),("OwnedCardsButton",2,0,0),("RetreatButton",3,0,0),
+            ("ResumeButton",0,0,0),("OutsideItemsButton",1,0,0),
             ("KeyboardSettingsButton",0,1,1),("GamepadSettingsButton",0,2,2),("AudioSettingsButton",1,1,1),("VibrationSetting",1,2,2),
-            ("TransformationAnimationSetting",2,1,1),("DialogueTextSpeedButton",2,2,2),("OutsideItemsButton",3,1,2)};
+            ("TransformationAnimationSetting",2,1,1),("DialogueTextSpeedButton",2,2,2)};
         public Selectable FindNavigation(Selectable from,Vector2 direction)
         {
             if(!(from is Button current)||!actions.ContainsKey(current)||direction==Vector2.zero)return null;
@@ -40,6 +40,15 @@ namespace Olca.Presentation.Management
         }
 
         private bool outsidePresentation;
+        private RectTransform itemRect;private Vector2 itemPosition,itemSize;private Text playHeading;private string playHeadingText;
+        private readonly Dictionary<Button,bool> outsideHidden=new Dictionary<Button,bool>();
+        private void SetOutsideLayout(bool value)
+        {
+            if(value){foreach(var button in actions.Keys.Where(b=>b!=null&&(b.name=="LoadCheckpointButton"||b.name=="OwnedCardsButton"||b.name=="RetreatButton"))){if(!outsideHidden.ContainsKey(button))outsideHidden.Add(button,button.gameObject.activeSelf);button.gameObject.SetActive(false);}}
+            else{foreach(var pair in outsideHidden)if(pair.Key!=null)pair.Key.gameObject.SetActive(pair.Value);outsideHidden.Clear();}
+            if(itemRect!=null){itemRect.anchoredPosition=value?new Vector2(-480,0):itemPosition;itemRect.sizeDelta=value?new Vector2(360,88):itemSize;}
+            if(playHeading!=null)playHeading.text=value?"タンサク":playHeadingText;
+        }
         private Text inputGuide;
         private readonly Dictionary<Button,GameObject> focusFrames=new Dictionary<Button,GameObject>();
         // 操作は変更せず、メニューが実際に読む割当だけを案内する。
@@ -51,7 +60,7 @@ namespace Olca.Presentation.Management
         }
         public void SetOutsidePresentation(bool value)
         {
-            outsidePresentation=value;
+            outsidePresentation=value;SetOutsideLayout(value);
             if(value&&inputGuide==null){
                 var obj=new GameObject("OutsidePauseInputGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);inputGuide=obj.GetComponent<Text>();
                 inputGuide.font=actions.Keys.First().GetComponentInChildren<Text>().font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
@@ -78,6 +87,8 @@ namespace Olca.Presentation.Management
         {
             inputAllowed=allowed;presentation=gameObject.AddComponent<CanvasGroup>();
             foreach(var button in GetComponentsInChildren<Button>(true))actions.Add(button,button.onClick);
+            itemRect=transform.Find("OutsideItemsButton") as RectTransform;if(itemRect!=null){itemPosition=itemRect.anchoredPosition;itemSize=itemRect.sizeDelta;}
+            playHeading=GetComponentsInChildren<Text>(true).FirstOrDefault(x=>x.name=="PausePlayHeading");if(playHeading!=null)playHeadingText=playHeading.text;
         }
         public void Show(ManagedScreenContext owner)
         {
