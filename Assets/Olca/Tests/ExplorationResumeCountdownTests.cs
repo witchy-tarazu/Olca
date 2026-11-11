@@ -10,6 +10,70 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        [Test] public void 穴のダッシュ残像の負高度も保存し旧地形では負残像を拒否する()
+        {
+            using(var s=Void165()){
+                using(var v=s.AttachPresentation()){FallTick164(s,-1,false,true);for(int n=0;n<30&&!s.Core.Afterimages.Any(a=>a.Y<0);n++)FallTick164(s,-1);Assert.IsFalse(s.Player.IsDead);Assert.IsTrue(s.Core.Afterimages.Any(a=>a.Y<0));}
+                var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(actor,data,null,null,OutsideTraversalProfile.ValidationPit);Assert.AreEqual(s.Core.Height,cold.Core.Height);CollectionAssert.AreEqual(s.Core.Afterimages.Select(a=>a.Y),cold.Core.Afterimages.Select(a=>a.Y));using(var v=cold.AttachPresentation()){for(int n=0;n<100&&!cold.Player.IsDead;n++)FallTick164(cold);Assert.IsTrue(cold.Player.IsDead);}}
+            }
+            using(var old=new OutsideExplorationSession()){old.TryInitializePlayer(()=>new PlayerCharacter(100));var data=old.CaptureRuntime();data.Core.Afterimages=new[]{new OutsideAfterimageStateData{Frame=0,X=old.Core.Position,Y=-1,Facing=1,Pose=OutsideAfterimagePose.JumpFall}};var actor=OutsidePlayerSaveData.Capture(old.Player);actor.Id=data.Id;Assert.Throws<ArgumentException>(()=>old.RestoreSavedState(actor,data,null));}
+        }
+        [Test] public void 死亡済みの穴下端を生存状態として保存復元しない()
+        {
+            using(var s=Void165()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;data.Core.Height=-60000;data.Core.Velocity=0;data.Core.SupportId=null;data.Fall=new OutsideFallStateData{Peak=0,Grounded=false};Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,null,OutsideTraversalProfile.ValidationPit));using(var v=s.AttachPresentation())for(int i=0;i<100&&!s.Player.IsDead;i++)FallTick164(s,-1);Assert.Throws<ArgumentException>(()=>s.CaptureRuntime());}
+        }
+
+        [TestCase(-1,258000L)] [TestCase(1,222000L)] public void 床交差後の終点が穴内なら架空の床を付けず同frame保存をcold復元できる(int direction,long x)
+        {
+            using(var s=Void165(x,1000,-4000)){
+                using(var view=s.AttachPresentation()){FallTick164(s,direction);Assert.IsFalse(s.Core.IsGrounded);Assert.AreEqual(-3000,s.Core.Height);Assert.AreEqual(x+direction*6000,s.Core.Position);}
+                var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null,null,OutsideTraversalProfile.ValidationPit));Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.IsFalse(cold.Core.IsGrounded);}
+            }
+        }
+        [TestCase(false)] [TestCase(true)] public void 壁滑りの距離resetは下端死亡を防がず壁蹴りで下端到達前なら脱出できる(bool kick)
+        {
+            var profile=OutsideTraversalProfile.ValidationWall(true).WithFloorGaps("explicit-wall-void-fixture",60000,new OutsideFloorGap("wall-gap",23*60000,25*60000));
+            using(var s=new OutsideExplorationSession()){s.TryConfigureTraversal(profile);var data=s.Core.CaptureState();data.Position=24*60000-31200;data.SupportId=null;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{data});s.TryInitializePlayer(()=>new PlayerCharacter(100));using(var v=s.AttachPresentation()){
+                for(int i=0;i<10;i++)FallTick164(s,1);Assert.IsTrue(s.Core.IsWallSliding);Assert.IsFalse(s.Core.HasFallenOut);
+                if(kick){FallTick164(s,1,true);Assert.IsTrue(s.Core.IsWallKicking);for(int i=0;i<70;i++){s.Core.TickFrame(-1,false,true);s.AdvancePlayerFrame();}Assert.IsFalse(s.Player.IsDead);Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(100,s.Player.CurrentHp);}else{for(int i=0;i<100&&!s.Player.IsDead;i++)FallTick164(s,1);Assert.IsTrue(s.Core.HasFallenOut);Assert.IsTrue(s.Player.IsDead);}
+            }}
+        }
+        private static OutsideExplorationSession Void165(long x=300000,long height=0,long velocity=0)
+        {
+            var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationPit);var state=s.Core.CaptureState();state.Position=x;state.Height=height;state.Velocity=velocity;if(height!=0)state.SupportId=null;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;
+        }
+        [TestCase(false)] [TestCase(true)] public void 下の足場がない試用穴は防御無敵毒と無関係に死亡し通常復帰で下端を解除する(bool invincible)
+        {
+            using(var s=Void165())using(var view=s.AttachPresentation()){
+                int deaths=0;s.Player.OnDeath+=()=>deaths++;if(invincible)s.Player.SetInvincible(10000);s.Player.SetElementResistances(new ElementResistances(100,100,100,100));
+                for(int i=0;i<100&&!s.Player.IsDead;i++)FallTick164(s,-1);
+                Assert.IsTrue(s.Core.HasFallenOut);Assert.IsTrue(s.Player.IsDead);Assert.AreEqual(1,deaths);Assert.IsFalse(s.CanPerformAttack);s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.IsFalse(s.Core.HasFallenOut);Assert.AreEqual(6*60000,s.Core.Position);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsTrue(s.Core.IsGrounded);
+            }
+        }
+        [TestCase(false)] [TestCase(true)] public void 穴の下降途中は表示終了と冷起動で保存復元しPause相当の無更新では進行しない(bool cold)
+        {
+            using(var s=Void165()){
+                using(var v=s.AttachPresentation()){while(s.Core.Height>=0)FallTick164(s,-1);long frame=s.Core.Frame,y=s.Core.Height;Assert.IsFalse(s.Core.HasFallenOut);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(y,s.Core.Height);Assert.AreEqual(frame,s.Core.Frame);}
+                var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                if(cold){using(var next=new OutsideExplorationSession()){next.RestoreSavedState(actor,runtime,null,null,OutsideTraversalProfile.ValidationPit);using(var v=next.AttachPresentation()){for(int i=0;i<100&&!next.Player.IsDead;i++)FallTick164(next);Assert.IsTrue(next.Player.IsDead);}}}else using(var v=s.AttachPresentation()){for(int i=0;i<100&&!s.Player.IsDead;i++)FallTick164(s);Assert.IsTrue(s.Player.IsDead);}
+            }
+        }
+        [Test] public void 穴の旧保存は旧床を維持し新規試走だけ穴を選ぶ()
+        {
+            using(var s=new OutsideExplorationSession()){s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));s.TryInitializePlayer(()=>new PlayerCharacter(100));var old=s.CaptureRuntime();Assert.AreEqual(0,OutsideTrialRoute.ResolveTraversal(old).FloorGaps.Count);Assert.AreEqual(1,OutsideTrialRoute.ResolveTraversal(null).FloorGaps.Count);Assert.AreEqual(0,s.Core.TraversalProfile.FloorGaps.Count);Assert.AreEqual("28459110E8810EF3EE319D2B63AD770D4E867109CDE631DB865656B0BB069DFB",s.Core.StateDefinitionKey());}
+        }
+        [Test] public void 試用穴の境界は床を保持しジャンプで越えれば死亡しない()
+        {
+            using(var s=Void165())using(var v=s.AttachPresentation()){
+                for(int i=0;i<5;i++)FallTick164(s,-1);Assert.AreEqual(270000,s.Core.Position);Assert.IsTrue(s.Core.IsGrounded);FallTick164(s,-1,true);for(int i=0;i<80;i++)FallTick164(s,-1);Assert.IsTrue(s.Core.IsGrounded);Assert.IsFalse(s.Core.HasFallenOut);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 穴を横切って床の下へ入っても上面へ吸着せず下端で停止する()
+        {
+            using(var s=Void165())using(var v=s.AttachPresentation()){for(int i=0;i<100&&!s.Player.IsDead;i++)FallTick164(s,-1,false,i==0);Assert.IsTrue(s.Core.HasFallenOut);long x=s.Core.Position;for(int i=0;i<10;i++)s.Core.TickFrame(1,true,true,true,true);Assert.AreEqual(x,s.Core.Position);Assert.IsFalse(s.Core.IsGrounded);Assert.AreEqual(-60000,s.Core.Height);}
+        }
+
+
         [TestCase(false)] [TestCase(true)] public void 外界落下は通常無敵と防御を迂回し追加無敵を発生させない(bool invincible)
         {
             using(var s=Fall164())using(var view=s.AttachPresentation()){s.Player.SetElementResistances(new ElementResistances(100,100,100,100));if(invincible)s.Player.SetInvincible(10000);Land164(s);Assert.AreEqual(95,s.Player.CurrentHp);Assert.AreEqual(invincible,s.Player.IsInvincible);}

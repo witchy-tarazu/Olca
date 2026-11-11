@@ -12,6 +12,13 @@ namespace Olca.Core.Logic.Integration
         public OutsideValidationWall(string id,long x,long bottom,long top,bool allowsSlide=true,bool allowsKick=true)
         {if(string.IsNullOrWhiteSpace(id)||x<=0||bottom<0||top<=bottom)throw new ArgumentException("検証壁の定義が不正です");Id=id;X=x;Bottom=bottom;Top=top;AllowsSlide=allowsSlide;AllowsKick=allowsKick;}
     }
+    /// <summary>床だけを抜く試用区間。側面/身体幅や製品Mapの衝突規則は追加しない。</summary>
+    public sealed class OutsideFloorGap
+    {
+        public string Id {get;}public long Left {get;}public long Right {get;}
+        public OutsideFloorGap(string id,long left,long right){if(string.IsNullOrWhiteSpace(id)||left<0||right<=left)throw new ArgumentException("床抜け範囲が不正です");Id=id;Left=left;Right=right;}
+        public bool Contains(long x)=>x>Left&&x<Right;
+    }
     /// <summary>製品未確定値を分けた試走設定。Rootの検証地形だけへ明示注入する。</summary>
     public sealed class OutsideTraversalProfile
     {
@@ -21,6 +28,15 @@ namespace Olca.Core.Logic.Integration
         public long WallKickVelocity {get;} public long WallKickSpeedPerSecond {get;} public int WallKickPushFrames {get;}
         public int WallKickMotionFrames {get;} public bool WallActionsUnlocked {get;}
         public IReadOnlyList<OutsideValidationWall> Walls {get;}
+        public IReadOnlyList<OutsideFloorGap> FloorGaps {get;private set;}=Array.Empty<OutsideFloorGap>();
+        public long VoidDepth {get;private set;}
+        public OutsideTraversalProfile WithFloorGaps(string id,long voidDepth,params OutsideFloorGap[] gaps)
+        {
+            var copy=(gaps??Array.Empty<OutsideFloorGap>()).OrderBy(g=>g?.Left??-1).ToArray();
+            if(voidDepth<=0||copy.Length==0||copy.Any(g=>g==null)||copy.Select(g=>g.Id).Distinct().Count()!=copy.Length||copy.Skip(1).Where((g,i)=>g.Left<copy[i].Right).Any())throw new ArgumentException("床抜けと下端の試用定義が不正です");
+            var next=new OutsideTraversalProfile(id,DashSpeedPerSecond,DashFrames,DashCooldownFrames,DashResetFrames,DashJumpSpeedPerSecond,BodyHalfWidth,BodyHeight,WallSlidePerFrame,WallKickVelocity,WallKickSpeedPerSecond,WallKickPushFrames,WallKickMotionFrames,WallActionsUnlocked,Walls.ToArray());
+            next.VoidDepth=voidDepth;next.FloorGaps=Array.AsReadOnly(copy);return next;
+        }
         public OutsideTraversalProfile(string id,long dashSpeed,int dashFrames,int cooldownFrames,int resetFrames,long dashJumpSpeed,
             long bodyHalfWidth,long bodyHeight,long wallSlidePerFrame,long wallKickVelocity,long wallKickSpeed,int wallKickPushFrames,int wallKickMotionFrames,
             bool wallActionsUnlocked=false,params OutsideValidationWall[] walls)
@@ -38,12 +54,14 @@ namespace Olca.Core.Logic.Integration
             try{long n=(WallKickVelocity-1)/OutsideExplorationCore.ValidationGravity+1;kickRise=checked(n*WallKickVelocity-OutsideExplorationCore.ValidationGravity*n*(n-1)/2);}
             catch(OverflowException){throw new ArgumentException("壁蹴り速度が検証座標の表現範囲外です");}
             long reserve=Math.Max(kickRise,OutsideExplorationCore.ValidationMaximumRise);
+            if(VoidDepth>long.MaxValue-reserve||FloorGaps.Any(g=>g.Right>definition.Width||g.Contains(definition.Start)))throw new ArgumentException("床抜けの範囲/開始位置/下端が不正です");
             if(BodyHeight>long.MaxValue-reserve)throw new ArgumentException("検証身体高が表現範囲外です");
             foreach(var wall in Walls)if(wall.X<BodyHalfWidth||wall.X>definition.Width-BodyHalfWidth||wall.Top>long.MaxValue-BodyHeight-reserve||wall.Bottom<BodyHeight&&Math.Abs(definition.Start-wall.X)<BodyHalfWidth)throw new ArgumentException("検証壁の範囲または開始位置が不正です");
         }
         // 全て調整用。12単位/秒、0.2秒、2回後0.5秒待ち、1秒未使用で回数リセット。
         // ダッシュジャンプは試走では着地まで空中速度10。正式な慣性/速度表へ転用しない。
         // 壁身体幅は既存Idleの104px/PPU100に対応、滑り1.8単位/秒、蹴り初速12/横8。
+        public static OutsideTraversalProfile ValidationPit=>ValidationWall(true).WithFloorGaps("validation-pit-v1",60000,new OutsideFloorGap("trial-void",225000,255000));
         public static OutsideTraversalProfile ValidationDash=>new OutsideTraversalProfile("validation-traversal-v1",720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12);
         public static OutsideTraversalProfile ValidationWall(bool unlocked,bool slide=true,bool kick=true)=>new OutsideTraversalProfile("validation-wall-actions-v1",720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12,unlocked,new OutsideValidationWall("validation-wall",24*60000,0,1000*60000,slide,kick));
     }
@@ -53,6 +71,14 @@ namespace Olca.Core.Logic.Integration
         // 通常導線の仮拠点と既存回復地点。空中で同じ範囲にいるだけでは再装填しない。
         public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit);
         public static bool CanEditDeck(OutsideExplorationCore core)=>IsDeckEditingZone(core)&&core.IsGrounded&&core.Height==0;
+        public static OutsideTraversalProfile ResolveTraversal(OutsideRuntimeSaveData runtime)
+        {
+            if(runtime==null)return OutsideTraversalProfile.ValidationPit;
+            foreach(var profile in new[]{OutsideTraversalProfile.ValidationPit,OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash}){
+                var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,profile);if(core.StateDefinitionKey()==runtime.Core.DefinitionKey)return profile;
+            }
+            throw new ArgumentException("外界試走の地形定義が未登録です");
+        }
         public const string RecoveryPointId="validation-recovery-left-v1";
         public const long RecoveryX=6*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;

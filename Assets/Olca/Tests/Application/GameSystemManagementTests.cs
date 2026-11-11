@@ -739,6 +739,15 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [Test] public async Task 試用穴の負高度は描画カメラへ渡さず死亡保存直前もRenderが例外にならない()
+        {
+            var model=system.OutsideExploration;model.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationPit);model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);for(int i=0;i<100&&!model.Core.HasFallenOut;i++){model.Core.TickFrame(-1);model.AdvancePlayerFrame();if(model.Core.Height<0)Assert.DoesNotThrow(()=>binding.Pump(false));}
+                Assert.IsTrue(model.Core.HasFallenOut);Assert.IsTrue(model.Player.IsDead);Assert.DoesNotThrow(()=>binding.Pump(false));var offset=(float)typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("ResolveVerticalViewOffset",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(binding.View,new object[]{model.Core});Assert.AreEqual(0,offset);Assert.Less(model.Core.Height,0);
+            }
+        }
         [TestCase(0,30,1f)] [TestCase(10,30,2f/3)] [TestCase(31,30,0f)] [TestCase(0,0,0f)] public async Task 外界強靭HUDは既存被弾と回復を読み再表示で状態を変更しない(int damage,int poise,float fraction)
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100,poise:30,staggerDurationFrames:6,poiseRecoveryDelayFrames:10));model.Player.SetPoise(poise);

@@ -219,7 +219,7 @@ namespace Olca.Core.Logic.Integration
             attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected)};AdvanceAttack(true);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
         public bool CanPerformAttack=>BodyCanAttack&&attackState==null;
-        private bool BodyCanAttack=>!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked;
+        private bool BodyCanAttack=>!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
         public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
@@ -384,15 +384,18 @@ namespace Olca.Core.Logic.Integration
         public const long ValidationMaximumRise=ValidationJumpVelocity*(ValidationJumpVelocity/ValidationGravity+1)/2;
         public OutsideExplorationCore(OutsideMovementDefinition definition,OutsideTraversalProfile traversal=null)
         {Definition=definition??throw new System.ArgumentNullException(nameof(definition));Position=definition.Start;ConfigureTraversal(traversal);}
+        private bool FloorExists(decimal x)=>TraversalProfile==null||!TraversalProfile.FloorGaps.Any(g=>x>g.Left&&x<g.Right);
+        public bool HasFallenOut=>TraversalProfile?.VoidDepth>0&&Height<=-TraversalProfile.VoidDepth;
         private string SupportAt(long x,long y)
         {
-            if(y==0)return "floor";string id=null;
+            if(y==0&&FloorExists(x))return "floor";string id=null;
             foreach(var surface in Definition.LandingSurfaces)if(surface.Top==y&&surface.Contains(x)&&(id==null||System.StringComparer.Ordinal.Compare(surface.Id,id)<0))id=surface.Id;
             return id;
         }
         private bool Landing(long oldX,long oldY,long nextY,out long top,out string id)
         {
-            top=0;id=nextY<=0?"floor":null;
+            top=0;id=null;
+            if(oldY>=0&&nextY<=0){decimal fraction=oldY==nextY?0:(decimal)oldY/(oldY-nextY);decimal x=oldX+((decimal)Position-oldX)*fraction;if(FloorExists(Position)&&FloorExists(x))id="floor";}
             foreach(var surface in Definition.LandingSurfaces){
                 if(oldY<surface.Top||nextY>surface.Top||!surface.Contains(Position))continue;
                 decimal fraction=(decimal)(oldY-surface.Top)/(oldY-nextY);
@@ -406,7 +409,7 @@ namespace Olca.Core.Logic.Integration
         {
             if(float.IsNaN(horizontal)||float.IsInfinity(horizontal))throw new System.ArgumentOutOfRangeException(nameof(horizontal));
             bool wasIdle=IsIdleMotion;
-            Frame++;CardGauge.AdvanceFrame();bool jumpEdge=jumpDown&&!jumpWasHeld;jumpWasHeld=jumpHeld;
+            Frame++;CardGauge.AdvanceFrame();if(HasFallenOut){StopTraversalForLanding();IsMoving=false;MovementFrame=0;return;}bool jumpEdge=jumpDown&&!jumpWasHeld;jumpWasHeld=jumpHeld;
             if(movementLocked){horizontal=0;jumpEdge=false;dashDown=false;StopTraversalForLanding();}
             BeginTraversalFrame(dashDown,dashHeld);
             bool launch=jumpEdge&&IsGrounded;
@@ -432,7 +435,7 @@ namespace Olca.Core.Logic.Integration
             UpdateWallSlide(horizontalDirection);
             long next=Height+VerticalVelocity;
             if(VerticalVelocity<0&&Landing(previous,oldHeight,next,out var top,out var support)){Height=top;VerticalVelocity=0;SupportId=support;}
-            else{Height=next;VerticalVelocity-=ValidationGravity;if(IsWallSliding)VerticalVelocity=System.Math.Max(VerticalVelocity,-TraversalProfile.WallSlidePerFrame);SupportId=null;}
+            else{Height=TraversalProfile?.VoidDepth>0?Math.Max(-TraversalProfile.VoidDepth,next):next;VerticalVelocity-=ValidationGravity;if(IsWallSliding)VerticalVelocity=System.Math.Max(VerticalVelocity,-TraversalProfile.WallSlidePerFrame);SupportId=null;}
             CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);
         }
         private void AdvanceIdleFrame(bool wasIdle)
@@ -596,8 +599,8 @@ namespace Olca.Core.Logic.Integration
         public OutsideCoreStateData Copy(){var v=(OutsideCoreStateData)MemberwiseClone();v.Afterimages=Afterimages?.Select(a=>a?.Copy()).ToArray();return v;}
         public void Validate()
         {
-            if(DefinitionKey==null||DefinitionKey.Length!=64||!DefinitionKey.All(Uri.IsHexDigit)||Position<0||Frame<0||Height<0||Facing!=1&&Facing!=-1||MovementFrame<0||MovementFrame>Frame||IdleFrame<0||IdleFrame>Frame||Remainder<=-60||Remainder>=60||Moving!=(MovementFrame>0)||SupportId!=null&&string.IsNullOrWhiteSpace(SupportId)||ConsecutiveDashes<0||ConsecutiveDashes>2||KickAway< -1||KickAway>1||WallContact< -1||WallContact>1||WallSlideFrame<0||WallSlideFrame>Frame||!WallSliding&&WallSlideFrame!=0||new[]{DashStartedAt,DashEndsAt,CooldownUntil,LastDashAt,WallKickAt}.Any(v=>v< -1)||GaugeMaximum<=0||GaugeRecovery<0||GaugeUnits<0||GaugeUnits>(long)GaugeMaximum*OutsideCardGauge.UnitsPerPoint||Afterimages==null||Afterimages.Length>4)throw new ArgumentException("外界Core保存の値が不正です");
-            long previous=-1;foreach(var a in Afterimages){if(a==null||a.X<0||a.Y<0||a.Frame<0||a.Frame<=previous||a.Frame>Frame||Frame-a.Frame>=12||a.Facing!=1&&a.Facing!=-1||!Enum.IsDefined(typeof(OutsideAfterimagePose),a.Pose))throw new ArgumentException("外界残像保存が不正です");previous=a.Frame;}
+            if(DefinitionKey==null||DefinitionKey.Length!=64||!DefinitionKey.All(Uri.IsHexDigit)||Position<0||Frame<0||Height<0&&SupportId!=null||Facing!=1&&Facing!=-1||MovementFrame<0||MovementFrame>Frame||IdleFrame<0||IdleFrame>Frame||Remainder<=-60||Remainder>=60||Moving!=(MovementFrame>0)||SupportId!=null&&string.IsNullOrWhiteSpace(SupportId)||ConsecutiveDashes<0||ConsecutiveDashes>2||KickAway< -1||KickAway>1||WallContact< -1||WallContact>1||WallSlideFrame<0||WallSlideFrame>Frame||!WallSliding&&WallSlideFrame!=0||new[]{DashStartedAt,DashEndsAt,CooldownUntil,LastDashAt,WallKickAt}.Any(v=>v< -1)||GaugeMaximum<=0||GaugeRecovery<0||GaugeUnits<0||GaugeUnits>(long)GaugeMaximum*OutsideCardGauge.UnitsPerPoint||Afterimages==null||Afterimages.Length>4)throw new ArgumentException("外界Core保存の値が不正です");
+            long previous=-1;foreach(var a in Afterimages){if(a==null||a.X<0||a.Frame<0||a.Frame<=previous||a.Frame>Frame||Frame-a.Frame>=12||a.Facing!=1&&a.Facing!=-1||!Enum.IsDefined(typeof(OutsideAfterimagePose),a.Pose))throw new ArgumentException("外界残像保存が不正です");previous=a.Frame;}
         }
     }
     /// <summary>カードは参照番号で各領域を結合し、復元で抽選しない。未登録は外側のnullで表す。</summary>
@@ -645,6 +648,7 @@ namespace Olca.Core.Logic.Integration
             w.Write("outside-core-state-v1");w.Write(Definition.Id);w.Write(Definition.Width);w.Write(Definition.Start);w.Write(Definition.SpeedPerSecond);w.Write(ValidationJumpVelocity);w.Write(ValidationGravity);w.Write(ValidationReleasedRise);w.Write(Definition.LandingSurfaces.Count);
             foreach(var v in Definition.LandingSurfaces){w.Write(v.Id);w.Write(v.Left);w.Write(v.Right);w.Write(v.Top);}var p=TraversalProfile;w.Write(p!=null);if(p==null)return;
             w.Write(p.Id);w.Write(p.DashSpeedPerSecond);w.Write(p.DashFrames);w.Write(p.DashCooldownFrames);w.Write(p.DashResetFrames);w.Write(p.DashJumpSpeedPerSecond);w.Write(p.BodyHalfWidth);w.Write(p.BodyHeight);w.Write(p.WallSlidePerFrame);w.Write(p.WallKickVelocity);w.Write(p.WallKickSpeedPerSecond);w.Write(p.WallKickPushFrames);w.Write(p.WallKickMotionFrames);w.Write(p.WallActionsUnlocked);w.Write(p.Walls.Count);foreach(var v in p.Walls){w.Write(v.Id);w.Write(v.X);w.Write(v.Bottom);w.Write(v.Top);w.Write(v.AllowsSlide);w.Write(v.AllowsKick);}
+            if(p.FloorGaps.Count>0){w.Write("outside-floor-gaps-v1");w.Write(p.VoidDepth);w.Write(p.FloorGaps.Count);foreach(var g in p.FloorGaps){w.Write(g.Id);w.Write(g.Left);w.Write(g.Right);}}
         });
         public OutsideCoreStateData CaptureState()=>new OutsideCoreStateData{DefinitionKey=StateDefinitionKey(),Position=Position,Facing=Facing,Frame=Frame,Height=Height,Velocity=VerticalVelocity,SupportId=SupportId,Moving=IsMoving,MovementFrame=MovementFrame,IdleFrame=IdleFrame,Remainder=remainder,DashStartedAt=dashStartedAt,DashEndsAt=dashEndsAt,CooldownUntil=cooldownUntil,LastDashAt=lastDashAt,WallKickAt=wallKickAt,ConsecutiveDashes=consecutiveDashes,KickAway=kickAway,DashJumping=IsDashJumping,WallSliding=IsWallSliding,WallSlideFrame=WallSlideFrame,WallContact=WallContactDirection,GaugeMaximum=CardGauge.Maximum,GaugeRecovery=CardGauge.RecoveryPerSecond,GaugeUnits=CardGauge.CurrentUnits,Afterimages=afterimages.Select(v=>new OutsideAfterimageStateData{X=v.X,Y=v.Y,Frame=v.Frame,Facing=v.Facing,Pose=v.Pose}).ToArray()};
         internal long MaximumReachableHeight()
@@ -657,7 +661,7 @@ namespace Olca.Core.Logic.Integration
             int reserve=p==null?1:Math.Max(Math.Max(p.DashFrames,p.DashCooldownFrames),Math.Max(p.DashResetFrames,p.WallKickMotionFrames));
             long maxHeight=MaximumReachableHeight(),maxVelocity=Math.Max(ValidationJumpVelocity,p?.WallKickVelocity??0);
             if(p==null&&(v.DashJumping||v.WallSliding||v.DashStartedAt!=-1||v.DashEndsAt!=-1||v.CooldownUntil!=-1||v.LastDashAt!=-1||v.WallKickAt!=-1||v.ConsecutiveDashes!=0||v.KickAway!=0||v.WallContact!=0||v.Afterimages.Length!=0)||v.DashJumping&&(p==null||v.DashStartedAt<0||v.WallKickAt>=0)||v.DashEndsAt>=0&&v.CooldownUntil>=0||v.WallSliding&&(p==null||!p.Walls.Any(w=>w.AllowsSlide&&v.Height<w.Top&&v.Height>w.Bottom-p.BodyHeight&&v.Position==w.X-v.WallContact*p.BodyHalfWidth)))throw new ArgumentException("外界の行動と壁接触が保存定義と矛盾しています");
-            if(v.DefinitionKey!=StateDefinitionKey()||v.Position>Definition.Width||v.Height>maxHeight||v.Velocity< -maxHeight||v.Velocity>maxVelocity||v.Frame>long.MaxValue-reserve-1||v.DashStartedAt>v.Frame||v.LastDashAt>v.Frame||v.WallKickAt>v.Frame||v.CooldownUntil>v.Frame+(p?.DashCooldownFrames??0)||v.DashEndsAt>v.Frame+(p?.DashFrames??0)||v.DashEndsAt>=0&&(p==null||v.DashEndsAt<=v.Frame||v.DashStartedAt<0||v.DashEndsAt-v.DashStartedAt!=p.DashFrames||v.ConsecutiveDashes==0)||v.CooldownUntil>=0&&(v.CooldownUntil<=v.Frame||v.ConsecutiveDashes!=2)||v.SupportId!=null&&(v.Velocity!=0||v.SupportId!=SupportAt(v.Position,v.Height))||v.SupportId!=null&&(v.DashJumping||v.WallSliding||v.WallKickAt>=0)||v.WallKickAt>=0&&(p==null||v.KickAway==0)||v.WallSliding&&(p?.WallActionsUnlocked!=true||v.WallContact==0||v.SupportId!=null||v.Velocity>=0)||v.Afterimages.Any(a=>a.X>Definition.Width||a.Y>maxHeight))throw new ArgumentException("外界Core保存と地形/行動定義が一致しません");
+            if(v.DefinitionKey!=StateDefinitionKey()||v.Position>Definition.Width||v.Height>maxHeight||v.Height< -(p?.VoidDepth??0)||v.Velocity< -Math.Max(maxHeight,p?.VoidDepth??0)||v.Velocity>maxVelocity||v.Frame>long.MaxValue-reserve-1||v.DashStartedAt>v.Frame||v.LastDashAt>v.Frame||v.WallKickAt>v.Frame||v.CooldownUntil>v.Frame+(p?.DashCooldownFrames??0)||v.DashEndsAt>v.Frame+(p?.DashFrames??0)||v.DashEndsAt>=0&&(p==null||v.DashEndsAt<=v.Frame||v.DashStartedAt<0||v.DashEndsAt-v.DashStartedAt!=p.DashFrames||v.ConsecutiveDashes==0)||v.CooldownUntil>=0&&(v.CooldownUntil<=v.Frame||v.ConsecutiveDashes!=2)||v.SupportId!=null&&(v.Velocity!=0||v.SupportId!=SupportAt(v.Position,v.Height))||v.SupportId!=null&&(v.DashJumping||v.WallSliding||v.WallKickAt>=0)||v.WallKickAt>=0&&(p==null||v.KickAway==0)||v.WallSliding&&(p?.WallActionsUnlocked!=true||v.WallContact==0||v.SupportId!=null||v.Velocity>=0)||v.Afterimages.Any(a=>a.X>Definition.Width||a.Y>maxHeight||a.Y< -(p?.VoidDepth??0)))throw new ArgumentException("外界Core保存と地形/行動定義が一致しません");
         }
         internal void RestoreState(OutsideCoreStateData v)
         {
@@ -672,7 +676,7 @@ namespace Olca.Core.Logic.Integration
     {
         internal static OutsideExplorationCore RecoveryCore(OutsideCoreStateData state)
         {
-            var profiles=new OutsideTraversalProfile[]{OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash,null};
+            var profiles=new OutsideTraversalProfile[]{OutsideTraversalProfile.ValidationPit,OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash,null};
             foreach(var profile in profiles){var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,profile);if(core.StateDefinitionKey()==state.DefinitionKey){core.RestoreState(state);return core;}}
             throw new ArgumentException("死亡復帰先の外界地形定義が未登録です");
         }
@@ -742,7 +746,7 @@ namespace Olca.Core.Logic.Integration
         private string savedRuntimeId,savedRuntimeKey;
         public OutsideRuntimeSaveData CaptureRuntime(CheckpointDefinitions definitions=null)
         {
-            if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));if(IsPresented)throw new InvalidOperationException("外界表示を閉じて退避してください");
+            if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));if(IsPresented)throw new InvalidOperationException("外界表示を閉じて退避してください");if(Core.HasFallenOut)throw new ArgumentException("死亡済み落下を生存状態として保存できません");
             var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),Fall=CaptureFall()};value.Validate();return value;
         }
         public bool RestoreSavedState(OutsidePlayerSaveData player,OutsideRuntimeSaveData runtime,string recoveryPoint,CheckpointDefinitions definitions=null,OutsideTraversalProfile initializationProfile=null)
@@ -752,7 +756,7 @@ namespace Olca.Core.Logic.Integration
             if(IsPresented)throw new InvalidOperationException("表示中の外界状態を置換できません");if(savedPlayerId==player.Id&&savedPlayerKey!=playerKey)throw new ArgumentException("同じ外界個体IDの内容が変わりました");
             // 全候補を先に検証し、途中失敗で旧Sessionの一部だけを書き換えない。
             if(initializationProfile!=null&&Core.Frame!=0)throw new ArgumentException("進行済みの外界地形設定を置換できません");
-            var actor=player.Restore();var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
+            var actor=player.Restore();var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);if(candidateCore.HasFallenOut)throw new ArgumentException("死亡済み落下を生存個体として復元できません");var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
             var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);var target=CreateTrialTarget(runtime.TrialTarget);
             ValidateAttack(runtime.Attack,cards,runtime.Core.Frame);
             if(runtime.Fall!=null&&runtime.Fall.Peak>candidateCore.MaximumReachableHeight())throw new ArgumentException("落下頂点が外界地形の上限を超えています");
@@ -805,6 +809,7 @@ namespace Olca.Core.Logic.Integration
         }
         private void AdvanceFall()
         {
+            if(Core.HasFallenOut){Player.TakeFallDamage(Player.MaxHp);Core.StopTraversalForLanding();attackState=null;CancelAttackReservation();CardUseMessage="ラクカ / フッキ";CardUseMessageFrame=Core.Frame;return;}
             bool ground=Core.IsGrounded;
             if(Core.IsWallSliding||Core.IsWallKicking&&Core.WallKickFrame==0)fallPeak=Core.Height;
             fallPeak=Math.Max(fallPeak,Core.Height);

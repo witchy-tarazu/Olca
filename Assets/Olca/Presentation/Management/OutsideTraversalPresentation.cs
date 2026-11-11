@@ -14,6 +14,8 @@ namespace Olca.Presentation.Exploration
         private Olca.Unity.ResourceManager traversalResources;
         private OutsideTraversalProfile renderedTraversal;
         private readonly List<Image> wallImages=new List<Image>();
+        private readonly List<Image> gapImages=new List<Image>();
+        private void DestroyGapImages(){foreach(var image in gapImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}gapImages.Clear();}
         private readonly Image[] afterimageImages=new Image[4];
         private void InitializeTraversal(Olca.Unity.ResourceManager resources,Olca.Presentation.Field.GameFieldView field)
         {
@@ -42,7 +44,7 @@ namespace Olca.Presentation.Exploration
             // 壁4枚は共通256px/PPU100/pivotY14。未ロード時も同じ上端でView再生成の跳ねを防ぐ。
             if(core.TraversalProfile?.Walls.Count>0)actorTop=Mathf.Max(actorTop,2.42f);
             float height=((RectTransform)transform).rect.height;
-            return presentation.Camera.ResolveVerticalOffset(core.Height,height/pixelsPerWorldUnit,height*.21f/pixelsPerWorldUnit,144/pixelsPerWorldUnit,actorTop);
+            return presentation.Camera.ResolveVerticalOffset(Math.Max(0,core.Height),height/pixelsPerWorldUnit,height*.21f/pixelsPerWorldUnit,144/pixelsPerWorldUnit,actorTop);
         }
         private void RenderTraversal(OutsideExplorationCore core,float camera,float viewport,float verticalOffset)
         {
@@ -50,10 +52,14 @@ namespace Olca.Presentation.Exploration
             float Origin(long x)=>(x/unit-camera+viewport*.5f)*pixelsPerWorldUnit;
             var profile=core.TraversalProfile;
             if(!ReferenceEquals(renderedTraversal,profile)){
-                foreach(var image in wallImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}wallImages.Clear();renderedTraversal=profile;
+                foreach(var image in wallImages)if(image!=null){if(UnityEngine.Application.isPlaying)Destroy(image.gameObject);else DestroyImmediate(image.gameObject);}wallImages.Clear();DestroyGapImages();renderedTraversal=profile;
                 if(profile!=null)foreach(var wall in profile.Walls){
                     var go=new GameObject("OutsideValidationWall-"+wall.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=terrain.sprite;image.type=Image.Type.Tiled;image.color=new Color(.6f,.85f,.94f,.8f);image.raycastTarget=false;
                     image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=new Vector2(.5f,0);go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());wallImages.Add(image);
+                }
+                if(profile!=null)foreach(var gap in profile.FloorGaps){
+                    var go=new GameObject("OutsideTrialFloorGap-"+gap.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.color=new Color(.015f,.035f,.055f,1);image.raycastTarget=false;image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=new Vector2(0,1);go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());gapImages.Add(image);
+                    for(int side=0;side<2;side++){var edge=new GameObject("VoidEdge"+side,typeof(RectTransform),typeof(Image));edge.transform.SetParent(go.transform,false);var line=edge.GetComponent<Image>();line.color=new Color(.3f,.85f,.9f,.85f);line.raycastTarget=false;line.rectTransform.anchorMin=line.rectTransform.anchorMax=new Vector2(side,1);line.rectTransform.pivot=new Vector2(side,1);line.rectTransform.sizeDelta=new Vector2(2,8);}
                 }
                 var title=transform.Find("OutsideExplorationTitle")?.GetComponent<Text>();
                 if(title!=null)title.text=profile!=null&&profile.Walls.Count>0?"ガイカイ タンサク / ケンショウ カベ（"+(profile.WallActionsUnlocked?"ノウリョク カリカイホウ":"ノウリョク ミカイホウ")+"）":"ガイカイ タンサク  /  ケンショウ チケイ";
@@ -68,6 +74,9 @@ namespace Olca.Presentation.Exploration
                 if(tile>0)bottom-=Mathf.Repeat((bottom-wall.Bottom/unit)*pixelsPerWorldUnit,tile)/pixelsPerWorldUnit;
                 image.rectTransform.anchoredPosition=new Vector2(Origin(wall.X),(bottom-verticalOffset)*pixelsPerWorldUnit);image.rectTransform.sizeDelta=new Vector2(18,Math.Max(0,top-bottom)*pixelsPerWorldUnit);
             }
+            for(int i=0;i<gapImages.Count;i++){
+                var gap=profile.FloorGaps[i];var image=gapImages[i];image.gameObject.SetActive(true);image.rectTransform.anchoredPosition=new Vector2(Origin(gap.Left),-verticalOffset*pixelsPerWorldUnit);image.rectTransform.sizeDelta=new Vector2((gap.Right-gap.Left)/unit*pixelsPerWorldUnit,profile.VoidDepth/unit*pixelsPerWorldUnit+8);
+            }
             var samples=core.Afterimages;
             for(int i=0;i<afterimageImages.Length;i++){
                 var image=afterimageImages[i];if(i>=samples.Count){image.enabled=false;image.sprite=null;continue;}
@@ -79,12 +88,13 @@ namespace Olca.Presentation.Exploration
             }
             if(movementGuideText.text.Length>0){
                 if(profile!=null&&profile.WallActionsUnlocked&&profile.Walls.Count>0)movementGuideText.text+="\nタイオウするカベ: ホウコウホジでスベル / ジャンプでケる";
+                if(profile?.FloorGaps.Count>0)movementGuideText.text+="\nカイフクのヒダリ: ラッカ フッキのシヨウアナ（カリ）";
                 if(core.DashCooldownRemaining>0)movementGuideText.text+="\nダッシュ マチ: "+(Math.Ceiling(core.DashCooldownRemaining/6d)/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
             }
         }
         private void ClearTraversalDisplay()
-        {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){ClearTraversalDisplay();wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);}
+        private void ReleaseTraversalReferences(){ClearTraversalDisplay();DestroyGapImages();wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
