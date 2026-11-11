@@ -6,6 +6,38 @@ namespace Olca.Tests
 {
     public sealed class OutsideTraversalTests
     {
+        [Test] public void 二段ジャンプは空中の押し直し一回だけで保持や三回目を拒否し接地で回復する()
+        {
+            var c=Core(OutsideTraversalProfile.ValidationDoubleJump);c.TickFrame(0,true,true);for(int n=0;n<8;n++)c.TickFrame(0,jumpHeld:true);Assert.IsFalse(c.AirJumpUsed);
+            c.TickFrame(0);long old=c.Height;c.TickFrame(0,true,true);Assert.IsTrue(c.DidAirJumpThisFrame);Assert.IsTrue(c.AirJumpUsed);Assert.AreEqual(old+12000,c.Height);
+            c.TickFrame(0);long velocity=c.VerticalVelocity;c.TickFrame(0,true,true);Assert.IsFalse(c.DidAirJumpThisFrame);Assert.Less(c.VerticalVelocity,12000);
+            for(int n=0;n<200&&!c.IsGrounded;n++)c.TickFrame(0,jumpHeld:true);Assert.IsTrue(c.IsGrounded);Assert.IsFalse(c.AirJumpUsed);c.TickFrame(0,jumpHeld:true);Assert.IsTrue(c.IsGrounded);c.TickFrame(0);c.TickFrame(0,true,true);Assert.IsFalse(c.IsGrounded);
+        }
+        [Test] public void 二段ジャンプ未解放と旧地形は同じ空中押下を拒否する()
+        {
+            var c=Core(OutsideTraversalProfile.ValidationPit);string key=c.StateDefinitionKey();c.TickFrame(0,true,true);c.TickFrame(0);c.TickFrame(0,true,true);Assert.IsFalse(c.AirJumpUsed);Assert.AreEqual(key,c.StateDefinitionKey());
+            string json=System.Text.Encoding.UTF8.GetString(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(c.CaptureState()));StringAssert.DoesNotContain("AirJumpAt",json);StringAssert.Contains("Position",json);StringAssert.Contains("Afterimages",json);StringAssert.Contains("Moving",json);
+        }
+        [Test] public void 二段ジャンプの短押しは上昇を抑え空中でも左右と一押下を保つ()
+        {
+            var c=Core(OutsideTraversalProfile.ValidationDoubleJump);c.TickFrame(0,true,true);c.TickFrame(0);c.TickFrame(1,true,true);long x=c.Position;c.TickFrame(-1);Assert.Less(c.Position,x);Assert.LessOrEqual(c.VerticalVelocity,OutsideExplorationCore.ValidationReleasedRise);Assert.IsTrue(c.AirJumpUsed);
+        }
+        [Test] public void 二段ジャンプ消費後の壁蹴りでは回数を回復しない()
+        {
+            var c=Core(OutsideTraversalProfile.ValidationDoubleJump);ToWall(c);c.TickFrame(-1,true,true);c.TickFrame(0);c.TickFrame(0,true,true);Assert.IsTrue(c.AirJumpUsed);c.TickFrame(1);c.TickFrame(1,true,true);Assert.IsTrue(c.IsWallKicking);Assert.IsTrue(c.AirJumpUsed);c.TickFrame(-1);c.TickFrame(-1,true,true);Assert.IsFalse(c.DidAirJumpThisFrame);Assert.IsTrue(c.AirJumpUsed);
+        }
+        [Test] public void 壁蹴り優先は未使用の二段ジャンプを消費しない()
+        {
+            var c=Core(OutsideTraversalProfile.ValidationDoubleJump);ToWall(c);c.TickFrame(1,true,true);c.TickFrame(1);c.TickFrame(1,true,true);Assert.IsTrue(c.IsWallKicking);Assert.IsFalse(c.AirJumpUsed);c.TickFrame(-1);c.TickFrame(-1,true,true);Assert.IsTrue(c.DidAirJumpThisFrame);
+        }
+        [Test] public void 二段追加前の実保存Coreは全フィールドとbytesを変えず再出力する()
+        {
+            string json=@"{""Afterimages"":[],""ConsecutiveDashes"":0,""CooldownUntil"":-1,""DashEndsAt"":-1,""DashJumping"":false,""DashStartedAt"":-1,""DefinitionKey"":""F1A69D39ACDB21C7408FB7A62339D0EB338BA00E70D05D8D3E38632A1CDF20FF"",""Facing"":-1,""Frame"":2128,""GaugeMaximum"":100,""GaugeRecovery"":10,""GaugeUnits"":6000,""Height"":0,""IdleFrame"":0,""KickAway"":0,""LastDashAt"":-1,""MovementFrame"":0,""Moving"":false,""Position"":300000,""Remainder"":0,""SupportId"":""floor"",""Velocity"":0,""WallContact"":0,""WallKickAt"":-1,""WallSlideFrame"":0,""WallSliding"":false}";var bytes=System.Text.Encoding.UTF8.GetBytes(json);var dto=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<OutsideCoreStateData>(bytes);Assert.IsNull(dto.AirJumpAt);CollectionAssert.AreEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(dto));var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationPit);Assert.AreEqual(dto.DefinitionKey,core.StateDefinitionKey());typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(core,new object[]{dto});Assert.IsFalse(core.AirJumpUsed);
+        }
+        [Test] public void 二段用の追加高度を含めた上限で地形を拒否する()
+        {
+            long top=long.MaxValue-135000-OutsideExplorationCore.ValidationMaximumRise;var p=new OutsideTraversalProfile("overflow",720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12,true,new OutsideValidationWall("high",24*60000,0,top));Assert.Throws<ArgumentException>(()=>Core(p.WithDoubleJump("double-overflow")));
+        }
         private static OutsideExplorationCore Core(OutsideTraversalProfile p=null)=>new OutsideExplorationCore(OutsideMovementDefinition.ValidationTerrain,p??OutsideTraversalProfile.ValidationDash);
         private static void ToWall(OutsideExplorationCore c)
         {long x=c.TraversalProfile.Walls[0].X-c.TraversalProfile.BodyHalfWidth;for(int i=0;i<300&&c.Position<x;i++)c.TickFrame(1);Assert.AreEqual(x,c.Position);}

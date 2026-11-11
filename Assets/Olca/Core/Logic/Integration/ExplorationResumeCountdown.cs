@@ -415,6 +415,9 @@ namespace Olca.Core.Logic.Integration
             bool launch=jumpEdge&&IsGrounded;
             int horizontalDirection=horizontal>0?1:horizontal<0?-1:0;
             bool wallLaunch=TryWallKick(jumpEdge,horizontalDirection);
+            // 壁蹴りを優先し、壁蹴りでは空中一回分を回復しない。接地だけで再使用可。
+            bool airLaunch=jumpEdge&&!launch&&!wallLaunch&&!IsGrounded&&TraversalProfile?.DoubleJumpUnlocked==true&&!airJumpAt.HasValue;
+            if(airLaunch){airJumpAt=Frame;wallKickAt=-1;kickAway=0;VerticalVelocity=ValidationJumpVelocity;}
             if(launch){IsDashJumping=IsDashing;if(IsDashing)EndDash();SupportId=null;VerticalVelocity=ValidationJumpVelocity;}
             if(!jumpHeld&&VerticalVelocity>ValidationReleasedRise)VerticalVelocity=ValidationReleasedRise;
             long previous=Position,oldHeight=Height;
@@ -431,10 +434,10 @@ namespace Olca.Core.Logic.Integration
             }
             ClampValidationWalls(previous,Height+VerticalVelocity);
             IsMoving=Position!=previous;MovementFrame=IsMoving?MovementFrame+1:0;
-            if(!launch&&!wallLaunch&&IsGrounded){SupportId=SupportAt(Position,Height);if(IsGrounded){UpdateWallSlide(horizontalDirection);CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);return;}VerticalVelocity=0;}
+            if(!launch&&!wallLaunch&&!airLaunch&&IsGrounded){SupportId=SupportAt(Position,Height);if(IsGrounded){UpdateWallSlide(horizontalDirection);airJumpAt=null;CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);return;}VerticalVelocity=0;}
             UpdateWallSlide(horizontalDirection);
             long next=Height+VerticalVelocity;
-            if(VerticalVelocity<0&&Landing(previous,oldHeight,next,out var top,out var support)){Height=top;VerticalVelocity=0;SupportId=support;}
+            if(VerticalVelocity<0&&Landing(previous,oldHeight,next,out var top,out var support)){Height=top;VerticalVelocity=0;SupportId=support;airJumpAt=null;}
             else{Height=TraversalProfile?.VoidDepth>0?Math.Max(-TraversalProfile.VoidDepth,next):next;VerticalVelocity-=ValidationGravity;if(IsWallSliding)VerticalVelocity=System.Math.Max(VerticalVelocity,-TraversalProfile.WallSlidePerFrame);SupportId=null;}
             CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);
         }
@@ -590,12 +593,14 @@ namespace Olca.Core.Logic.Integration
     public sealed class OutsideTrialStrike{public long Frame,X,Y;public int Facing;public bool Hit;public OutsideTrialStrike Copy()=>(OutsideTrialStrike)MemberwiseClone();}
     public sealed class OutsideAfterimageStateData
     {public long X,Y,Frame;public int Facing;public OutsideAfterimagePose Pose;public OutsideAfterimageStateData Copy()=>(OutsideAfterimageStateData)MemberwiseClone();}
+    [System.Runtime.Serialization.DataContract]
     public sealed class OutsideCoreStateData
     {
-        public string DefinitionKey,SupportId;public long Position,Frame,Height,Velocity,MovementFrame,IdleFrame,Remainder;
-        public int Facing,ConsecutiveDashes,KickAway,WallContact;public bool Moving,DashJumping,WallSliding;
-        public long DashStartedAt,DashEndsAt,CooldownUntil,LastDashAt,WallKickAt,WallSlideFrame;
-        public int GaugeMaximum,GaugeRecovery;public long GaugeUnits;public OutsideAfterimageStateData[] Afterimages=Array.Empty<OutsideAfterimageStateData>();
+        [System.Runtime.Serialization.DataMember] public string DefinitionKey,SupportId;[System.Runtime.Serialization.DataMember] public long Position,Frame,Height,Velocity,MovementFrame,IdleFrame,Remainder;
+        [System.Runtime.Serialization.DataMember] public int Facing,ConsecutiveDashes,KickAway,WallContact;[System.Runtime.Serialization.DataMember] public bool Moving,DashJumping,WallSliding;
+        [System.Runtime.Serialization.DataMember] public long DashStartedAt,DashEndsAt,CooldownUntil,LastDashAt,WallKickAt,WallSlideFrame;
+        [System.Runtime.Serialization.DataMember] public int GaugeMaximum,GaugeRecovery;[System.Runtime.Serialization.DataMember] public long GaugeUnits;[System.Runtime.Serialization.DataMember] public OutsideAfterimageStateData[] Afterimages=Array.Empty<OutsideAfterimageStateData>();
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public long? AirJumpAt;
         public OutsideCoreStateData Copy(){var v=(OutsideCoreStateData)MemberwiseClone();v.Afterimages=Afterimages?.Select(a=>a?.Copy()).ToArray();return v;}
         public void Validate()
         {
@@ -648,16 +653,21 @@ namespace Olca.Core.Logic.Integration
             w.Write("outside-core-state-v1");w.Write(Definition.Id);w.Write(Definition.Width);w.Write(Definition.Start);w.Write(Definition.SpeedPerSecond);w.Write(ValidationJumpVelocity);w.Write(ValidationGravity);w.Write(ValidationReleasedRise);w.Write(Definition.LandingSurfaces.Count);
             foreach(var v in Definition.LandingSurfaces){w.Write(v.Id);w.Write(v.Left);w.Write(v.Right);w.Write(v.Top);}var p=TraversalProfile;w.Write(p!=null);if(p==null)return;
             w.Write(p.Id);w.Write(p.DashSpeedPerSecond);w.Write(p.DashFrames);w.Write(p.DashCooldownFrames);w.Write(p.DashResetFrames);w.Write(p.DashJumpSpeedPerSecond);w.Write(p.BodyHalfWidth);w.Write(p.BodyHeight);w.Write(p.WallSlidePerFrame);w.Write(p.WallKickVelocity);w.Write(p.WallKickSpeedPerSecond);w.Write(p.WallKickPushFrames);w.Write(p.WallKickMotionFrames);w.Write(p.WallActionsUnlocked);w.Write(p.Walls.Count);foreach(var v in p.Walls){w.Write(v.Id);w.Write(v.X);w.Write(v.Bottom);w.Write(v.Top);w.Write(v.AllowsSlide);w.Write(v.AllowsKick);}
+            if(p.DoubleJumpUnlocked)w.Write("outside-double-jump-v1");
             if(p.FloorGaps.Count>0){w.Write("outside-floor-gaps-v1");w.Write(p.VoidDepth);w.Write(p.FloorGaps.Count);foreach(var g in p.FloorGaps){w.Write(g.Id);w.Write(g.Left);w.Write(g.Right);}}
         });
-        public OutsideCoreStateData CaptureState()=>new OutsideCoreStateData{DefinitionKey=StateDefinitionKey(),Position=Position,Facing=Facing,Frame=Frame,Height=Height,Velocity=VerticalVelocity,SupportId=SupportId,Moving=IsMoving,MovementFrame=MovementFrame,IdleFrame=IdleFrame,Remainder=remainder,DashStartedAt=dashStartedAt,DashEndsAt=dashEndsAt,CooldownUntil=cooldownUntil,LastDashAt=lastDashAt,WallKickAt=wallKickAt,ConsecutiveDashes=consecutiveDashes,KickAway=kickAway,DashJumping=IsDashJumping,WallSliding=IsWallSliding,WallSlideFrame=WallSlideFrame,WallContact=WallContactDirection,GaugeMaximum=CardGauge.Maximum,GaugeRecovery=CardGauge.RecoveryPerSecond,GaugeUnits=CardGauge.CurrentUnits,Afterimages=afterimages.Select(v=>new OutsideAfterimageStateData{X=v.X,Y=v.Y,Frame=v.Frame,Facing=v.Facing,Pose=v.Pose}).ToArray()};
+        private long? airJumpAt;
+        public bool AirJumpUsed=>airJumpAt.HasValue;
+        public bool DidAirJumpThisFrame=>airJumpAt==Frame;
+        public OutsideCoreStateData CaptureState()=>new OutsideCoreStateData{AirJumpAt=airJumpAt,DefinitionKey=StateDefinitionKey(),Position=Position,Facing=Facing,Frame=Frame,Height=Height,Velocity=VerticalVelocity,SupportId=SupportId,Moving=IsMoving,MovementFrame=MovementFrame,IdleFrame=IdleFrame,Remainder=remainder,DashStartedAt=dashStartedAt,DashEndsAt=dashEndsAt,CooldownUntil=cooldownUntil,LastDashAt=lastDashAt,WallKickAt=wallKickAt,ConsecutiveDashes=consecutiveDashes,KickAway=kickAway,DashJumping=IsDashJumping,WallSliding=IsWallSliding,WallSlideFrame=WallSlideFrame,WallContact=WallContactDirection,GaugeMaximum=CardGauge.Maximum,GaugeRecovery=CardGauge.RecoveryPerSecond,GaugeUnits=CardGauge.CurrentUnits,Afterimages=afterimages.Select(v=>new OutsideAfterimageStateData{X=v.X,Y=v.Y,Frame=v.Frame,Facing=v.Facing,Pose=v.Pose}).ToArray()};
         internal long MaximumReachableHeight()
         {
-            var p=TraversalProfile;long top=Definition.LandingSurfaces.Select(s=>s.Top).DefaultIfEmpty(0).Max();if(p!=null)top=Math.Max(top,p.Walls.Select(a=>a.Top).DefaultIfEmpty(0).Max());long rise=ValidationMaximumRise;if(p!=null){long n=(p.WallKickVelocity-1)/ValidationGravity+1;rise=Math.Max(rise,checked(n*p.WallKickVelocity-ValidationGravity*n*(n-1)/2));}return checked(top+rise);
+            var p=TraversalProfile;long top=Definition.LandingSurfaces.Select(s=>s.Top).DefaultIfEmpty(0).Max();if(p!=null)top=Math.Max(top,p.Walls.Select(a=>a.Top).DefaultIfEmpty(0).Max());long rise=ValidationMaximumRise;if(p!=null){long n=(p.WallKickVelocity-1)/ValidationGravity+1;rise=Math.Max(rise,checked(n*p.WallKickVelocity-ValidationGravity*n*(n-1)/2));}return checked(top+rise+(p?.DoubleJumpUnlocked==true?ValidationMaximumRise:0));
         }
         private void ValidateState(OutsideCoreStateData v)
         {
             if(v==null)throw new ArgumentException("外界Core保存が欠落しています");v.Validate();var p=TraversalProfile;
+            if(v.AirJumpAt.HasValue&&(p?.DoubleJumpUnlocked!=true||v.AirJumpAt.Value<1||v.AirJumpAt.Value>v.Frame||v.SupportId!=null))throw new ArgumentException("空中ジャンプ保存が地形/接地/時計と一致しません");
             int reserve=p==null?1:Math.Max(Math.Max(p.DashFrames,p.DashCooldownFrames),Math.Max(p.DashResetFrames,p.WallKickMotionFrames));
             long maxHeight=MaximumReachableHeight(),maxVelocity=Math.Max(ValidationJumpVelocity,p?.WallKickVelocity??0);
             if(p==null&&(v.DashJumping||v.WallSliding||v.DashStartedAt!=-1||v.DashEndsAt!=-1||v.CooldownUntil!=-1||v.LastDashAt!=-1||v.WallKickAt!=-1||v.ConsecutiveDashes!=0||v.KickAway!=0||v.WallContact!=0||v.Afterimages.Length!=0)||v.DashJumping&&(p==null||v.DashStartedAt<0||v.WallKickAt>=0)||v.DashEndsAt>=0&&v.CooldownUntil>=0||v.WallSliding&&(p==null||!p.Walls.Any(w=>w.AllowsSlide&&v.Height<w.Top&&v.Height>w.Bottom-p.BodyHeight&&v.Position==w.X-v.WallContact*p.BodyHalfWidth)))throw new ArgumentException("外界の行動と壁接触が保存定義と矛盾しています");
@@ -668,7 +678,7 @@ namespace Olca.Core.Logic.Integration
             ValidateState(v);Position=v.Position;Facing=v.Facing;Frame=v.Frame;Height=v.Height;VerticalVelocity=v.Velocity;SupportId=v.SupportId;IsMoving=v.Moving;MovementFrame=v.MovementFrame;IdleFrame=v.IdleFrame;remainder=v.Remainder;
             dashStartedAt=v.DashStartedAt;dashEndsAt=v.DashEndsAt;cooldownUntil=v.CooldownUntil;lastDashAt=v.LastDashAt;wallKickAt=v.WallKickAt;consecutiveDashes=v.ConsecutiveDashes;kickAway=v.KickAway;IsDashJumping=v.DashJumping;IsWallSliding=v.WallSliding;WallSlideFrame=v.WallSlideFrame;WallContactDirection=v.WallContact;
             // 入力世代は再生しない。既存の再開neutral契約で新しい押下を受ける。
-            jumpWasHeld=dashWasHeld=false;CardGauge.Restore(v.GaugeMaximum,v.GaugeRecovery,v.GaugeUnits);afterimages.Clear();afterimages.AddRange(v.Afterimages.Select(a=>new OutsideAfterimage(a.X,a.Y,a.Frame,a.Facing,a.Pose)));
+            airJumpAt=v.AirJumpAt;jumpWasHeld=dashWasHeld=false;CardGauge.Restore(v.GaugeMaximum,v.GaugeRecovery,v.GaugeUnits);afterimages.Clear();afterimages.AddRange(v.Afterimages.Select(a=>new OutsideAfterimage(a.X,a.Y,a.Frame,a.Facing,a.Pose)));
         }
     }
     /// <summary>登録済み試用地形の死亡復帰候補。Rootを触らず、既存回復処理と専用乱数を使う。</summary>
@@ -676,7 +686,7 @@ namespace Olca.Core.Logic.Integration
     {
         internal static OutsideExplorationCore RecoveryCore(OutsideCoreStateData state)
         {
-            var profiles=new OutsideTraversalProfile[]{OutsideTraversalProfile.ValidationPit,OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash,null};
+            var profiles=new OutsideTraversalProfile[]{OutsideTraversalProfile.ValidationDoubleJump,OutsideTraversalProfile.ValidationPit,OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash,null};
             foreach(var profile in profiles){var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,profile);if(core.StateDefinitionKey()==state.DefinitionKey){core.RestoreState(state);return core;}}
             throw new ArgumentException("死亡復帰先の外界地形定義が未登録です");
         }
@@ -811,7 +821,7 @@ namespace Olca.Core.Logic.Integration
         {
             if(Core.HasFallenOut){Player.TakeFallDamage(Player.MaxHp);Core.StopTraversalForLanding();attackState=null;CancelAttackReservation();CardUseMessage="ラクカ / フッキ";CardUseMessageFrame=Core.Frame;return;}
             bool ground=Core.IsGrounded;
-            if(Core.IsWallSliding||Core.IsWallKicking&&Core.WallKickFrame==0)fallPeak=Core.Height;
+            if(Core.DidAirJumpThisFrame||Core.IsWallSliding||Core.IsWallKicking&&Core.WallKickFrame==0)fallPeak=Core.Height;
             fallPeak=Math.Max(fallPeak,Core.Height);
             if(ground&&!fallGrounded){
                 int damage=OutsideFallRules.Damage(fallPeak-Core.Height,Player.MaxHp);

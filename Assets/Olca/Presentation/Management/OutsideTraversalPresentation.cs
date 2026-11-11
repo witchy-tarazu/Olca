@@ -88,6 +88,7 @@ namespace Olca.Presentation.Exploration
             }
             if(movementGuideText.text.Length>0){
                 if(profile!=null&&profile.WallActionsUnlocked&&profile.Walls.Count>0)movementGuideText.text+="\nタイオウするカベ: ホウコウホジでスベル / ジャンプでケる";
+                if(profile?.DoubleJumpUnlocked==true)movementGuideText.text+="\nニダンジャンプ: クウチュウでオシナオシ（カリ カイホウ）";
                 if(profile?.FloorGaps.Count>0)movementGuideText.text+="\nカイフクのヒダリ: ラッカ フッキのシヨウアナ（カリ）";
                 if(core.DashCooldownRemaining>0)movementGuideText.text+="\nダッシュ マチ: "+(Math.Ceiling(core.DashCooldownRemaining/6d)/10d).ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+"s";
             }

@@ -10,6 +10,30 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        private static OutsideExplorationSession Air166(){var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationDoubleJump);s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;}
+        [TestCase(false)] [TestCase(true)] public void 二段ジャンプ使用済みは空中保存復元し再表示や冷起動で回数を戻さない(bool used)
+        {
+            using(var s=Air166()){
+                using(var view=s.AttachPresentation()){s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();s.Core.TickFrame(0);s.AdvancePlayerFrame();if(used){s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();}}
+                var data=s.CaptureRuntime();var bytes=PortableCheckpointJson.Serialize(data);data=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;
+                using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(actor,data,null,null,OutsideTraversalProfile.ValidationDoubleJump);Assert.AreEqual(used,cold.Core.AirJumpUsed);using(var view=cold.AttachPresentation()){cold.Core.TickFrame(0,true,true);cold.AdvancePlayerFrame();Assert.AreEqual(!used,cold.Core.DidAirJumpThisFrame);}}
+            }
+        }
+        [TestCase(-1L)] [TestCase(999999L)] public void 二段ジャンプの不正保存はliveを部分変更しない(long when)
+        {
+            using(var s=Air166()){var data=s.CaptureRuntime();data.Core.AirJumpAt=when;var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;long frame=s.Core.Frame;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,null,OutsideTraversalProfile.ValidationDoubleJump));Assert.AreEqual(frame,s.Core.Frame);Assert.IsFalse(s.Core.AirJumpUsed);}
+        }
+        [Test] public void 二段ジャンプは前の落下頂点を捨てPause非表示は時計を進めず着地硬直で再発動しない()
+        {
+            using(var s=Air166()){
+                using(var view=s.AttachPresentation()){
+                    s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();s.Core.TickFrame(0);s.AdvancePlayerFrame();typeof(OutsideExplorationSession).GetField("fallPeak",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(s,20L*60000);
+                    s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();Assert.AreEqual(s.Core.Height,(long)typeof(OutsideExplorationSession).GetField("fallPeak",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s));
+                    long frame=s.Core.Frame;Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(frame,s.Core.Frame);for(int n=0;n<200&&!s.Core.IsGrounded;n++){s.Core.TickFrame(0,jumpHeld:true);s.AdvancePlayerFrame();}Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsFalse(s.IsLandingLocked);
+                }
+                long stopped=s.Core.Frame;Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(stopped,s.Core.Frame);
+            }
+        }
         [Test] public void 穴のダッシュ残像の負高度も保存し旧地形では負残像を拒否する()
         {
             using(var s=Void165()){
