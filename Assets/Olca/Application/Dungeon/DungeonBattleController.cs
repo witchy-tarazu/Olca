@@ -357,9 +357,11 @@ namespace Olca.Application.Dungeon
         {
             public FloorSequenceDefinitions Floors;
             public CheckpointDefinitions Single;
+            public string DisplayName;
+            public IEvaluationRewardProvider Rewards;
             public string Id => Floors?.RouteId ?? Single.DungeonId;
             public string Key => Floors?.RouteHash ?? Single.MapHash;
-            public string Label => Map().DungeonName + (Floors == null ? "" : " / " + Id);
+            public string Label => DisplayName ?? Map().DungeonName + (Floors == null ? "" : " / " + Id);
             public DungeonConfig Map() => Floors?.CreateInitialMap(0) ?? Single.CreateInitialMap();
         }
                 private bool exchangeOpen;
@@ -486,6 +488,11 @@ namespace Olca.Application.Dungeon
         {string title=definition==OutsideSupplyDefinition.PoisonProvisional?"ドクケシバコ（カリ）":"ホキュウバコ（カリ）";string body=outsideSupplyMessages.TryGetValue(definition.Id,out var message)?message:clearReturnSession.HasClaimedOutsideSupply(definition.Id)?"ウケトリズミ":(definition==OutsideSupplyDefinition.PoisonProvisional?"ドクケシ":"カイフク")+definition.Count+"コ / ジョウゲン"+definition.Maximum+"\n"+(NearOutsideSupply(definition)?inputProvider.OutsideInteractionLabel+" デ ウケトル":"チカヅイテ シラベル");return title+"\n"+body;}
         private void BindOutsideSupply(){outsideSupplyMessages.Clear();var heal=OutsideSupplyDefinition.Provisional;var poison=OutsideSupplyDefinition.PoisonProvisional;outsideExploration.View.ConfigureSupply(()=>ClaimOutsideSupply(heal),()=>OutsideSupplyReady(heal),()=>OutsideSupplyMessage(heal));outsideExploration.View.ConfigurePoisonSupply(()=>ClaimOutsideSupply(poison),()=>OutsideSupplyReady(poison),()=>OutsideSupplyMessage(poison));}
 
+        private string outsideCardSupplyMessage;private int outsideCardSupplyAttemptFrame=-1;
+        private bool OutsideCardSupplyReady=>OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideCardSupplyAttemptFrame&&gameSystem.OutsideExploration.Player?.IsDead==false&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(gameSystem.OutsideExploration.Core)&&!clearReturnSession.HasClaimedOutsideSupply(Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId);
+        private void ClaimOutsideCardSupply(){if(!OutsideCardSupplyReady)return;outsideCardSupplyAttemptFrame=Time.frameCount;outsideExploration.Pump(false);outsideCardSupplyMessage=clearReturnSession.TryClaimTrialExplorationCards(ReturnSettings(),out var count,out var tokens,out var error)?"カード "+count+"マイ / チョウカ "+tokens+"トークン\nヘンセイチテンに モドって30マイへ":error;outsideExploration.View.Render();}
+        private void BindOutsideCardSupply(){outsideCardSupplyMessage=null;outsideExploration.View.ConfigureCardSupply(ClaimOutsideCardSupply,()=>OutsideCardSupplyReady,()=>"シヨウ カードバコ（カリ）\n"+(outsideCardSupplyMessage??(clearReturnSession.HasClaimedOutsideSupply(Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId)?"ウケトリズミ":"ソード★4 / ボム★4 / ソード★★2\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ ウケトル":"チカヅイテ シラベル"))));}
+
         private string outsideTrialPoisonMessage;private int outsideTrialPoisonAttemptFrame=-1;
         private bool OutsideTrialPoisonReady=>OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideTrialPoisonAttemptFrame&&gameSystem.OutsideExploration.CanTryTrialPoison;
         private void ApplyOutsideTrialPoison()
@@ -556,7 +563,7 @@ namespace Olca.Application.Dungeon
             if(outsideWheel==null)outsideWheel=panelFactory.Component<Olca.Presentation.Management.OutsideKamuiWheelDialog>("OutsideKamuiWheelDialog",v=>v.Initialize(panelFactory.Font));
             var owner=context;long epoch=++outsideWheelEpoch;
             System.Func<bool> alive=()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner);
-            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen;
+            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen&&!gameSystem.OutsideExploration.IsLandingLocked;
             if(pcOpen){outsideWheelInputOwner=OutsideWheelInputOwner.Pc;outsideWheelKeyboard=keyboard;
                 string label=inputProvider.KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null?key:"ミワリアテ";
                 outsideWheel.OpenPc(gameSystem.Dialogs,owner,alive,allowed,value=>SetOutsideWheelPaused(epoch,value),pc,label);
@@ -571,30 +578,41 @@ namespace Olca.Application.Dungeon
             if(gameSystem==null||(!OutsideHubEligible&&!CanRestoreOutsideRecovery)||(!CanSelectDungeon&&!CanRestoreOutsideRecovery&&outsideExploration?.HasLostView!=true)||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             outsideDepartureError=null;outsideExplorationOpening=true;ResetOutsideRouteInput();
             try{
-                try{gameSystem.OutsideExploration.RestoreSavedState(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true):null);gameSystem.OutsideExploration.RestoreItemCooldowns(clearReturnSession.Snapshot.OutsideItemState,clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
+                try{gameSystem.OutsideExploration.RestoreForPresentation(clearReturnSession.Snapshot.OutsidePlayerSave,clearReturnSession.Snapshot.OutsideRuntimeSave,clearReturnSession.Snapshot.OutsideRecoveryPointId,memoryCheckpoints?.Definitions,outsideLandingRoute&&gameSystem.OutsideExploration.Core.Frame==0?Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveTraversal(clearReturnSession.Snapshot.OutsideRuntimeSave):null,clearReturnSession.Snapshot.OutsideItemState);}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){clearReturnError=e.Message;ShowClearReturn();return;}
                 if(outsideExploration==null){var services=gameSystem;var font=panelFactory.GameplayFont;
                     // 製品の特殊アイテム解放ではない、通常導線から触れる明示試走。進行済みSessionは付け替えない。
                     if(services.OutsideExploration.Player==null){try{Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(services.OutsideExploration.Core,clearReturnSession.Snapshot.OutsideRecoveryPointId);}catch(System.ArgumentException e){clearReturnError=e.Message;ShowDungeonSelection();return;}}
                     if(services.OutsideExploration.TryInitializePlayer(()=>CreateCoreFactory().CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames)))services.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);
-                    if(outsideLandingRoute&&services.OutsideExploration.Core.Frame==0&&!services.OutsideExploration.IsPresented)services.OutsideExploration.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true));
+                    if(outsideLandingRoute&&services.OutsideExploration.Core.Frame==0&&!services.OutsideExploration.IsPresented)services.OutsideExploration.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveTraversal(clearReturnSession.Snapshot.OutsideRuntimeSave));
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources);panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>().ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);return System.Threading.Tasks.Task.FromResult(panel);},
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
                         ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
                 }
+                try{PrepareSelectedExplorationDeck();}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){outsideDepartureError=e.Message;outsideExplorationOpening=false;ShowDungeonSelection();return;}
                 var result=await outsideExploration.OpenAsync();
-                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideTrialPoison();}
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
+        }
+        private bool CanManageExplorationDeck=>gameSystem!=null&&OutsideHubEligible&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanEditDeck(gameSystem.OutsideExploration.Core);
+        private void PrepareSelectedExplorationDeck()
+        {
+            using(var decks=new ExplorationDeckSession(gameSystemSession.Storage.ExplorationDecks(clearReturnSession.Snapshot.CheckpointGeneration))){
+                if(!decks.Ready)throw new System.ArgumentException(decks.Error??"探索デッキ保存を確認できません");
+                var profile=decks.Snapshot;var selected=profile.Decks.SingleOrDefault(d=>d.Id==profile.SelectedDeckId);var owned=clearReturnSession.Snapshot;Card[] cards=null;string key=null;
+                if(profile.SelectedDeckId!=null){if(selected==null)throw new System.ArgumentException("使用中デッキがありません");if(!ExplorationDeckRules.TryValidate(owned,selected,out var error))throw new System.ArgumentException(error);cards=selected.Cards.Select(slot=>{var row=OwnedDefinition.Resolve(owned,slot);if(row==null||!ResolveOwnedDefinition(row,out var card))throw new System.ArgumentException("使用中デッキのカード定義が未解決です");return card;}).ToArray();key=selected.Id;}
+                if(!gameSystem.OutsideExploration.QueueSelectedDeck(key,cards,owned==null?null:OwnedDefinition.AggregateCounts(owned),new Olca.Core.Logic.Battle.SeededBattleRandom(unchecked((uint)System.Guid.NewGuid().GetHashCode())),out var failure))throw new System.ArgumentException(failure);
+            }
         }
         private Olca.Application.Management.ExplorationDeckLibrary explorationDeckLibrary;
         private void OpenExplorationDeckLibrary()
         {
-            if(gameSystem==null||!CanSelectDungeon||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
+            if(!CanManageExplorationDeck||!CanSelectDungeon||styleSelectionOpen||exchangeOpen||gameSystem.Dialogs.ActiveCount!=0)return;
             if(explorationDeckLibrary==null)explorationDeckLibrary=new Olca.Application.Management.ExplorationDeckLibrary(hostPanels,gameSystem.Views,gameSystem.Dialogs,panelFactory,
                 ()=>gameSystemSession.Storage.ExplorationDecks(clearReturnSession.Snapshot.CheckpointGeneration),()=>clearReturnSession.Snapshot,
                 row=>ResolveOwnedDefinition(row,out var card)?card:null,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,
-                ()=>CustomizationUiLive&&clearReturnVisible&&!IsUserPaused&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned),()=>{outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("ExplorationDeckEntry");});
+                ()=>CustomizationUiLive&&CanManageExplorationDeck&&clearReturnVisible&&!IsUserPaused&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned),()=>{outsideDepartureError=null;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();ShowDungeonSelection();clearReturnView.FocusMenuControl("ExplorationDeckEntry");});
             ResetOutsideRouteInput();explorationDeckLibrary.Open();
         }
         private bool CanSelectDungeon => !departureQuoteOpen && explorationDeckLibrary?.IsOpen!=true && !OutsideRouteBusy && !CustomizationAcquisitionOpen && !CustomizationEditorOpen && !CustomizationUnlockOpen && !progressDialogOpen && clearReturnVisible && !collectionOpen && !ownedDepartureEditing && !savedDeckMenuOpen &&
@@ -623,7 +641,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,gameSystem!=null?(System.Action)OpenExplorationDeckLibrary:null);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
@@ -1785,7 +1803,7 @@ namespace Olca.Application.Dungeon
                     outsideDepartureError=null;
                     var frozen = choice.Floors?.CreateDepartureSession() ?? new DungeonCheckpointSession(choice.Single, new MemoryCheckpointStore(choice.Single));
                     frozen.BindDepartureTerms(terms?.Key());
-                    var factory = CreateCoreFactory();
+                    var factory = CreateCoreFactory(rewardChoice:choice);
                     var player = factory.CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames);
                     player.SetDepartureStyle(style);
                     ApplyDepartureCustomization(player);
@@ -1824,14 +1842,14 @@ namespace Olca.Application.Dungeon
                 route = new FloorSequenceSession(choice.Floors, routeStore);
                 if (!route.TryLoad(out error) || route.Current.State.Snapshot.RunId != plan.Start.RunId) { error = error ?? "攻略IDが一致しません"; return false; }
                 if (route.Current.State.Snapshot.Boundary == CheckpointBoundary.Terminal) { error = "終了済み攻略を上書きしません"; return false; }
-                next = CreateFloorManager(route, out session, choice.Floors);
+                next = CreateFloorManager(route, out session, choice.Floors,choice);
             } else {
                 var defs = choice.Single;
                 var store = new FileCheckpointStore(defs, ActiveCheckpointDirectory, nextDepartureIo);
                 if (!store.HasExistingData && !store.TryWrite(plan.Start, out error)) return false;
                 var saved = store.Read(); if (saved == null || saved.RunId != plan.Start.RunId) { error = store.ReadError ?? "攻略IDが一致しません"; return false; }
                 session = new DungeonCheckpointSession(defs, store);
-                if (!CreateCoreFactory().TryRestore(session,out next,out error)) return false;
+                if (!CreateCoreFactory(rewardChoice:choice).TryRestore(session,out next,out error)) return false;
             }
             // 新攻略の保存と復元が成功してから、旧帰還画面・モデルを交換する。
             if (manager.CurrentPhase != GamePhase.DungeonCleared && manager.CurrentPhase != GamePhase.GameOver) manager.SuspendForCheckpoint();
@@ -2086,13 +2104,40 @@ namespace Olca.Application.Dungeon
                 if (found >= 0) { selectedDungeon = found; floorDefinitions = dungeonChoices[found].Floors; }
             }
             var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
+            if(enemyAIProvider==null&&dungeonChoices==null&&configuredDungeon==null&&floorDefinitions==null&&configuredDepartureDeck==null)
+                enemyAIProvider=Olca.Application.Management.DungeonCoreFactory.CreateTrialCardEnemyAI();
             var coreFactory = CreateCoreFactory();
             var playerCharacter = coreFactory.CreatePlayer(ReturnSettings(),persistentLevel,battleStaggerFrames,playerPoiseRecoveryFrames);
             var processing = coreFactory.CreateProcessing();
             var cardFactory = processing.Cards;
 
             var initialDeck = CreateInitialDeck();
+            CheckpointDefinitions preparedSingle=null;
+            // 保存ストアを選ぶ前に全候補を登録する。旧Singleを階層列で包み直さない。
+            if(dungeonChoices==null&&configuredDungeon==null&&floorDefinitions==null&&configuredDepartureDeck==null){
+                preparedSingle=CreateSingleDefinitions(dungeonConfig,initialDeck);
+                var trial=Olca.Application.Management.DungeonCoreFactory.CreateTrialRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                var cardTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialCardRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                var rewardTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                var shopTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialShopRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"},new DungeonChoice{Floors=rewardTrial,DisplayName="シヨウ カードホウシュウ（カリ）",Rewards=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardProvider(cardFactory)},new DungeonChoice{Floors=shopTrial,DisplayName="シヨウ ショップ（カリ）"}};
+                var selected=savedPlan==null?null:dungeonChoices.FirstOrDefault(c=>c.Key==savedPlan.DefinitionKey);
+                if(selected?.Floors!=null){floorDefinitions=selected.Floors;dungeonConfig=floorDefinitions.CreateInitialMap(0);selectedDungeon=dungeonChoices.IndexOf(selected);}
+
+            }
             RegisterLegacyDeparture(initialDeck);
+            if(preparedSingle!=null){
+                if(savedPlan!=null&&!dungeonChoices.Concat(knownLegacyDungeons).Any(c=>c.Key==savedPlan.DefinitionKey&&ValidateDeparture(savedPlan.Start,c,out _))){progressStartupBlocked=true;clearReturnError="シュツゲキケイカクのテイギがイッチしません。キゾンデータはヘンコウしていません。";}
+                if(savedPlan==null){bool unclaimed;string routeError;if(!FloorSequenceFileStore.TryFindUnclaimedRunFloors(ProgressCheckpointRoot,clearReturnSession.Snapshot.Receipts.Select(v=>v.RunId),out unclaimed,out routeError)||unclaimed){progressStartupBlocked=true;clearReturnError=routeError??"カイソウのホゾンにタイオウするシュツゲキケイカクがありません。キゾンデータはヘンコウしていません。";}}
+            }
             if (floorDefinitions != null)
             {
                 floorStore = new FloorSequenceFileStore(floorDefinitions, ActiveCheckpointDirectory);
@@ -2102,7 +2147,7 @@ namespace Olca.Application.Dungeon
             }
             else
             {
-                var definitions = CreateSingleDefinitions(dungeonConfig, initialDeck);
+                var definitions = preparedSingle ?? CreateSingleDefinitions(dungeonConfig, initialDeck);
                 nextDepartureDefinitions = definitions; // 旧攻略の再開定義と、新規出撃の現在定義を分ける。
                 var store = new FileCheckpointStore(definitions, ActiveCheckpointDirectory);
                 if (store.HasExistingData && store.Read() == null)
@@ -2141,11 +2186,13 @@ namespace Olca.Application.Dungeon
             initialHub = dungeonSelectionEnabled && clearReturnSession.Ready && clearReturnSession.Snapshot.Flow == null &&
                 savedPlan == null && !awaitingCheckpointChoice;
             bool waitingReturn=clearReturnSession.Snapshot?.Flow?.Stage==ClearReturnStage.Returned&&(clearReturnSession.Snapshot.NextDeparture==null||outsideLandingRoute&&!HasPreparedOutsideDeparture);
+            if(outsideLandingRoute&&clearReturnSession.Ready)gameSystem?.OutsideExploration.ClassifyStartupRestore(
+                (initialHub||waitingReturn)&&!HasPreparedOutsideDeparture&&!HasIncompleteReturn&&!progressStartupBlocked&&!clearReturnSession.HasPendingSave&&clearReturnSession.Snapshot.OutsidePlayerSave!=null);
             // 既存攻略は保存済み能力を復元する。現在の製品登録を遡及適用しない。
             if(!awaitingCheckpointChoice&&savedPlan==null&&!waitingReturn&&!HasIncompleteReturn&&!progressStartupBlocked){
                 try{ApplyDepartureCustomization(playerCharacter);}catch(System.ArgumentException e){progressStartupBlocked=true;clearReturnError=e.Message;}
             }
-            var launchFactory = CreateCoreFactory(waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null);
+            var launchFactory = CreateCoreFactory(waitingReturn||initialHub||awaitingCheckpointChoice||progressStartupBlocked||HasIncompleteReturn||clearReturnSession.Snapshot.NextDeparture!=null,RewardChoiceFor(floorDefinitions?.RouteHash??memoryCheckpoints?.Definitions.MapHash));
             manager = runtimeSession.CreateDungeon(() => launchFactory.Create(new Olca.Application.Management.DungeonCoreFactory.Launch {
                 Map=dungeonConfig,Player=playerCharacter,Deck=initialDeck,ProcessingSystems=processing,
                 Checkpoints=waitingReturn || initialHub || awaitingCheckpointChoice || progressStartupBlocked || HasIncompleteReturn || clearReturnSession.Snapshot.NextDeparture != null
@@ -2236,6 +2283,7 @@ namespace Olca.Application.Dungeon
                 if(OutsideTrialPoisonReady&&inspect){ApplyOutsideTrialPoison();return;}
                 if(OutsideRecoveryReady&&inspect){UseOutsideRecovery();return;}
                 if(inspect)foreach(var supply in outsideSupplies)if(OutsideSupplyReady(supply)){ClaimOutsideSupply(supply);return;}
+                if(OutsideCardSupplyReady&&inspect){ClaimOutsideCardSupply();return;}
                 if(OutsideEntranceReady&&inspect){EnterOutsideDungeon();return;}
                 outsideExploration?.Pump(!IsUserPaused&&!outsideWheelPaused&&!outsideRecoveryPending&&!progressStartupBlocked&&Time.timeScale>0);
                 if(IsUserPaused)RefreshSystemMenu();else{systemMenu?.Suspend();systemMenuRoot=null;}
@@ -2389,6 +2437,8 @@ namespace Olca.Application.Dungeon
                     break;
 
                 case GamePhase.CardReward:
+                    // 戦闘で変化したHPを報酬中にも反映し、接敵前の値を残さない。
+                    RefreshDungeonHud();
                     break;
             }
         }
@@ -2740,8 +2790,9 @@ namespace Olca.Application.Dungeon
             _ = new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: timings);
             configuredCardTimings = timings.ToDictionary(entry => entry.Key, entry => entry.Value);
         }
-        private Olca.Application.Management.DungeonCoreFactory CreateCoreFactory(bool suppressEvaluation=false)
-            => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider);
+        private DungeonChoice RewardChoiceFor(string key)=>key==null||dungeonChoices==null?null:dungeonChoices.Concat(knownLegacyDungeons).FirstOrDefault(c=>c.Key==key);
+        private Olca.Application.Management.DungeonCoreFactory CreateCoreFactory(bool suppressEvaluation=false,DungeonChoice rewardChoice=null)
+            => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider??rewardChoice?.Rewards);
         private SimpleCardFactory CreateCardFactory()
             => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 
@@ -2810,9 +2861,9 @@ namespace Olca.Application.Dungeon
         }
         private void OnFloorCompleted() { floorSwapPending = true; }
 
-        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session, FloorSequenceDefinitions definitions = null)
+        private DungeonBattleManager CreateFloorManager(FloorSequenceSession route, out DungeonCheckpointSession session, FloorSequenceDefinitions definitions = null,DungeonChoice rewardChoice=null)
         {
-            return CreateCoreFactory().CreateFloor(route,definitions??floorDefinitions,out session);
+            return CreateCoreFactory(rewardChoice:rewardChoice??RewardChoiceFor((definitions??floorDefinitions)?.RouteHash)).CreateFloor(route,definitions??floorDefinitions,out session);
         }
 
         private void ApplyPendingFloor()
@@ -2831,7 +2882,7 @@ namespace Olca.Application.Dungeon
             error = null;
             if (manager == null || memoryCheckpoints == null || manager.Dungeon.IsCheckpointBlocked)
             { error = "保存が未完了です"; return false; }
-            var flow=new Olca.Application.Management.DungeonCheckpointFlow(CreateCoreFactory());
+            var flow=new Olca.Application.Management.DungeonCheckpointFlow(CreateCoreFactory(rewardChoice:RewardChoiceFor(floorDefinitions?.RouteHash??memoryCheckpoints.Definitions.MapHash)));
             if(!flow.TryPrepare(memoryCheckpoints,floorDefinitions,floorStore,()=>clearReturnSession?.Snapshot?.Receipts,out var prepared,out error))return false;
             var restored=prepared.Core;var candidate=prepared.Checkpoint;var loadedRoute=prepared.Route;
             if (!manager.SuspendForCheckpoint()) { error = "現在の攻略は再開できません"; return false; }

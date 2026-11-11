@@ -43,7 +43,7 @@ namespace Olca.Tests
         public void 旧設定のアイテム4枠だけを補完し競合は既存を優先して未割当にし原本を変更しない(bool gamepad)
         {
             var defaults=gamepad?UnityInputProvider.CreateDefaultGamepadProfile():UnityInputProvider.CreateDefaultKeyboardProfile();string device=gamepad?"gamepad":"keyboard";
-            var old=defaults.Bindings.Where(p=>p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)).ToDictionary(p=>p.Key,p=>p.Value);
+            var old=defaults.Bindings.Where(p=>p.Key.Context!="outside"||(!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)&&p.Key.Action!="CardPrimary")).ToDictionary(p=>p.Key,p=>p.Value);
             var occupied=gamepad?(device,"outside","WheelPrimary"):(device,"exploration","JumpPrimary");old[occupied]=gamepad?"DpadUp":"Digit1";var before=old.ToArray();var upgraded=UnityInputProvider.DecodeSelectionSlots(old,gamepad);
             CollectionAssert.AreEquivalent(before,old);foreach(var pair in old)Assert.AreEqual(pair.Value,upgraded.Bindings[pair.Key]);Assert.IsNull(upgraded.Bindings[(device,"outside","ItemUp")]);Assert.AreEqual(gamepad?"DpadRight":"Digit2",upgraded.Bindings[(device,"outside","ItemRight")]);
             var partial=upgraded.Bindings.ToDictionary(p=>p.Key,p=>p.Value);partial.Remove((device,"outside","ItemRight"));Assert.Throws<InvalidDataException>(()=>UnityInputProvider.DecodeSelectionSlots(partial,gamepad));
@@ -135,7 +135,7 @@ namespace Olca.Tests
         [TestCase(false)][TestCase(true)] public void PCホイールの旧設定補完は旧割当と原本を守りTab競合時だけ新slotを空にする(bool collision)
         {
             var current=UnityInputProvider.CreateDefaultKeyboardProfile();var wheel=("keyboard","outside","WheelPrimary");Assert.AreEqual("Tab",current.Bindings[wheel]);
-            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel&&(p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)))old.Add(p.Key,p.Value);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel&&(p.Key.Context!="outside"||(!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)&&p.Key.Action!="CardPrimary")))old.Add(p.Key,p.Value);
             if(collision)old[("keyboard","exploration","DashSecondary")]="Tab";
             var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);var loaded=UnityInputProvider.DecodeSelectionSlots(old,false);
             CollectionAssert.AreEquivalent(before,old);foreach(var p in before)Assert.AreEqual(p.Value,loaded.Bindings[p.Key]);Assert.AreEqual(collision?null:"Tab",loaded.Bindings[wheel]);
@@ -263,7 +263,7 @@ namespace Olca.Tests
         [TestCase(false)][TestCase(true)] public void 外界ホイールslot追加は既存LB割当を奪わず完全な旧形式だけ補完する(bool collision)
         {
             var current=UnityInputProvider.CreateDefaultGamepadProfile();var wheel=("gamepad","outside","WheelPrimary");Assert.AreEqual("LeftShoulder",current.Bindings[wheel]);
-            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel&&(p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)))old.Add(p.Key,p.Value);
+            var old=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>();foreach(var p in current.Bindings)if(p.Key!=wheel&&(p.Key.Context!="outside"||(!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)&&p.Key.Action!="CardPrimary")))old.Add(p.Key,p.Value);
             if(collision)old[("gamepad","outside","DashPrimary")]="LeftShoulder";
             var before=new System.Collections.Generic.Dictionary<(string Device,string Context,string Action),string>(old);var loaded=UnityInputProvider.DecodeSelectionSlots(old,true);
             foreach(var p in before)Assert.AreEqual(p.Value,loaded.Bindings[p.Key]);CollectionAssert.AreEquivalent(before,old);Assert.AreEqual(collision?null:"LeftShoulder",loaded.Bindings[wheel]);
@@ -271,7 +271,7 @@ namespace Olca.Tests
             var edit=current.BeginEdit();Assert.IsFalse(edit.TryAssign(wheel,"South",out _),"JumpとDecideの複数競合を原子的に拒否");CollectionAssert.AreEquivalent(current.Bindings,edit.Draft);
             Assert.IsTrue(edit.TryAssign(wheel,"RightShoulder",out var error),error);Assert.AreEqual("LeftShoulder",edit.Draft[("gamepad","outside","DashPrimary")]);Assert.AreEqual("RightShoulder",edit.Draft[("gamepad","battle","CardPrimary")]);
             edit=current.BeginEdit();Assert.IsFalse(edit.TryAssign(("gamepad","menu","Decide"),"LeftShoulder",out _));CollectionAssert.AreEquivalent(current.Bindings,edit.Draft);
-            var menu=UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();Assert.IsTrue(menu.TryAssign(("gamepad","menu","Decide"),"RightStick",out _));var customized=menu.Draft.Where(p=>p.Key.Context!="outside"||!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)).ToDictionary(p=>p.Key,p=>p.Value);customized.Remove(wheel);customized[("gamepad","menu","Decide")]="LeftShoulder";customized[("gamepad","menu","PageUp")]="RightStick";
+            var menu=UnityInputProvider.CreateDefaultGamepadProfile().BeginEdit();Assert.IsTrue(menu.TryAssign(("gamepad","menu","Decide"),"RightStick",out _));var customized=menu.Draft.Where(p=>p.Key.Context!="outside"||(!p.Key.Action.StartsWith("Item",StringComparison.Ordinal)&&p.Key.Action!="CardPrimary")).ToDictionary(p=>p.Key,p=>p.Value);customized.Remove(wheel);customized[("gamepad","menu","Decide")]="LeftShoulder";customized[("gamepad","menu","PageUp")]="RightStick";
             loaded=UnityInputProvider.DecodeSelectionSlots(customized,true);Assert.IsNull(loaded.Bindings[wheel]);Assert.AreEqual("LeftShoulder",loaded.Bindings[("gamepad","menu","Decide")]);
         }
         [Test] public void 神依ホイールraw入力は開始Padを固定し停止snapshot中も解放と確定を読みBで確定しない()

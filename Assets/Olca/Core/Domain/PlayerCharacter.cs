@@ -167,6 +167,8 @@ namespace Olca.Core.Domain
         public int ParalysisRemainingFrames => paralysisTimer.Frames;
         public bool IsParalyzed => !IsDead && (paralysisFrameOpen ? frameParalyzed : paralysisTimer.IsActive);
         public bool IsActionPrevented => IsStaggered || IsParalyzed;
+        /// <summary>移動更新前の照会。次frame冒頭と同じ解除優先で判定し、状態や時計は変更しない。</summary>
+        internal bool IsMovementPreventedNextFrame => !IsDead && (staggerTimer.IsActive || !clearParalysisPending && (pendingParalysisFrames.HasValue ? pendingParalysisFrames.Value > 0 : paralysisTimer.IsActive));
         internal bool HasParalysisState => paralysisTimer.IsActive || pendingParalysisFrames.HasValue || clearParalysisPending || frameParalyzed;
         /// <summary>外部で確定した有効期間を予約する。付与フレームには行動を中断しない。</summary>
         public void ApplyParalysis(int durationFrames)
@@ -582,6 +584,8 @@ namespace Olca.Core.Domain
         }
 
         /// <summary>拘束障害物の確定量。被弾無敵・防御・強靭度を経由せず、毒のHP1制限も付けない。</summary>
+        internal void TakeFallDamage(int damage)=>TakeObstacleDamage(damage);
+
         internal void TakeObstacleDamage(int damage)
         {
             if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));

@@ -229,15 +229,27 @@ namespace Olca.Presentation.Management
         public GameObject Reward(bool currency,out Text message,out Button receive)
         {
             var panel=Panel(currency?"CurrencyRewardPanel":"ItemRewardPanel",true);
-            message=Label(currency?"CurrencyRewardText":"ItemRewardText",panel.transform,new Vector2(.5f,.5f),new Vector2(0,100),currency?new Vector2(1000,180):new Vector2(1200,220));
-            receive=Button(currency?"ReceiveCurrencyButton":"ReceiveItemReward","ウケトル",panel.transform,new Vector2(.5f,.5f),new Vector2(-240,currency?-80:-100));
-            Button(currency?"SkipCurrencyButton":"SkipItemReward","スキップ",panel.transform,new Vector2(.5f,.5f),new Vector2(240,currency?-80:-100));
+            // 読取面の内側は背面文字を遮り、外縁には既存水鏡の透明なベベルを残す。
+            panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
+            var backing=new GameObject("RewardReadingBacking",typeof(RectTransform),typeof(Image));backing.transform.SetParent(panel.transform,false);
+            ((RectTransform)backing.transform).sizeDelta=new Vector2(1456,656);backing.GetComponent<Image>().color=new Color(.025f,.075f,.105f,1f);backing.GetComponent<Image>().raycastTarget=false;
+            var surface=new GameObject("RewardReadingSurface",typeof(RectTransform),typeof(Image));surface.transform.SetParent(panel.transform,false);
+            ((RectTransform)surface.transform).sizeDelta=new Vector2(1480,680);var face=surface.GetComponent<Image>();face.sprite=Resources.Load<Sprite>("OlcaUI/description");face.type=Image.Type.Sliced;face.color=face.sprite!=null?Color.white:new Color(.025f,.075f,.105f,1f);face.raycastTarget=false;
+            message=Label(currency?"CurrencyRewardText":"ItemRewardText",panel.transform,new Vector2(.5f,.5f),new Vector2(0,80),new Vector2(1280,320));message.fontSize=40;message.color=new Color(.94f,.99f,1f,1f);
+            receive=Button(currency?"ReceiveCurrencyButton":"ReceiveItemReward","ウケトル",panel.transform,new Vector2(.5f,.5f),new Vector2(-280,-190));
+            var skip=Button(currency?"SkipCurrencyButton":"SkipItemReward","スキップ",panel.transform,new Vector2(.5f,.5f),new Vector2(280,-190));
+            foreach(var button in new[]{receive,skip}){((RectTransform)button.transform).sizeDelta=new Vector2(420,100);var label=button.GetComponentInChildren<Text>();label.fontSize=34;label.rectTransform.offsetMin=new Vector2(20,8);label.rectTransform.offsetMax=new Vector2(-20,-8);}
             Button(currency?"PauseCurrencyReward":"PauseItemReward","ポーズ",panel.transform,Vector2.one,new Vector2(-120,-60));return panel;
         }
         public GameObject Checkpoint(out Text message,out Button resume,out Button retry)
         {
-            var panel=Panel("CheckpointOverlay",true);
-            message=Label("CheckpointMessage",panel.transform,new Vector2(.5f,.5f),new Vector2(0,90),new Vector2(1360,560));message.horizontalOverflow=HorizontalWrapMode.Wrap;
+            var panel=Panel("CheckpointOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
+            // 再開・保存失敗の案内は背面HUDを遮った読取面に載せる。操作位置は変えない。
+            var backing=new GameObject("CheckpointReadingBacking",typeof(RectTransform),typeof(Image));backing.transform.SetParent(panel.transform,false);
+            ((RectTransform)backing.transform).sizeDelta=new Vector2(1456,826);backing.GetComponent<Image>().color=new Color(.025f,.075f,.105f,1f);backing.GetComponent<Image>().raycastTarget=false;
+            var surface=new GameObject("CheckpointReadingSurface",typeof(RectTransform),typeof(Image));surface.transform.SetParent(panel.transform,false);
+            ((RectTransform)surface.transform).sizeDelta=new Vector2(1480,850);var face=surface.GetComponent<Image>();face.sprite=Resources.Load<Sprite>("OlcaUI/description");face.type=Image.Type.Sliced;face.color=face.sprite!=null?Color.white:new Color(.025f,.075f,.105f,1f);face.raycastTarget=false;
+            message=Label("CheckpointMessage",panel.transform,new Vector2(.5f,.5f),new Vector2(0,90),new Vector2(1360,560));message.horizontalOverflow=HorizontalWrapMode.Wrap;message.color=new Color(.94f,.99f,1f,1f);
             resume=Button("ContinueCheckpointButton","続きから",panel.transform,new Vector2(.5f,.5f),new Vector2(0,-270));
             retry=Button("RetryCheckpointButton","保存を再試行",panel.transform,new Vector2(.5f,.5f),new Vector2(0,-270));((RectTransform)retry.transform).sizeDelta=new Vector2(320,70);return panel;
         }

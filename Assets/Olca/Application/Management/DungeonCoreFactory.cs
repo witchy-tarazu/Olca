@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Olca.Application.Battle;
 using Olca.Core.Domain;
 using Olca.Core.Interfaces;
@@ -57,6 +59,89 @@ namespace Olca.Application.Management
         {
             var p=CreateProcessing();
             return DungeonBattleManager.TryRestoreCheckpoint(checkpoint,random,logger,out manager,out error,p.Exceed,p.Tuning,p.Fusion,p.Cards,enemyAIProvider:enemies,evaluationRewards:rewards);
+        }
+        /// <summary>通常入口で試せる暫定配置。既存SingleのID/hash/性能を置換しない。</summary>
+        public static FloorSequenceDefinitions CreateTrialRoute(CheckpointDefinitions cardCatalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            if(cardCatalog==null||cards==null)throw new ArgumentNullException();
+            DungeonConfig Floor(int index,int count,bool final){
+                var cells=new List<MapCell>();
+                for(int i=0;i<count;i++){
+                    Enemy enemy=null;
+                    if(final&&i==count-1)enemy=new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(i,0),poiseDefinition:boss);
+                    else if(i==3||i==9)enemy=new Enemy("enemy_"+i,"スライム",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal);
+                    cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+                }
+                // 階層数・配置は試用。回復量と敵性能は既存定義を借用する。
+                var recovery=new DungeonVisitDefinition(6,false,new[]{new DungeonVisitOption("recover",0,heal:cards.CreateById(SimpleCardFactory.Heal).Power)},1);
+                return new DungeonConfig("trial-floor-"+index,"シヨウ "+index+"/2（カリ）",count,cells,visits:new[]{recovery});
+            }
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-two-floor-v1","trial-v1",new[]{Floor(1,14,false),Floor(2,18,true)},cardCatalog);
+        }
+        // 新IDの試用定義だけを登録する。変更時は敵IDとroute revisionを新しくし、旧攻略へ上書きしない。
+        public const string TrialSwordEnemyId="trial-sword-slime-v1",TrialBombEnemyId="trial-bomb-slime-v1";
+        public static IEnemyAIProvider CreateTrialCardEnemyAI()
+        {
+            EnemyAIRegistration Definition(Olca.Core.Logic.CardEffects.ICardDatabase database,string id){
+                var card=database?.GetCardById(id)??throw new InvalidOperationException("試用敵のカード定義がありません");
+                // 登録factory内で行動を毎回生成。隣接を待つStayは0、カード終了後の待ちは既存2秒を暫定借用。
+                return new EnemyAIRegistration(new[]{new EnemyActionPattern(0,EnemyActionPatternSamples.Slime(card,2000,database),EnemyPatternEndMode.Loop)},0);
+            }
+            return new EnemyAIRegistry(new Dictionary<string,Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{
+                [TrialSwordEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Sword),[TrialBombEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Bomb)});
+        }
+        public static FloorSequenceDefinitions CreateTrialCardRoute(CheckpointDefinitions cardCatalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            if(cardCatalog==null||cards==null)throw new ArgumentNullException();
+            var cells=new List<MapCell>();for(int i=0;i<14;i++){
+                Enemy enemy=i==3?new Enemy(TrialSwordEnemyId,"ソードスライム（カリ）",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):
+                    i==9?new Enemy(TrialBombEnemyId,"ボムスライム（カリ）",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):
+                    i==13?new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(i,0),poiseDefinition:boss):null;
+                cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+            }
+            var recovery=new DungeonVisitDefinition(6,false,new[]{new DungeonVisitOption("recover",0,heal:cards.CreateById(SimpleCardFactory.Heal).Power)},1);
+            var map=new DungeonConfig("trial-card-floor-v1","シヨウ テキカード（カリ）",14,cells,visits:new[]{recovery});
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-card-actions-v1","trial-card-v1",new[]{map},cardCatalog);
+        }
+        public const string TrialRewardMapId="trial-reward-floor-v1";
+        /// <summary>旧試用を上書きしない、新しい実カード入手表の試走。</summary>
+        public static FloorSequenceDefinitions CreateTrialRewardRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            var source=CreateTrialCardRoute(catalog,cards,normal,boss).CreateInitialMap(0);
+            var map=new DungeonConfig(TrialRewardMapId,"シヨウ カードホウシュウ（カリ）",source.TotalCellCount,source.MapCells,visits:source.Visits);
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-card-rewards-v1","trial-reward-v1",new[]{map},catalog);
+        }
+        /// <summary>既存攻略を置換しない、攻略中通貨とショップ操作の明示的な試用配置。</summary>
+        public static FloorSequenceDefinitions CreateTrialShopRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            var source=CreateTrialCardRoute(catalog,cards,normal,boss).CreateInitialMap(0);
+            // 価格3/3/2/1、4候補中3枠、セル6は試用値。既存戦闘後の通貨10で試せる範囲にする。
+            var shop=new DungeonVisitDefinition(6,true,new[]{
+                new DungeonVisitOption("sword",3,cards.CreateById(SimpleCardFactory.Sword)),
+                new DungeonVisitOption("heal-card",3,cards.CreateById(SimpleCardFactory.Heal)),
+                new DungeonVisitOption("heal-now",2,heal:cards.CreateById(SimpleCardFactory.Heal).Power),
+                new DungeonVisitOption("remove-one",1,removeCount:1)},3);
+            var map=new DungeonConfig("trial-shop-floor-v1","シヨウ ショップ（カリ）",source.TotalCellCount,source.MapCells,visits:new[]{shop});
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-shop-v1","trial-shop-v1",new[]{map},catalog);
+        }
+        public static IEvaluationRewardProvider CreateTrialRewardProvider(SimpleCardFactory cards)=>new TrialRewardProvider(cards);
+        private sealed class TrialRewardProvider:IEvaluationRewardProvider
+        {
+            private readonly ICardPool pool;
+            public TrialRewardProvider(SimpleCardFactory cards){pool=new TrialCardPool(cards??throw new ArgumentNullException(nameof(cards)));}
+            public EvaluationRewardDefinition Resolve(BattleRewardContext context)
+            {
+                if(context==null||context.DungeonId!=TrialRewardMapId||context.HasNextFloor)throw new ArgumentException("試用報酬の対象マップが一致しません");
+                // 製品の評価差を仮決定しない。全帯を既存50%/同額・等重みの暫定入手表に揃える。
+                return new EvaluationRewardDefinition("trial-card-rewards-v1",Enumerable.Range(0,4).Select(_=>new EvaluationRewardBand(pool,5000,0,Array.Empty<int>(),context.BaseCurrencyAmounts)));
+            }
+        }
+        private sealed class TrialCardPool:ICardPool
+        {
+            private readonly Card[] normal,limited;
+            public TrialCardPool(SimpleCardFactory cards){normal=new[]{SimpleCardFactory.Sword,SimpleCardFactory.Bomb,SimpleCardFactory.Heal,SimpleCardFactory.Shield,SimpleCardFactory.Tuning}.Select(cards.CreateById).ToArray();limited=new[]{cards.CreateById(SimpleCardFactory.FireSword)};}
+            public IReadOnlyList<Card> GetCandidates(CardRarity rarity)=>(rarity==CardRarity.Normal?normal:rarity==CardRarity.Limited?limited:Array.Empty<Card>()).Select(c=>c.Clone()).ToArray();
+            public Card GetRandomCard(CardRarity rarity,IRandomProvider random){if(random==null)throw new ArgumentNullException(nameof(random));var values=GetCandidates(rarity);if(values.Count==0)throw new ArgumentException("試用報酬の候補がありません");return values[random.Range(0,values.Count)].Clone();}
         }
         public DungeonBattleManager CreateFloor(FloorSequenceSession route,FloorSequenceDefinitions definitions,out DungeonCheckpointSession checkpoint)
         {

@@ -474,6 +474,8 @@ namespace Olca.Core.Logic.Integration
         public bool JumpButton { get; set; }
         public bool DashButton { get; set; }
         public bool DashButtonDown { get; set; }
+        public int OutsideHandPress {get;set;}=-1; public long OutsideHandRevision {get;set;}=-1; public long OutsideHandPressedAt {get;set;} public bool OutsideHandSelectionChanged {get;set;}
+        public OutsideExplorationCards OutsideHandOwner {get;set;} public OutsideExplorationSession.PresentationLease OutsideHandLease {get;set;}
         public bool CardUseButtonDown { get; set; }
         public long CardUsePressedAt { get; set; }
         public long BasicAttackPressedAt { get; set; }
@@ -491,7 +493,7 @@ namespace Olca.Core.Logic.Integration
         public bool MenuCancelButtonDown { get; set; }
         public int OutsideItemDownMask {get;set;}
         public LogicalInput Copy() => (LogicalInput)MemberwiseClone();
-        public void ClearEdges() { OutsideItemDownMask=0; CardUsePressedAt = BasicAttackPressedAt = 0; SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
+        public void ClearEdges() { OutsideHandPress=-1;OutsideHandRevision=-1;OutsideHandPressedAt=0;OutsideHandSelectionChanged=false;OutsideHandOwner=null;OutsideHandLease=null;OutsideItemDownMask=0; CardUsePressedAt = BasicAttackPressedAt = 0; SelectionPreviousDown=SelectionNextDown=SelectionSnapshot=false;HorizontalDown = TouchHorizontalDown = 0; CancelTouchTap = false; JumpButtonDown = DashButtonDown = CardUseButtonDown = BasicAttackButtonDown = BasicAttackButtonUp = CustomScreenButtonDown = MenuConfirmButtonDown = MenuDecideButtonDown = MenuCancelButtonDown = false; }
     }
 
     /// <summary>指ごとの押下順だけを所有する。UI除外・座標・時計はUnity側で決める。</summary>
@@ -531,6 +533,8 @@ namespace Olca.Core.Logic.Integration
                 var next = pending.Dequeue().Value;
                 // 同じ論理フレーム内で再押下されても、解放前の連続保持時間を引き継がない。
                 if (!next.BasicAttackButton) heldFrames = 0;
+                if(next.OutsideHandPress>=0&&held.OutsideHandPress>=0&&ReferenceEquals(next.OutsideHandOwner,held.OutsideHandOwner)&&ReferenceEquals(next.OutsideHandLease,held.OutsideHandLease)&&next.OutsideHandRevision==held.OutsideHandRevision)next.OutsideHandSelectionChanged|=held.OutsideHandSelectionChanged;
+                if(next.OutsideHandPress<0){next.OutsideHandPress=held.OutsideHandPress;next.OutsideHandRevision=held.OutsideHandRevision;next.OutsideHandPressedAt=held.OutsideHandPressedAt;next.OutsideHandSelectionChanged=held.OutsideHandSelectionChanged;next.OutsideHandOwner=held.OutsideHandOwner;next.OutsideHandLease=held.OutsideHandLease;}
                 next.OutsideItemDownMask|=held.OutsideItemDownMask;next.SelectionPreviousDown|=held.SelectionPreviousDown;next.SelectionNextDown|=held.SelectionNextDown;
                 next.JumpButtonDown |= held.JumpButtonDown;
                 next.DashButtonDown |= held.DashButtonDown;

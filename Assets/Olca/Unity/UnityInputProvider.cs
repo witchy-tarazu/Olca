@@ -140,6 +140,12 @@ namespace Olca.Unity
             if(slot<0||slot>=4||!capturing||!OutsideGamepad||GameplayPause.InputBlocked||GamepadGameplayActive?.Invoke()!=true)return;
             var value=BuildState();value.ClearEdges();value.OutsideItemDownMask=1<<slot;events.Add(new TimestampedLogicalInput(PointerClickTimestamp,value));
         }
+        public void QueueOutsideHandPress(Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease lease,Olca.Core.Logic.Integration.OutsideExplorationCards cards,int index,long revision)
+        {
+            if(!capturing||!OutsideGamepad||GameplayPause.InputBlocked||GamepadGameplayActive?.Invoke()!=true||lease?.IsCurrent!=true||!ReferenceEquals(lease.Cards,cards)||cards==null||cards.HandRevision!=revision||index<0||index>=cards.Hand.Count)return;
+            var value=BuildState();value.ClearEdges();value.OutsideHandPress=index;value.OutsideHandOwner=cards;value.OutsideHandLease=lease;value.OutsideHandRevision=revision;value.OutsideHandSelectionChanged=index!=cards.SelectedIndex;long at=PointerClickTimestamp;value.OutsideHandPressedAt=at;events.Add(new TimestampedLogicalInput(at,value));
+        }
+        private bool CardActionHeld()=>OutsideGamepad?(Held("outside","CardPrimary")||PadActionHeld("outside","CardPrimary")):ActionHeld("battle","CardPrimary");
         private int ItemPressMask(InputDevice device,List<ButtonControl> presses)
         {
             if(!OutsideGamepad||GameplayPause.InputBlocked||GamepadGameplayActive?.Invoke()!=true)return 0;int mask=0;
@@ -150,7 +156,8 @@ namespace Olca.Unity
             return mask;
         }
         public Olca.Core.Domain.InputBindingProfile KeyboardProfile { get; private set; } = CreateDefaultKeyboardProfile();
-        public static Olca.Core.Domain.InputBindingProfile CreateDefaultKeyboardProfile()
+        public static Olca.Core.Domain.InputBindingProfile CreateDefaultKeyboardProfile()=>CreateDefaultKeyboardProfile(true);
+        private static Olca.Core.Domain.InputBindingProfile CreateDefaultKeyboardProfile(bool cardSlot)
         {
             var slots = new Dictionary<(string Device, string Context, string Action), string>();
             void Add(string context, string action, Key key) => slots.Add(("keyboard", context, action), key.ToString());
@@ -163,7 +170,7 @@ namespace Olca.Unity
             Add("battle", "DownPrimary", Key.DownArrow); Add("battle", "DownSecondary", Key.S);
             Add("battle", "AttackPrimary", Key.Z); Add("battle", "CardPrimary", Key.Space);
             Add("battle", "CustomPrimary", Key.LeftAlt); Add("battle", "CustomSecondary", Key.RightAlt);
-            Add("outside","WheelPrimary",Key.Tab);
+            Add("outside","WheelPrimary",Key.Tab);if(cardSlot)Add("outside","CardPrimary",Key.F);
             for(int i=0;i<4;i++)Add("outside",itemActions[i],new[]{Key.Digit1,Key.Digit2,Key.Digit3,Key.Digit4}[i]);
             return new Olca.Core.Domain.InputBindingProfile(slots, new (string, string, string)[0],SelectionCoUse(false));
         }
@@ -173,12 +180,12 @@ namespace Olca.Unity
             foreach(var selection in new[]{"SelectionPrevious","SelectionNext"})
                 foreach(var move in gamepad?new[]{"LeftPrimary","RightPrimary"}:new[]{"LeftPrimary","LeftSecondary","RightPrimary","RightSecondary"})
                     pairs.Add((gamepad?"gamepad":"keyboard","exploration",selection,"battle",move));
-            if(gamepad)pairs.Add(("gamepad","outside","WheelPrimary","menu","Decide"));
+            if(gamepad){pairs.Add(("gamepad","outside","WheelPrimary","menu","Decide"));pairs.Add(("gamepad","outside","CardPrimary","menu","Decide"));}
             else {
                 foreach(var action in new[]{"JumpPrimary","DashPrimary","DashSecondary","SelectionPrevious","SelectionNext"})pairs.Add(("keyboard","outside","WheelPrimary","exploration",action));
                 foreach(var action in new[]{"LeftPrimary","LeftSecondary","RightPrimary","RightSecondary"})pairs.Add(("keyboard","outside","WheelPrimary","battle",action));
             }
-            if(!gamepad)foreach(var item in itemActions){
+            if(!gamepad)foreach(var item in itemActions.Concat(new[]{"CardPrimary"})){
                 foreach(var action in new[]{"JumpPrimary","DashPrimary","DashSecondary","SelectionPrevious","SelectionNext"})pairs.Add(("keyboard","outside",item,"exploration",action));
                 foreach(var action in new[]{"LeftPrimary","LeftSecondary","RightPrimary","RightSecondary"})pairs.Add(("keyboard","outside",item,"battle",action));
             }
@@ -188,19 +195,27 @@ namespace Olca.Unity
             =>profile.WithCoUse(SelectionCoUse(gamepad));
         public static Olca.Core.Domain.InputBindingProfile DecodeSelectionSlots(Dictionary<(string Device,string Context,string Action),string> slots,bool gamepad)
         {
-            if(slots==null)throw new System.ArgumentNullException(nameof(slots));var defaults=gamepad?CreateDefaultGamepadProfile():CreateDefaultKeyboardProfile();
+            if(slots==null)throw new System.ArgumentNullException(nameof(slots));var defaults=gamepad?CreateDefaultGamepadProfile():CreateDefaultKeyboardProfile();var key=(Device:gamepad?"gamepad":"keyboard",Context:"outside",Action:"CardPrimary");
+            var copy=slots.ToDictionary(p=>p.Key,p=>p.Value);
+            if(!copy.ContainsKey(key)){copy=DecodeBeforeOutsideCard(copy,gamepad).Bindings.ToDictionary(p=>p.Key,p=>p.Value);string value=defaults.Bindings[key];if(copy.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,key)))value=null;copy.Add(key,value);}
+            if(copy.Count!=defaults.Bindings.Count||!defaults.Bindings.Keys.All(copy.ContainsKey))throw new System.IO.InvalidDataException();
+            var result=new Olca.Core.Domain.InputBindingProfile(copy,gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));if(!(gamepad?ValidateGamepadProfile(result,out _):ValidateKeyboardProfile(result,out _)))throw new System.IO.InvalidDataException();return result;
+        }
+        private static Olca.Core.Domain.InputBindingProfile DecodeBeforeOutsideCard(Dictionary<(string Device,string Context,string Action),string> slots,bool gamepad)
+        {
+            if(slots==null)throw new System.ArgumentNullException(nameof(slots));var defaults=gamepad?CreateDefaultGamepadProfile(false):CreateDefaultKeyboardProfile(false);
             var copy=slots.ToDictionary(p=>p.Key,p=>p.Value);
             if(copy.Count!=defaults.Bindings.Count||!defaults.Bindings.Keys.All(copy.ContainsKey)){
                 copy=DecodeBeforeItemSlots(copy,gamepad).Bindings.ToDictionary(p=>p.Key,p=>p.Value);
                 foreach(var pair in defaults.Bindings.Where(p=>IsItemSlot(p.Key))){var value=pair.Value;if(copy.Any(p=>p.Value==value&&defaults.Conflicts(p.Key,pair.Key)))value=null;copy.Add(pair.Key,value);}
             }
             var result=new Olca.Core.Domain.InputBindingProfile(copy,gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
-            if(!(gamepad?ValidateGamepadProfile(result,out _):ValidateKeyboardProfile(result,out _)))throw new System.IO.InvalidDataException();return result;
+            return result;
         }
         private static Olca.Core.Domain.InputBindingProfile DecodeBeforeItemSlots(Dictionary<(string Device,string Context,string Action),string> slots,bool gamepad)
         {
             if(slots==null)throw new System.ArgumentNullException(nameof(slots));slots=slots.ToDictionary(p=>p.Key,p=>p.Value);
-            var full=gamepad?CreateDefaultGamepadProfile():CreateDefaultKeyboardProfile();var defaults=new Olca.Core.Domain.InputBindingProfile(full.Bindings.Where(p=>!IsItemSlot(p.Key)).ToDictionary(p=>p.Key,p=>p.Value),gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
+            var full=gamepad?CreateDefaultGamepadProfile(false):CreateDefaultKeyboardProfile(false);var defaults=new Olca.Core.Domain.InputBindingProfile(full.Bindings.Where(p=>!IsItemSlot(p.Key)).ToDictionary(p=>p.Key,p=>p.Value),gamepad?RequiredGamepadSlots():new (string,string,string)[0],SelectionCoUse(gamepad));
             if(!gamepad){
                 var wheelKey=(Device:"keyboard",Context:"outside",Action:"WheelPrimary");
                 bool SelectKey((string Device,string Context,string Action) k)=>k.Context=="exploration"&&(k.Action=="SelectionPrevious"||k.Action=="SelectionNext");
@@ -247,14 +262,14 @@ namespace Olca.Unity
         public static int GamepadProfileVersion { get; private set; }
         public Olca.Core.Domain.InputBindingProfile GamepadProfile { get; private set; } = CreateDefaultGamepadProfile();
         public static IEnumerable<(string,string,string)> RequiredGamepadSlots() => CreateDefaultGamepadSlots().Keys.Where(k=>k.Item3=="Pause"||((k.Item2=="menu"||k.Item2=="custom")&&(new[]{"Left","Right","Up","Down","Decide","Cancel","Confirm"}).Contains(k.Item3)));
-        private static Dictionary<(string,string,string),string> CreateDefaultGamepadSlots()
+        private static Dictionary<(string,string,string),string> CreateDefaultGamepadSlots(bool cardSlot=true)
         {
             var slots=new Dictionary<(string,string,string),string>();
             void Add(string context,string action,GamepadButton key)=>slots.Add(("gamepad",context,action),GamepadButtonId(key));
             Add("exploration","JumpPrimary",GamepadButton.South);Add("exploration","DashPrimary",GamepadButton.LeftStick);Add("exploration","Pause",GamepadButton.Start);
             Add("exploration","SelectionPrevious",GamepadButton.LeftTrigger);Add("exploration","SelectionNext",GamepadButton.RightTrigger);
             Add("outside","JumpPrimary",GamepadButton.South);Add("outside","DashPrimary",GamepadButton.RightShoulder);Add("outside","Pause",GamepadButton.Start);
-            Add("outside","SelectionPrevious",GamepadButton.LeftTrigger);Add("outside","SelectionNext",GamepadButton.RightTrigger);Add("outside","WheelPrimary",GamepadButton.LeftShoulder);
+            Add("outside","SelectionPrevious",GamepadButton.LeftTrigger);Add("outside","SelectionNext",GamepadButton.RightTrigger);Add("outside","WheelPrimary",GamepadButton.LeftShoulder);if(cardSlot)Add("outside","CardPrimary",GamepadButton.North);
             for(int i=0;i<4;i++)Add("outside",itemActions[i],new[]{GamepadButton.DpadUp,GamepadButton.DpadRight,GamepadButton.DpadDown,GamepadButton.DpadLeft}[i]);
             Add("battle","LeftPrimary",GamepadButton.DpadLeft);Add("battle","RightPrimary",GamepadButton.DpadRight);Add("battle","UpPrimary",GamepadButton.DpadUp);Add("battle","DownPrimary",GamepadButton.DpadDown);
             Add("battle","AttackPrimary",GamepadButton.West);Add("battle","CardPrimary",GamepadButton.RightShoulder);Add("battle","CustomPrimary",GamepadButton.North);Add("battle","Pause",GamepadButton.Start);
@@ -264,6 +279,7 @@ namespace Olca.Unity
             }
             return slots;
         }
+        private static Olca.Core.Domain.InputBindingProfile CreateDefaultGamepadProfile(bool cardSlot)=>new Olca.Core.Domain.InputBindingProfile(CreateDefaultGamepadSlots(cardSlot),RequiredGamepadSlots(),SelectionCoUse(true));
         public static Olca.Core.Domain.InputBindingProfile CreateDefaultGamepadProfile()=>new Olca.Core.Domain.InputBindingProfile(CreateDefaultGamepadSlots(),RequiredGamepadSlots(),SelectionCoUse(true));
         public static bool ValidateGamepadProfile(Olca.Core.Domain.InputBindingProfile profile,out string error)
         {
@@ -314,6 +330,7 @@ namespace Olca.Unity
                 if (value != null && (!System.Enum.TryParse<Key>(value, out var key) || key == Key.None ||
                     !System.Enum.IsDefined(typeof(Key), key) || key.ToString() != value))
                 { error = "キー識別子が不正です"; return false; }
+            if(profile.Bindings.TryGetValue(("keyboard","outside","CardPrimary"),out var card)&&card!=null&&new[]{Key.Enter,Key.NumpadEnter,Key.Escape,Key.Space}.Any(k=>k.ToString()==card)){error="カード使用には調べる・ポーズの固定キーを重複できません";return false;}
             if(profile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var wheel)&&wheel!=null&&new[]{Key.W,Key.A,Key.S,Key.D,Key.Enter,Key.NumpadEnter,Key.Escape,Key.Space}.Any(k=>k.ToString()==wheel)){error="ホイールの開閉には選択・決定・取消・調べるの固定キーを重複できません";return false;}
             try{NormalizeSelectionProfile(profile,false);return true;}catch(System.ArgumentException e){error=e.Message;return false;}
         }
@@ -530,7 +547,7 @@ namespace Olca.Unity
             var pointer = device as Pointer;
             bool pointerWasPressed = pointer != null && buttons.TryGetValue(pointer.press, out var pressed) && pressed;
             bool basic = ActionHeld("battle", "AttackPrimary");
-            bool jump = TraversalHeld("JumpPrimary"), card = ActionHeld("battle", "CardPrimary"), leftShift = TraversalHeld("DashPrimary"), rightShift = TraversalHeld("DashSecondary");
+            bool jump = TraversalHeld("JumpPrimary"), card = CardActionHeld(), leftShift = TraversalHeld("DashPrimary"), rightShift = TraversalHeld("DashSecondary");
             bool leftAlt = ActionHeld("battle", "CustomPrimary"), rightAlt = ActionHeld("battle", "CustomSecondary");
             var selectionPresses=new List<ButtonControl>();
             foreach (var button in Buttons(device))
@@ -558,7 +575,7 @@ namespace Olca.Unity
             next.TouchHorizontalDown=touchDown; next.CancelTouchTap=touchCanceled;
             next.HorizontalDown = device is Touchscreen ? 0 : eventState.Horizontal == 0 ? next.Horizontal : 0;
             next.JumpButtonDown = !jump && TraversalHeld("JumpPrimary");
-            next.CardUseButtonDown = !card && ActionHeld("battle", "CardPrimary");
+            next.CardUseButtonDown = !card && CardActionHeld();
             next.BasicAttackButtonDown = !basic && ActionHeld("battle", "AttackPrimary");
             next.BasicAttackButtonUp = basic && !ActionHeld("battle", "AttackPrimary");
             next.DashButtonDown = (!leftShift && TraversalHeld("DashPrimary")) || (!rightShift && TraversalHeld("DashSecondary"));

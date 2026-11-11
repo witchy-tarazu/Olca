@@ -254,6 +254,8 @@ namespace Olca.Presentation.Field
         }
 
         /// <summary>Enemy に対応する WorldEnemyView を返す（見つからなければ null）</summary>
+        public Sprite AuthoredTrialEnemySprite=>enemyViewPrefab!=null?enemyViewPrefab.GetComponent<Olca.Presentation.Battle.EnemyView>()?.AuthoredGruntSprite:null;
+        public Font AuthoredTrialEnemyFont=>enemyViewPrefab!=null?enemyViewPrefab.GetComponent<Olca.Presentation.Battle.EnemyView>()?.AuthoredHudFont:null;
         public WorldEnemyView GetEnemyView(Olca.Core.Domain.Enemy enemy)
         {
             foreach (var view in enemyViews)

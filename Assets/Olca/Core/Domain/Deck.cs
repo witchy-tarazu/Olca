@@ -214,10 +214,13 @@ namespace Olca.Core.Domain
         public static bool TryCreate(IReadOnlyList<Card> cards,
             IReadOnlyDictionary<(string Id, ExceedLevel Level), int> ownedCounts,
             out Deck deck, out string error)
+            =>TryCreateForSize(cards,ownedCounts,20,out deck,out error);
+        // 構築制限は共通、必要枚数だけ探索の明示経路から30を渡す。
+        internal static bool TryCreateForSize(IReadOnlyList<Card> cards,IReadOnlyDictionary<(string Id,ExceedLevel Level),int> ownedCounts,int required,out Deck deck,out string error)
         {
             deck = null; error = null;
             if (cards == null || ownedCounts == null) { error = "デッキと所持枚数が必要です"; return false; }
-            if (cards.Count != 20) { error = "出撃デッキは20枚必要です"; return false; }
+            if (cards.Count != required) { error = required==20?"出撃デッキは20枚必要です":"探索デッキは30枚必要です"; return false; }
             if (cards.Any(c => c == null || string.IsNullOrWhiteSpace(c.Id) ||
                 !Enum.IsDefined(typeof(CardRarity), c.Rarity) || !Enum.IsDefined(typeof(ExceedLevel), c.ExceedLevel)))
             { error = "カード定義が不正です"; return false; }
@@ -510,6 +513,8 @@ namespace Olca.Core.Domain
         public SavedDeckCard[] Cards = new SavedDeckCard[0];
         public SavedDepartureDeck Copy() => new SavedDepartureDeck { Id=Id, Name=Name, Cards=Cards?.Select(c=>c?.Copy()).ToArray() };
         public static bool TryValidateEquipped(ClearReturnProfile profile, SavedDepartureDeck saved, out string error)
+            =>TryValidateConstruction(profile,saved,20,out error);
+        internal static bool TryValidateConstruction(ClearReturnProfile profile,SavedDepartureDeck saved,int required,out string error)
         {
             error=null;
             if(saved?.Cards==null||saved.Cards.Any(c=>c==null)){error="デッキがありません";return false;}
@@ -521,7 +526,7 @@ namespace Olca.Core.Domain
                 if(used[key]>owned.Count){error="登録定義の所持枚数が不足しています";return false;}
                 cards.Add(new Card(owned.Id,owned.Name,0,owned.Rarity,CardCategory.Attack,ElementType.None,CardSeries.None,0,"",exceedLevel:owned.Level));
             }
-            return DepartureDeckRules.TryCreate(cards,OwnedDefinition.AggregateCounts(profile),out _,out error);
+            return DepartureDeckRules.TryCreateForSize(cards,OwnedDefinition.AggregateCounts(profile),required,out _,out error);
         }
     }
     /// <summary>個体ではなく所持定義の識別。旧行はメタデータ付きの安定キーで保持する。</summary>
@@ -1318,20 +1323,28 @@ namespace Olca.Core.Domain
 
 namespace Olca.Core.Domain
 {
+    /// <summary>探索の新規保存/編集だけに適用。旧保存の読取やDungeonを自動変換しない。</summary>
+    public static class ExplorationDeckRules
+    {
+        public const int RequiredCards=30;
+        public static bool TryValidate(ClearReturnProfile owned,SavedDepartureDeck saved,out string error)
+            =>SavedDepartureDeck.TryValidateConstruction(owned,saved,RequiredCards,out error);
+    }
     /// <summary>探索デッキだけの独立保存。所持・ダンジョン進行・装備先は複製しない。</summary>
     public sealed class ExplorationDeckProfile
     {
         public int Version=1;
         public long Revision;
         public string CommitId;
+        public string SelectedDeckId;
         public SavedDepartureDeck[] Decks=Array.Empty<SavedDepartureDeck>();
-        public ExplorationDeckProfile Copy()=>new ExplorationDeckProfile{Version=Version,Revision=Revision,CommitId=CommitId,Decks=Decks?.Select(d=>d?.Copy()).ToArray()};
+        public ExplorationDeckProfile Copy()=>new ExplorationDeckProfile{Version=Version,Revision=Revision,CommitId=CommitId,SelectedDeckId=SelectedDeckId,Decks=Decks?.Select(d=>d?.Copy()).ToArray()};
         public static void Validate(ExplorationDeckProfile value)
         {
             if(value==null||value.Version!=1||value.Revision<0||(value.Revision>0&&!Guid.TryParseExact(value.CommitId,"N",out _))||value.Decks==null||
                 value.Decks.Any(d=>d==null||!Guid.TryParseExact(d.Id,"N",out _)||string.IsNullOrWhiteSpace(d.Name)||d.Cards==null||
                     d.Cards.Any(c=>c==null||string.IsNullOrWhiteSpace(c.Id)||!Enum.IsDefined(typeof(ExceedLevel),c.Level)||c.Level==ExceedLevel.Lv3))||
-                value.Decks.Select(d=>d.Id).Distinct().Count()!=value.Decks.Length)throw new ArgumentException("探索デッキ保存の形式が不正です");
+                value.Decks.Select(d=>d.Id).Distinct().Count()!=value.Decks.Length||value.SelectedDeckId!=null&&!value.Decks.Any(d=>d.Id==value.SelectedDeckId&&d.Cards.Length==ExplorationDeckRules.RequiredCards))throw new ArgumentException("探索デッキ保存の形式が不正です");
         }
     }
     public interface IExplorationDeckStore
@@ -1359,13 +1372,22 @@ namespace Olca.Core.Domain
             if(id!=null&&previous==null)return Fail("保存デッキがありません");
             if(previous==null||name!=previous.Name){name=name?.Trim();if(!SavedDeckNameRules.IsValid(name))return Fail("デッキ名は16文字以内の一行で入力してください");}
             var deck=new SavedDepartureDeck{Id=id??Guid.NewGuid().ToString("N"),Name=name,Cards=cards?.Select(c=>c?.Copy()).ToArray()};
-            if(!SavedDepartureDeck.TryValidateEquipped(owned,deck,out var error))return Fail(error);
+            if(!ExplorationDeckRules.TryValidate(owned,deck,out var error))return Fail(error);
             var next=current.Copy();next.Decks=previous==null?next.Decks.Concat(new[]{deck}).ToArray():next.Decks.Select(d=>d.Id==id?deck:d).ToArray();return Stage(next);
+        }
+        public bool Select(string id,ClearReturnProfile owned)
+        {
+            if(!Ready||writing||pending!=null)return false;
+            var deck=current.Decks.SingleOrDefault(d=>d.Id==id);if(deck==null)return Fail("保存デッキがありません");
+            if(!ExplorationDeckRules.TryValidate(owned,deck,out var error))return Fail(error);
+            if(current.SelectedDeckId==id){Error=null;return true;}
+            var next=current.Copy();next.SelectedDeckId=id;return Stage(next);
         }
         public bool Delete(string id)
         {
             if(!Ready||writing||pending!=null)return false;
             if(!current.Decks.Any(d=>d.Id==id))return Fail("保存デッキがありません");
+            if(current.SelectedDeckId==id)return Fail("使用中の探索デッキは削除できません");
             var next=current.Copy();next.Decks=next.Decks.Where(d=>d.Id!=id).ToArray();return Stage(next);
         }
         private bool Stage(ExplorationDeckProfile next){next.Revision=checked(current.Revision+1);next.CommitId=Guid.NewGuid().ToString("N");ExplorationDeckProfile.Validate(next);pending=next;return Retry();}
@@ -1488,6 +1510,31 @@ namespace Olca.Core.Domain
                 if(item==null){item=new OutsideItemCount{Id=definition.ItemId};items.Add(item);}item.Count=checked(count+amount);inventory.Items=items.ToArray();inventory.ClaimedSources=claimed.Concat(new[]{definition.Id}).ToArray();next.OutsideInventory=inventory;
                 next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;received=amount;return true;}finally{writing=false;}
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        /// <summary>試用30枚への任意入手経路。スターターや保存デッキを自動変更しない。</summary>
+        public bool TryClaimTrialExplorationCards(ClearReturnSettings settings,out int received,out long overflow,out string error)
+        {
+            received=0;overflow=0;error=null;
+            if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に調べてください";return false;}
+            try{
+                if(settings==null||collectionDefinitions==null){error="カード補給の登録定義がありません";return false;}settings.Validate();
+                var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();var claimed=inventory.ClaimedSources??Array.Empty<string>();
+                if(claimed.Contains(Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId)){error="この箱は受取済みです";return false;}
+                // 既存実定義だけ。配置・4/4/2は試用値で、カード性能や超過換算率は作らない。
+                var entries=new[]{(Id:"sword",Level:ExceedLevel.Lv1,Count:4),(Id:"bomb",Level:ExceedLevel.Lv1,Count:4),(Id:"sword",Level:ExceedLevel.Lv2,Count:2)};
+                int accepted=0;long tokens=0;
+                foreach(var entry in entries){
+                    var matches=collectionDefinitions.Where(c=>c.Id==entry.Id&&c.ExceedLevel==entry.Level).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
+                    if(matches.Length!=1){error="試用カードの定義が未登録または曖昧です";return false;}var card=matches[0];string hash=CollectionDisplay.DefinitionHash(card);
+                    var owned=AcquisitionOwned(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,hash);var list=next.Owned.ToList();
+                    if(owned==null){owned=new OwnedCardCount{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,DefinitionHash=hash};list.Add(owned);}
+                    if(owned.Name!=card.Name||owned.Rarity!=card.Rarity){error="既存所持と補給定義が一致しません";return false;}
+                    int add=Math.Min(entry.Count,Math.Max(0,4-owned.Count));owned.Count=checked(owned.Count+add);accepted=checked(accepted+add);tokens=checked(tokens+(long)(entry.Count-add)*settings.Tokens(card.Rarity,card.ExceedLevel));next.Owned=list.ToArray();
+                    if(add>0)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,hash);
+                }
+                inventory.ClaimedSources=claimed.Concat(new[]{Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId}).ToArray();next.OutsideInventory=inventory;next.Tokens=checked(next.Tokens+tokens);next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;received=accepted;overflow=tokens;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
         }
         public bool HasClaimedOutsideSupply(string id)=>(current?.OutsideInventory?.ClaimedSources??Array.Empty<string>()).Contains(id);

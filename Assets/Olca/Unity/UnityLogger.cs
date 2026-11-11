@@ -272,6 +272,24 @@ namespace Olca.Unity
         public string ReadError { get; private set; }
         public bool HasExistingData => System.IO.File.Exists(ActivePath) || System.IO.Directory.Exists(ActivePath) ||
             System.IO.File.Exists(BackupPath) || System.IO.Directory.Exists(BackupPath);
+        /// <summary>計画を失ったrun別階層保存を読取だけで検知する。受領済みrunは再適用しない。</summary>
+        public static bool TryFindUnclaimedRunFloors(string checkpointRoot,System.Collections.Generic.IEnumerable<string> settledRuns,out bool found,out string error)
+        {
+            found=false;error=null;
+            try{
+                var root=System.IO.Path.GetFullPath(checkpointRoot);
+                if(System.IO.File.Exists(root))throw new System.IO.InvalidDataException("チェックポイントのルートがフォルダではありません");
+                var runs=System.IO.Path.Combine(root,"runs");
+                if(System.IO.File.Exists(runs))throw new System.IO.InvalidDataException("攻略保存先がフォルダではありません");
+                if(!System.IO.Directory.Exists(runs))return true;
+                var settled=new System.Collections.Generic.HashSet<string>(settledRuns??System.Array.Empty<string>(),System.StringComparer.Ordinal);
+                foreach(var directory in System.IO.Directory.EnumerateDirectories(runs)){
+                    if(settled.Contains(System.IO.Path.GetFileName(directory)))continue;
+                    foreach(var name in new[]{"floors.active.json","floors.backup.json"}){var file=System.IO.Path.Combine(directory,name);if(System.IO.File.Exists(file)||System.IO.Directory.Exists(file)){found=true;return true;}}
+                }
+                return true;
+            }catch(System.Exception ex)when(StorageFailure(ex)){error=FailureMessage(ex);return false;}
+        }
         public FloorSequenceFileStore(Olca.Core.Logic.Dungeon.FloorSequenceDefinitions definitions, string directory, CheckpointFileIo io = null)
         {
             this.definitions = definitions ?? throw new System.ArgumentNullException(nameof(definitions));

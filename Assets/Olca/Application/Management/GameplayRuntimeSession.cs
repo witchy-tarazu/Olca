@@ -65,7 +65,7 @@ namespace Olca.Application.Management
         private object driver;private Olca.Unity.UnityInputProvider input;private System.Action<int> itemUse;
         private bool disposed,active,armed,pumping,covered,resumeSelection;
         private readonly Olca.Core.Logic.Integration.OutsideSelectionRepeat selection=new Olca.Core.Logic.Integration.OutsideSelectionRepeat();
-        public void SetCovered(object owner,bool value){if(!ReferenceEquals(driver,owner)||covered==value)return;if(covered&&!value)resumeSelection=true;covered=value;}
+        public void SetCovered(object owner,bool value){if(!ReferenceEquals(driver,owner)||covered==value)return;if(covered&&!value)resumeSelection=true;covered=value;if(value)session.CancelAttackReservation();}
         public long Frame=>loop?.Clock.Frame??0;
         public OutsideExplorationRuntime(Olca.Core.Logic.Integration.OutsideExplorationSession session){this.session=session??throw new System.ArgumentNullException(nameof(session));}
         public void Attach(object owner,Olca.Unity.UnityInputProvider provider,System.Action<int> useItem=null)
@@ -75,7 +75,7 @@ namespace Olca.Application.Management
             if(driver!=null&&!ReferenceEquals(driver,owner))throw new System.InvalidOperationException("外界driverが重複しています");
             if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);driver=owner;input=provider;itemUse=useItem;covered=resumeSelection=false;selection.Reset();Reset();
         }
-        private void Reset(){active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
+        private void Reset(){session.CancelAttackReservation();active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
         public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();selection.Reset();covered=resumeSelection=false;driver=null;input=null;itemUse=null;}
         public void Pump(object owner,bool canPlay)
         {
@@ -92,11 +92,20 @@ namespace Olca.Application.Management
                     samples.Add(new Olca.Unity.TimestampedLogicalInput(time,null,()=>selection.Queue(time,value.SelectionPreviousHeld,value.SelectionNextHeld,value.SelectionPreviousDown,value.SelectionNextDown,value.SelectionSnapshot,value.AnyKey,value.SelectionPreviousAt,value.SelectionNextAt)));
                 }
                 loop.PumpTimestamped(true,samples,(frame,ms,value)=>{
-                    selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked);
+                    bool selectionChanged=selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked&&!session.IsDeckEditingLocation);
                     if(!armed&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f)armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
-                    session.Core.TickFrame(accept?value.Horizontal:0,accept&&value.JumpButtonDown,accept&&value.JumpButton,accept&&value.DashButtonDown,accept&&value.DashButton);
+                    int facing=session.Core.Facing;bool grounded=session.Core.IsGrounded;
+                    bool move=accept&&!session.IsAttacking;
+                    session.Core.TickFrame(move?value.Horizontal:0,move&&value.JumpButtonDown,move&&value.JumpButton,move&&value.DashButtonDown,move&&value.DashButton,session.IsMovementLockedForNextFrame);
+                    session.ObserveAttackBoundary(facing,grounded);
+                    session.AdvanceDeckLocation();
                     session.AdvancePlayerFrame(out var canAttack);
+                    bool requested=value.CardUseButtonDown;long cardAt=value.CardUsePressedAt;
+                    if(accept&&!session.IsDeckEditingLocation&&value.OutsideHandPress>=0&&value.OutsideHandLease?.IsCurrent==true&&ReferenceEquals(value.OutsideHandLease.Core,session.Core)&&ReferenceEquals(value.OutsideHandOwner,session.Cards)&&value.OutsideHandRevision==session.Cards?.HandRevision){
+                        int index=value.OutsideHandPress;if(index<session.Cards.Hand.Count){selectionChanged|=value.OutsideHandSelectionChanged;if(index!=session.Cards.SelectedIndex){session.Cards.TrySelect(index);selectionChanged=true;}else{cardAt=requested?(cardAt==0||value.OutsideHandPressedAt==0?0:System.Math.Max(cardAt,value.OutsideHandPressedAt)):value.OutsideHandPressedAt;requested=true;}}
+                    }
+                    if(accept)session.ProcessCardUseInput(requested,selectionChanged,value.BasicAttackButtonDown,cardAt,value.BasicAttackPressedAt,out _);
                     if(accept&&canAttack&&itemUse!=null)for(int slot=0;slot<4;slot++)if((value.OutsideItemDownMask&(1<<slot))!=0){
                         // 既得frameは保持し、同期保存の待ち時間だけを次の観測から除外する。
                         loop.Observe(true);try{itemUse(slot);}finally{loop.Observe(false);}
