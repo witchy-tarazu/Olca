@@ -1892,7 +1892,7 @@ namespace Olca.Application.Dungeon
             if(checkpointOverlay!=null&&checkpointOverlay.activeInHierarchy){root=checkpointOverlay;preferred=checkpointReturnFocus??(manager.Dungeon.IsCheckpointBlocked?"RetryCheckpointButton":"ContinueCheckpointButton");checkpointReturnFocus=null;}
             else if(pauseOverlay!=null&&pauseOverlay.activeInHierarchy&&IsUserPaused){root=pauseOverlay;preferred=managedPauseView?.TakeRestoredFocus()??pauseFocus;pauseFocus=preferred;cancel=ResumeFromPauseUi;}
             var next=root!=null?root.transform:null;
-            if(next!=systemMenuRoot){if(pauseOverlay!=null&&systemMenuRoot==pauseOverlay.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=next;if(next!=null){if(systemMenu==null)systemMenu=new MenuPadScope(()=>MenuPadScope.IsTopmost(systemMenuRoot),()=>systemMenuRoot==checkpointOverlay?.transform?new[]{newGameButton}:System.Array.Empty<Button>());systemMenu.Bind(next,preferred,cancel);}}
+            if(next!=systemMenuRoot){if(pauseOverlay!=null&&systemMenuRoot==pauseOverlay.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=next;if(next!=null){if(systemMenu==null)systemMenu=new MenuPadScope(()=>MenuPadScope.IsTopmost(systemMenuRoot),()=>systemMenuRoot==checkpointOverlay?.transform?new[]{newGameButton}:System.Array.Empty<Button>());systemMenu.NavigationResolver=next==pauseOverlay?.transform&&OutsideRouteBusy&&managedPauseView!=null?(System.Func<Selectable,Vector2,Selectable>)managedPauseView.FindNavigation:null;systemMenu.Bind(next,preferred,cancel);}}
             systemMenu?.Tick();
         }
         private Transform resourceRewardRoot;

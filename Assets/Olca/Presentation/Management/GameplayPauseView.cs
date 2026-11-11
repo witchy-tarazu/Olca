@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -22,6 +23,22 @@ namespace Olca.Presentation.Management
         public string TakeRestoredFocus(){var value=restoredFocus;restoredFocus=null;return value;}
         public ManagedScreenContext Context=>context;
         public bool Covered=>covered;
+        // LayoutPauseMenuの行・列。横長アイテム行は設定2列を占め、上へは左列を優先する。
+        private static readonly (string Name,int Row,int First,int Last)[] navigationCells={
+            ("ResumeButton",0,0,0),("LoadCheckpointButton",1,0,0),("OwnedCardsButton",2,0,0),("RetreatButton",3,0,0),
+            ("KeyboardSettingsButton",0,1,1),("GamepadSettingsButton",0,2,2),("AudioSettingsButton",1,1,1),("VibrationSetting",1,2,2),
+            ("TransformationAnimationSetting",2,1,1),("DialogueTextSpeedButton",2,2,2),("OutsideItemsButton",3,1,2)};
+        public Selectable FindNavigation(Selectable from,Vector2 direction)
+        {
+            if(!(from is Button current)||!actions.ContainsKey(current)||direction==Vector2.zero)return null;
+            var origin=navigationCells.FirstOrDefault(c=>c.Name==current.name);if(origin.Name==null)return null;
+            var cells=navigationCells.Where(c=>actions.Keys.Any(b=>b!=null&&b.name==c.Name&&b.gameObject.activeInHierarchy&&b.IsInteractable()));
+            var target=direction.x!=0?
+                cells.Where(c=>c.Row==origin.Row&&(direction.x>0?c.First>origin.Last:c.Last<origin.First)).OrderBy(c=>direction.x>0?c.First-origin.Last:origin.First-c.Last).FirstOrDefault():
+                cells.Where(c=>c.First<=origin.Last&&c.Last>=origin.First&&(direction.y>0?c.Row<origin.Row:c.Row>origin.Row)).OrderBy(c=>Math.Abs(c.Row-origin.Row)).ThenBy(c=>Math.Abs(c.First+c.Last-origin.First-origin.Last)).ThenBy(c=>c.First).FirstOrDefault();
+            return target.Name==null?null:actions.Keys.First(b=>b!=null&&b.name==target.Name);
+        }
+
         public bool BlocksInput=>context?.DialogBlocksInput==true;
         public void Initialize(Func<bool> allowed)
         {

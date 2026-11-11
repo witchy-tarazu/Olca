@@ -1033,6 +1033,10 @@ namespace Olca.Unity
         private bool directionScroll=true;private Vector2 linkedScrollPosition;private bool linkedScrollTracked;
         private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Selectable focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
         public string FocusName=>focused!=null?focused.name:null;
+        private System.Func<UnityEngine.UI.Selectable,Vector2,UnityEngine.UI.Selectable> navigationResolver;
+        public System.Func<UnityEngine.UI.Selectable,Vector2,UnityEngine.UI.Selectable> NavigationResolver
+        {get=>navigationResolver;set{if(navigationResolver==value)return;navigationResolver=value;linked=System.Array.Empty<UnityEngine.UI.Selectable>();}}
+
         /// <summary>ゲーム操作を併用する表示では、メニュー決定/方向を採用せず取消だけ受ける。</summary>
         public bool CancelOnly {get;set;}
         public bool SuppressPadCancel {get;set;}
@@ -1050,10 +1054,12 @@ namespace Olca.Unity
         private static Vector2 Point(UnityEngine.UI.Selectable b)=>RectTransformUtility.WorldToScreenPoint(null,b.transform.TransformPoint(((RectTransform)b.transform).rect.center));
         private static UnityEngine.UI.Selectable Near(UnityEngine.UI.Selectable from,Vector2 direction,UnityEngine.UI.Selectable[] buttons)
         {var p=Point(from);return buttons.Where(b=>b!=from&&Vector2.Dot(Point(b)-p,direction)>.01f).OrderByDescending(b=>Vector2.Dot(Point(b)-p,direction)/(Point(b)-p).sqrMagnitude).FirstOrDefault();}
+        private UnityEngine.UI.Selectable Neighbor(UnityEngine.UI.Selectable from,Vector2 direction,UnityEngine.UI.Selectable[] buttons)
+        {if(navigationResolver==null)return Near(from,direction,buttons);var next=navigationResolver(from,direction);return next!=null&&buttons.Contains(next)?next:null;}
         public void Bind(Transform root,string preferred,System.Action cancel,UnityEngine.UI.ScrollRect scroll=null,bool restorePosition=false,bool directionScroll=true)
         {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;this.directionScroll=directionScroll;linked=System.Array.Empty<UnityEngine.UI.Selectable>();focused=null;if(!restorePosition)havePoint=false;
             if(Usable()){var initial=Buttons().FirstOrDefault(b=>b.name==preferred);if(initial!=null)Focus(initial);}Refresh();}
-        public void Suspend(){version++;input.Reset();root=null;focused=null;cancel=null;scroll=null;}
+        public void Suspend(){version++;input.Reset();NavigationResolver=null;root=null;focused=null;cancel=null;scroll=null;}
         private void Focus(UnityEngine.UI.Selectable button,bool follow=true)
         {focused=button;if(button==null)return;preferred=button.name;lastPoint=Point(button);havePoint=true;button.Select();if(follow)Follow(button);RefreshLinks(Buttons());}
         private void Follow(UnityEngine.UI.Selectable button)
@@ -1068,7 +1074,7 @@ namespace Olca.Unity
         private void RefreshLinks(UnityEngine.UI.Selectable[] buttons)
         {
             bool tracking=scroll!=null&&scroll.content!=null;var position=tracking?scroll.content.anchoredPosition:Vector2.zero;
-            if(!linked.SequenceEqual(buttons)||tracking&&(!linkedScrollTracked||position!=linkedScrollPosition)){linked=buttons;foreach(var b in buttons)b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.Explicit,selectOnLeft=b is UnityEngine.UI.Slider?null:Near(b,Vector2.left,buttons),selectOnRight=b is UnityEngine.UI.Slider?null:Near(b,Vector2.right,buttons),selectOnUp=Near(b,Vector2.up,buttons),selectOnDown=Near(b,Vector2.down,buttons)};}
+            if(!linked.SequenceEqual(buttons)||tracking&&(!linkedScrollTracked||position!=linkedScrollPosition)){linked=buttons;foreach(var b in buttons)b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.Explicit,selectOnLeft=b is UnityEngine.UI.Slider?null:Neighbor(b,Vector2.left,buttons),selectOnRight=b is UnityEngine.UI.Slider?null:Neighbor(b,Vector2.right,buttons),selectOnUp=Neighbor(b,Vector2.up,buttons),selectOnDown=Neighbor(b,Vector2.down,buttons)};}
             linkedScrollTracked=tracking;linkedScrollPosition=position;
         }
         private void Refresh()
@@ -1094,7 +1100,7 @@ namespace Olca.Unity
                 if(e.Command==CustomPadCommand.Decide){if(focused!=null&&focused.IsInteractable()){if(focused is UnityEngine.UI.Button button)button.onClick.Invoke();else if(focused is UnityEngine.UI.Toggle toggle)toggle.isOn=!toggle.isOn;}continue;}
                 if(focused is UnityEngine.UI.Slider slider&&(e.Command==CustomPadCommand.Left||e.Command==CustomPadCommand.Right)){float step=slider.wholeNumbers?1:(slider.maxValue-slider.minValue)*.1f;slider.value=Mathf.Clamp(slider.value+(e.Command==CustomPadCommand.Right?step:-step),slider.minValue,slider.maxValue);continue;}
                 Vector2 direction=e.Command==CustomPadCommand.Left?Vector2.left:e.Command==CustomPadCommand.Right?Vector2.right:e.Command==CustomPadCommand.Up?Vector2.up:e.Command==CustomPadCommand.Down?Vector2.down:Vector2.zero;
-                if(direction!=Vector2.zero&&focused!=null)Focus(Near(focused,direction,Buttons())??focused);
+                if(direction!=Vector2.zero&&focused!=null)Focus(Neighbor(focused,direction,Buttons())??focused);
             }
             if(scroll!=null){if(directionScroll&&Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
         }
