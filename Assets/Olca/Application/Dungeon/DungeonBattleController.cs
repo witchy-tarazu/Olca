@@ -2125,7 +2125,10 @@ namespace Olca.Application.Dungeon
                 var rewardTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardRoute(preparedSingle,cardFactory,
                     new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
                     new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
-                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"},new DungeonChoice{Floors=rewardTrial,DisplayName="シヨウ カードホウシュウ（カリ）",Rewards=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardProvider(cardFactory)}};
+                var shopTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialShopRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"},new DungeonChoice{Floors=rewardTrial,DisplayName="シヨウ カードホウシュウ（カリ）",Rewards=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardProvider(cardFactory)},new DungeonChoice{Floors=shopTrial,DisplayName="シヨウ ショップ（カリ）"}};
                 var selected=savedPlan==null?null:dungeonChoices.FirstOrDefault(c=>c.Key==savedPlan.DefinitionKey);
                 if(selected?.Floors!=null){floorDefinitions=selected.Floors;dungeonConfig=floorDefinitions.CreateInitialMap(0);selectedDungeon=dungeonChoices.IndexOf(selected);}
 

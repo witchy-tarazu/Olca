@@ -111,6 +111,19 @@ namespace Olca.Application.Management
             var map=new DungeonConfig(TrialRewardMapId,"シヨウ カードホウシュウ（カリ）",source.TotalCellCount,source.MapCells,visits:source.Visits);
             return FloorSequenceDefinitions.WithSharedCardCatalog("trial-card-rewards-v1","trial-reward-v1",new[]{map},catalog);
         }
+        /// <summary>既存攻略を置換しない、攻略中通貨とショップ操作の明示的な試用配置。</summary>
+        public static FloorSequenceDefinitions CreateTrialShopRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            var source=CreateTrialCardRoute(catalog,cards,normal,boss).CreateInitialMap(0);
+            // 価格3/3/2/1、4候補中3枠、セル6は試用値。既存戦闘後の通貨10で試せる範囲にする。
+            var shop=new DungeonVisitDefinition(6,true,new[]{
+                new DungeonVisitOption("sword",3,cards.CreateById(SimpleCardFactory.Sword)),
+                new DungeonVisitOption("heal-card",3,cards.CreateById(SimpleCardFactory.Heal)),
+                new DungeonVisitOption("heal-now",2,heal:cards.CreateById(SimpleCardFactory.Heal).Power),
+                new DungeonVisitOption("remove-one",1,removeCount:1)},3);
+            var map=new DungeonConfig("trial-shop-floor-v1","シヨウ ショップ（カリ）",source.TotalCellCount,source.MapCells,visits:new[]{shop});
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-shop-v1","trial-shop-v1",new[]{map},catalog);
+        }
         public static IEvaluationRewardProvider CreateTrialRewardProvider(SimpleCardFactory cards)=>new TrialRewardProvider(cards);
         private sealed class TrialRewardProvider:IEvaluationRewardProvider
         {
