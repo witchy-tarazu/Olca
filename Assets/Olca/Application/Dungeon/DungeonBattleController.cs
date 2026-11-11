@@ -2103,6 +2103,8 @@ namespace Olca.Application.Dungeon
                 if (found >= 0) { selectedDungeon = found; floorDefinitions = dungeonChoices[found].Floors; }
             }
             var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
+            if(enemyAIProvider==null&&dungeonChoices==null&&configuredDungeon==null&&floorDefinitions==null&&configuredDepartureDeck==null)
+                enemyAIProvider=Olca.Application.Management.DungeonCoreFactory.CreateTrialCardEnemyAI();
             var coreFactory = CreateCoreFactory();
             var playerCharacter = coreFactory.CreatePlayer(ReturnSettings(),persistentLevel,battleStaggerFrames,playerPoiseRecoveryFrames);
             var processing = coreFactory.CreateProcessing();
@@ -2116,7 +2118,10 @@ namespace Olca.Application.Dungeon
                 var trial=Olca.Application.Management.DungeonCoreFactory.CreateTrialRoute(preparedSingle,cardFactory,
                     new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
                     new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
-                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"}};
+                var cardTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialCardRoute(preparedSingle,cardFactory,
+                    new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
+                    new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
+                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"}};
                 var selected=savedPlan==null?null:dungeonChoices.FirstOrDefault(c=>c.Key==savedPlan.DefinitionKey);
                 if(selected?.Floors!=null){floorDefinitions=selected.Floors;dungeonConfig=floorDefinitions.CreateInitialMap(0);selectedDungeon=dungeonChoices.IndexOf(selected);}
 

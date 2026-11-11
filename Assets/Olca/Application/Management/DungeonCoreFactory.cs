@@ -77,6 +77,31 @@ namespace Olca.Application.Management
             }
             return FloorSequenceDefinitions.WithSharedCardCatalog("trial-two-floor-v1","trial-v1",new[]{Floor(1,14,false),Floor(2,18,true)},cardCatalog);
         }
+        // 新IDの試用定義だけを登録する。変更時は敵IDとroute revisionを新しくし、旧攻略へ上書きしない。
+        public const string TrialSwordEnemyId="trial-sword-slime-v1",TrialBombEnemyId="trial-bomb-slime-v1";
+        public static IEnemyAIProvider CreateTrialCardEnemyAI()
+        {
+            EnemyAIRegistration Definition(Olca.Core.Logic.CardEffects.ICardDatabase database,string id){
+                var card=database?.GetCardById(id)??throw new InvalidOperationException("試用敵のカード定義がありません");
+                // 登録factory内で行動を毎回生成。隣接を待つStayは0、カード終了後の待ちは既存2秒を暫定借用。
+                return new EnemyAIRegistration(new[]{new EnemyActionPattern(0,EnemyActionPatternSamples.Slime(card,2000,database),EnemyPatternEndMode.Loop)},0);
+            }
+            return new EnemyAIRegistry(new Dictionary<string,Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{
+                [TrialSwordEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Sword),[TrialBombEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Bomb)});
+        }
+        public static FloorSequenceDefinitions CreateTrialCardRoute(CheckpointDefinitions cardCatalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            if(cardCatalog==null||cards==null)throw new ArgumentNullException();
+            var cells=new List<MapCell>();for(int i=0;i<14;i++){
+                Enemy enemy=i==3?new Enemy(TrialSwordEnemyId,"ソードスライム（カリ）",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):
+                    i==9?new Enemy(TrialBombEnemyId,"ボムスライム（カリ）",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):
+                    i==13?new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(i,0),poiseDefinition:boss):null;
+                cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+            }
+            var recovery=new DungeonVisitDefinition(6,false,new[]{new DungeonVisitOption("recover",0,heal:cards.CreateById(SimpleCardFactory.Heal).Power)},1);
+            var map=new DungeonConfig("trial-card-floor-v1","シヨウ テキカード（カリ）",14,cells,visits:new[]{recovery});
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-card-actions-v1","trial-card-v1",new[]{map},cardCatalog);
+        }
         public DungeonBattleManager CreateFloor(FloorSequenceSession route,FloorSequenceDefinitions definitions,out DungeonCheckpointSession checkpoint)
         {
             var state=route.Current.State;checkpoint=definitions.CreateCheckpointSession(route.Current.FloorIndex,route);
