@@ -275,18 +275,38 @@ namespace Olca.Presentation.Management
     /// <summary>起動の表示だけ。保存判断やhost生成は注入された開始要求へ委譲する。</summary>
     public sealed class BootstrapTitleView:MonoBehaviour
     {
-        private ManagedScreenContext context;private Action hidden;private Button start;private Text status;private Olca.Unity.MenuPadScope menu;
+        private ManagedScreenContext context;private Action hidden;private Button start,newGame;private Text status;private Olca.Unity.MenuPadScope menu;
+        private GameplayPanelFactory factory;private ProgressActionDialog newGameDialog;private bool busy,canContinue,canCreate;private string hint;
         public static GameObject Create(Transform parent,Olca.Unity.ResourceManager resources){
             var root=new GameObject("BootstrapTitle",typeof(RectTransform),typeof(Image));root.SetActive(false);root.transform.SetParent(parent,false);var rect=(RectTransform)root.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;root.GetComponent<Image>().color=new Color(.015f,.04f,.06f,1);
             try{var view=root.AddComponent<BootstrapTitleView>();var source=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation");Sprite background=null;foreach(var sr in source.GetComponentsInChildren<SpriteRenderer>(true))if(sr.name=="DungeonBackground")background=sr.sprite;if(background==null)throw new InvalidOperationException("タイトルの共有背景がありません");
                 var bg=new GameObject("TitleOriginalBackground",typeof(RectTransform),typeof(Image),typeof(AspectRatioFitter));bg.transform.SetParent(root.transform,false);var image=bg.GetComponent<Image>();image.sprite=background;image.raycastTarget=false;var br=image.rectTransform;br.anchorMin=Vector2.zero;br.anchorMax=Vector2.one;br.offsetMin=br.offsetMax=Vector2.zero;var fit=bg.GetComponent<AspectRatioFitter>();fit.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;fit.aspectRatio=background.rect.width/background.rect.height;
-                var factory=new GameplayPanelFactory(root.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null);var title=factory.Label("TitleHeading",root.transform,new Vector2(.5f,.5f),new Vector2(0,160),new Vector2(1000,130));title.text="OLCA";title.fontSize=80;title.color=Color.white;
-                view.start=factory.Button("TitleStart","ハジメル",root.transform,new Vector2(.5f,.5f),new Vector2(0,-20));view.start.GetComponent<RectTransform>().sizeDelta=new Vector2(460,90);view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-150),new Vector2(1050,120));view.status.color=Color.white;view.status.fontSize=24;return root;
+                var factory=view.factory=new GameplayPanelFactory(root.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null);var title=factory.Label("TitleHeading",root.transform,new Vector2(.5f,.5f),new Vector2(0,200),new Vector2(1000,130));title.text="OLCA";title.fontSize=80;title.color=Color.white;
+                view.newGame=factory.Button("TitleNewGame","はじめから",root.transform,new Vector2(.5f,.5f),new Vector2(0,30));view.start=factory.Button("TitleStart","つづきから",root.transform,new Vector2(.5f,.5f),new Vector2(0,-90));
+                foreach(var button in new[]{view.newGame,view.start})button.GetComponent<RectTransform>().sizeDelta=new Vector2(460,90);
+                view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-240),new Vector2(1100,150));view.status.color=Color.white;view.status.fontSize=24;return root;
             }catch{if(Application.isPlaying)Destroy(root);else DestroyImmediate(root);throw;}
         }
-        public void Show(ManagedScreenContext value,Action begin,Action hidden=null){Hide();context=value;this.hidden=hidden;start.onClick=new Button.ButtonClickedEvent();start.onClick.AddListener(()=>{if(this!=null&&context==value&&value.IsCurrent&&!value.DialogBlocksInput&&start.IsInteractable())begin?.Invoke();});SetBusy(false,null);gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>context?.IsCurrent==true&&start.IsInteractable());menu.Bind(transform,start.name,null);UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(start.gameObject);}
-        public void SetBusy(bool busy,string error){start.interactable=!busy;status.text=busy?"ヨミコミチュウ":error==null?"ツヅキノ セーブガ アル バアイハ ソノ シンコウカラ サイカイ":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error);}
-        public void Hide(){var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context=null;if(start!=null)start.onClick=new Button.ButtonClickedEvent();if(this!=null)gameObject.SetActive(false);}
-        private void LateUpdate(){menu?.Tick();}private void OnDisable(){var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();}
+        // 既存のView寿命検証向け互換入口。通常起動は保存判定を渡す。
+        public void Show(ManagedScreenContext value,Action begin,Action hidden=null)=>Show(value,begin,null,true,false,null,hidden);
+        public void Show(ManagedScreenContext value,Action resume,Action create,bool continueAvailable,bool createAvailable,string message,Action hidden=null)
+        {
+            Hide();context=value;this.hidden=hidden;canContinue=continueAvailable;canCreate=createAvailable;hint=message??(continueAvailable?"ホゾンした シンコウから サイカイします":"ツヅキの セーブが ありません");
+            void Bind(Button button,Action action){button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{if(this!=null&&context==value&&value.IsCurrent&&!value.DialogBlocksInput&&button.IsInteractable())action?.Invoke();});}
+            Bind(start,resume);Bind(newGame,create);SetBusy(false,null);gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy);var focus=canContinue?start:newGame;menu.Bind(transform,focus.name,null);UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(focus.IsInteractable()?focus.gameObject:null);
+        }
+        public void SetContinueAvailable(){canContinue=true;hint="ホゾンした シンコウから サイカイします";SetBusy(busy,null);}
+        public void OpenNewGame(IProgressActionOperations operations,DialogManager manager,Action saved)
+        {
+            if(context?.IsCurrent!=true||busy||context.DialogBlocksInput||!canCreate)return;var owner=context;
+            if(newGameDialog==null){var panel=factory.Panel("TitleNewGameConfirmation",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,1f);newGameDialog=panel.AddComponent<ProgressActionDialog>();newGameDialog.Initialize(factory);newGameDialog.Message.color=Color.white;newGameDialog.Message.fontSize=38;}
+            // 再表示時にも同じserviceの未保存計画を使う。保存/初期化そのものはDialogへ複製しない。
+            newGameDialog.Completed-=completed;completed=result=>{if(this==null||context!=owner||!owner.IsCurrent)return;if(result.Outcome==ProgressActionOutcome.NewGameStarted){SetContinueAvailable();saved?.Invoke();}};newGameDialog.Completed+=completed;
+            newGameDialog.OpenNewGame(operations,manager,owner,()=>this!=null&&context==owner&&owner.IsCurrent);
+        }
+        private Action<ProgressActionResult> completed;
+        public void SetBusy(bool value,string error){busy=value;start.interactable=!busy&&canContinue;newGame.interactable=!busy&&canCreate;status.text=busy?"ヨミコミチュウ":error==null?hint:Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error);}
+        public void Hide(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context=null;if(start!=null)start.onClick=new Button.ButtonClickedEvent();if(newGame!=null)newGame.onClick=new Button.ButtonClickedEvent();if(this!=null)gameObject.SetActive(false);}
+        private void LateUpdate(){newGameDialog?.RefreshLifetime();menu?.Tick();}private void OnDisable(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();completed=null;}
     }
 }

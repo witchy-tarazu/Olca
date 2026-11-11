@@ -2793,6 +2793,8 @@ namespace Olca.Application.Dungeon
         private DungeonChoice RewardChoiceFor(string key)=>key==null||dungeonChoices==null?null:dungeonChoices.Concat(knownLegacyDungeons).FirstOrDefault(c=>c.Key==key);
         private Olca.Application.Management.DungeonCoreFactory CreateCoreFactory(bool suppressEvaluation=false,DungeonChoice rewardChoice=null)
             => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider??rewardChoice?.Rewards);
+        /// <summary>タイトルの新規保存も、host prefabの既存スターター定義を副作用なく使用する。</summary>
+        public IReadOnlyList<Card> CreateNewGameStarterCards()=>CreateCardFactory().CreateStarterDeck().GetAllCards();
         private SimpleCardFactory CreateCardFactory()
             => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 

@@ -402,7 +402,7 @@ namespace Olca.Presentation.Management
             purpose=Purpose.NewGame;operations=service;revision=service.Revision;pending=service.Pending;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
             if(!Begin(manager,parent,live)){operations=null;return;}
             if(pending){ShowPending();return;}
-            Set("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で拠点から開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
+            Set("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で新しい進行を開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
         }
         public void OpenNotice(string message,bool accept,bool close,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {
