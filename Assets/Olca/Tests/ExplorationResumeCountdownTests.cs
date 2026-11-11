@@ -13,6 +13,15 @@ namespace Olca.Tests
         private static OutsideExplorationSession Water167(long x=60000,long y=0,long velocity=0,OutsideTraversalProfile profile=null)
         {var s=new OutsideExplorationSession();s.TryConfigureTraversal(profile??OutsideTraversalProfile.ValidationWater);var data=s.Core.CaptureState();data.Position=x;data.Height=y;data.Velocity=velocity;data.SupportId=y==0?"floor":null;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{data});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;}
         private static void WaterTick167(OutsideExplorationSession s,float x=0,bool down=false,bool held=false,bool dash=false){s.Core.TickFrame(x,down,held,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
+        [Test] public void 外界名称は論理百二十と六十で消えView再生成と同じ保存の再適用では戻らない()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.AreEqual(0,s.MapNameOpacity);var view=s.AttachPresentation();Assert.AreEqual(1,view.MapNameOpacity);Assert.That(view.MapName,Does.Contain("カリ"));
+                for(int i=0;i<119;i++)s.Core.TickFrame(0);Assert.AreEqual(1,view.MapNameOpacity);s.Core.TickFrame(0);Assert.AreEqual(1,view.MapNameOpacity);view.Dispose();using(var next=s.AttachPresentation()){Assert.AreEqual(1,next.MapNameOpacity);for(int i=0;i<59;i++)s.Core.TickFrame(0);Assert.AreEqual(1d/60,next.MapNameOpacity,.000001);s.Core.TickFrame(0);Assert.AreEqual(0,next.MapNameOpacity);}using(var next=s.AttachPresentation())Assert.AreEqual(0,next.MapNameOpacity);
+                var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(actor,runtime,null);using(var attached=cold.AttachPresentation()){Assert.AreEqual(1,attached.MapNameOpacity);for(int i=0;i<181;i++)cold.Core.TickFrame(0);}Assert.IsFalse(cold.RestoreSavedState(actor,runtime,null));using(var attached=cold.AttachPresentation())Assert.AreEqual(0,attached.MapNameOpacity);}
+            }
+        }
+
         [Test] public void 外界移動制限照会は付与解除予約と残一frameを副作用なく判定する()
         {
             using(var s=new OutsideExplorationSession()){

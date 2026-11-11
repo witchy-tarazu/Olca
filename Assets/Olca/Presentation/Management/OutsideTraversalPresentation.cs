@@ -9,6 +9,16 @@ namespace Olca.Presentation.Exploration
 {
     public sealed partial class OutsideExplorationView
     {
+        private Text mapNameLabel;
+        private void RenderMapName()
+        {
+            double opacity=presentation?.MapNameOpacity??0;
+            if(opacity>0&&mapNameLabel==null){
+                var go=new GameObject("OutsideMapName",typeof(RectTransform),typeof(Text),typeof(Shadow));go.transform.SetParent(transform,false);mapNameLabel=go.GetComponent<Text>();mapNameLabel.font=gaugeLabel.font;mapNameLabel.fontSize=44;mapNameLabel.alignment=TextAnchor.MiddleCenter;mapNameLabel.raycastTarget=false;mapNameLabel.horizontalOverflow=HorizontalWrapMode.Wrap;mapNameLabel.verticalOverflow=VerticalWrapMode.Overflow;
+                var rect=mapNameLabel.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.pivot=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(0,90);rect.sizeDelta=new Vector2(1000,90);var shadow=go.GetComponent<Shadow>();shadow.effectColor=new Color(.005f,.025f,.04f,.95f);shadow.effectDistance=new Vector2(2,-2);
+            }
+            if(mapNameLabel==null)return;mapNameLabel.gameObject.SetActive(opacity>0);if(opacity<=0)return;mapNameLabel.text=presentation.MapName;mapNameLabel.color=new Color(.8f,.98f,1,(float)opacity);mapNameLabel.transform.SetAsLastSibling();
+        }
         private Sprite traversalDashSprite;
         private Sprite[] wallSlideFrames;
         private Olca.Unity.ResourceManager traversalResources;

@@ -126,6 +126,8 @@ namespace Olca.Core.Logic.Integration
             public Olca.Core.Domain.PlayerCharacter Player=>owner?.Player;
             public OutsideCameraPolicy Camera=>owner?.Camera;
             public OutsideExplorationCards Cards=>owner?.Cards;
+            public string MapName=>IsCurrent?owner.MapName:null;
+            public double MapNameOpacity=>IsCurrent?owner.MapNameOpacity:0;
             public bool ShouldShowBreath=>IsCurrent&&owner.ShouldShowBreath;
             public int BreathFramesRemaining=>owner?.BreathFramesRemaining??0;public int BreathMaximumFrames=>owner?.BreathMaximumFrames??0;
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
@@ -247,7 +249,7 @@ namespace Olca.Core.Logic.Integration
             string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
             if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
             var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
-            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}ResetCardUseFeedback();trialTarget=null;trialTargetChanged=false;trialTargetHits=0;Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;ResetFall();savedPlayerId=data.Id;savedPlayerKey=key;return true;
+            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);}ResetCardUseFeedback();trialTarget=null;trialTargetChanged=false;trialTargetHits=0;Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;ResetFall();savedPlayerId=data.Id;savedPlayerKey=key;PrepareMapEntry();return true;
         }
         /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
         public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
@@ -318,11 +320,21 @@ namespace Olca.Core.Logic.Integration
             if(profile==null)throw new System.ArgumentNullException(nameof(profile));
             if(IsPresented||Core.Frame!=0)return false;Core.ConfigureTraversal(profile);ResetWater();return true;
         }
+        // 名称は装飾時間だけ。Core/保存hashへ加えず、同一訪問のView再生成では戻さない。
+        private long? mapNameStartedAt;
+        private bool mapEntryPending=true;
+        public const int MapNameDisplayFrames=120,MapNameFadeFrames=60;
+        public string MapName=>Core.Definition.Id=="validation-landing-32"?"ケンショウ エリア（カリ）":null;
+        public double MapNameOpacity {
+            get{if(mapEntryPending||!mapNameStartedAt.HasValue||MapName==null)return 0;long age=Math.Max(0,Core.Frame-mapNameStartedAt.Value);return age<MapNameDisplayFrames?1:Math.Max(0,1-(age-MapNameDisplayFrames)/(double)MapNameFadeFrames);}
+        }
+        private void PrepareMapEntry(){mapEntryPending=true;mapNameStartedAt=null;}
         public bool IsEnded{get;private set;}
         public bool IsPresented=>current!=null;
         public PresentationLease AttachPresentation()
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
+            if(mapEntryPending){mapNameStartedAt=Core.Frame;mapEntryPending=false;}
             CancelAttackReservation();return current=new PresentationLease(this);
         }
         public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();trialTarget=null;trialTargetChanged=false;trialTargetHits=0;Player=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
@@ -776,7 +788,7 @@ namespace Olca.Core.Logic.Integration
             ValidateWater(runtime.Water,candidateCore);
             if(runtime.Fall!=null&&runtime.Fall.Peak>candidateCore.MaximumReachableHeight())throw new ArgumentException("落下頂点が外界地形の上限を超えています");
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();attackState=runtime.Attack?.Copy();trialTarget=target;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;return true;
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();attackState=runtime.Attack?.Copy();trialTarget=target;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
         }
     }
 }
