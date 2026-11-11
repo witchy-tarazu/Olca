@@ -10,6 +10,12 @@ namespace Olca.Tests
 {
     public class SettingsWriteRefactorTests
     {
+        [TestCase(false)] [TestCase(true)] public void 外界方向sampleはPad中立待ちでも横levelだけ保持しaction遮断とDungeonを変えない(bool action)
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var prior=UnityInputProvider.ActiveGamepadProfile;
+            try{using(var input=new UnityInputProvider()){Assert.IsTrue(input.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _));string context="outside";input.GamepadContext=()=>context;input.GamepadGameplayActive=()=>true;input.StartEventCapture();var state=new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=UnityEngine.Vector2.right};if(action)state=state.WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();input.QueueSnapshot();var samples=input.CaptureTimestamped();var value=samples.Last(x=>x.Input!=null).Input;Assert.IsTrue(value.HasOutsideHorizontalSample);Assert.AreEqual(1,value.OutsideHorizontal);Assert.AreEqual(0,value.Horizontal,"通常Pad遮断は維持");Assert.IsFalse(value.JumpButton||value.JumpButtonDown,"snapshot保持で発火しない");context="battle";input.QueueSnapshot();value=input.CaptureTimestamped().Last(x=>x.Input!=null).Input;Assert.IsFalse(value.HasOutsideHorizontalSample,"Dungeonでは例外値を採用しない");Assert.AreEqual(0,value.Horizontal);}}
+            finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);using(var input=new UnityInputProvider())Assert.IsTrue(input.TryRestoreGamepadProfile(prior,out _));}
+        }
         [TestCase(false,0)] [TestCase(false,1)] [TestCase(false,2)] [TestCase(false,3)]
         [TestCase(true,0)] [TestCase(true,1)] [TestCase(true,2)] [TestCase(true,3)]
         public void 調べる独立行は既知の旧完全形式を元設定と保存bytesを変えず拡張する(bool gamepad,int mode)

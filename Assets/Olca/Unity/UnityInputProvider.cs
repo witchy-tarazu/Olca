@@ -126,6 +126,7 @@ namespace Olca.Unity
             }
         }
         private bool capturing,focusResnapshotPending;
+        public bool IsFocusResynchronizing=>focusResnapshotPending;
         private double eventClockOffset;
         private long pointerReleaseTimestamp;
         private int pointerReleaseRenderFrame = -1;
@@ -541,7 +542,10 @@ namespace Olca.Unity
                 if (Mathf.Abs(stick.x) >= .19f && Mathf.Abs(stick.x) > Mathf.Abs(x)) x = stick.x;
                 if (Mathf.Abs(stick.y) >= .19f && Mathf.Abs(stick.y) > Mathf.Abs(y)) y = stick.y;
             }
+            float outsideHorizontal=x;
+            if(OutsideGamepad)foreach(var raw in sticks.Where(p=>p.Key.enabled))if(Mathf.Abs(raw.Value.x)>=.19f&&Mathf.Abs(raw.Value.x)>Mathf.Abs(outsideHorizontal))outsideHorizontal=raw.Value.x;
             return new Olca.Core.Logic.Integration.LogicalInput {
+                HasOutsideHorizontalSample=OutsideGamepad,OutsideHorizontal=Mathf.Clamp(outsideHorizontal,-1,1),
                 HasSelectionSample=true,AnyKeyExceptSelection=physicalTouches.Count>0||buttons.Any(p=>p.Value&&(!(p.Key.device is Keyboard)||p.Key is KeyControl)&&!ReferenceEquals(p.Key,SelectionControl("SelectionPrevious",p.Key.device))&&!ReferenceEquals(p.Key,SelectionControl("SelectionNext",p.Key.device))),
                 SelectionPreviousHeld=RawSelectionHeld("SelectionPrevious"),SelectionNextHeld=RawSelectionHeld("SelectionNext"),SelectionPreviousAt=RawSelectionPressedAt("SelectionPrevious"),SelectionNextAt=RawSelectionPressedAt("SelectionNext"),
                 HasInputSample = true, AnyKey = physicalTouches.Count>0 || buttons.Values.Any(pressed => pressed),

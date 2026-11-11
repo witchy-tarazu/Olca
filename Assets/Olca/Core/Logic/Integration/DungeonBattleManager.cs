@@ -461,6 +461,8 @@ namespace Olca.Core.Logic.Integration
         public bool HasInputSample { get; set; }
         public bool AnyKey { get; set; }
         public float Horizontal { get; set; }
+        // 外界の明示Pause復帰専用。アクション遮断中の方向levelだけを別に保持する。
+        public bool HasOutsideHorizontalSample {get;set;} public float OutsideHorizontal {get;set;}
         public float HorizontalDown { get; set; }
         public float TouchHorizontalDown { get; set; }
         public float HorizontalTap => TouchHorizontalDown;

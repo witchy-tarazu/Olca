@@ -150,18 +150,20 @@ namespace Olca.Application.Dungeon
             uiAttackHeld = uiAttackDown = uiAttackUp = false; basicAttackHud?.CancelAttackPointer();
             queuedBasicAttackTap=false;TouchUiCancelGuard.CancelAll();logicalLoop.ReleaseInput();inputProvider?.QueueSnapshot();
         }
+        private bool applicationFocused=true;
         private void OnApplicationFocus(bool focused)
         {
+            applicationFocused=focused;CancelOutsideDirectionResume();
             if(!focused)StopGamepadVibration();
             ResetTouchInput();
             // PCは継続するが、復帰同期で到着した古い押下edgeは再生しない。
-            outsideExploration?.ResetInputForFocus();
+            outsideExploration?.ResetInputForFocus(focused);
             inputProvider?.ResetCapturedInput();
         }
         private bool applicationInactive;
         private void OnApplicationPause(bool paused)
         {
-            applicationInactive = paused;
+            applicationInactive = paused;if(paused)CancelOutsideDirectionResume();
             if(paused)StopGamepadVibration();
             ResetTouchInput();
             // 復帰通知は入力を取り直すだけ。再開は必ずメニューから明示する。
@@ -594,11 +596,11 @@ namespace Olca.Application.Dungeon
                     outsideExploration=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,services.OutsideExploration,
                         ct=>{ct.ThrowIfCancellationRequested();var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources);panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>().ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);return System.Threading.Tasks.Task.FromResult(panel);},
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
-                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,()=>SetUserPaused(true),card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
+                        ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,RequestOutsidePause,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
                 }
                 try{PrepareSelectedExplorationDeck();}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){outsideDepartureError=e.Message;outsideExplorationOpening=false;ShowDungeonSelection();return;}
                 var result=await outsideExploration.OpenAsync();
-                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();}
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
@@ -1074,6 +1076,7 @@ namespace Olca.Application.Dungeon
         private DungeonBattleManager automaticPauseOwner;
         private void OnGamepadDisconnected()
         {
+            CancelOutsideDirectionResume();
 #if UNITY_STANDALONE || UNITY_EDITOR
             RequestAutomaticPause();
 #endif
@@ -1121,8 +1124,13 @@ namespace Olca.Application.Dungeon
             if (explorationResume.AdvanceFrame()) { CancelExplorationResume(); ApplyUserPauseImmediate(false); }
         }
 
+        private bool outsideManualPause;
+        private void RequestOutsidePause(){if(IsUserPaused)return;SetUserPaused(true);outsideManualPause=IsUserPaused&&outsideExploration?.IsOpen==true;}
+        private void ResumeFromPauseUi(){bool direction=outsideManualPause&&outsideExploration?.IsOpen==true&&!DialogueOpen&&!outsideWheelPaused;outsideManualPause=false;SetUserPaused(false);if(direction&&!IsUserPaused)outsideExploration?.ResumeDirectionAfterExplicitPause();}
+        private void CancelOutsideDirectionResume(){outsideManualPause=false;outsideExploration?.CancelDirectionResume();}
         public void SetUserPaused(bool paused)
         {
+            if(paused)CancelOutsideDirectionResume();
             if(paused)AbortOutsideWheel();
             bool cancelledCountdown = paused && explorationResume.IsRunning;
             if (paused) CancelExplorationResume();
@@ -1267,7 +1275,7 @@ namespace Olca.Application.Dungeon
             Button Button(string name)=>pauseOverlay.transform.Find(name).GetComponent<Button>();
             void Bind(string name,System.Action action)=>Button(name).onClick.AddListener(()=>{if(this!=null&&bindings.IsAlive&&(!OutsideRouteBusy||OutsidePauseControlAllowed(name))&&Time.frameCount!=outsideClosedFrame)action();});
             Bind("OutsideItemsButton",OpenOutsideItems);
-            Bind("ResumeButton",()=>SetUserPaused(false));Bind("LoadCheckpointButton",ContinueCheckpointFromUi);
+            Bind("ResumeButton",ResumeFromPauseUi);Bind("LoadCheckpointButton",ContinueCheckpointFromUi);
             Bind("KeyboardSettingsButton",OpenKeyboardSettings);Bind("GamepadSettingsButton",OpenGamepadSettings);Bind("AudioSettingsButton",OpenAudioSettings);
             Bind("OwnedCardsButton",OpenOwnedCards);Bind("RetreatButton",RequestRetreat);
             void Vibration()=>Button("VibrationSetting").GetComponentInChildren<Text>().text=vibrationSettingsError!=null?"シンドウ: ホゾンエラー（サイシコウ）":"シンドウ: "+(GamepadVibrationEnabled?"ON":"OFF");
@@ -1882,7 +1890,7 @@ namespace Olca.Application.Dungeon
             if(gameSystem!=null&&managedPauseView?.BlocksInput==true){if(systemMenuRoot==pauseOverlay?.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=null;return;}
             GameObject root=null;string preferred=null;System.Action cancel=null;
             if(checkpointOverlay!=null&&checkpointOverlay.activeInHierarchy){root=checkpointOverlay;preferred=checkpointReturnFocus??(manager.Dungeon.IsCheckpointBlocked?"RetryCheckpointButton":"ContinueCheckpointButton");checkpointReturnFocus=null;}
-            else if(pauseOverlay!=null&&pauseOverlay.activeInHierarchy&&IsUserPaused){root=pauseOverlay;preferred=managedPauseView?.TakeRestoredFocus()??pauseFocus;pauseFocus=preferred;cancel=()=>SetUserPaused(false);}
+            else if(pauseOverlay!=null&&pauseOverlay.activeInHierarchy&&IsUserPaused){root=pauseOverlay;preferred=managedPauseView?.TakeRestoredFocus()??pauseFocus;pauseFocus=preferred;cancel=ResumeFromPauseUi;}
             var next=root!=null?root.transform:null;
             if(next!=systemMenuRoot){if(pauseOverlay!=null&&systemMenuRoot==pauseOverlay.transform&&systemMenu?.FocusName!=null)pauseFocus=systemMenu.FocusName;systemMenu?.Suspend();systemMenuRoot=next;if(next!=null){if(systemMenu==null)systemMenu=new MenuPadScope(()=>MenuPadScope.IsTopmost(systemMenuRoot),()=>systemMenuRoot==checkpointOverlay?.transform?new[]{newGameButton}:System.Array.Empty<Button>());systemMenu.Bind(next,preferred,cancel);}}
             systemMenu?.Tick();
@@ -2283,7 +2291,7 @@ namespace Olca.Application.Dungeon
             gameplayChrome?.SetCovered(OutsideRouteBusy);
             if(OutsideRouteBusy){
                 logicalLoop.Observe(false);
-                if(inputProvider.ConsumeGamepadPause())SetUserPaused(true);
+                if(inputProvider.ConsumeGamepadPause())RequestOutsidePause();
                 outsideExploration?.SetCovered(IsUserPaused||outsideWheelPaused);
                 bool inspect=inputProvider.OutsideInteractionPressed(outsideExploration?.Context);
                 if(gameSystem.OutsideExploration.Player?.IsDead==true&&!outsideRecoveryPending&&!progressStartupBlocked&&!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0){outsideExploration.Pump(false);outsideRecoveryRelocate=true;try{bool saved=clearReturnSession.TrySaveOutsideDeathRecovery(gameSystem.OutsideExploration.Player);outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;}else if(!outsideRecoveryPending)progressStartupBlocked=true;}catch(System.ArgumentException e){outsideRecoveryError=e.Message;progressStartupBlocked=true;}outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();outsideExploration.View.Render();return;}
