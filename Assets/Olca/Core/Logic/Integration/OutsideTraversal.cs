@@ -106,7 +106,7 @@ namespace Olca.Core.Logic.Integration
     public static class OutsideTrialRoute
     {
         // 通常導線の仮拠点と既存回復地点。空中で同じ範囲にいるだけでは再装填しない。
-        public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit);
+        public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit||IsReloadZone(core));
         public static bool CanEditDeck(OutsideExplorationCore core)=>IsDeckEditingZone(core)&&core.IsGrounded&&core.Height==0;
         public static OutsideTraversalProfile ResolveTraversal(OutsideRuntimeSaveData runtime)
         {
@@ -116,6 +116,9 @@ namespace Olca.Core.Logic.Integration
             }
             throw new ArgumentException("外界試走の地形定義が未登録です");
         }
+        // 回復/入口/壁と接触範囲を重ねない、追加の試用リロード専用地点。
+        public const long ReloadX=22*OutsideMovementDefinition.UnitsPerWorldUnit,ReloadRadius=OutsideMovementDefinition.UnitsPerWorldUnit/2;
+        public static bool IsReloadZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&Math.Abs(core.Position-ReloadX)<=ReloadRadius;
         public const string RecoveryPointId="validation-recovery-left-v1";
         public const long RecoveryX=6*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
