@@ -243,8 +243,13 @@ namespace Olca.Presentation.Management
         }
         public GameObject Checkpoint(out Text message,out Button resume,out Button retry)
         {
-            var panel=Panel("CheckpointOverlay",true);
-            message=Label("CheckpointMessage",panel.transform,new Vector2(.5f,.5f),new Vector2(0,90),new Vector2(1360,560));message.horizontalOverflow=HorizontalWrapMode.Wrap;
+            var panel=Panel("CheckpointOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
+            // 再開・保存失敗の案内は背面HUDを遮った読取面に載せる。操作位置は変えない。
+            var backing=new GameObject("CheckpointReadingBacking",typeof(RectTransform),typeof(Image));backing.transform.SetParent(panel.transform,false);
+            ((RectTransform)backing.transform).sizeDelta=new Vector2(1456,826);backing.GetComponent<Image>().color=new Color(.025f,.075f,.105f,1f);backing.GetComponent<Image>().raycastTarget=false;
+            var surface=new GameObject("CheckpointReadingSurface",typeof(RectTransform),typeof(Image));surface.transform.SetParent(panel.transform,false);
+            ((RectTransform)surface.transform).sizeDelta=new Vector2(1480,850);var face=surface.GetComponent<Image>();face.sprite=Resources.Load<Sprite>("OlcaUI/description");face.type=Image.Type.Sliced;face.color=face.sprite!=null?Color.white:new Color(.025f,.075f,.105f,1f);face.raycastTarget=false;
+            message=Label("CheckpointMessage",panel.transform,new Vector2(.5f,.5f),new Vector2(0,90),new Vector2(1360,560));message.horizontalOverflow=HorizontalWrapMode.Wrap;message.color=new Color(.94f,.99f,1f,1f);
             resume=Button("ContinueCheckpointButton","続きから",panel.transform,new Vector2(.5f,.5f),new Vector2(0,-270));
             retry=Button("RetryCheckpointButton","保存を再試行",panel.transform,new Vector2(.5f,.5f),new Vector2(0,-270));((RectTransform)retry.transform).sizeDelta=new Vector2(320,70);return panel;
         }

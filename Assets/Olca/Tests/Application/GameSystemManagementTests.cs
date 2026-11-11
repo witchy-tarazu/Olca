@@ -262,6 +262,16 @@ namespace Olca.Tests.Application
             var stale=confirm.onClick;layer.CloseCurrent();Assert.AreEqual(DialogResult.ParentClosed,await request);stale.Invoke();Assert.AreEqual(0,confirms);Assert.IsFalse(panel.activeSelf);Assert.AreEqual(0,dialogs.ActiveCount);
             UnityEngine.Object.DestroyImmediate(popup);
         }
+        [Test] public void Checkpoint読取面は本文と既存操作を覆い入力やフォントを変更しない()
+        {
+            var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var factory=new GameplayPanelFactory(host.transform,font,null);var panel=factory.Checkpoint(out var message,out var resume,out var retry);
+            Assert.IsFalse(panel.activeSelf);Assert.AreSame(factory.Font,message.font);Assert.IsFalse(message.raycastTarget);
+            var backing=panel.transform.Find("CheckpointReadingBacking").GetComponent<Image>();var surface=panel.transform.Find("CheckpointReadingSurface").GetComponent<Image>();Assert.IsFalse(backing.raycastTarget);Assert.IsFalse(surface.raycastTarget);Assert.AreEqual(1f,backing.color.a);Assert.Less(surface.transform.GetSiblingIndex(),message.transform.GetSiblingIndex());
+            Assert.AreSame(Resources.Load<Sprite>("OlcaUI/description"),surface.sprite);var corners=new Vector3[4];foreach(var item in new[]{message.transform,resume.transform,retry.transform}){((RectTransform)item).GetWorldCorners(corners);foreach(var corner in corners)Assert.IsTrue(backing.rectTransform.rect.Contains(backing.transform.InverseTransformPoint(corner)),item.name);}
+            Assert.AreEqual(new Vector2(0,90),message.rectTransform.anchoredPosition);Assert.AreEqual(new Vector2(1360,560),message.rectTransform.sizeDelta);Assert.AreEqual(new Vector2(0,-270),((RectTransform)resume.transform).anchoredPosition);Assert.AreEqual(new Vector2(0,-270),((RectTransform)retry.transform).anchoredPosition);Assert.AreEqual(0,resume.onClick.GetPersistentEventCount());Assert.AreEqual(0,retry.onClick.GetPersistentEventCount());
+            float L(Color c)=>.2126f*c.r+.7152f*c.g+.0722f*c.b;Assert.Greater(L(message.color),.9f);Assert.Less(L(backing.color),.1f);
+        }
+
         [Test] public async Task Checkpoint案内は内容更新で世代を変えず再表示後の旧入力を拒否する()
         {
             int calls=0;bool allowed=true;var panel=Panel("checkpoint");var button=Button(panel,"Continue");button.onClick.AddListener(()=>calls++);
