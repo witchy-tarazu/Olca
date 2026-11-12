@@ -207,6 +207,17 @@ namespace Olca.Tests.Application
                 State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
             }}finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
+        [Test] public void 空中入口名の退避はキャラ全体を避け画面内と入口方向を保つ()
+        {
+            var method=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("EntranceTitleOffset",BindingFlags.Static|BindingFlags.NonPublic);
+            foreach(float width in new[]{1440f,1920f,3840f})foreach(float actorX in new[]{-width*.5f+150,0,width*.5f-150})foreach(float offset in new[]{-60f,60f}){
+                var viewport=new Rect(-width*.5f,-540,width,1080);var actor=new Rect(actorX-128,250,256,256);var center=Mathf.Clamp(actorX+offset,viewport.xMin+176,viewport.xMax-176);var label=new Rect(center-160,340,320,42);
+                float shift=(float)method.Invoke(null,new object[]{label,actor,viewport});label.position+=new Vector2(shift,0);Assert.IsFalse(label.Overlaps(actor));Assert.GreaterOrEqual(label.xMin,viewport.xMin);Assert.LessOrEqual(label.xMax,viewport.xMax);
+            }
+            Assert.Greater((float)method.Invoke(null,new object[]{new Rect(-220,340,320,42),new Rect(-128,250,256,256),new Rect(-960,-540,1920,1080)}),0f,"右側に空きがあれば接近方向によらず同じ側へ退避する");
+            var unchanged=new Rect(-160,600,320,42);Assert.AreEqual(0f,(float)method.Invoke(null,new object[]{unchanged,new Rect(-128,0,256,256),new Rect(-960,-540,1920,1080)}),"重ならなければ移動しない");
+        }
+
         [Test] public void 入口の目印は空中も残し実行可能時だけ現在キーを案内する()
         {
             var root=new GameObject("EntranceHintTest",typeof(RectTransform));try{

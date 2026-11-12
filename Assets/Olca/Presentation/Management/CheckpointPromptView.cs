@@ -34,7 +34,7 @@ namespace Olca.Presentation.Exploration
         private Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease presentation;
         private Olca.Unity.MenuPadScope menu;
         private Button back,pause;private bool covered;private int uncoveredFrame=-1;
-        private Action returned,entered;private Func<bool> canEnter;private Func<string> interactionHint;private Func<bool> trialRoute,transientInputBlocked;private Button entrance;private Text entranceActionHint;private Text trialRouteHint;private Image trialDoor;private RectTransform reloadPoint;private Text reloadPointLabel;
+        private Action returned,entered;private Func<bool> canEnter;private Func<string> interactionHint;private Func<bool> trialRoute,transientInputBlocked;private Button entrance;private Text entranceTitle,entranceActionHint;private Text trialRouteHint;private Image trialDoor;private RectTransform reloadPoint;private Text reloadPointLabel;
         private Func<Olca.Core.Domain.Card,Sprite> cardIcon;
         private Olca.Core.Logic.Integration.OutsideExplorationCards renderedCards;
         private bool renderedDeckLocation;
@@ -100,7 +100,7 @@ namespace Olca.Presentation.Exploration
             var doorObject=new GameObject("OutsideTrialDungeonMarker",typeof(RectTransform),typeof(Image));doorObject.transform.SetParent(transform,false);trialDoor=doorObject.GetComponent<Image>();trialDoor.sprite=resources.GetShared<Sprite>("OlcaUI/window");trialDoor.type=Image.Type.Sliced;trialDoor.color=new Color(.15f,.45f,.55f,.92f);trialDoor.raycastTarget=false;var doorRect=trialDoor.rectTransform;doorRect.anchorMin=doorRect.anchorMax=new Vector2(0,.21f);doorRect.pivot=new Vector2(.5f,0);doorRect.sizeDelta=new Vector2(140,200);doorObject.transform.SetSiblingIndex(player.transform.GetSiblingIndex());
             var reloadObject=new GameObject("OutsideReloadPoint",typeof(RectTransform),typeof(Image));reloadObject.transform.SetParent(transform,false);reloadPoint=reloadObject.GetComponent<RectTransform>();reloadPoint.anchorMin=reloadPoint.anchorMax=new Vector2(0,.21f);reloadObject.GetComponent<Image>().color=new Color(.025f,.07f,.1f,.9f);reloadObject.GetComponent<Image>().raycastTarget=false;
             reloadPointLabel=factory.Label("OutsideReloadPointLabel",reloadPoint,new Vector2(.5f,.5f),Vector2.zero,new Vector2(210,48));reloadPointLabel.fontSize=24;reloadPointLabel.alignment=TextAnchor.MiddleCenter;reloadPointLabel.color=Color.white;reloadPointLabel.raycastTarget=false;reloadPointLabel.resizeTextForBestFit=true;reloadPointLabel.resizeTextMinSize=18;reloadPointLabel.resizeTextMaxSize=24;
-            entrance=factory.Button("OutsideDungeonEntrance","ダンジョン イリグチ",transform,new Vector2(0,.21f),new Vector2(0,340));entrance.GetComponent<RectTransform>().sizeDelta=new Vector2(340,100);entrance.navigation=new Navigation{mode=Navigation.Mode.None};var entranceTitle=entrance.GetComponentInChildren<Text>();entranceTitle.rectTransform.anchorMin=entranceTitle.rectTransform.anchorMax=new Vector2(.5f,.5f);entranceTitle.rectTransform.sizeDelta=new Vector2(320,42);entranceTitle.rectTransform.anchoredPosition=new Vector2(0,22);entranceTitle.fontSize=24;entranceTitle.color=new Color(.6f,.94f,1f);entranceTitle.raycastTarget=false;
+            entrance=factory.Button("OutsideDungeonEntrance","ダンジョン イリグチ",transform,new Vector2(0,.21f),new Vector2(0,340));entrance.GetComponent<RectTransform>().sizeDelta=new Vector2(340,100);entrance.navigation=new Navigation{mode=Navigation.Mode.None};entranceTitle=entrance.GetComponentInChildren<Text>();entranceTitle.rectTransform.anchorMin=entranceTitle.rectTransform.anchorMax=new Vector2(.5f,.5f);entranceTitle.rectTransform.sizeDelta=new Vector2(320,42);entranceTitle.rectTransform.anchoredPosition=new Vector2(0,22);entranceTitle.fontSize=24;entranceTitle.color=new Color(.6f,.94f,1f);entranceTitle.raycastTarget=false;
             entranceActionHint=factory.Label("OutsideEntranceActionHint",entrance.transform,new Vector2(.5f,.5f),new Vector2(0,-23),new Vector2(320,40));entranceActionHint.fontSize=22;entranceActionHint.color=Color.white;entranceActionHint.raycastTarget=false;entranceActionHint.gameObject.SetActive(false);trialRouteHint=factory.Label("OutsideTrialRouteHint",transform,new Vector2(.5f,0),new Vector2(0,75),new Vector2(1100,60));trialRouteHint.fontSize=22;trialRouteHint.color=Color.white;trialRouteHint.resizeTextForBestFit=true;trialRouteHint.resizeTextMinSize=18;trialRouteHint.resizeTextMaxSize=22;
         }
         // 利用判定は呼出側の既存条件を使い、目印と操作案内だけを分離する。
@@ -111,6 +111,25 @@ namespace Olca.Presentation.Exploration
             entrance.image.raycastTarget=grounded;entrance.image.enabled=grounded;
             bool show=visible&&available&&!string.IsNullOrWhiteSpace(key)&&key!="ミワリアテ"&&key!="未割当";
             entranceActionHint.gameObject.SetActive(show);entranceActionHint.text=show?Olca.Presentation.CustomScreen.CustomDisplay.Katakana("["+key+"] シラベル"):"";
+        }
+        private static float EntranceTitleOffset(Rect label,Rect actor,Rect viewport)
+        {
+            if(!label.Overlaps(actor))return 0;
+            const float gap=16;float half=label.width*.5f;float left=actor.xMin-gap-half,right=actor.xMax+gap+half;
+            bool Fits(float center)=>center-half>=viewport.xMin+gap&&center+half<=viewport.xMax-gap;
+            float target=Fits(right)?right:left;
+            if(!Fits(target))target=Fits(left)?left:right;
+            return target-label.center.x;
+        }
+        // 操作領域は固定したまま、空中で重なる入口名だけをキャラの横へ避ける。
+        private void PlaceEntranceTitle(bool grounded)
+        {
+            entranceTitle.rectTransform.anchoredPosition=new Vector2(0,22);entranceTitle.text="ダンジョン イリグチ";
+            if(grounded||!entrance.gameObject.activeInHierarchy)return;
+            Rect Bounds(RectTransform value){var corners=new Vector3[4];value.GetWorldCorners(corners);var min=(Vector2)transform.InverseTransformPoint(corners[0]);var max=min;foreach(var point in corners){var local=(Vector2)transform.InverseTransformPoint(point);min=Vector2.Min(min,local);max=Vector2.Max(max,local);}return Rect.MinMaxRect(min.x,min.y,max.x,max.y);}
+            float shift=EntranceTitleOffset(Bounds(entranceTitle.rectTransform),Bounds(player.rectTransform),((RectTransform)transform).rect);
+            entranceTitle.rectTransform.anchoredPosition+=new Vector2(shift,0);
+            if(shift!=0)entranceTitle.text=shift>0?"< ダンジョン イリグチ":"ダンジョン イリグチ >";
         }
         // ワールド追従の案内だけを避け、固定HUDやゲーム座標は動かさない。
         private void PlaceReloadBelowVitals()
@@ -252,7 +271,7 @@ namespace Olca.Presentation.Exploration
             }
             if(sprite==null)sprite=idleSprite;
             player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);
             RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)
