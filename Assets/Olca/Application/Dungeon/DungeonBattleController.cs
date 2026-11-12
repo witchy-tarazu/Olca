@@ -659,7 +659,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null,outsideDungeonSelection?(System.Action)OpenOutsideDepartureDeckMenu:null,CanEditOwnedDeparture);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
@@ -1375,7 +1375,7 @@ namespace Olca.Application.Dungeon
             bool allowProgressActions=!exchangeOpen&&!styleSelectionOpen&&!OutsideRouteBusy&&!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&(!clearReturnSession.HasPendingSave||CanResumeProgressAction);
-            newGameButton.gameObject.SetActive(explorationDeckLibrary?.IsOpen!=true&&allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
+            newGameButton.gameObject.SetActive(explorationDeckLibrary?.IsOpen!=true&&!outsideDepartureDeckMenuOpen&&allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
             manualSaveButton.transform.SetAsLastSibling();newGameButton.transform.SetAsLastSibling();
             if(customizationEditorButton!=null){
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
@@ -1494,9 +1494,21 @@ namespace Olca.Application.Dungeon
         private void CloseOwnedCards() { collectionOpen = false; clearReturnView.Hide(); SetPausePanelVisible(IsUserPaused); }
 
         private bool ownedDepartureEditing;
-        private bool savedDeckMenuOpen, savedDeckDirty;
+        private bool savedDeckMenuOpen, savedDeckDirty,outsideDepartureDeckMenuOpen;
         private string editingSavedDeckId, editingSavedDeckName;
         private SavedDepartureDeck[] SavedDecks => clearReturnSession.Snapshot.SavedDecks??new SavedDepartureDeck[0];
+        // 入口から既存の帰還後編成へ接続する。初回攻略前の編集可否は既存ルールを維持。
+        private void OpenOutsideDepartureDeckMenu()
+        {
+            if(!outsideDungeonSelection||!CanSelectDungeon||!CanEditOwnedDeparture)return;
+            outsideDepartureDeckMenuOpen=true;OpenSavedDeckMenu();
+        }
+        private void CloseSavedDeckMenu()
+        {
+            savedDeckMenuOpen=false;
+            if(outsideDepartureDeckMenuOpen){outsideDepartureDeckMenuOpen=false;ShowDungeonSelection();clearReturnView.FocusMenuControl("PrepareDungeonDeck");}
+            else ShowClearReturn();
+        }
         private void OpenSavedDeckMenu(){if(!CanEditOwnedDeparture)return;clearReturnSession.ConfigureCollectionDefinitions(CurrentCollectionDefinitions());savedDeckMenuOpen=true;ShowSavedDeckMenu();}
         private void ShowSavedDeckMenu(string deleting=null)
         {
@@ -1504,8 +1516,8 @@ namespace Olca.Application.Dungeon
             EnsureReturnView();
             clearReturnView.RenderSavedDeckMenu(clearReturnSession.Snapshot, clearReturnSession.Error??ownedDepartureError,
                 !clearReturnSession.Ready||clearReturnSession.HasPendingSave,()=>EditSavedDeck(null),EditSavedDeck,CloneSavedDeck,EquipSavedDeck,
-                id=>ShowSavedDeckMenu(id),()=>{savedDeckMenuOpen=false;ShowClearReturn();},RetryClearReturn,
-                deleting,()=>{clearReturnSession.DeleteDeck(deleting);ShowSavedDeckMenu();},ReloadSavedDeckMenu);
+                id=>ShowSavedDeckMenu(id),CloseSavedDeckMenu,RetryClearReturn,
+                deleting,()=>{clearReturnSession.DeleteDeck(deleting);ShowSavedDeckMenu();},ReloadSavedDeckMenu,outsideDepartureDeckMenuOpen?"シュツゲキサキへモドる":null);
         }
         private void ReloadSavedDeckMenu()
         {

@@ -706,7 +706,7 @@ namespace Olca.Presentation.Dungeon
 
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
-            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null, Action explorationDecks = null, string departureDeck = null)
+            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null, Action explorationDecks = null, string departureDeck = null, Action prepareDepartureDeck = null, bool departureDeckEditable = true)
         {
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
@@ -718,7 +718,8 @@ namespace Olca.Presentation.Dungeon
             gameObject.SetActive(true);CommerceSurface();
             var heading=Text("DungeonSelectionTitle","シュツゲキサキをエラぶ",-245,390,1250,60,36);heading.color=Color.white;heading.alignment=TextAnchor.MiddleLeft;
             if(outsideExploration!=null&&!blocked&&error==null)QuietDepartureAction(Button("OutsideExplorationEntry","ガイカイ タンサク",150,390,340,60,outsideExploration));
-            if(explorationDecks!=null&&!blocked)QuietDepartureAction(Button("ExplorationDeckEntry","タンサク デッキ",150,305,340,60,explorationDecks));
+            if(prepareDepartureDeck!=null){var owner=content;var prepare=QuietPreparationButton(prepareDepartureDeck,owner,departureDeckEditable);prepare.interactable=!blocked&&departureDeckEditable;}
+            else if(explorationDecks!=null&&!blocked)QuietDepartureAction(Button("ExplorationDeckEntry","タンサク デッキ",150,305,340,60,explorationDecks));
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             int shown=Math.Min(rows,Math.Max(0,names.Length-dungeonPage*rows));float bottom=shown>0?208-(shown-1)*95-69:120;bool preview=shown<=3;
             float actionY=Mathf.Max(-400,bottom-(preview?(pages>1?285:245):150)),auxiliaryY=actionY-93,pageY=actionY+115;
@@ -726,7 +727,7 @@ namespace Olca.Presentation.Dungeon
             if(departureDeck!=null){float summaryTop=bottom-(preview?135:18);deckY=summaryTop-35;guideY=summaryTop-95;actionY=Mathf.Min(actionY,summaryTop-155);auxiliaryY=actionY-93;pageY=deckY;}
             bool valid=selected>=0&&selected<names.Length&&unlocked[selected];
             string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
-            var help=Text("DungeonSelectionHelp",error??("スタイル: "+styleName+(!preview&&!string.IsNullOrEmpty(info)?"\n"+info:"")),-245,305,1250,80,25);help.color=Color.white;help.alignment=TextAnchor.MiddleLeft;AddOverflowTextDetails(help,error==null?"シュツゲキのセツメイ":"ホゾンエラー",explorationDecks!=null);
+            var help=Text("DungeonSelectionHelp",error??("スタイル: "+styleName+(!preview&&!string.IsNullOrEmpty(info)?"\n"+info:"")),-245,305,1250,80,25);help.color=Color.white;help.alignment=TextAnchor.MiddleLeft;AddOverflowTextDetails(help,error==null?"シュツゲキのセツメイ":"ホゾンエラー",explorationDecks!=null||prepareDepartureDeck!=null);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
                 int index = dungeonPage * rows + row;
                 string label = unlocked[index]
@@ -742,8 +743,8 @@ namespace Olca.Presentation.Dungeon
             // 行き先名は選択行だけに置き、必要な地形/敵情報を静かな説明へまとめる。
             if(preview){var detail=Text("DungeonPreviewInformation",valid?(info??"トウロクされたツイカジョウホウはありません。"):"ミカイホウのイきサキはジョウケンをカクニンしてください。",0,bottom-72,1450,100,24);detail.color=new Color(.78f,.9f,.95f,1);detail.alignment=TextAnchor.MiddleLeft;detail.supportRichText=false;AddOverflowTextDetails(detail,"イキサキのジョウホウ");}
             if(pages>1){
-            Button("PreviousDungeonPage", "前へ", departureDeck==null?-380:-780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck); }).interactable = !blocked && dungeonPage > 0;
-            Button("NextDungeonPage", "次へ", departureDeck==null?380:780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Button("PreviousDungeonPage", "前へ", departureDeck==null?-380:-780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", departureDeck==null?380:780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable); }).interactable = !blocked && dungeonPage + 1 < pages;
             Text("DungeonPage", $"{dungeonPage+1}/{pages}", departureDeck==null?0:780, departureDeck==null?pageY:guideY, 250, 40, 24).color=Color.white;
             }
             if(departureDeck!=null){var deckLabel=Text("OutsideDepartureDeck",departureDeck,0,deckY,pages>1?1200:1700,70,24);deckLabel.color=new Color(.88f,.97f,1f);deckLabel.supportRichText=false;AddTrailingTextDetails(deckLabel,"OutsideDepartureDeckDetails","攻略用デッキ");outsideDepartureGuide=Text("OutsideDepartureGuide","",0,guideY,pages>1?1250:1700,40,20);outsideDepartureGuide.color=new Color(.88f,.97f,1f);}
@@ -753,6 +754,10 @@ namespace Olca.Presentation.Dungeon
             if (openTokenExchange != null && !blocked && error == null) QuietDepartureAction(Button("OpenTokenExchange", "トークン交換所", 430, auxiliaryY, 480, 58, openTokenExchange));
             if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, auxiliaryY, 850, 58, retrySave);
                     SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryDungeonDeparture":"DungeonChoice_"+selected,blocked);RefreshOutsideDepartureGuide();
+        }
+        private Button QuietPreparationButton(Action open,GameObject owner,bool editable)
+        {
+            var button=Button("PrepareDungeonDeck",editable?"コウリャク デッキ20マイ":"コウリャクデッキ（キカンゴ）",150,305,340,60,()=>{if(editable&&CanOperateView&&content==owner&&owner!=null&&owner.activeInHierarchy)open();});QuietDepartureAction(button);return button;
         }
         private static void QuietDepartureAction(Button button)
         {
@@ -1157,16 +1162,17 @@ namespace Olca.Presentation.Dungeon
             reading.sizeDelta=new Vector2(reading.sizeDelta.x,top-bottom);
         }
 
-        public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
+        public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null,string closeLabel=null)
         {
             if(deleting!=null){
-                if(content==null||content.name!="SavedDeckContents"||ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true)RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);
-                OpenDelete(profile,error,pending,deleting,confirmDelete,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload));return;
+                if(content==null||content.name!="SavedDeckContents"||ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true)RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload,closeLabel:closeLabel);
+                OpenDelete(profile,error,pending,deleting,confirmDelete,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload,closeLabel:closeLabel));return;
             }
             BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("SavedDeckContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            var closeOwner=content;Action closeCurrent=closeLabel==null?close:(Action)(()=>{if(CanOperateView&&!pending&&!HasMenuModal&&content==closeOwner&&closeOwner!=null&&closeOwner.activeInHierarchy)close();});
             var title=Text("SavedDeckTitle",explorationDeckLibrary?"探索用の保存デッキ":"保存デッキ・装備",0,455,1700,70,36);
             title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-85);
             var errorLabel=Text("SavedDeckError",error??"",0,365,1750,100,25);
@@ -1208,7 +1214,7 @@ namespace Olca.Presentation.Dungeon
             void ChangeSavedDeckPage(int direction){
                 if(this==null||pageOwner==null||content!=pageOwner||!pageOwner.activeInHierarchy||pending||HasMenuModal)return;
                 int next=Math.Max(0,Math.Min(pages-1,savedDeckPage+direction));if(next==savedDeckPage)return;
-                savedDeckPage=next;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);
+                savedDeckPage=next;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload,closeLabel:closeLabel);
                 // 端で無効になったページ操作からは反対側へ戻し、別の業務操作へ飛ばさない。
                 string focus=direction>0&&next+1<pages||direction<0&&next==0?"NextSavedDeckPage":"PreviousSavedDeckPage";
                 SetMenu(content.transform,close,focus,true);
@@ -1216,7 +1222,7 @@ namespace Olca.Presentation.Dungeon
             Button("PreviousSavedDeckPage","前へ",-380,-300,240,55,()=>ChangeSavedDeckPage(-1)).interactable=!pending&&savedDeckPage>0;
             Button("NextSavedDeckPage","次へ",380,-300,240,55,()=>ChangeSavedDeckPage(1)).interactable=!pending&&savedDeckPage+1<pages;
             Button("NewSavedDeck","新しいデッキ",-450,-420,750,75,create).interactable=!pending;
-            Button("CloseSavedDeckMenu",explorationDeckLibrary?"拠点へ戻る":"帰還画面へ戻る",450,-420,750,75,close).interactable=!pending;
+            Button("CloseSavedDeckMenu",closeLabel??(explorationDeckLibrary?"拠点へ戻る":"帰還画面へ戻る"),450,-420,750,75,closeCurrent).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retry);
             else if(reload!=null)Button("ReloadSavedDecks","保存から再読込",0,-493,800,58,reload);
             // 基準画面の配置を保ち、横長でも下部のページ/保存操作を欠けさせない。
@@ -1225,7 +1231,7 @@ namespace Olca.Presentation.Dungeon
                 control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
             }
             ApplyDeckReadingLook(error==null);FitExplorationSavedRows();FitSavedDeckReadingSurface();
-            SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+(explorationDeckLibrary?decks[0].Id:profile.EquippedDeckId),force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
+            SetMenu(content.transform,pending?null:closeCurrent,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+(explorationDeckLibrary?decks[0].Id:profile.EquippedDeckId),force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
         }
 
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false,string dungeonName=null,float y=-340,bool darkBackdrop=false)

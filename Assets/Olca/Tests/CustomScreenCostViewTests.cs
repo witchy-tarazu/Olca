@@ -48,6 +48,20 @@ namespace Olca.Tests
             }finally{Object.DestroyImmediate(root);}
         }
 
+        [TestCase(1920f,true)][TestCase(1920f,false)][TestCase(1662.77f,true)][TestCase(1662.77f,false)][TestCase(2199.64f,true)][TestCase(2199.64f,false)]
+        public void 入口の攻略編成は既存可否と区別表示を保ち旧入口callbackを拒否する(float width,bool editable)
+        {
+            var root=new GameObject("PrepareEntrance",typeof(RectTransform));try{((RectTransform)root.transform).sizeDelta=new Vector2(width,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);int opened=0;
+                void Draw(){view.RenderDungeonSelection(new[]{"イキサキ"},new[]{true},0,_=>{},()=>{},()=>{},false,null,()=>{},departureDeck:ClearReturnView.FormatDepartureDeckDisplay("スターター",20),prepareDepartureDeck:()=>opened++,departureDeckEditable:editable);}
+                Draw();var button=root.GetComponentsInChildren<Button>().Single(b=>b.name=="PrepareDungeonDeck");Assert.AreEqual(editable,button.interactable);StringAssert.Contains(editable?"20マイ":"キカンゴ",button.GetComponentInChildren<Text>().text);button.onClick.Invoke();Assert.AreEqual(editable?1:0,opened);var old=button.onClick;Draw();old.Invoke();Assert.AreEqual(editable?1:0,opened);
+                var help=root.GetComponentsInChildren<Text>().Single(x=>x.name=="DungeonSelectionHelp");Assert.LessOrEqual(help.rectTransform.anchoredPosition.x+help.rectTransform.rect.width/2,((RectTransform)root.GetComponentsInChildren<Button>().Single(b=>b.name=="PrepareDungeonDeck").transform).anchoredPosition.x-170);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(false)][TestCase(true)] public void 入口からの攻略保存デッキは戻る先を明示し旧閉鎖を再実行しない(bool pending)
+        {
+            var root=new GameObject("PrepareDeckBack",typeof(RectTransform));try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);int closed=0;void Draw(){view.RenderSavedDeckMenu(new ClearReturnProfile(),null,pending,()=>{},_=>{},_=>{},_=>{},_=>{},()=>closed++,()=>{},closeLabel:"シュツゲキサキへモドる");}Draw();var b=root.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseSavedDeckMenu");Assert.AreEqual(!pending,b.interactable);StringAssert.Contains("シュツゲキサキ",b.GetComponentInChildren<Text>().text);var old=b.onClick;Draw();old.Invoke();Assert.AreEqual(0,closed);root.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseSavedDeckMenu").onClick.Invoke();Assert.AreEqual(pending?0:1,closed);}finally{Object.DestroyImmediate(root);}
+        }
+
         [TestCase(1920f,1)][TestCase(1920f,5)][TestCase(1920f,7)]
         [TestCase(1662.77f,1)][TestCase(1662.77f,5)][TestCase(1662.77f,7)]
         [TestCase(2199.64f,1)][TestCase(2199.64f,5)][TestCase(2199.64f,7)]
