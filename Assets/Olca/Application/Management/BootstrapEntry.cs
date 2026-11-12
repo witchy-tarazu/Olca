@@ -73,7 +73,7 @@ namespace Olca.Application.Management
                 if(values.Length!=1)throw new InvalidOperationException("hostのControllerは1つ必要です");return values[0];
             }
             return HostOpenRequest.Prefab(GameplayHostPrefabPath,ct=>GameplayPrefabHostLease.LoadAsync(services.Resources,GameplayHostPrefabPath,scene,ct),root=>{
-                var controller=Controller(root);controller.ConfigureGameSystem(services);controller.ConfigureOutsideLandingRoute();controller.PrepareWorldPresentation(services);controller.ConfigureManagedCamera(services,null);
+                var controller=Controller(root);controller.ConfigureGameSystem(services);controller.ConfigureOutsideLandingRoute();controller.ConfigureTrialCustomizationDefaults();controller.PrepareWorldPresentation(services);controller.ConfigureManagedCamera(services,null);
                 if(storage!=null){controller.ConfigureGameplaySettingsDirectory(storage.BootstrapSettings);controller.ConfigureCheckpointDirectory(storage.BootstrapCheckpoint);controller.ConfigureProgressDirectory(storage.BootstrapProgress);controller.RequireValidationStorageGuard();}
             },root=>Controller(root).StartManagedHost(services));
         }

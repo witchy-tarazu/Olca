@@ -3741,13 +3741,27 @@ namespace Olca.Tests.Integration
             finally {c.gameObject.SetActive(false);}
         }
 
+        [TestCase("Editor")][TestCase("Unlocks")][TestCase("Acquisitions")]
+        public void 外界入口からの試用装備を閉じると同じ行き先一覧へ戻り閉鎖では保存しない(string kind)
+        {
+            var c=Start(new[]{Empty(3),DungeonConfig.CreateTestDungeon(8)},configure:x=>x.ConfigureTrialCustomizationDefaults());c.gameObject.SetActive(true);
+            try{
+                c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");Assert.AreEqual(ClearReturnStage.Returned,c.PersistentProgress.Flow.Stage);
+                Set(c,"outsideDungeonSelection",true);Call(c,"ShowDungeonSelection");var model=Model(c);int selected=(int)Get(c,"selectedDungeon");
+                Call(c,"OpenCustomization"+kind);var progress=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(progress.ActivePath);
+                Assert.IsTrue((bool)Get(c,kind=="Editor"?"CustomizationEditorOpen":kind=="Unlocks"?"CustomizationUnlockOpen":"CustomizationAcquisitionOpen"));Call(c,"CloseCustomization"+kind);
+                var view=(Olca.Presentation.Dungeon.ClearReturnView)Get(c,"clearReturnView");Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name=="PrepareDungeonDeck"&&b.gameObject.activeInHierarchy),"入口の行き先一覧へ戻す");
+                Assert.IsTrue((bool)Get(c,"dungeonSelectionOpen"));Assert.IsTrue((bool)Get(c,"outsideDungeonSelection"));Assert.AreEqual(selected,Get(c,"selectedDungeon"));Assert.AreSame(model,Model(c));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(progress.ActivePath));
+            }finally{c.gameObject.SetActive(false);}
+        }
+
         [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)][TestCase(2199.64f,942.70f)]
         public void 拠点の補助操作は画面比率が変わっても図鑑と重ならず基準位置を保つ(float width,float height)
         {
             var c=Start();var viewport=new UnityEngine.GameObject("HubButtonViewport",typeof(UnityEngine.RectTransform));var rect=(UnityEngine.RectTransform)viewport.transform;rect.sizeDelta=new UnityEngine.Vector2(width,height);
             try{
                 var names=new[]{"CardCollectionButton","OpenCustomizationEditor","OpenCustomizationUnlocks","OpenCustomizationAcquisitions","ManualSaveButton","NewGameButton"};var areas=new System.Collections.Generic.List<UnityEngine.Rect>();
-                foreach(var name in names){var button=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b=>b.name==name);var r=(UnityEngine.RectTransform)button.transform;r.SetParent(rect,false);var corners=new UnityEngine.Vector3[4];r.GetWorldCorners(corners);var points=corners.Select(p=>rect.InverseTransformPoint(p)).ToArray();var area=UnityEngine.Rect.MinMaxRect(points.Min(p=>p.x),points.Min(p=>p.y),points.Max(p=>p.x),points.Max(p=>p.y));Assert.GreaterOrEqual(area.xMin,rect.rect.xMin);Assert.LessOrEqual(area.xMax,rect.rect.xMax);Assert.GreaterOrEqual(area.yMin,rect.rect.yMin);Assert.LessOrEqual(area.yMax,rect.rect.yMax);foreach(var other in areas)Assert.IsFalse(area.Overlaps(other),name);areas.Add(area);if(width==1920&&name=="OpenCustomizationEditor"){Assert.AreEqual(650,area.center.x,.1);Assert.AreEqual(380,area.center.y,.1);}}
+                foreach(var name in names){var button=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b=>b.name==name);var r=(UnityEngine.RectTransform)button.transform;r.SetParent(rect,false);var corners=new UnityEngine.Vector3[4];r.GetWorldCorners(corners);var points=corners.Select(p=>rect.InverseTransformPoint(p)).ToArray();var area=UnityEngine.Rect.MinMaxRect(points.Min(p=>p.x),points.Min(p=>p.y),points.Max(p=>p.x),points.Max(p=>p.y));Assert.GreaterOrEqual(area.xMin,rect.rect.xMin);Assert.LessOrEqual(area.xMax,rect.rect.xMax);Assert.GreaterOrEqual(area.yMin,rect.rect.yMin);Assert.LessOrEqual(area.yMax,rect.rect.yMax);foreach(var other in areas)Assert.IsFalse(area.Overlaps(other),name);areas.Add(area);if(width==1920&&name=="OpenCustomizationEditor"){Assert.AreEqual(650,area.center.x,.1);Assert.AreEqual(400,area.center.y,.1);}}
             }finally{UnityEngine.Object.DestroyImmediate(viewport);}
         }
 

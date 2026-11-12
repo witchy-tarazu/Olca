@@ -20,6 +20,42 @@ namespace Olca.Tests
         private static CustomizationAcquisitionDefinition Define(string context,int max,params CustomizationGrant[] grants)=>new CustomizationAcquisitionDefinition(context,max,grants,grants.ToDictionary(v=>v.RequestId,v=>"テスト "+v.RequestId));
         [SetUp]public void Setup(){directory=Path.Combine(Path.GetTempPath(),"olca-acquisition-"+Id());catalog=new CustomizationCatalog("fixture",new PartsBoardDefinition(2,1,new[]{new Vector2Int(0,0)}),new[]{"a"},new Dictionary<string,PartShape>{{"dot",new PartShape(new[]{new Vector2Int(0,0)})}},null);var s=Session();Assert.IsTrue(s.InitializeStarter(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards()),s.Error);}
         [TearDown]public void Cleanup(){if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        private static CustomizationAcquisitionDefinition TrialKit(string run=null)=>Olca.Application.Management.TrialCustomizationDefinitions.Provider().Resolve(new CustomizationAcquisitionContext(run));
+        [Test]
+        public void 試用装備は読取だけで旧保存を変えず別盤面と不明所持を自動登録しない()
+        {
+            var before=File.ReadAllBytes(Store().ActivePath);Assert.IsTrue(Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(Session().CustomizationSnapshot));
+            Assert.IsFalse(Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(new CustomizationProgress{BoardId="other"}));
+            Assert.IsFalse(Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(new CustomizationProgress{OwnedAccessoryIds=new[]{"unknown"}}));
+            Assert.IsFalse(Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(new CustomizationProgress{OwnedParts=new[]{new CustomizationItemCount{Id="unknown",Count=1}}}));
+            var a=TrialKit().Snapshot;var b=TrialKit().Snapshot;Assert.AreEqual(a.ContextId,b.ContextId);Assert.AreEqual(a.Candidates.Single().RequestId,b.Candidates.Single().RequestId);
+            var run=Id();var clear=TrialKit(run).Snapshot;Assert.AreEqual("clear:"+run,clear.ContextId);Assert.AreEqual(run,clear.Candidates.Single().ClearRunId);Assert.AreNotEqual(a.Candidates.Single().RequestId,clear.Candidates.Single().RequestId);Assert.AreEqual(clear.Candidates.Single().RequestId,TrialKit(run).Snapshot.Candidates.Single().RequestId);
+            CollectionAssert.AreEqual(before,File.ReadAllBytes(Store().ActivePath));
+        }
+        [Test]
+        public void 試用一式の取得配置回転固定解放と再読込は既知耐性だけを加算する()
+        {
+            catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();var s=Session();var definition=TrialKit();var origin=definition.Snapshot.ContextId;var id=definition.Snapshot.Candidates.Single().RequestId;
+            Assert.IsTrue(s.TryPrepareCustomizationAcquisition(catalog,definition),s.Error);Assert.IsEmpty(s.CustomizationSnapshot.OwnedAccessoryIds);Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,origin,id),s.Error);
+            var state=Session().CustomizationSnapshot;Assert.AreEqual(1,state.OwnedAccessoryIds.Length);Assert.AreEqual(2,state.OwnedParts.Single().Count);Assert.AreEqual(1,state.OwnedUnlockItems.Single().Count);Assert.IsEmpty(state.EquippedAccessoryIds);Assert.IsEmpty(state.Placements);Assert.AreEqual(6,state.UnlockedCells.Length);
+            string accessory=Olca.Application.Management.TrialCustomizationDefinitions.Accessory,part=Olca.Application.Management.TrialCustomizationDefinitions.Part;
+            var placements=new[]{new PartPlacement("first",part,new Vector2Int(0,0)),new PartPlacement("second",part,new Vector2Int(2,0),PartRotation.Clockwise90)};
+            Assert.IsFalse(s.TrySetCustomizationLoadout(catalog,new[]{accessory},placements));Assert.IsTrue(s.TryApplyCustomizationUnlock(catalog,Olca.Application.Management.TrialCustomizationDefinitions.Unlock),s.Error);
+            Assert.IsTrue(s.TrySetCustomizationLoadout(catalog,new[]{accessory},placements),s.Error);s=Session();Assert.AreEqual(9,s.CustomizationSnapshot.UnlockedCells.Length);Assert.AreEqual(2,s.CustomizationSnapshot.Placements.Length);
+            var abilities=Olca.Application.Management.TrialCustomizationDefinitions.Abilities().Resolve(new CustomizationLoadoutSources(catalog,s.CustomizationSnapshot));var actor=new PlayerCharacter(100);actor.SetDepartureAbilities(abilities);Assert.AreEqual(20,actor.Resistances.Fire);Assert.AreEqual(0,actor.Resistances.Water);Assert.IsFalse(actor.TerrainState.IsFloating);
+            var snapshot=abilities.Capture();var restored=new ResolvedCustomizationAbilities(snapshot);Assert.AreEqual(20,restored.CombineElements(ElementResistances.Neutral).Fire);Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.AbilityId,snapshot.DefinitionId);
+            long revision=s.Snapshot.Revision;Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,origin,id));Assert.AreEqual(revision,s.Snapshot.Revision);Assert.AreEqual(2,s.CustomizationSnapshot.OwnedParts.Single().Count);
+            var other=new CustomizationGrant(Id(),new[]{accessory},new Dictionary<string,int>{{part,2}});Assert.IsTrue(s.TryPrepareCustomizationAcquisition(catalog,Define("other-trial",1,other)),s.Error);Assert.IsEmpty(s.FindCustomizationAcquisition("other-trial").Candidates);Assert.AreEqual(2,s.CustomizationSnapshot.OwnedParts.Single().Count);
+        }
+        [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
+        public void 試用一式も候補と受領の保存失敗再起動を同じ内容で復旧する(bool claim,bool after)
+        {
+            catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();var definition=TrialKit();var origin=definition.Snapshot.ContextId;var id=definition.Snapshot.Candidates.Single().RequestId;var s=Session();if(claim)Assert.IsTrue(s.TryPrepareCustomizationAcquisition(catalog,definition));
+            var bytes=File.ReadAllBytes(Store().ActivePath);var fault=new Fault{Before=!after,After=after};s=Session(fault);
+            bool ok=claim?s.TryClaimCustomizationAcquisition(catalog,origin,id):s.TryPrepareCustomizationAcquisition(catalog,definition);Assert.AreEqual(after,ok,s.Error);
+            if(!after){Assert.IsTrue(s.HasPendingSave);CollectionAssert.AreEqual(bytes,File.ReadAllBytes(Store().ActivePath));fault.Before=false;Assert.IsTrue(s.Retry(),s.Error);}
+            s=Session();Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,origin,id),s.Error);Assert.AreEqual(1,s.CustomizationSnapshot.OwnedAccessoryIds.Length);Assert.AreEqual(2,s.CustomizationSnapshot.OwnedParts.Single().Count);long revision=s.Snapshot.Revision;Assert.IsTrue(s.TryClaimCustomizationAcquisition(catalog,origin,id));Assert.AreEqual(revision,s.Snapshot.Revision);
+        }
         [Test]
         public void 所持済み装飾品だけを候補から除き重複パーツは除かない()
         {

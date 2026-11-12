@@ -726,21 +726,21 @@ namespace Olca.Application.Dungeon
             if(manager!=null&&!manager.IsSuspended)BindBattleFeedback(manager.CurrentBattle);
             if(!customizationEditorInterrupted||clearReturnSession?.Ready!=true)return;
             customizationEditorInterrupted=false;
-            if(initialHub)ShowDungeonSelection();else ShowClearReturn();
+            if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();
         }
         private bool CustomizationEditorOpen => customizationEditorView != null && customizationEditorView.gameObject.activeSelf;
         private bool CustomizationUnlockOpen => customizationUnlockView != null && customizationUnlockView.gameObject.activeSelf;
         private void OpenCustomizationUnlocks()
         {
             if(!CustomizationUiLive||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!IsProgressHub||clearReturnSession.HasPendingSave||customizationCatalog==null)return;
-            if(!TryGetCustomizationLayout(out _,out _)){clearReturnError="ホゾンとテイギがイッチしません";if(initialHub)ShowDungeonSelection();else ShowClearReturn();return;}
+            if(!TryGetCustomizationLayout(out _,out _)){clearReturnError="ホゾンとテイギがイッチしません";if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();return;}
             customizationUnlockWasOpen=true;customizationUnlockSavePending=false;
             hostPanels.Show("equipment-unlock");customizationUnlockView.PrepareManagedOpen();clearReturnView.Hide();customizationUnlockView.Open(customizationCatalog,clearReturnSession.CustomizationSnapshot);RefreshProgressActions();
         }
         private void CloseCustomizationUnlocks()
         {
             if(!CustomizationUiLive||!CustomizationUnlockOpen||!customizationUnlockView.CanInteract||customizationUnlockSavePending)return;
-            customizationUnlockWasOpen=false;customizationUnlockView.Close();if(initialHub)ShowDungeonSelection();else ShowClearReturn();
+            customizationUnlockWasOpen=false;customizationUnlockView.Close();if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();
         }
         private void ApplyCustomizationUnlockFromUi(string id)
         {
@@ -766,7 +766,7 @@ namespace Olca.Application.Dungeon
             if (!CustomizationUiLive || clearReturnView?.ManagementContext?.DialogBlocksInput==true || !IsProgressHub || clearReturnSession.HasPendingSave || customizationCatalog == null) return;
             try {
                 customizationDraft = new Olca.Core.Logic.Customization.CustomizationEditDraft(customizationCatalog, clearReturnSession.CustomizationSnapshot, clearReturnSession.Snapshot.Revision);
-            } catch (System.ArgumentException) { clearReturnError="ホゾンとテイギがイッチしません";if(initialHub)ShowDungeonSelection();else ShowClearReturn();return; }
+            } catch (System.ArgumentException) { clearReturnError="ホゾンとテイギがイッチしません";if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();return; }
             customizationSavePending = false;
             hostPanels.Show("equipment-loadout");customizationEditorView.PrepareManagedOpen();clearReturnView.Hide();customizationEditorView.Open(customizationDraft); RefreshProgressActions();
         }
@@ -774,7 +774,7 @@ namespace Olca.Application.Dungeon
         {
             if (!CustomizationUiLive || !CustomizationEditorOpen || !customizationEditorView.CanInteract || customizationSavePending) return;
             customizationEditorView?.Close(); customizationDraft = null;
-            if (initialHub) ShowDungeonSelection(); else ShowClearReturn();
+            if (initialHub||outsideDungeonSelection) ShowDungeonSelection(); else ShowClearReturn();
         }
         private void SaveCustomizationEditor()
         {
@@ -819,7 +819,7 @@ namespace Olca.Application.Dungeon
                 customizationAcquisitionPending=clearReturnSession.HasPendingSave;
                 if(!prepared&&!customizationAcquisitionPending)throw new System.ArgumentException(clearReturnSession.Error);
                 hostPanels.Show("equipment-acquisition");customizationAcquisitionView.PrepareManagedOpen();clearReturnView.Hide();customizationAcquisitionView.Open(clearReturnSession.FindCustomizationAcquisition(customizationAcquisitionContext),clearReturnSession.CustomizationSnapshot,customizationAcquisitionPending,customizationCatalog);RefreshProgressActions();
-            }catch(System.ArgumentException){clearReturnError="ソウビのコウホをカクニンできません。ホゾンをホジしています";if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
+            }catch(System.ArgumentException){clearReturnError="ソウビのコウホをカクニンできません。ホゾンをホジしています";if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();}
         }
         private void ClaimCustomizationAcquisition(string requestId)
         {
@@ -838,7 +838,7 @@ namespace Olca.Application.Dungeon
         private void CloseCustomizationAcquisitions()
         {
             if(!CustomizationUiLive||!CustomizationAcquisitionOpen||!customizationAcquisitionView.CanInteract||customizationAcquisitionPending)return;
-            customizationAcquisitionView.Close();if(initialHub)ShowDungeonSelection();else ShowClearReturn();
+            customizationAcquisitionView.Close();if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();
         }
         private IEvaluationRewardProvider evaluationRewardProvider;
         public void ConfigureEvaluationRewards(IEvaluationRewardProvider provider)
@@ -855,8 +855,25 @@ namespace Olca.Application.Dungeon
         private void ApplyDepartureCustomization(PlayerCharacter player)
         {
             if(customizationAbilityCatalog==null)return;
+            var state=clearReturnSession.CustomizationSnapshot;
+            // 任意の試用セットを未装備なら、従来の能力未設定checkpointを変えない。
+            if(useTrialCustomizationDefaults&&customizationAbilityCatalog.DefinitionId==Olca.Application.Management.TrialCustomizationDefinitions.AbilityId&&state.EquippedAccessoryIds.Length==0&&state.Placements.Length==0)return;
             if(!TryGetCustomizationSources(out var sources,out var error))throw new System.ArgumentException(error);
             player.SetDepartureAbilities(customizationAbilityCatalog.Resolve(sources));
+        }
+        private bool useTrialCustomizationDefaults;
+        public void ConfigureTrialCustomizationDefaults()
+        {
+            if(manager!=null||clearReturnSession!=null)throw new System.InvalidOperationException("試用データは起動前に指定してください");
+            useTrialCustomizationDefaults=true;
+        }
+        private void RegisterTrialCustomizationDefaults()
+        {
+            if(!useTrialCustomizationDefaults||clearReturnSession?.Ready!=true||customizationCatalog!=null||customizationAbilityCatalog!=null||customizationAcquisitionProvider!=null||
+                !Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(clearReturnSession.CustomizationSnapshot))return;
+            customizationCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();
+            customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();
+            customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.Provider();
         }
         private Olca.Core.Logic.Customization.CustomizationCatalog customizationCatalog;
         public void ConfigureCustomizationCatalog(Olca.Core.Logic.Customization.CustomizationCatalog catalog)
@@ -1381,7 +1398,7 @@ namespace Olca.Application.Dungeon
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
                 customizationEditorButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;
                 var label=customizationEditorButton.GetComponentInChildren<Text>();
-                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":"ソウビ・パーツ";
+                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":customizationCatalog.BoardId==Olca.Application.Management.TrialCustomizationDefinitions.BoardId?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";
                 // 未登録注記の2行だけ、既存の外形と上下の装飾内に余白を確保する。
                 label.resizeTextMaxSize=customizationCatalog==null?24:30;
             }
@@ -2104,6 +2121,7 @@ namespace Olca.Application.Dungeon
             PrepareCardRewardPresentation();
             clearReturnStore = clearReturnStore ?? gameSystemSession?.Storage.Progress ?? new ClearReturnFileStore(ProgressDirectory);
             clearReturnSession = new ClearReturnSession(clearReturnStore, new SimpleFusionRecipeProvider(CreateCardFactory()).CollectionRecipes, CreateCardFactory().CollectionCards, isCustomizationRunActive: () => manager != null && !clearReturnVisible);
+            RegisterTrialCustomizationDefaults();
             progressStartupBlocked = !clearReturnSession.Ready;
             int persistentLevel = clearReturnSession.Snapshot?.Level ?? 1;
             runtimeSession.Initialize(simulationSeed);
@@ -2446,10 +2464,10 @@ namespace Olca.Application.Dungeon
 
         private void UpdateViews()
         {
-            if(customizationUnlockWasOpen&&!CustomizationUnlockOpen){customizationUnlockWasOpen=false;if(initialHub)ShowDungeonSelection();else ShowClearReturn();}
+            if(customizationUnlockWasOpen&&!CustomizationUnlockOpen){customizationUnlockWasOpen=false;if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();}
             if(customizationDraft!=null&&(!CustomizationEditorOpen||customizationEditorView.Draft==null)) {
                 customizationEditorView?.Close();customizationDraft=null;
-                if(initialHub)ShowDungeonSelection();else ShowClearReturn();
+                if(initialHub||outsideDungeonSelection)ShowDungeonSelection();else ShowClearReturn();
             }
             if(CustomizationEditorOpen)customizationEditorView.transform.SetAsLastSibling();
             if(CustomizationUnlockOpen)customizationUnlockView.transform.SetAsLastSibling();

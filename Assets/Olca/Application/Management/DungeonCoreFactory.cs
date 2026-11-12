@@ -150,3 +150,37 @@ namespace Olca.Application.Management
         }
     }
 }
+
+namespace Olca.Application.Management
+{
+    /// <summary>正式品ではない任意受取の試用装備。値・形・入手元を変更する時は別IDで登録する。</summary>
+    public static class TrialCustomizationDefinitions
+    {
+        public const string BoardId="trial-equipment-board-v1",AbilityId="trial-equipment-abilities-v1";
+        public const string Accessory="カリ・ヒタイセイ+10",Part="カリ・ヒタイセイ+5パーツ",Unlock="カリ・ミギ3マス";
+        public static Olca.Core.Logic.Customization.CustomizationCatalog Catalog()
+            =>new Olca.Core.Logic.Customization.CustomizationCatalog(BoardId,new Olca.Core.Logic.Customization.PartsBoardDefinition(3,3,
+                Enumerable.Range(0,3).SelectMany(y=>Enumerable.Range(0,2).Select(x=>new Vector2Int(x,y)))),new[]{Accessory},
+                new Dictionary<string,Olca.Core.Logic.Customization.PartShape>{{Part,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0),new Vector2Int(1,0)})}},
+                new Dictionary<string,IEnumerable<Vector2Int>>{{Unlock,Enumerable.Range(0,3).Select(y=>new Vector2Int(2,y))}});
+        public static Olca.Core.Logic.Customization.CustomizationAbilityCatalog Abilities()
+            =>new Olca.Core.Logic.Customization.CustomizationAbilityCatalog(AbilityId,
+                new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Accessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:10))}},
+                new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Part,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:5))}});
+        // 別の登録/将来の所持品を自動変換しない。読込も保存も行わない。
+        public static bool CanRegister(Olca.Core.Logic.Customization.CustomizationProgress state)
+            =>state==null||(state.BoardId==null||state.BoardId==BoardId)&&state.OwnedAccessoryIds.All(x=>x==Accessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>x.Id==Unlock);
+        public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();
+        private sealed class TrialProvider:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
+        {
+            public Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition Resolve(Olca.Core.Logic.Customization.CustomizationAcquisitionContext context)
+            {
+                if(context==null)throw new ArgumentNullException(nameof(context));
+                string origin=context.IsClearReward?"clear:"+context.ClearRunId:"trial-equipment-event-v1",id;
+                using(var hash=System.Security.Cryptography.SHA256.Create())id=string.Concat(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes("trial-equipment-v1:"+origin)).Take(16).Select(b=>b.ToString("x2")));
+                var grant=new Olca.Core.Logic.Customization.CustomizationGrant(id,new[]{Accessory},new Dictionary<string,int>{{Part,2}},new Dictionary<string,int>{{Unlock,1}},context.ClearRunId);
+                return new Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition(origin,1,new[]{grant},new Dictionary<string,string>{{id,"シヨウ ソウビセット（カリ）"}});
+            }
+        }
+    }
+}

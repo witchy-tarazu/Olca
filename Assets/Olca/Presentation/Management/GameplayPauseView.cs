@@ -173,9 +173,9 @@ namespace Olca.Presentation.Management
             chrome.Collection=Button("CardCollectionButton","カード図鑑",parent,Vector2.one,new Vector2(-402,-64));
             ((RectTransform)chrome.Collection.transform).sizeDelta=new Vector2(300,60);
             var label=chrome.Collection.GetComponentInChildren<Text>();label.fontSize=label.resizeTextMaxSize=26;label.rectTransform.offsetMin=new Vector2(16,4);label.rectTransform.offsetMax=new Vector2(-16,-4);
-            chrome.Loadout=Button("OpenCustomizationEditor","ソウビ・パーツ",parent,Vector2.one,new Vector2(-310,-160));
-            chrome.Unlock=Button("OpenCustomizationUnlocks","マスカイホウ",parent,Vector2.one,new Vector2(-310,-235));
-            chrome.Acquisition=Button("OpenCustomizationAcquisitions","ソウビのウケトリ",parent,Vector2.one,new Vector2(-310,-310));
+            chrome.Loadout=Button("OpenCustomizationEditor","ソウビ・パーツ",parent,Vector2.one,new Vector2(-310,-140));
+            chrome.Unlock=Button("OpenCustomizationUnlocks","マスカイホウ",parent,Vector2.one,new Vector2(-310,-200));
+            chrome.Acquisition=Button("OpenCustomizationAcquisitions","ソウビのウケトリ",parent,Vector2.one,new Vector2(-310,-260));
             foreach(var button in new[]{chrome.Collection,chrome.Loadout,chrome.Unlock,chrome.Acquisition}){((RectTransform)button.transform).sizeDelta=new Vector2(300,60);button.gameObject.SetActive(false);}return chrome;
         }
         public GameObject Panel(string name,bool surface=false)
