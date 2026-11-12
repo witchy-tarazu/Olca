@@ -207,6 +207,21 @@ namespace Olca.Tests.Application
                 State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
             }}finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
+        [Test] public void 入口の目印は空中も残し実行可能時だけ現在キーを案内する()
+        {
+            var root=new GameObject("EntranceHintTest",typeof(RectTransform));try{
+                var view=root.AddComponent<Olca.Presentation.Exploration.OutsideExplorationView>();var buttonObject=new GameObject("OutsideDungeonEntrance",typeof(RectTransform),typeof(Image),typeof(Button));buttonObject.transform.SetParent(root.transform,false);var button=buttonObject.GetComponent<Button>();button.targetGraphic=buttonObject.GetComponent<Image>();
+                var hintObject=new GameObject("OutsideEntranceActionHint",typeof(RectTransform),typeof(Text));hintObject.transform.SetParent(buttonObject.transform,false);var hint=hintObject.GetComponent<Text>();
+                var type=view.GetType();type.GetField("entrance",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,button);type.GetField("entranceActionHint",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,hint);var render=type.GetMethod("RenderEntranceHint",BindingFlags.Instance|BindingFlags.NonPublic);
+                void Draw(bool visible,bool available,bool ground,string key)=>render.Invoke(view,new object[]{visible,available,ground,key});
+                Draw(true,true,true,"Enter");Assert.IsTrue(buttonObject.activeSelf);Assert.IsTrue(button.interactable);Assert.IsTrue(hintObject.activeSelf);Assert.AreEqual("[Enter] シラベル",hint.text);
+                Draw(true,false,false,"Enter");Assert.IsTrue(buttonObject.activeSelf);Assert.IsFalse(button.interactable);Assert.IsFalse(button.image.raycastTarget);Assert.IsFalse(button.image.enabled);Assert.IsFalse(hintObject.activeSelf);Assert.IsEmpty(hint.text);
+                Draw(true,false,true,"Enter");Assert.IsTrue(buttonObject.activeSelf);Assert.IsTrue(button.image.raycastTarget);Assert.IsTrue(button.image.enabled);Assert.IsFalse(hintObject.activeSelf);
+                Draw(true,true,true,"B / ○");Assert.AreEqual("[B / ○] シラベル",hint.text);Draw(true,true,true,"X / □");Assert.AreEqual("[X / □] シラベル",hint.text);
+                Draw(true,true,true,"ミワリアテ");Assert.IsFalse(hintObject.activeSelf);Draw(false,false,true,"Enter");Assert.IsFalse(buttonObject.activeSelf);Draw(true,true,true,"Enter");Assert.IsTrue(hintObject.activeSelf);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+
         [Test] public void 近接入口は通常移動の範囲だけで接地を要求し空中ではJump入力を奪わない()
         {
             var core=new Olca.Core.Logic.Integration.OutsideExplorationCore(Olca.Core.Logic.Integration.OutsideMovementDefinition.ValidationTerrain,Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationDash);
