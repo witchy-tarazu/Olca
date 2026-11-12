@@ -1366,7 +1366,7 @@ namespace Olca.Application.Dungeon
             bool allowProgressActions=!exchangeOpen&&!styleSelectionOpen&&!OutsideRouteBusy&&!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&(!clearReturnSession.HasPendingSave||CanResumeProgressAction);
-            newGameButton.gameObject.SetActive(allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
+            newGameButton.gameObject.SetActive(explorationDeckLibrary?.IsOpen!=true&&allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
             manualSaveButton.transform.SetAsLastSibling();newGameButton.transform.SetAsLastSibling();
             if(customizationEditorButton!=null){
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);

@@ -60,6 +60,44 @@ namespace Olca.Tests
                 Render(required-1);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());Render(required);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());StringAssert.Contains(required.ToString(),root.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureDraftCount").text);if(exploration)StringAssert.Contains("30",root.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureValidation").text);
             }finally{UnityEngine.Object.DestroyImmediate(root);}
         }
+        [TestCase(true,false,false,false,"シンキヘンセイ","ミホゾン")]
+        [TestCase(false,true,false,false,"シヨウチュウをヘンシュウ","ホゾンズみ")]
+        [TestCase(false,true,true,false,"シヨウチュウをヘンシュウ","ミホゾン")]
+        [TestCase(false,false,false,false,"ホゾンデッキをヘンシュウ","ホゾンズみ")]
+        [TestCase(false,false,true,false,"ホゾンデッキをヘンシュウ","ミホゾン")]
+        [TestCase(false,true,true,true,"シヨウチュウをヘンシュウ","ホゾンのサイシコウ")]
+        public void 探索編成の状態案内だけを更新し編成や保存callbackを変更しない(bool isNew,bool selected,bool dirty,bool pending,string kind,string state)
+        {
+            var root=new GameObject("ExplorationDeckState",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);view.ConfigureExplorationDeckLibrary();var profile=new ClearReturnProfile();byte[] before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);int saved=0;
+                view.RenderOwnedDeparture(profile,new Card[0],new Card[0],"30マイヒツヨウ",false,(_,__)=>{},null,_=>{},()=>{},false,save:()=>saved++,deckName:"テスト",rename:_=>{});
+                view.SetExplorationDeckEditingState(isNew,selected,dirty,pending);var label=root.GetComponentsInChildren<Text>().Single(x=>x.name=="ExplorationDeckEditingState");StringAssert.Contains(kind,label.text);StringAssert.Contains(state,label.text);StringAssert.Contains("シヨウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="DepartureRules").text);
+                CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));Assert.AreEqual(0,saved);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="SaveNamedDeck").IsInteractable());
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)][TestCase(2199.64f,942.70f)]
+        public void 探索編成の三行案内と状態は実メニューフォントで欠けず画面内に収まる(float width,float height)
+        {
+            var root=new GameObject("ExplorationStateViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);try{
+                var host=new GameObject("ExplorationStateView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);view.ConfigureExplorationDeckLibrary();
+                view.RenderOwnedDeparture(new ClearReturnProfile(),new Card[0],new Card[0],null,false,(_,__)=>{},null,_=>{},()=>{},false,save:()=>{},deckName:"テスト",rename:_=>{});view.SetExplorationDeckEditingState(false,true,true,false);
+                foreach(string name in new[]{"DepartureRules","ExplorationDeckEditingState","DepartureValidation"}){
+                    var label=host.GetComponentsInChildren<Text>().Single(t=>t.name==name);RequireInside(viewport,label.rectTransform);using(var generated=new TextGenerator()){Assert.IsTrue(generated.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)));Assert.GreaterOrEqual(generated.characterCountVisible,label.text.Length,name);}
+                }
+                StringAssert.Contains("シヨウ",host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureRules").text);
+                var profile=new ClearReturnProfile{SavedDecks=new[]{new SavedDepartureDeck{Id="active",Name="テスト",Cards=new SavedDeckCard[30]}},EquippedDeckId="active"};view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},null,_=>{},_=>{},()=>{},()=>{});var help=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckHelp");
+                using(var generated=new TextGenerator()){var settings=help.GetGenerationSettings(help.rectTransform.rect.size);Assert.IsTrue(generated.Populate(help.text,settings));Assert.GreaterOrEqual(generated.characterCountVisible,help.text.Length);foreach(var line in help.text.Split('\n'))Assert.Less(generated.GetPreferredWidth(line,settings),help.rectTransform.rect.width-160,"Playerの丸めと全文入口用の余裕を残す");}
+                Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="SavedDeckHelpDetails"));
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 探索一覧は使用中を名前でも明示し保存と切替の違いだけを案内する()
+        {
+            var root=new GameObject("ExplorationUsageLabel",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);view.ConfigureExplorationDeckLibrary();var profile=new ClearReturnProfile{EquippedDeckId="active",SavedDecks=new[]{new SavedDepartureDeck{Id="active",Name="なまえ",Cards=new SavedDeckCard[30]},new SavedDepartureDeck{Id="other",Name="別",Cards=new SavedDeckCard[30]}}};byte[] before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);int calls=0;
+                view.RenderSavedDeckMenu(profile,null,false,()=>calls++,_=>calls++,null,_=>calls++,_=>calls++,()=>calls++,()=>calls++);
+                StringAssert.Contains("シヨウチュウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="SavedDeckRow_active").text);StringAssert.DoesNotContain("シヨウチュウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="SavedDeckRow_other").text);StringAssert.Contains("キリカエ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="SavedDeckHelp").text);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="DeleteDeck_active").IsInteractable());CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));Assert.AreEqual(0,calls);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
         [Test] public void 探索使用中は使用ボタンに表示し削除を無効化して旧20枚の選択も拒否する()
         {
             var root=new GameObject("SelectedDeckFixture",typeof(RectTransform));try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});view.ConfigureExplorationDeckLibrary();var profile=new ClearReturnProfile{EquippedDeckId="active",SavedDecks=new[]{new SavedDepartureDeck{Id="active",Name="使用中",Cards=new SavedDeckCard[30]},new SavedDepartureDeck{Id="legacy",Name="旧20",Cards=new SavedDeckCard[20]}}};int calls=0;view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},null,_=>calls++,_=>calls++,()=>{},()=>{});Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="DeleteDeck_active").IsInteractable());Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="EquipDeck_active").IsInteractable());Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="EquipDeck_legacy").IsInteractable());Assert.AreEqual(0,calls);

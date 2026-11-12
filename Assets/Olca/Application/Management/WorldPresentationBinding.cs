@@ -175,8 +175,10 @@ namespace Olca.Application.Management
             var cards=ResolveDraftCards(source,options,slots);
             valid&=cards.All(c=>c!=null);
             view.RenderOwnedDeparture(source,options,cards,session.Error??(valid?null:invalid??"定義未解決のカードがあります"),valid,(index,delta)=>ChangeDraft(source,options,index,delta),null,RequestCloseEditor,()=>RenderEditor(),discard,
-            SaveDraft,name,value=>{if(!Operate||session.HasPendingSave)return;name=value;dirty=true;},session.HasPendingSave,Retry,draft.Select(c=>c.DefinitionKey).ToArray(),persistedName);
+            SaveDraft,name,value=>{if(!Operate||session.HasPendingSave)return;name=value;dirty=true;RefreshEditingState();},session.HasPendingSave,Retry,draft.Select(c=>c.DefinitionKey).ToArray(),persistedName);
+            RefreshEditingState();
         }
+        private void RefreshEditingState()=>view?.SetExplorationDeckEditingState(editingId==null,editingId!=null&&editingId==session.Snapshot?.SelectedDeckId,dirty,session.HasPendingSave);
         private void ChangeDraft(Olca.Core.Domain.ClearReturnProfile source,Olca.Core.Domain.Card[] options,int index,int delta)
         {
             if(!Operate||session.HasPendingSave||index<0||index>=source.Owned.Length)return;

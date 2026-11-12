@@ -263,7 +263,7 @@ namespace Olca.Presentation.Dungeon
     // 通常クリアの選択・経験値反映・帰還確認。保存判断はController/Coreへ委譲する。
     public sealed class ClearReturnView : MonoBehaviour
     {
-        private bool explorationDeckLibrary;
+        private bool explorationDeckLibrary;private UnityEngine.UI.Text explorationEditingState;
         public void ConfigureExplorationDeckLibrary(){explorationDeckLibrary=true;}
         private Action ensureManagedVisible,hideManaged;
         private Olca.Presentation.Management.ReturnDialog activeDialog;
@@ -274,7 +274,7 @@ namespace Olca.Presentation.Dungeon
         public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){ManagementContext=context;gameObject.SetActive(true);}
         public void HideManaged(){StopMenu();ManagementContext=null;gameObject.SetActive(false);}
         public void Hide(){if(hideManaged!=null)hideManaged();else gameObject.SetActive(false);}
-        private void BeginRender(){shopGuide=null;if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
+        private void BeginRender(){explorationEditingState=null;shopGuide=null;if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
         private bool CanOperateView=>this!=null&&gameObject.activeInHierarchy&&(ensureManagedVisible==null||ManagementContext?.IsCurrent==true&&!ManagementContext.DialogBlocksInput);
         private Font font;
         private Action<int> toggle;
@@ -972,6 +972,15 @@ namespace Olca.Presentation.Dungeon
             if(input!=null){input.customCaretColor=true;input.caretColor=primary;input.selectionColor=new Color(.18f,.60f,.74f,.65f);}
         }
 
+        // 編集状態の案内だけ。dirty/使用中の判断と保存は呼出側Sessionに残す。
+        public void SetExplorationDeckEditingState(bool isNew,bool isSelected,bool dirty,bool pending)
+        {
+            if(!explorationDeckLibrary||explorationEditingState==null)return;
+            string kind=isNew?"新規編成":isSelected?"使用中を編集":"保存デッキを編集";
+            explorationEditingState.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(kind+" / "+(pending?"保存の再試行":dirty||isNew?"ミホゾン":"保存済み"));
+            explorationEditingState.color=dirty||isNew||pending?new Color(1f,.79f,.40f):new Color(.7f,.95f,.96f);
+        }
+
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
             string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null, string persistedDeckName=null)
         {
@@ -987,6 +996,7 @@ namespace Olca.Presentation.Dungeon
             var owner=content;
             Action Live(Action action,bool allowPending=false)=>()=>{if(CanOperateView&&owner!=null&&content==owner&&owner.activeInHierarchy&&(allowPending||!pending)&&readonlyDetails==null)action?.Invoke();};
             Text("DepartureTitle", explorationDeckLibrary?"探索デッキを編成":"所持から出撃デッキを編成", 0, 455, 1750, 60, 36);
+            if(explorationDeckLibrary)explorationEditingState=Text("ExplorationDeckEditingState","編集中",610,455,480,60,23);
             Button nameSaveButton=null;Func<bool> nameCanSave=()=>true;Action refreshNameState=null;
             if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(SavedDeckNameInputField));inputObj.transform.SetParent(content.transform,false);
                 var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(-150,400);ir.sizeDelta=new Vector2(1000,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
@@ -1012,14 +1022,14 @@ namespace Olca.Presentation.Dungeon
             // 編集中の枚数と候補一覧を分け、数量は操作の隣で読めるようにする。
             CommerceFace("DepartureSummary",0,325,1760,96);
             Text("DepartureDraftCount",$"編成 {draft.Count} / {(explorationDeckLibrary?ExplorationDeckRules.RequiredCards:20)}枚",-650,325,410,74,34);
-            Text("DepartureRules", "所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 220, 325, 1270, 84, 23);
+            Text("DepartureRules", "所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1"+(explorationDeckLibrary?"\n保存は編成の確定。使うデッキは一覧の「使用」で選びます。":""), 220, 325, 1270, explorationDeckLibrary?96:84, explorationDeckLibrary?21:23);
             CommerceFace("DepartureCandidates",0,-35,1760,500);
             Text("DepartureCandidateHeading","所持カード",-650,190,410,36,22);
             Text("DepartureCountHeading","編成",515,190,140,36,22);
             Text("DepartureOwnedHeading","所持",775,190,140,36,22);
             // 共通の構築判定は保ち、探索画面の案内だけ用途へ揃える。
             string conditionText=explorationDeckLibrary?error?.Replace("出撃デッキ","探索デッキ"):error;
-            AddOverflowTextDetails(Text("DepartureValidation", conditionText ?? (explorationDeckLibrary?"この30枚を探索用に保存できます。":"この20枚で出撃できます。"), 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
+            AddOverflowTextDetails(Text("DepartureValidation", conditionText ?? (explorationDeckLibrary?"この30枚を保存できます。使用中の編集はヘンセイチテンからデるとハンエイします。":"この20枚で出撃できます。"), 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
@@ -1120,16 +1130,18 @@ namespace Olca.Presentation.Dungeon
             var decks=profile.SavedDecks??new SavedDepartureDeck[0];
             AddOverflowTextDetails(errorLabel,"ホゾンエラー");
             if(decks.Length==0)Text("SavedDeckEmpty",pending?"保存デッキはまだありません。\n保存を再試行してください。":"保存デッキはまだありません。\n新しいデッキからつくれます。",0,80,1450,150,30);
-            var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?explorationDeckLibrary?"永続所持カードから30枚を編成。所持枚数は減りません。\n旧デッキは自動変更せず、ダンジョン用とは別に保存します。":"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
+            var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?explorationDeckLibrary?"30マイをヘンセイ。ショジスウはヘらず、ダンジョンヨウとはベツにホゾンします。\n「ホゾン」はヘンセイのカクテイ。「シヨウ」でツカうデッキをキリカエます。\nハンエイはヘンセイチテンをデたとき。キュウデッキはジドウヘンコウしません。":"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
             help.rectTransform.anchorMin=new Vector2(0,1);help.rectTransform.anchorMax=Vector2.one;help.rectTransform.sizeDelta=new Vector2(-170,100);help.rectTransform.anchoredPosition=new Vector2(0,-175);
-            AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
+            // 探索一覧には上端の補助操作がない。短い固定案内に不要な右上予備幅を取らない。
+            if(!explorationDeckLibrary)AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
+            else if(NeedsTextDetails(help))AddOverflowTextDetails(help,"ホゾンデッキのセツメイ");
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
             if(explorationDeckLibrary&&decks.Length>0){
                 Text("SavedDeckNameHeading","デッキのナマエ",-470,235,700,36,22).alignment=TextAnchor.MiddleLeft;
                 Text("SavedDeckCountHeading","マイスウ",-20,235,140,36,22);
             }
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
-                var row=Text("SavedDeckRow_"+d.Id,explorationDeckLibrary?d.Name:(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
+                var row=Text("SavedDeckRow_"+d.Id,explorationDeckLibrary?(active?"［使用中］ ":"")+d.Name:(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
                 if(explorationDeckLibrary){
                     row.alignment=TextAnchor.MiddleLeft;
                     Text("SavedDeckQuantity_"+d.Id,d.Cards.Length+"枚",-20,y,140,70,25);
