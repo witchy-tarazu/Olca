@@ -305,7 +305,7 @@ namespace Olca.Presentation.Management
     public sealed class BootstrapTitleView:MonoBehaviour
     {
         private ManagedScreenContext context;private Action hidden;private Button start,newGame;private Text status;private Olca.Unity.MenuPadScope menu;
-        private GameplayPanelFactory factory;private ProgressActionDialog newGameDialog;private bool busy,canContinue,canCreate;private string hint;
+        private GameplayPanelFactory factory;private ProgressActionDialog newGameDialog;private bool busy,canContinue,canCreate;private string hint,statusError;private Text inputGuide;private GameObject newGameFocus,startFocus;
         public static GameObject Create(Transform parent,Olca.Unity.ResourceManager resources){
             var root=new GameObject("BootstrapTitle",typeof(RectTransform),typeof(Image));root.SetActive(false);root.transform.SetParent(parent,false);var rect=(RectTransform)root.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;root.GetComponent<Image>().color=new Color(.015f,.04f,.06f,1);
             try{var view=root.AddComponent<BootstrapTitleView>();var source=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation");Sprite background=null;foreach(var sr in source.GetComponentsInChildren<SpriteRenderer>(true))if(sr.name=="DungeonBackground")background=sr.sprite;if(background==null)throw new InvalidOperationException("タイトルの共有背景がありません");
@@ -313,7 +313,8 @@ namespace Olca.Presentation.Management
                 var factory=view.factory=new GameplayPanelFactory(root.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null);var title=factory.Label("TitleHeading",root.transform,new Vector2(.5f,.5f),new Vector2(0,200),new Vector2(1000,130));title.text="OLCA";title.fontSize=80;title.color=Color.white;
                 view.newGame=factory.Button("TitleNewGame","はじめから",root.transform,new Vector2(.5f,.5f),new Vector2(0,30));view.start=factory.Button("TitleStart","つづきから",root.transform,new Vector2(.5f,.5f),new Vector2(0,-90));
                 foreach(var button in new[]{view.newGame,view.start})button.GetComponent<RectTransform>().sizeDelta=new Vector2(460,90);
-                view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-240),new Vector2(1100,150));view.status.color=Color.white;view.status.fontSize=24;return root;
+                view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-240),new Vector2(1100,150));view.status.color=Color.white;view.status.fontSize=24;view.newGameFocus=AddFocusFrame(view.newGame);view.startFocus=AddFocusFrame(view.start);
+                view.inputGuide=factory.Label("TitleInputGuide",root.transform,new Vector2(.5f,.5f),new Vector2(0,-365),new Vector2(1400,100));view.inputGuide.color=Color.white;view.inputGuide.fontSize=24;return root;
             }catch{if(Application.isPlaying)Destroy(root);else DestroyImmediate(root);throw;}
         }
         // 既存のView寿命検証向け互換入口。通常起動は保存判定を渡す。
@@ -328,14 +329,36 @@ namespace Olca.Presentation.Management
         public void OpenNewGame(IProgressActionOperations operations,DialogManager manager,Action saved)
         {
             if(context?.IsCurrent!=true||busy||context.DialogBlocksInput||!canCreate)return;var owner=context;
-            if(newGameDialog==null){var panel=factory.Panel("TitleNewGameConfirmation",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,1f);newGameDialog=panel.AddComponent<ProgressActionDialog>();newGameDialog.Initialize(factory);newGameDialog.Message.color=Color.white;newGameDialog.Message.fontSize=38;}
+            if(newGameDialog==null){var panel=factory.Panel("TitleNewGameConfirmation",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,1f);newGameDialog=panel.AddComponent<ProgressActionDialog>();newGameDialog.Initialize(factory);newGameDialog.ConfigureTitlePresentation(factory);}
             // 再表示時にも同じserviceの未保存計画を使う。保存/初期化そのものはDialogへ複製しない。
             newGameDialog.Completed-=completed;completed=result=>{if(this==null||context!=owner||!owner.IsCurrent)return;if(result.Outcome==ProgressActionOutcome.NewGameStarted){SetContinueAvailable();saved?.Invoke();}};newGameDialog.Completed+=completed;
             newGameDialog.OpenNewGame(operations,manager,owner,()=>this!=null&&context==owner&&owner.IsCurrent);
         }
         private Action<ProgressActionResult> completed;
-        public void SetBusy(bool value,string error){busy=value;start.interactable=!busy&&canContinue;newGame.interactable=!busy&&canCreate;status.text=busy?"ヨミコミチュウ":error==null?hint:Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error);}
+        // タイトルだけの表示。開始/保存の判断や入力処理は既存の経路を使う。
+        internal static GameObject AddFocusFrame(Button button)
+        {
+            var frame=new GameObject("TitleSelectionFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-5,-5);rect.offsetMax=new Vector2(5,5);
+            void Edge(string name,Vector2 min,Vector2 max,Vector2 size){var edge=new GameObject(name,typeof(RectTransform),typeof(Image));edge.transform.SetParent(frame.transform,false);var image=edge.GetComponent<Image>();image.color=new Color(.3f,.95f,1f);image.raycastTarget=false;var area=(RectTransform)edge.transform;area.anchorMin=min;area.anchorMax=max;area.anchoredPosition=Vector2.zero;area.sizeDelta=size;}
+            Edge("Top",new Vector2(0,1),Vector2.one,new Vector2(0,4));Edge("Bottom",Vector2.zero,new Vector2(1,0),new Vector2(0,4));Edge("Left",Vector2.zero,new Vector2(0,1),new Vector2(4,0));Edge("Right",new Vector2(1,0),Vector2.one,new Vector2(4,0));frame.SetActive(false);return frame;
+        }
+        public static string InputGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad,bool confirmation=false,bool canCancel=true)
+        {
+            string Label(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(profile!=null&&profile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null);
+            string direction=gamepad?"ホウコウ":confirmation?"← / →":"↑ / ↓";
+            string decide=gamepad?Label("Decide"):"Enter",cancel=gamepad?Label("Cancel"):"Esc";
+            return direction+" : センタク    "+decide+" : ケッテイ"+(canCancel?"\n"+cancel+(confirmation?" : トリケシ":" : カクニンガメンで モドる"):"\nホゾンの サイシコウが ヒツヨウです");
+        }
+        public void RefreshPresentation()
+        {
+            if(status==null)return;var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;string focus=selected!=null?selected.name:menu?.FocusName;
+            bool visible=context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy;
+            newGameFocus.SetActive(visible&&focus==newGame.name&&newGame.IsInteractable());startFocus.SetActive(visible&&focus==start.name&&start.IsInteractable());
+            status.text=busy?"ヨミコミチュウ":statusError!=null?Olca.Presentation.CustomScreen.CustomDisplay.Katakana(statusError):!canCreate?hint:focus==newGame.name?"アタラしい シンコウを カイシします。\nカクニンガメンで トリケシできます。"+(!canContinue?"\nツヅキの セーブが ありません":""):hint;
+            inputGuide.gameObject.SetActive(visible);if(visible)inputGuide.text=InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);
+        }
+        public void SetBusy(bool value,string error){busy=value;statusError=error;start.interactable=!busy&&canContinue;newGame.interactable=!busy&&canCreate;RefreshPresentation();}
         public void Hide(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context=null;if(start!=null)start.onClick=new Button.ButtonClickedEvent();if(newGame!=null)newGame.onClick=new Button.ButtonClickedEvent();if(this!=null)gameObject.SetActive(false);}
-        private void LateUpdate(){newGameDialog?.RefreshLifetime();menu?.Tick();}private void OnDisable(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();completed=null;}
+        private void LateUpdate(){newGameDialog?.RefreshLifetime();menu?.Tick();RefreshPresentation();}private void OnDisable(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();completed=null;}
     }
 }

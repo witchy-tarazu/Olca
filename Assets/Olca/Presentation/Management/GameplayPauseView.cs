@@ -436,7 +436,7 @@ namespace Olca.Presentation.Management
         private IProgressActionOperations operations;
         private long revision;
         private bool pending,newGameSucceeded,showConfirm,canClose;
-        private string body,confirmText;
+        private string body,confirmText;private bool titlePresentation;private Text titleGuide;private GameObject titleConfirmFocus,titleCancelFocus;
         public Text Message {get;private set;}
         public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
         public event Action<ProgressActionResult> Completed;
@@ -448,6 +448,21 @@ namespace Olca.Presentation.Management
             confirm=factory.Button("ConfirmNewGame","進行を初期化して開始",transform,new Vector2(.5f,.5f),new Vector2(-300,-180));
             cancel=factory.Button("CancelProgressAction","取消して戻る",transform,new Vector2(.5f,.5f),new Vector2(300,-180));
             foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(500,80);CaptureFeedback();
+        }
+        // タイトルから開く新規開始確認だけに適用。他の進行/保存Dialogは従来表示を保つ。
+        public void ConfigureTitlePresentation(GameplayPanelFactory factory)
+        {
+            if(titlePresentation)return;titlePresentation=true;
+            var heading=factory.Label("TitleNewGameHeading",transform,new Vector2(.5f,.5f),new Vector2(0,350),new Vector2(1300,80));heading.text="はじめから カイシしますか？";heading.fontSize=44;heading.color=Color.white;
+            Message.color=Color.white;Message.fontSize=32;Message.alignment=TextAnchor.MiddleLeft;Message.rectTransform.sizeDelta=new Vector2(1300,430);Message.rectTransform.anchoredPosition=new Vector2(0,100);
+            titleGuide=factory.Label("TitleConfirmationInputGuide",transform,new Vector2(.5f,.5f),new Vector2(0,-335),new Vector2(1300,100));titleGuide.fontSize=24;titleGuide.color=Color.white;
+            titleConfirmFocus=BootstrapTitleView.AddFocusFrame(confirm);titleCancelFocus=BootstrapTitleView.AddFocusFrame(cancel);
+        }
+        private void LateUpdate()
+        {
+            if(!titlePresentation)return;bool live=CanOperatePopup;var selected=EventSystem.current?.currentSelectedGameObject;
+            titleConfirmFocus.SetActive(live&&selected==confirm.gameObject&&confirm.IsInteractable());titleCancelFocus.SetActive(live&&selected==cancel.gameObject&&cancel.IsInteractable());
+            titleGuide.text=BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true,canClose);
         }
         public void OpenManualSave(IProgressActionOperations service,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {
@@ -464,7 +479,7 @@ namespace Olca.Presentation.Management
             purpose=Purpose.NewGame;operations=service;revision=service.Revision;pending=service.Pending;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
             if(!Begin(manager,parent,live)){operations=null;return;}
             if(pending){ShowPending();return;}
-            Set("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で新しい進行を開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
+            Set(titlePresentation?"スロット1の シンコウを ショキカします。\n\nショジカード・ホゾンデッキ・セイチョウ・ツウカ・ズカン、\nカイホウリレキ・コウリャクシンコウが タイショウです。\nスターター20マイで アタラしい シンコウを カイシします。\n\nソウサ・エンシュツ・オンリョウの セッテイは ホジします。\nジッコウマエの シンコウブンショ・キュウコウリャクデータは\nフッキュウヨウに ホゼンします。":"スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で新しい進行を開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
         }
         public void OpenNotice(string message,bool accept,bool close,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {
