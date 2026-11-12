@@ -10,6 +10,36 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        [Test] public void ダッシュ中の後入力蹴りが拒否されても古いカード予約を復活させない()
+        {
+            using(var s=Sword161(startup:3,recovery:8))using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsDashing);Assert.IsTrue(s.ProcessCardUseInput(true,false,false,1,0,out _));long rev=s.Cards.HandRevision;
+                for(int n=1;n<=9;n++){s.TickTraversal(0);s.ProcessCardUseInput(n==8,false,n==9,2,3,out _);if(n==8)Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);}
+                Assert.IsTrue(s.Core.IsDashing);Assert.IsFalse(s.NormalKick.IsActive);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);
+                for(int n=0;n<15;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(rev,s.Cards.HandRevision);Assert.IsFalse(s.NormalKick.IsActive);
+            }
+        }
+        [TestCase(false)] [TestCase(true)] public void 蹴り中のカード予約は六frame境界と取消可能化で一枚だけ消費する(bool late)
+        {
+            using(var s=Sword161())using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();long at=s.Core.Frame;long revision=s.Cards.HandRevision;Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));
+                for(int n=1;n<=15;n++){s.TickTraversal(0);s.ProcessCardUseInput(n==(late?10:9),false,false,2,0,out _);}
+                Assert.AreEqual(revision+(late?1:0),s.Cards.HandRevision);Assert.AreEqual(late?false:true,s.NormalKick.IsActive);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);
+            }
+        }
+        [TestCase(false)] [TestCase(true)] public void 同frameのカードと蹴りは不明ならカードで後の蹴りだけ上書きする(bool basicLater)
+        {
+            using(var s=Sword161())using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();long revision=s.Cards.HandRevision;Assert.IsTrue(s.ProcessCardUseInput(true,false,true,basicLater?1:0,basicLater?2:0,out _));Assert.AreEqual(basicLater?revision:revision+1,s.Cards.HandRevision);Assert.AreEqual(basicLater,s.NormalKick.IsActive);
+            }
+        }
+        [Test] public void カード前隙中の蹴り予約は消費済みカードを巻き戻さず取消境界で発動する()
+        {
+            using(var s=Sword161(startup:3,recovery:8))using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();Assert.IsTrue(s.ProcessCardUseInput(true,false,false,1,0,out _));long rev=s.Cards.HandRevision;
+                for(int n=1;n<=11;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,n==7,0,2,out _);}Assert.IsTrue(s.NormalKick.IsActive);Assert.IsNull(s.AttackState);Assert.AreEqual(rev,s.Cards.HandRevision);
+            }
+        }
         private static OutsideExplorationSession Deck188(out CheckpointDefinitions definitions)
         {
             var data=Deck155();definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(data.ToList())).Definitions;var session=new OutsideExplorationSession();session.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.IsTrue(session.QueueSelectedDeck("reload188",data,Owned(data),new SeededBattleRandom(188),out _));Walk155(session,10*60000);session.Core.CardGauge.Configure(100,0);Assert.IsTrue(session.Cards.TryConsumeSelected(session.Cards.SelectedCard,session.Cards.HandRevision,session.Core.CardGauge,out _));return session;

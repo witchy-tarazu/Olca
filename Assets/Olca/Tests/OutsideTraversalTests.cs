@@ -7,6 +7,48 @@ namespace Olca.Tests
 {
     public sealed class OutsideTraversalTests
     {
+        private static OutsideExplorationSession TrialKick212()
+        {var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.EnableTrialNormalKick();return s;}
+        [Test] public void 試用蹴り入力は地上移動向きを固定しジャンプで中断する()
+        {
+            using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
+                Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));long x=s.Core.Position;int facing=s.Core.Facing;
+                for(int n=0;n<10;n++){s.TickTraversal(-facing);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(facing,s.Core.Facing);Assert.IsTrue(s.IsAttacking);}
+                s.TickTraversal(0,true,true);Assert.IsFalse(s.Core.IsGrounded);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(1,s.NormalKick.NextGroundStage);
+            }
+        }
+        [TestCase(-1,OutsideKickKind.AirDown)] [TestCase(0,OutsideKickKind.AirForward)] [TestCase(1,OutsideKickKind.AirUp)]
+        public void 実Session空中蹴りは通常の横移動落下を保ち着地中断する(int vertical,OutsideKickKind kind)
+        {
+            using(var s=TrialKick212())using(var control=TrialKick212())using(var a=s.AttachPresentation())using(var b=control.AttachPresentation()){
+                s.TickTraversal(0,true,true);control.TickTraversal(0,true,true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _,vertical));Assert.AreEqual(kind,s.NormalKick.Kind);int facing=s.NormalKick.AttackFacing;
+                for(int n=0;n<200&&!s.Core.IsGrounded;n++){s.TickTraversal(-1,jumpHeld:n<8);control.TickTraversal(-1,jumpHeld:n<8);Assert.AreEqual(control.Core.Position,s.Core.Position);Assert.AreEqual(control.Core.Height,s.Core.Height);Assert.AreEqual(control.Core.VerticalVelocity,s.Core.VerticalVelocity);Assert.AreEqual(facing,s.NormalKick.AttackFacing);}
+                Assert.IsTrue(s.Core.IsGrounded);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(1,s.NormalKick.NextGroundStage);
+            }
+        }
+        [Test] public void 試用蹴りは同フレーム重複せず保持だけで次段へ進まず六フレーム予約で次段へ進む()
+        {
+            using(var s=TrialKick212())using(var l=s.AttachPresentation()){
+                Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,2,out _));long start=s.NormalKick.StartedAt;
+                for(int n=1;n<=10;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(start,s.NormalKick.StartedAt);
+                s.TickTraversal(0);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,3,out _));
+                for(int n=12;n<=15;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(OutsideKickKind.GroundSecond,s.NormalKick.Kind);Assert.AreEqual(15,s.NormalKick.StartedAt);
+            }
+        }
+        [Test] public void 蹴りの停止再表示は論理時計を進めず保存拒否は既存保存を書き換えない()
+        {
+            using(var s=TrialKick212()){
+                var l=s.AttachPresentation();s.ProcessCardUseInput(false,false,true,0,1,out _);long frame=s.Core.Frame;long x=s.Core.Position;l.Dispose();Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(1));Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);Assert.Throws<ArgumentException>(()=>s.CaptureRuntime());
+                using(var next=s.AttachPresentation()){Assert.IsTrue(s.NormalKick.IsActive);s.CancelAttackReservation();for(int n=0;n<39;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.IsFalse(s.NormalKick.HasProgress);next.Dispose();Assert.DoesNotThrow(()=>s.CaptureRuntime());}
+            }
+        }
+        [Test] public void ダッシュ中の未定蹴りと行動不能は発動せず回復後も古い予約を実行しない()
+        {
+            using(var s=TrialKick212())using(var l=s.AttachPresentation()){
+                s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsDashing);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.IsFalse(s.IsAttacking);
+                s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);s.Player.ApplyParalysis(3);s.TickTraversal(0);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,2,out _));Assert.IsFalse(s.IsAttacking);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,s.PendingAttack);
+            }
+        }
         private static OutsideNormalKickSequence Kick(out Olca.Core.Logic.Battle.AttackInputReservation buffer,int startup=1,int active=2,int recovery=3,int? cancel=1)
         {buffer=new Olca.Core.Logic.Battle.AttackInputReservation();var k=new OutsideNormalKickSequence(buffer);k.Configure(System.Linq.Enumerable.Repeat(new OutsideKickTiming(startup,active,recovery,cancel),6).ToArray());return k;}
         [Test] public void 通常蹴りは時間六種が未登録なら発動せず製品の性能仮値を作らない()

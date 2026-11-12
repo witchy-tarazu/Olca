@@ -78,7 +78,7 @@ namespace Olca.Application.Management
             if(disposed)throw new System.ObjectDisposedException(nameof(OutsideExplorationRuntime));
             if(owner==null||provider==null)throw new System.ArgumentNullException(nameof(owner));
             if(driver!=null&&!ReferenceEquals(driver,owner))throw new System.InvalidOperationException("外界driverが重複しています");
-            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);driver=owner;input=provider;itemUse=useItem;covered=resumeSelection=false;selection.Reset();Reset();
+            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);session.EnableTrialNormalKick();driver=owner;input=provider;itemUse=useItem;covered=resumeSelection=false;selection.Reset();Reset();
         }
         private void Reset(){directionRequested=directionResumed=false;directionDelay=0;session.CancelAttackReservation();active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
         public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();selection.Reset();covered=resumeSelection=false;driver=null;input=null;itemUse=null;}
@@ -101,22 +101,19 @@ namespace Olca.Application.Management
                     if(!armed&&focusActive&&!input.IsFocusResynchronizing&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f&&(!value.HasOutsideHorizontalSample||System.Math.Abs(value.OutsideHorizontal)<.01f))armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;
                     int facing=session.Core.Facing;bool grounded=session.Core.IsGrounded;
-                    bool move=accept&&!session.IsAttacking;
+                    bool move=accept&&session.AllowsTraversalInput;
                     // 明示再開の方向だけを別levelで採用する。共有Pause/Padのアクション遮断は解除しない。
-                    bool direction=directionResumed&&directionDelay==0&&value.HasOutsideHorizontalSample&&!Olca.Unity.GameplayPause.IsPaused&&!session.IsAttacking;
+                    bool direction=directionResumed&&directionDelay==0&&value.HasOutsideHorizontalSample&&!Olca.Unity.GameplayPause.IsPaused&&session.AllowsTraversalInput;
                     float horizontal=move?value.Horizontal:direction?value.OutsideHorizontal:0;
                     if(directionDelay>0)directionDelay--;
                     if(armed)directionResumed=false;
-                    session.Core.TickFrame(horizontal,move&&value.JumpButtonDown,move&&value.JumpButton,move&&value.DashButtonDown,move&&value.DashButton,session.IsMovementLockedForNextFrame);
-                    session.ObserveAttackBoundary(facing,grounded);
-                    session.AdvanceDeckLocation();
-                    session.AdvancePlayerFrame(out var canAttack);
+                    session.TickTraversal(horizontal,move&&value.JumpButtonDown,move&&value.JumpButton,move&&value.DashButtonDown,move&&value.DashButton);
                     bool requested=value.CardUseButtonDown;long cardAt=value.CardUsePressedAt;
                     if(accept&&!session.IsDeckEditingLocation&&value.OutsideHandPress>=0&&value.OutsideHandLease?.IsCurrent==true&&ReferenceEquals(value.OutsideHandLease.Core,session.Core)&&ReferenceEquals(value.OutsideHandOwner,session.Cards)&&value.OutsideHandRevision==session.Cards?.HandRevision){
                         int index=value.OutsideHandPress;if(index<session.Cards.Hand.Count){selectionChanged|=value.OutsideHandSelectionChanged;if(index!=session.Cards.SelectedIndex){session.Cards.TrySelect(index);selectionChanged=true;}else{cardAt=requested?(cardAt==0||value.OutsideHandPressedAt==0?0:System.Math.Max(cardAt,value.OutsideHandPressedAt)):value.OutsideHandPressedAt;requested=true;}}
                     }
-                    if(accept)session.ProcessCardUseInput(requested,selectionChanged,value.BasicAttackButtonDown,cardAt,value.BasicAttackPressedAt,out _);
-                    if(accept&&canAttack&&itemUse!=null)for(int slot=0;slot<4;slot++)if((value.OutsideItemDownMask&(1<<slot))!=0){
+                    if(accept)session.ProcessCardUseInput(requested,selectionChanged,value.BasicAttackButtonDown,cardAt,value.BasicAttackPressedAt,out _,value.Vertical>0?1:value.Vertical<0?-1:0);
+                    if(accept&&session.CanPerformAttack&&itemUse!=null)for(int slot=0;slot<4;slot++)if((value.OutsideItemDownMask&(1<<slot))!=0){
                         // 既得frameは保持し、同期保存の待ち時間だけを次の観測から除外する。
                         loop.Observe(true);try{itemUse(slot);}finally{loop.Observe(false);}
                     }

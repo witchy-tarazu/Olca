@@ -361,7 +361,7 @@ namespace Olca.Core.Logic.Integration
         public int ContinuationFrames {get;}=18;
         public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation,int continuationFrames):this(reservation)
         {if(continuationFrames<0)throw new ArgumentOutOfRangeException(nameof(continuationFrames));ContinuationFrames=continuationFrames;}
-        private bool CanCancelNormal {
+        public bool CanCancelNormal {
             get{
                 if(!active)return true;if(Kind==OutsideKickKind.GroundThird)return false;
                 var timing=timings[(int)Kind];return timing.RecoveryCancelAfterFrames.HasValue&&frame-StartedAt>=timing.StartupFrames+(long)timing.ActiveFrames+timing.RecoveryCancelAfterFrames.Value;

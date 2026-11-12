@@ -178,6 +178,23 @@ namespace Olca.Core.Logic.Integration
         private readonly Olca.Core.Logic.Battle.AttackInputReservation attackReservation=new Olca.Core.Logic.Battle.AttackInputReservation();
         private OutsideNormalKickSequence normalKick;
         public OutsideNormalKickSequence NormalKick {get{if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));return normalKick??(normalKick=new OutsideNormalKickSequence(attackReservation));}}
+        /// <summary>試用時間だけを登録。威力/空間範囲/本体素材は未接続で、正式定義ではない。</summary>
+        public void EnableTrialNormalKick()
+        {
+            if(Core.Definition.Id!="validation-landing-32"||NormalKick.IsConfigured)return;
+            NormalKick.Configure(Enumerable.Repeat(new OutsideKickTiming(6,3,12,6),6).ToArray());
+        }
+        // カードは従来どおり移動不可。空中蹴りは移動/落下を保ち、地上蹴りでもジャンプ中断は受け付ける。
+        public bool AllowsTraversalInput=>attackState==null;
+        public void TickTraversal(float horizontal,bool jumpDown=false,bool jumpHeld=false,bool dashDown=false,bool dashHeld=false)
+        {
+            if(IsEnded||!IsPresented)throw new InvalidOperationException("表示中のSessionが必要です");
+            normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,BodyCanAttack);
+            int facing=Core.Facing;bool grounded=Core.IsGrounded;
+            bool kick=normalKick?.IsActive==true;
+            Core.TickFrame(normalKick?.ResolveHorizontal(horizontal)??horizontal,jumpDown,jumpHeld,!kick&&dashDown,!kick&&dashHeld,IsMovementLockedForNextFrame);
+            ObserveAttackBoundary(facing,grounded);AdvanceDeckLocation();AdvancePlayerFrame();
+        }
         private Card reservedCard;private OutsideExplorationCards reservedOwner;private long reservedRevision,reservedActionFrame,lastAttackInputFrame=-1;
         public Olca.Core.Logic.Battle.AttackReservationKind PendingAttack=>attackReservation.Kind;
         public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
@@ -185,32 +202,43 @@ namespace Olca.Core.Logic.Integration
         private bool SupportedCard(Card card)=>Core.Definition.Id=="validation-landing-32"&&(HealDefinition(card)||SwordDefinition(card))&&(Core.IsGrounded||OutsideCardUseDefinition.AllowsAir(card));
         private bool CanCancelAttack()=>attackState!=null&&attackState.EffectApplied&&Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.HasValue&&Core.Frame-attackState.StartedAt>=attackState.StartupFrames+(long)Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.Value;
         // 予約入力は保存しない。Sessionの行動開始と同じ境界で最後に再検証する。
-        public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error)
+        public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error,int vertical=0)
         {
             error=null;if(lastAttackInputFrame==Core.Frame)return false;lastAttackInputFrame=Core.Frame;
             attackReservation.Observe(Core.Frame);if(attackReservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.None&&reservedCard!=null)CancelAttackReservation();
             if(selectionChanged||!IsPresented||IsDeckEditingLocation||!BodyCanAttack){CancelAttackReservation();return false;}
             if(reservedCard!=null&&(!ReferenceEquals(reservedOwner,Cards)||!ReferenceEquals(reservedCard,Cards?.SelectedCard)||reservedRevision!=Cards.HandRevision||attackState!=null&&reservedActionFrame!=attackState.StartedAt))CancelAttackReservation();
-            // 未登録の通常キックを実行/予約しないが、後からの固有攻撃入力で旧予約を復活させない。
-            if(basicRequested&&(!requested||cardAt!=0&&basicAt!=0&&basicAt>cardAt)){CancelAttackReservation();error="固有攻撃は未接続です";return false;}
+            // 同frameで時刻順不明はカード優先。後入力が確定した蹴りは共有一枠を上書きする。
+            if(basicRequested&&(!requested||cardAt!=0&&basicAt!=0&&basicAt>cardAt)){
+                if(normalKick?.IsConfigured!=true){CancelAttackReservation();error="固有攻撃は未接続です";return false;}
+                CancelAttackReservation();
+                bool started=normalKick.TryRequest(Core.Frame,Core.IsGrounded,Core.Facing,vertical,BodyCanAttack,Core.IsDashing,attackState!=null&&!CanCancelAttack(),true);
+                if(started){attackState=null;reservedCard=null;reservedOwner=null;KickFeedback();}return started;
+            }
             if(requested){
                 CancelAttackReservation();var card=Cards?.SelectedCard;
                 if(!SupportedCard(card)){return TryUseSelectedCard(card,Cards?.HandRevision??0,out error);}
                 if(Core.CardGauge.CurrentUnits<(long)card.GetFinalCost()*OutsideCardGauge.UnitsPerPoint){error="カードゲージが不足しています";return false;}
-                if(IsAttacking&&!CanCancelAttack()){attackReservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,Core.Frame);reservedCard=card;reservedOwner=Cards;reservedRevision=Cards.HandRevision;reservedActionFrame=attackState.StartedAt;return false;}
+                if(IsAttacking&&!CanCancelAnyAttack()){attackReservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,Core.Frame);reservedCard=card;reservedOwner=Cards;reservedRevision=Cards.HandRevision;reservedActionFrame=attackState?.StartedAt??-1;return false;}
                 return StartCardAfterRecovery(card,Cards.HandRevision,out error);
             }
-            if(attackReservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Card||IsAttacking&&!CanCancelAttack())return false;
+            if(attackReservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic){
+                bool started=normalKick?.TryExecuteReserved(Core.Frame,Core.IsGrounded,Core.Facing,BodyCanAttack,Core.IsDashing,attackState!=null&&!CanCancelAttack())==true;
+                if(started){attackState=null;reservedCard=null;reservedOwner=null;KickFeedback();}return started;
+            }
+            if(attackReservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Card||IsAttacking&&!CanCancelAnyAttack())return false;
             var expected=reservedCard;long revision=reservedRevision;CancelAttackReservation();
             if(!SupportedCard(expected)||Core.CardGauge.CurrentUnits<(long)expected.GetFinalCost()*OutsideCardGauge.UnitsPerPoint)return false;
             return StartCardAfterRecovery(expected,revision,out error);
         }
+        private void KickFeedback(){CardUseMessage="シヨウ キック "+NormalKick.Kind+" / メイチュウ・モーション ミセツゾク";CardUseMessageFrame=Core.Frame;}
+        private bool CanCancelAnyAttack()=>attackState!=null?CanCancelAttack():normalKick?.IsActive==true&&normalKick.CanCancelNormal;
         private bool StartCardAfterRecovery(Card card,long revision,out string error)
         {
-            var prior=attackState;attackState=null;bool started=TryUseSelectedCard(card,revision,out error);if(!started)attackState=prior;return started;
+            var prior=attackState;attackState=null;bool started=TryUseSelectedCard(card,revision,out error,true);if(!started)attackState=prior;return started;
         }
         public OutsideAttackStateData AttackState=>attackState?.Copy();
-        public bool IsAttacking=>attackState!=null;
+        public bool IsAttacking=>attackState!=null||normalKick?.IsActive==true;
         private static int Startup(Card card)=>card.StartupFrames??(int)Math.Ceiling(card.StartupTime*60d-0.00001d);
         private static int Recovery(Card card)=>card.RecoveryFrames??(int)Math.Ceiling(card.RecoveryTime*60d-0.00001d);
         private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=bodyPreventedFrame=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;normalKick?.Reset();CancelAttackReservation();}
@@ -229,10 +257,11 @@ namespace Olca.Core.Logic.Integration
         }
         /// <summary>試用ヒールの開始。地上/空中の登録判定と消費・前隙/発動済/後隙はSessionが所有する。</summary>
         public bool TryUseSelectedHealingCard(Card expected,long revision,out string error){if(!HealDefinition(expected)){error="ヒールではありません";return false;}return TryUseSelectedCard(expected,revision,out error);}
-        public bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error)
+        public bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error)=>TryUseSelectedCard(expected,revision,out error,false);
+        private bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error,bool recoveryCancel)
         {
             error=null;if(lastCardUseAttempt==Core.Frame){error="このフレームでは受付済みです";return false;}lastCardUseAttempt=Core.Frame;
-            if(IsEnded||!IsPresented||IsDeckEditingLocation||!CanPerformAttack){error="今はカードを使用できません";return false;}
+            if(IsEnded||!IsPresented||IsDeckEditingLocation||!(CanPerformAttack||recoveryCancel&&BodyCanAttack)){error="今はカードを使用できません";return false;}
             if(expected==null||!ReferenceEquals(expected,Cards?.SelectedCard)||Cards.HandRevision!=revision){error="現在の手札を選択してください";return false;}
             if(!(HealDefinition(expected)||SwordDefinition(expected))){error="このカードの外界発動は未対応です";}
             else if(!SupportedCard(expected)){error=Core.Definition.Id=="validation-landing-32"?"このカードはクウチュウでシヨウできません":"このバショではシヨウできません";}
@@ -243,7 +272,7 @@ namespace Olca.Core.Logic.Integration
             normalKick?.CardStarted();
             attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected)};AdvanceAttack(true);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
-        public bool CanPerformAttack=>BodyCanAttack&&attackState==null;
+        public bool CanPerformAttack=>BodyCanAttack&&!IsAttacking;
         private bool BodyCanAttack=>Core.Frame!=bodyPreventedFrame&&!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
         public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
         {
@@ -285,7 +314,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;
             playerFrame=Core.Frame;var value=Player;
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
-            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed)bodyPreventedFrame=Core.Frame;normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,bodyAllowed);AdvanceAttack(bodyAllowed);attackAllowed=bodyAllowed&&attackState==null;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed)bodyPreventedFrame=Core.Frame;normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,bodyAllowed);AdvanceAttack(bodyAllowed);attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
             attackAllowed&=!value.IsDead;return true;
         }
@@ -311,7 +340,7 @@ namespace Olca.Core.Logic.Integration
         public bool AdvanceDeckLocation()
         {
             if(!managedDeckLocations||IsEnded)return false;
-            if(IsDeckEditingLocation){attackState=null;CancelAttackReservation();deckLocationArmed=true;reloadGaugeOnExit|=OutsideTrialRoute.IsReloadZone(Core);return false;}
+            if(IsDeckEditingLocation){attackState=null;normalKick?.Reset();CancelAttackReservation();deckLocationArmed=true;reloadGaugeOnExit|=OutsideTrialRoute.IsReloadZone(Core);return false;}
             if(!deckLocationArmed)return false;deckLocationArmed=false;bool refillGauge=reloadGaugeOnExit;reloadGaugeOnExit=false;
             if(pendingLocationDeck!=null){var random=Cards?.RandomProvider??pendingLocationRandom;pendingLocationDeck.Shuffle(random);Cards=new OutsideExplorationCards(pendingLocationDeck,random,queuedDeckKey);pendingLocationDeck=null;pendingLocationRandom=null;if(refillGauge)Core.CardGauge.RestoreFull();return true;}
             if(Cards?.TotalCount!=ExplorationDeckRules.RequiredCards){if(refillGauge)Core.CardGauge.RestoreFull();return refillGauge;}
