@@ -633,6 +633,15 @@ namespace Olca.Application.Dungeon
             if (exchangeOpen || !CanSelectDungeon || styleSelectionOpen || !dungeonSelectionEnabled) return;
             outsideDepartureError=null;selectionBeforeOpen = selectedDungeon; dungeonSelectionOpen = true; ShowDungeonSelection();
         }
+        // 出撃処理と同じ優先順を読み取るだけ。選択・検証結果・保存は変更しない。
+        private string OutsideDepartureDeckDisplay(Deck draft=null)
+        {
+            var profile=clearReturnSession.Snapshot;var plan=profile.NextDeparture;
+            if(plan?.ParentRunId==(profile.Flow?.RunId??NextDepartureData.InitialParent))return ClearReturnView.FormatDepartureDeckDisplay("カクテイズみの シュツゲキデッキ",plan.Start.DeckOrder.Length);
+            if(draft!=null)return ClearReturnView.FormatDepartureDeckDisplay("コンカイのヘンセイ",draft.GetAllCards().Count);
+            if(profile.EquippedDeckId!=null){var saved=SavedDecks.SingleOrDefault(d=>d.Id==profile.EquippedDeckId);bool valid=TryResolveSavedDeck(saved,out var deck,out var error);return ClearReturnView.FormatDepartureDeckDisplay(saved?.Name??"ソウビデッキがありません",valid?deck.GetAllCards().Count:saved?.Cards?.Length??0,valid?null:error);}
+            return ClearReturnView.FormatDepartureDeckDisplay("キテイデッキ",CreateInitialDeck().GetAllCards().Count);
+        }
         private void ShowDungeonSelection()
         {
             gameplayAudio?.PlayBgm(PlaceholderBgm.Exploration(dungeonBgm));
@@ -650,7 +659,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
@@ -1792,7 +1801,7 @@ namespace Olca.Application.Dungeon
             // 非表示の互換呼出しは旧無料経路だけ。費用付き出撃を確認なしで通さない。
             if(!isActiveAndEnabled){if(terms.Cost.Currency==0&&terms.Cost.Items.Length==0)CommitNextDepartureWithDeck(ownedDeck,terms);return;}
             EnsureReturnView();var runtime=manager;int index=selectedDungeon;bool selection=dungeonSelectionOpen;var frozenDeck=ownedDeck==null?null:new Deck(ownedDeck.GetAllCards().Select(c=>c.Clone()).ToList());departureQuoteOpen=true;
-            bool opened=clearReturnView.ConfirmDepartureCost(terms,choice.Label,()=>clearReturnSession.OutsideInventorySnapshot,approved=>{if(this==null||runtimeReleased||!ReferenceEquals(runtime,manager)||selectedDungeon!=index||dungeonChoices[index].Id!=approved.DungeonId||dungeonChoices[index].Key!=approved.DefinitionKey||(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent)!=parent)return;CommitNextDepartureWithDeck(frozenDeck,approved);},()=>{if(this!=null&&selection)dungeonSelectionOpen=true;},()=>{if(this!=null)departureQuoteOpen=false;});
+            bool opened=clearReturnView.ConfirmDepartureCost(terms,choice.Label,()=>clearReturnSession.OutsideInventorySnapshot,approved=>{if(this==null||runtimeReleased||!ReferenceEquals(runtime,manager)||selectedDungeon!=index||dungeonChoices[index].Id!=approved.DungeonId||dungeonChoices[index].Key!=approved.DefinitionKey||(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent)!=parent)return;CommitNextDepartureWithDeck(frozenDeck,approved);},()=>{if(this!=null&&selection)dungeonSelectionOpen=true;},()=>{if(this!=null)departureQuoteOpen=false;},outsideDungeonSelection?OutsideDepartureDeckDisplay(frozenDeck):null);
             if(!opened)departureQuoteOpen=false;
         }
         private void CommitNextDepartureWithDeck(Deck ownedDeck,DepartureTermsData terms)

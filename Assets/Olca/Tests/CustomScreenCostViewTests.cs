@@ -48,6 +48,26 @@ namespace Olca.Tests
             }finally{Object.DestroyImmediate(root);}
         }
 
+        [TestCase(1920f,1)][TestCase(1920f,5)][TestCase(1920f,7)]
+        [TestCase(1662.77f,1)][TestCase(1662.77f,5)][TestCase(1662.77f,7)]
+        [TestCase(2199.64f,1)][TestCase(2199.64f,5)][TestCase(2199.64f,7)]
+        public void 入口の攻略デッキと操作案内は行や確定ボタンと重ならず既存処理を保つ(float width,int count)
+        {
+            var root=new GameObject("EntranceDeck",typeof(RectTransform));try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(width,1080);var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);int starts=0,backs=0;
+                string deck=ClearReturnView.FormatDepartureDeckDisplay("スターター",20);var names=Enumerable.Range(0,count).Select(i=>"イキサキ"+i).ToArray();
+                v.RenderDungeonSelection(names,Enumerable.Repeat(true,count).ToArray(),0,_=>{},()=>starts++,()=>backs++,false,null,()=>{},styleName:"キホン",descriptions:Enumerable.Repeat("テキゾクセイとチケイ",count).ToArray(),departureDeck:deck);
+                var all=root.GetComponentsInChildren<Text>();var summary=all.Single(x=>x.name=="OutsideDepartureDeck");var guide=all.Single(x=>x.name=="OutsideDepartureGuide");StringAssert.Contains("スターター / 20マイ",summary.text);StringAssert.Contains("30マイとはベツ",summary.text);bool pad=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad;StringAssert.Contains(pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","menu","Decide")]):"Enter",guide.text);StringAssert.Contains(pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","menu","Cancel")]):"Esc",guide.text);Assert.Greater(summary.color.r,.8f);Assert.Greater(guide.color.r,.8f);
+                var button=root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection");StringAssert.Contains("ヒヨウ",button.GetComponentInChildren<Text>().text);Assert.IsTrue(button.interactable);
+                foreach(var label in new[]{summary,guide}){using(var g=new TextGenerator()){g.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.GreaterOrEqual(g.characterCountVisible,label.text.Length,label.name);}}
+                Assert.Greater(summary.rectTransform.anchoredPosition.y-35,guide.rectTransform.anchoredPosition.y+20);Assert.Greater(guide.rectTransform.anchoredPosition.y-20,((RectTransform)button.transform).anchoredPosition.y+37.5f);
+                button.onClick.Invoke();root.GetComponentsInChildren<Button>().Single(x=>x.name=="CancelDungeonSelection").onClick.Invoke();Assert.AreEqual(1,starts);Assert.AreEqual(1,backs);
+                v.RenderDungeonSelection(names,Enumerable.Repeat(true,count).ToArray(),0,_=>{},()=>{},()=>{},false,null,()=>{});Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(x=>x.name=="OutsideDepartureDeck"||x.name=="OutsideDepartureGuide"));StringAssert.Contains("シュツゲキ",root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").GetComponentInChildren<Text>().text);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(6)][TestCase(20)][TestCase(30)] public void 攻略デッキ表示は実枚数を20枚へ偽装しない(int count)
+        {string s=ClearReturnView.FormatDepartureDeckDisplay("なまえ",count,"定義が未解決です");StringAssert.Contains("なまえ / "+count+"マイ",s);StringAssert.Contains("シヨウフカ",s);}
+
         [TestCase(false)][TestCase(true)] public void 費用結果表示は保存失敗の未確定と既存単独表示を区別する(bool blocked)
         {
             var root=new GameObject("CostPending137",typeof(RectTransform));try{((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var profile=new ClearReturnProfile{Flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Choosing}};var flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Awarded,Outcome=RunReturnOutcome.Cleared,ExperienceAward=100,NewLevel=2,ReturnedMaxHp=105,ReturnedAttack=11,Terms=new DepartureTermsData{DungeonId="test",DefinitionKey="display-only",Cost=new DepartureCostData{Currency=10},ReturnSettings=new ClearReturnSettings()}};view.Render(profile,flow,blocked,blocked?"ホゾンシッパイ":null);var title=root.GetComponentsInChildren<Text>().Single(t=>t.name=="Title").text;var summary=root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardSummary").text;Assert.AreEqual(blocked,title.Contains("ミカクテイ"));Assert.AreEqual(blocked,summary.Contains("ミカクテイ"));StringAssert.Contains("ヒヨウ",root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardTokens").text);}finally{Object.DestroyImmediate(root);}
