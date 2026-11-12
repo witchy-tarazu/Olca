@@ -294,6 +294,27 @@ namespace Olca.Core.Logic.Integration
         }
         private void RestoreWater(OutsideWaterStateData value){if(value==null){ResetWater();return;}waterRemaining=value.RemainingFrames;waterUnlimited=value.Unlimited;waterLastFrame=value.Frame;}
     }
+    /// <summary>通常導線の試用蹴り専用。正式な威力/範囲/敵配置や成長表ではない。</summary>
+    public static class OutsideKickTrialDefinition
+    {
+        public const int Damage=10;
+        public const long Range=180000,TargetHeight=54000,SecondTargetX=1170000;
+        // 標的の水平中心点と縦区間を使う明示試用範囲。地形遮蔽/身体幅は製品衝突として確定しない。
+        public static bool Contains(OutsideKickKind kind,long x,long y,int facing,long targetX)
+        {
+            if(facing!=-1&&facing!=1)throw new ArgumentOutOfRangeException(nameof(facing));
+            long dx=checked((targetX-x)*facing);if(dx<0||dx>Range)return false;
+            long bottom,top;
+            switch(kind){
+                case OutsideKickKind.GroundFirst:case OutsideKickKind.GroundSecond:case OutsideKickKind.GroundThird:bottom=-12000;top=90000;break;
+                case OutsideKickKind.AirForward:bottom=-45000;top=45000;break;
+                case OutsideKickKind.AirUp:bottom=0;top=120000;break;
+                case OutsideKickKind.AirDown:bottom=-120000;top=0;break;
+                default:throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+            return checked(y+bottom)<=TargetHeight&&checked(y+top)>=0;
+        }
+    }
     public enum OutsideKickKind { GroundFirst, GroundSecond, GroundThird, AirForward, AirUp, AirDown }
 
     /// <summary>性能値や素材を含まない必須時間定義。未登録の有効期間を暗黙の既定値で補わない。</summary>

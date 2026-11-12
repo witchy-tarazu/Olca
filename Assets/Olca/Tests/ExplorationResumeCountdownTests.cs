@@ -10,6 +10,52 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        [Test] public void 試用蹴り三段は範囲内の二体へ各段一度だけ命中し手札とゲージを消費しない()
+        {
+            using(var s=Sword161(175))using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));
+                for(int n=1;n<=51;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,n==11||n==26,0,n,out _);}
+                Assert.AreEqual(90,s.TrialTarget.CurrentHp);Assert.AreEqual(90,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(revision,s.Cards.HandRevision);Assert.GreaterOrEqual(s.Core.CardGauge.CurrentUnits,gauge);Assert.IsFalse(s.NormalKick.IsActive);
+            }
+        }
+        [TestCase(140,1,120,120)] [TestCase(175,1,110,110)] [TestCase(215,-1,120,110)]
+        public void 試用範囲は空振りと左右を分け範囲外や死亡した敵へ再命中しない(int position,int facing,int first,int second)
+        {
+            using(var s=Sword161(position,facing))using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=0;n<10;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(first,s.TrialTarget.CurrentHp);Assert.AreEqual(second,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(OutsideKickKind.AirUp,60000,false)] [TestCase(OutsideKickKind.AirDown,60000,true)] [TestCase(OutsideKickKind.AirForward,60000,true)]
+        public void 空中試用範囲は方向別の縦区間で地上標的を選ぶ(OutsideKickKind kind,long height,bool expected)
+        {Assert.AreEqual(expected,OutsideKickTrialDefinition.Contains(kind,17*60000,height,1,18*60000));Assert.IsFalse(OutsideKickTrialDefinition.Contains(kind,17*60000,height,1,16*60000));}
+        [Test] public void 試用蹴りは着地で中断しその後の有効期間に敵へ命中しない()
+        {
+            using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();Position188(s,175*6000,3000);using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _,1);while(!s.Core.IsGrounded)s.TickTraversal(0);
+                long hp=s.TrialTarget.CurrentHp;s.TickTraversal(0);Assert.AreEqual(120,hp);Assert.AreEqual(hp,s.TrialTarget.CurrentHp);Assert.IsFalse(s.NormalKick.IsActive);}
+            }
+        }
+        [Test] public void カード取消成功前の蹴り命中とカード効果は別々で取消後の蹴りを再実行しない()
+        {
+            using(var s=Sword161(175))using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();long rev=s.Cards.HandRevision;s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=1;n<=15;n++){s.TickTraversal(0);s.ProcessCardUseInput(n==11,false,false,2,0,out _);}Assert.AreEqual(80,s.TrialTarget.CurrentHp);Assert.AreEqual(110,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.IsFalse(s.NormalKick.IsActive);for(int n=0;n<20;n++)s.TickTraversal(0);Assert.AreEqual(110,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void 試用二体のHP保存は旧省略欄を保ち終了後復元で命中を二重適用しない()
+        {
+            using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;var old=s.CaptureRuntime(defs);Assert.IsNull(old.SecondTrialTarget);var oldJson=PortableCheckpointJson.Serialize(old);Assert.IsFalse(System.Text.Encoding.UTF8.GetString(oldJson).Contains("SecondTrialTarget"));Assert.AreEqual(old.Key(),PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(oldJson).Key());
+                using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=0;n<40;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}}
+                var runtime=s.CaptureRuntime(defs);Assert.AreEqual(110,runtime.SecondTrialTarget.Hp);var player=OutsidePlayerSaveData.Capture(s.Player);player.Id=runtime.Id;var serialized=PortableCheckpointJson.Serialize(runtime);var round=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(serialized);Assert.AreEqual(runtime.Key(),round.Key());
+                using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(player,round,null,defs);Assert.AreEqual(110,cold.TrialTarget.CurrentHp);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);using(var l=cold.AttachPresentation())for(int n=0;n<10;n++)cold.TickTraversal(0);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);}
+                var dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"kick213-"+Guid.NewGuid().ToString("N"));try{
+                    var io=new Action159Io{Fail=false};var store=new Olca.Unity.ClearReturnFileStore(dir,io);var oldPlayer=OutsidePlayerSaveData.Capture(s.Player);oldPlayer.Id=old.Id;
+                    var baseline=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=oldPlayer,OutsideRuntimeSave=old,OutsideItemState=new OutsideItemStateData{ActorKey=oldPlayer.Key(),RuntimeKey=old.Key()}};Assert.IsTrue(store.TryWrite(0,baseline,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+                    var plan=new ClearReturnProfile{Revision=2,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=player,OutsideRuntimeSave=round,OutsideItemState=new OutsideItemStateData{ActorKey=player.Key(),RuntimeKey=round.Key()}};io.Fail=true;Assert.IsFalse(store.TryWrite(1,plan,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(1,plan,out error),error);var saved=store.Read(out error);Assert.AreEqual(110,saved.OutsideRuntimeSave.SecondTrialTarget.Hp);Assert.IsTrue(store.TryWrite(1,plan,out _));Assert.AreEqual(110,store.Read(out _).OutsideRuntimeSave.TrialTarget.Hp);
+                }finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+                round.SecondTrialTarget.Id="unknown";Assert.Throws<ArgumentException>(()=>round.Validate());round.SecondTrialTarget.Id="trial-kick-target-v1";round.SecondTrialTarget.Hp=121;Assert.Throws<ArgumentException>(()=>round.Validate());
+            }
+        }
         [Test] public void ダッシュ中の後入力蹴りが拒否されても古いカード予約を復活させない()
         {
             using(var s=Sword161(startup:3,recovery:8))using(var l=s.AttachPresentation()){
