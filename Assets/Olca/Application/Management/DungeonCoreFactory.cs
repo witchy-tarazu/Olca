@@ -178,6 +178,9 @@ namespace Olca.Application.Management
         // 別の登録/将来の所持品を自動変換しない。読込も保存も行わない。
         public static bool CanRegister(Olca.Core.Logic.Customization.CustomizationProgress state)
             =>state==null||(state.BoardId==null||state.BoardId==BoardId)&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>x.Id==Unlock);
+        // 既存の試用盤面/能力定義だけを明示登録。別の製品定義へ仮商品を混ぜない。
+        public static OutsideShopDefinition OutsideShop(Olca.Core.Logic.Customization.CustomizationCatalog catalog,Olca.Core.Logic.Customization.CustomizationAbilityCatalog abilities)
+            =>catalog?.BoardId==BoardId&&abilities?.DefinitionId==AbilityId&&catalog.Parts.ContainsKey(Part)?new OutsideShopDefinition(OutsideShopDefinition.TrialLimited.Id,OutsideShopDefinition.TrialLimited.Offers.Concat(new[]{OutsideShopOffer.ForPart("fire-part-v1",Part,"ヒタイセイ+5（カリ）",4,1)}),catalog):OutsideShopDefinition.TrialLimited;
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();
         private sealed class TrialProvider:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
         {

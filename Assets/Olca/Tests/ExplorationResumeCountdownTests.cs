@@ -5,6 +5,7 @@ using Olca.Core.Logic.Dungeon;
 using Olca.Core.Logic.Battle;
 using NUnit.Framework;
 using Olca.Core.Logic.Integration;
+using Olca.Core.Logic.Customization;
 namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
@@ -14,6 +15,17 @@ namespace Olca.Tests
             public ClearReturnProfile Value=new ClearReturnProfile{Tokens=7};public bool Fail;public int Writes;
             public ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
             public bool TryWrite(long expected,ClearReturnProfile next,out string error){Writes++;if(Fail){error="style231 explicit failure";return false;}Assert.AreEqual(Value.Revision,expected);ClearReturnProfile.Validate(next);Value=next.Copy();error=null;return true;}
+        }
+        private static CustomizationCatalog Shop236Catalog()=>new CustomizationCatalog("shop236-board",new PartsBoardDefinition(1,1,new[]{new Vector2Int(0,0)}),Array.Empty<string>(),new System.Collections.Generic.Dictionary<string,PartShape>{{"part236",new PartShape(new[]{new Vector2Int(0,0)})}},null);
+        [Test] public void 外界パーツ購入は支払所持在庫を一括保存して自動配置せずcoldと追加所持を守る()
+        {
+            var catalog=Shop236Catalog();var shop=new OutsideShopDefinition("shop236",new[]{OutsideShopOffer.ForPart("part-offer","part236","仮パーツ",4)},catalog);var store=new Style231Store{Value=new ClearReturnProfile{Tokens=9,OutsideInventory=new OutsideInventoryData{Currency=10,ClaimedSources=new[]{"unknown236"}},Customization=new CustomizationProgress{OwnedParts=new[]{new CustomizationItemCount{Id="part236",Count=2}}}}};var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(store.Value);store.Fail=true;Assert.IsFalse(save.TryPurchaseOutsideShop(shop,"part-offer",out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.IsFalse(save.HasPendingSave);Assert.AreEqual(1,new ClearReturnSession(store).OutsideShopRemaining(shop,"part-offer"));store.Fail=false;Assert.IsTrue(save.TryPurchaseOutsideShop(shop,"part-offer",out var error),error);var cold=new ClearReturnSession(store);Assert.AreEqual(6,cold.OutsideInventorySnapshot.Currency);Assert.AreEqual(3,cold.CustomizationSnapshot.OwnedParts.Single().Count);Assert.AreEqual(catalog.BoardId,cold.CustomizationSnapshot.BoardId);Assert.AreEqual(0,cold.CustomizationSnapshot.Placements.Length);Assert.AreEqual(0,cold.CustomizationSnapshot.EquippedAccessoryIds.Length);Assert.AreEqual(9,cold.Snapshot.Tokens);Assert.Contains("unknown236",cold.OutsideInventorySnapshot.ClaimedSources);Assert.AreEqual(0,cold.OutsideShopRemaining(shop,"part-offer"));int writes=store.Writes;Assert.IsFalse(cold.TryPurchaseOutsideShop(shop,"part-offer",out _));Assert.AreEqual(writes,store.Writes);
+            var layout=new[]{new PartPlacement("shop236-instance","part236",new Vector2Int(0,0),PartRotation.None)};Assert.IsTrue(cold.TrySetCustomizationLoadout(catalog,Array.Empty<string>(),layout),cold.Error);var abilities=new CustomizationAbilityCatalog("shop236-abilities",null,new System.Collections.Generic.Dictionary<string,CustomizationAbilityValue>{{"part236",new CustomizationAbilityValue(new ElementResistances(fire:5))}});var restored=new ClearReturnSession(store);Assert.AreEqual(5,abilities.Resolve(new CustomizationLoadoutSources(catalog,restored.CustomizationSnapshot)).CombineElements(new ElementResistances()).Fire);
+        }
+        [Test] public void 外界パーツ販売は未登録盤面不一致所持overflowと攻略中を保存前に拒否する()
+        {
+            var catalog=Shop236Catalog();var offer=OutsideShopOffer.ForPart("part-offer","part236","仮パーツ",4);Assert.Throws<ArgumentException>(()=>new OutsideShopDefinition("shop236",new[]{offer}));Assert.Throws<ArgumentException>(()=>new OutsideShopDefinition("shop236",new[]{OutsideShopOffer.ForPart("unknown","unknown","不明",1)},catalog));var shop=new OutsideShopDefinition("shop236",new[]{offer},catalog);
+            foreach(int mode in new[]{0,1,2}){var store=new Style231Store{Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=10},Customization=mode==0?new CustomizationProgress{BoardId="other236"}:mode==1?new CustomizationProgress{OwnedParts=new[]{new CustomizationItemCount{Id="part236",Count=int.MaxValue}}}:null}};var save=new ClearReturnSession(store,isCustomizationRunActive:()=>mode==2);var before=PortableCheckpointJson.Serialize(store.Value);Assert.IsFalse(save.TryPurchaseOutsideShop(shop,offer.Id,out _));Assert.AreEqual(0,store.Writes);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));}
         }
         [TestCase(1)][TestCase(2)] public void 外界限定商品は支払取得在庫を一括保存し失敗coldと売切れを保つ(int limit)
         {
