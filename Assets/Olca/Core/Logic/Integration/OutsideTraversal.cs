@@ -294,4 +294,104 @@ namespace Olca.Core.Logic.Integration
         }
         private void RestoreWater(OutsideWaterStateData value){if(value==null){ResetWater();return;}waterRemaining=value.RemainingFrames;waterUnlimited=value.Unlimited;waterLastFrame=value.Frame;}
     }
+    public enum OutsideKickKind { GroundFirst, GroundSecond, GroundThird, AirForward, AirUp, AirDown }
+
+    /// <summary>性能値や素材を含まない必須時間定義。未登録の有効期間を暗黙の既定値で補わない。</summary>
+    public sealed class OutsideKickTiming
+    {
+        public int StartupFrames {get;} public int ActiveFrames {get;} public int RecoveryFrames {get;}
+        public int? RecoveryCancelAfterFrames {get;} public int Duration {get;}
+        public OutsideKickTiming(int startupFrames,int activeFrames,int recoveryFrames,int? recoveryCancelAfterFrames=null)
+        {
+            if(startupFrames<0||activeFrames<=0||recoveryFrames<0||recoveryCancelAfterFrames<0||recoveryCancelAfterFrames>recoveryFrames)throw new ArgumentOutOfRangeException(nameof(activeFrames));
+            Duration=checked(startupFrames+activeFrames+recoveryFrames);StartupFrames=startupFrames;ActiveFrames=activeFrames;RecoveryFrames=recoveryFrames;RecoveryCancelAfterFrames=recoveryCancelAfterFrames;
+        }
+    }
+    /// <summary>外界通常蹴りのSession所有状態。登録データ/空間判定/HP反映/本体描画は別責務。</summary>
+    public sealed class OutsideNormalKickSequence
+    {
+        private readonly Olca.Core.Logic.Battle.AttackInputReservation reservation;
+        private readonly HashSet<int> hitTargets=new HashSet<int>();
+        private OutsideKickTiming[] timings;
+        private long frame=-1,lastRequestFrame=-1,comboUntil=-1;
+        private int observedFacing,nextGroundStage=1,pendingVertical;
+        private bool observed,observedGrounded,active;
+        public OutsideKickKind Kind {get;private set;}
+        public long StartedAt {get;private set;} public long EndsAt {get;private set;}
+        public int AttackFacing {get;private set;}
+        public bool IsConfigured=>timings!=null;
+        public bool IsActive=>active;
+        public bool LocksGroundMotion=>active&&Kind<=OutsideKickKind.GroundThird;
+        public int NextGroundStage=>nextGroundStage;
+        public long ComboExpiresAt=>comboUntil;
+        public bool HasProgress=>active||nextGroundStage!=1||reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic;
+        public bool IsHitWindow=>active&&frame-StartedAt>=timings[(int)Kind].StartupFrames&&frame-StartedAt<timings[(int)Kind].StartupFrames+(long)timings[(int)Kind].ActiveFrames;
+        public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation)
+        {this.reservation=reservation??throw new ArgumentNullException(nameof(reservation));}
+        // 順序は地上1/2/3・空中横/上/下。全6定義が必要。検証値を製品既定として登録しない。
+        public void Configure(params OutsideKickTiming[] definitions)
+        {
+            if(definitions==null||definitions.Length!=6||definitions.Any(v=>v==null))throw new ArgumentException("蹴り6種の時間定義が必要です");
+            if(HasProgress)throw new InvalidOperationException("進行中の蹴り定義は変更できません");timings=definitions.ToArray();
+        }
+        private void CancelOwnReservation(){if(reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic)reservation.Cancel();}
+        public void Interrupt(){active=false;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();CancelOwnReservation();}
+        public void Reset(){Interrupt();frame=lastRequestFrame=-1;observed=false;}
+        public void CardStarted()=>Interrupt();
+        public float ResolveHorizontal(float horizontal)
+        {if(float.IsNaN(horizontal)||float.IsInfinity(horizontal))throw new ArgumentOutOfRangeException(nameof(horizontal));return LocksGroundMotion?0:horizontal;}
+        public int ResolveFacing(int facing)
+        {if(facing!=-1&&facing!=1)throw new ArgumentOutOfRangeException(nameof(facing));return LocksGroundMotion?AttackFacing:facing;}
+        public void Observe(long logicalFrame,bool grounded,int facing,bool bodyAllowed=true)
+        {
+            if(logicalFrame<0||logicalFrame<frame||(facing!=-1&&facing!=1))throw new ArgumentOutOfRangeException(nameof(logicalFrame));
+            frame=logicalFrame;reservation.Observe(frame);
+            if(observed&&(observedFacing!=facing||observedGrounded!=grounded))CancelOwnReservation();
+            observed=true;observedFacing=facing;observedGrounded=grounded;
+            if(!bodyAllowed){Interrupt();return;}
+            if(active&&(LocksGroundMotion&&!grounded||!LocksGroundMotion&&grounded)){Interrupt();return;}
+            if(!grounded){nextGroundStage=1;comboUntil=-1;}
+            if(active&&frame>=EndsAt){
+                bool continueGround=Kind<OutsideKickKind.GroundThird;active=false;hitTargets.Clear();
+                nextGroundStage=continueGround?(int)Kind+2:1;comboUntil=continueGround?checked(EndsAt+ContinuationFrames):-1;
+            }
+            if(nextGroundStage!=1&&frame>=comboUntil){nextGroundStage=1;comboUntil=-1;}
+        }
+        /// <summary>18frameは承認済みの調整可能な仮猶予。6frame予約の寿命を延長しない。</summary>
+        public int ContinuationFrames {get;}=18;
+        public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation,int continuationFrames):this(reservation)
+        {if(continuationFrames<0)throw new ArgumentOutOfRangeException(nameof(continuationFrames));ContinuationFrames=continuationFrames;}
+        private bool CanCancelNormal {
+            get{
+                if(!active)return true;if(Kind==OutsideKickKind.GroundThird)return false;
+                var timing=timings[(int)Kind];return timing.RecoveryCancelAfterFrames.HasValue&&frame-StartedAt>=timing.StartupFrames+(long)timing.ActiveFrames+timing.RecoveryCancelAfterFrames.Value;
+            }
+        }
+        private bool Begin(bool grounded,int facing,int vertical)
+        {
+            int stage=grounded?(active?(int)Kind+2:nextGroundStage):0;
+            var kind=grounded?(OutsideKickKind)(stage-1):vertical>0?OutsideKickKind.AirUp:vertical<0?OutsideKickKind.AirDown:OutsideKickKind.AirForward;
+            long end=checked(frame+timings[(int)kind].Duration);if(grounded&&stage<3)checked{_ = end+ContinuationFrames;}
+            active=true;Kind=kind;AttackFacing=facing;StartedAt=frame;EndsAt=end;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();reservation.Cancel();return true;
+        }
+        public bool TryRequest(long logicalFrame,bool grounded,int facing,int vertical=0,bool bodyAllowed=true,bool dashing=false,bool otherAttack=false,bool knownLaterThanCard=false)
+        {
+            if(vertical<-1||vertical>1)throw new ArgumentOutOfRangeException(nameof(vertical));Observe(logicalFrame,grounded,facing,bodyAllowed);
+            if(!IsConfigured||!bodyAllowed||dashing||lastRequestFrame==frame)return false;lastRequestFrame=frame;
+            // 同frameで前後不明ならカード優先。既存入力coordinatorが時刻順を確定できた場合だけ上書きする。
+            if(reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Card&&reservation.RequestedFrame==frame&&!knownLaterThanCard)return false;
+            if(otherAttack||active&&!CanCancelNormal){pendingVertical=vertical;reservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Basic,frame);return false;}
+            return Begin(grounded,facing,vertical);
+        }
+        public bool TryExecuteReserved(long logicalFrame,bool grounded,int facing,bool bodyAllowed=true,bool dashing=false,bool otherAttack=false)
+        {
+            Observe(logicalFrame,grounded,facing,bodyAllowed);
+            if(!IsConfigured||!bodyAllowed||dashing||otherAttack||reservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Basic||active&&!CanCancelNormal)return false;
+            return Begin(grounded,facing,pendingVertical);
+        }
+        /// <summary>空間サービスが範囲内と判定した各敵のSession内ID。威力/範囲はここで作らない。</summary>
+        public bool TryMarkHit(int targetId)
+        {if(targetId<0)throw new ArgumentOutOfRangeException(nameof(targetId));return IsHitWindow&&hitTargets.Add(targetId);}
+    }
+
 }
