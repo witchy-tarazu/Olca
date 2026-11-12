@@ -288,6 +288,13 @@ namespace Olca.Core.Logic.Integration
         }
         public bool CanPerformAttack=>BodyCanAttack&&!IsAttacking;
         private bool BodyCanAttack=>Core.Frame!=bodyPreventedFrame&&!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
+        public bool CanReplaceEquipment=>!IsEnded&&Player!=null&&Player.CanReplaceOutsideEquipment;
+        /// <summary>保存成功後の装備補正だけを置換。個体・HP・状態・論理時間は変更しない。</summary>
+        public bool TryApplyEquipment(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities abilities)
+        {
+            if(!CanReplaceEquipment||abilities==null)return false;
+            Player.ReplaceOutsideEquipment(abilities);return true;
+        }
         public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));

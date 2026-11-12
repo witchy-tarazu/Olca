@@ -885,6 +885,26 @@ namespace Olca.Tests
                 var invalid=saved.Copy();invalid.Player.Hp=0;Assert.Throws<System.ArgumentException>(()=>session.RestoreSavedPlayer(invalid,null));Assert.AreEqual(37,session.Player.CurrentHp);
             }
         }
+        [Test] public void 外界装備の差替えは同じ個体と一時状態とカードと時計を保ち補正を加算し直さない()
+        {
+            using(var s=SelectionSession()){
+                var actor=new PlayerCharacter(120);actor.SetHp(37);actor.ApplyPoison("equipment225",new StatusEffect(StatusEffectType.Poison,60000,2),600);actor.SetInvincible(3000);s.TryInitializePlayer(()=>actor);
+                var core=s.Core;var cards=s.Cards;var hand=cards.Hand.ToArray();long frame=core.Frame,position=core.Position,gauge=core.CardGauge.CurrentUnits;var poisons=actor.CapturePoisons();
+                Olca.Core.Logic.Customization.ResolvedCustomizationAbilities Abilities(int fire)=>new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(new Olca.Core.Logic.Customization.CustomizationAbilitiesDto{DefinitionId="equipment225",Sources=new[]{new Olca.Core.Logic.Customization.CustomizationAbilitySourceDto{Kind="part",SourceId="slot225",ItemId="part225",Fire=fire,Floating=fire>0}}});
+                using(var lease=s.AttachPresentation()){
+                    Assert.IsTrue(s.TryApplyEquipment(Abilities(20)));Assert.AreSame(actor,lease.Player);Assert.AreEqual(20,actor.Resistances.Fire);Assert.IsTrue(actor.TerrainState.IsFloating);
+                    Assert.IsTrue(s.TryApplyEquipment(Abilities(5)));Assert.AreEqual(5,actor.Resistances.Fire,"置換なので以前の20を累積しない");
+                    Assert.IsTrue(s.TryApplyEquipment(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(new Olca.Core.Logic.Customization.CustomizationAbilitiesDto{DefinitionId="equipment225",Sources=Array.Empty<Olca.Core.Logic.Customization.CustomizationAbilitySourceDto>()})));Assert.AreEqual(0,actor.Resistances.Fire);Assert.IsFalse(actor.TerrainState.IsFloating);
+                    Assert.AreEqual(37,actor.CurrentHp);Assert.IsTrue(actor.IsInvincible);Assert.AreEqual(3000,actor.InvincibleDurationMs);Assert.AreEqual(poisons[0].RemainingUnits,actor.CapturePoisons()[0].RemainingUnits);Assert.AreSame(core,s.Core);Assert.AreSame(cards,s.Cards);CollectionAssert.AreEqual(hand,cards.Hand);Assert.AreEqual(frame,core.Frame);Assert.AreEqual(position,core.Position);Assert.AreEqual(gauge,core.CardGauge.CurrentUnits);
+                }
+                var saved=OutsidePlayerSaveData.Capture(actor);using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedPlayer(saved,null));Assert.IsTrue(cold.TryApplyEquipment(Abilities(7)));Assert.AreEqual(7,cold.Player.Resistances.Fire);}
+                typeof(PlayerCharacter).GetMethod("FreezeDepartureState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(actor,null);Assert.IsFalse(s.CanReplaceEquipment);Assert.IsFalse(s.TryApplyEquipment(Abilities(99)));Assert.AreEqual(0,actor.Resistances.Fire,"攻略固定後は変更不可");
+            }
+        }
+        [Test] public void 外界装備は未生成と終了済みSessionへ反映しない()
+        {
+            var s=new OutsideExplorationSession();Assert.IsFalse(s.CanReplaceEquipment);Assert.IsFalse(s.TryApplyEquipment(null));s.TryInitializePlayer(()=>new PlayerCharacter(100));s.Dispose();Assert.IsFalse(s.CanReplaceEquipment);Assert.IsFalse(s.TryApplyEquipment(null));
+        }
         private static Olca.Core.Domain.Card[] CardFixture()=>System.Linq.Enumerable.ToArray(System.Linq.Enumerable.SelectMany(System.Linq.Enumerable.Range(0,5),id=>System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0,4),n=>new Olca.Core.Domain.Card("outside-fixture-"+id,"fixture",1,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))));
         private static System.Collections.Generic.Dictionary<(string Id,Olca.Core.Domain.ExceedLevel Level),int> Owned(Olca.Core.Domain.Card[] cards)=>System.Linq.Enumerable.ToDictionary(System.Linq.Enumerable.GroupBy(cards,c=>(c.Id,c.ExceedLevel)),g=>g.Key,g=>System.Linq.Enumerable.Count(g));
         private static OutsideExplorationSession SelectionSession()

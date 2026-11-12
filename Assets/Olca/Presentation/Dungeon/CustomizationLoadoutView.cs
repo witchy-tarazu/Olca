@@ -18,7 +18,7 @@ namespace Olca.Presentation.Dungeon
         private string selectedPart,selectedInstance,message="";
         private PartRotation rotation;
         private int accessoryPage,partPage,offsetX,offsetY;
-        private bool pending;
+        private bool pending;private string draftNotice;
         private GameObject nameReadout;
         private Text nameReadoutText;
         private readonly System.Collections.Generic.Dictionary<Text,int> labelSizes=new System.Collections.Generic.Dictionary<Text,int>();
@@ -43,9 +43,10 @@ namespace Olca.Presentation.Dungeon
             menu=new Olca.Unity.MenuPadScope(()=>CanInteract&&Olca.Unity.MenuPadScope.IsTopmost(transform));
             gameObject.SetActive(false);
         }
-        public void Open(CustomizationEditDraft value)
+        public void Open(CustomizationEditDraft value)=>OpenForContext(value,null);
+        public void OpenForContext(CustomizationEditDraft value,string notice)
         {
-            if(value==null)throw new ArgumentNullException(nameof(value));EnsureManaged();draft=value;selectedPart=selectedInstance=null;rotation=PartRotation.None;
+            if(value==null)throw new ArgumentNullException(nameof(value));EnsureManaged();draft=value;draftNotice=notice??"シュツゲキマエのヘンシュウ / ホゾンするまでハンエイしません";selectedPart=selectedInstance=null;rotation=PartRotation.None;
             accessoryPage=partPage=offsetX=offsetY=0;message="ヘンコウはまだホゾンしていません";pending=false;
             gameObject.SetActive(true);transform.SetAsLastSibling();Render("CancelCustomization");
         }
@@ -120,7 +121,7 @@ namespace Olca.Presentation.Dungeon
             var backdrop=GetComponent<Image>();backdrop.sprite=null;backdrop.type=Image.Type.Simple;backdrop.color=new Color(.025f,.075f,.10f,1);
             Face("EquipmentHeader",0,460,1800,110,true);Face("EquipmentInventory",-650,-5,600,850);Face("EquipmentBoard",330,90,1160,650,true);Face("EquipmentTools",330,-310,1160,165);Face("EquipmentFooter",0,-490,1800,100,true);
             Reading(Label("CustomizationTitle","ソウビ・パーツ",-600,465,540,60,36),true);
-            Reading(Label("CustomizationDraftNotice","シュツゲキマエのヘンシュウ / ホゾンするまでハンエイしません",330,465,1120,60,24),true);
+            Reading(Label("CustomizationDraftNotice",draftNotice,330,465,1120,60,24),true);
             Face("AccessoriesHeading",-650,390,570,60,true);Face("PartsHeading",-650,-65,570,55,true);
             Reading(Label("CustomizationAccessoriesTitle",$"ソウショクヒン  {draft.Accessories.Count} / {draft.Catalog.AccessorySlots} ワク",-650,390,530,55),true);
             var accessories=draft.OwnedAccessories.ToArray();int ap=Math.Max(1,(accessories.Length+PageSize-1)/PageSize);accessoryPage=Math.Min(accessoryPage,ap-1);

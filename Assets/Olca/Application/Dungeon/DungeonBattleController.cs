@@ -247,7 +247,7 @@ namespace Olca.Application.Dungeon
         {
             if(gameSystem!=null){pauseViews=gameSystem.Views.GetLayer("system-pause");pauseViewRegistered=true;}
             hostPanels.Register(ManagedPauseScreen,"system-pause",BuildPausePanel,
-                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.SetOutsidePresentation(OutsideRouteBusy);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
+                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.SetOutsidePresentation(OutsideRouteBusy);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);var equipmentButton=panel.transform.Find("OutsideEquipmentButton")?.GetComponent<Button>();if(equipmentButton!=null){equipmentButton.interactable=customizationCatalog!=null&&customizationAbilityCatalog!=null&&!clearReturnSession.HasPendingSave;equipmentButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":customizationCatalog.BoardId==Olca.Application.Management.TrialCustomizationDefinitions.BoardId?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";}managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.GameplayPauseView>().Hide();});
         }
         private void RegisterReturnViews(){RegisterReturnView(false);RegisterReturnView(true);}
@@ -341,6 +341,7 @@ namespace Olca.Application.Dungeon
             if(cardCollectionView!=null)cardCollectionView.Hide();
             customizationEditorView?.ReleaseManagement();customizationUnlockView?.ReleaseManagement();customizationAcquisitionView?.ReleaseManagement();
             customizationDraft=null;customizationUnlockWasOpen=false;customizationViews=null;
+            outsideEquipmentEpoch++;outsideEquipmentView?.ReleaseManagement();outsideEquipmentView=null;outsideEquipmentDraft=null;outsideEquipmentCandidate=null;outsideEquipmentHost=null;outsideEquipmentActor=null;outsideEquipmentPending=outsideEquipmentInterrupted=false;
             if(managedCardRewardPresentation!=null){managedCardRewardPresentation.Dispose();managedCardRewardPresentation=null;cardSelectionView=null;}
             if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
@@ -598,7 +599,7 @@ namespace Olca.Application.Dungeon
                         ()=>CustomizationUiLive&&OutsideHubEligible&&clearReturnVisible,
                         ()=>{if(!CustomizationUiLive||!OutsideHubEligible)return;outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();outsideDungeonSelection=outsideEntranceRequest;ShowDungeonSelection();clearReturnView.FocusMenuControl("OutsideExplorationEntry");},services.OutsideRuntime,inputProvider,RequestOutsidePause,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,EnterOutsideDungeon,()=>OutsideEntranceReady,()=>outsideLandingRoute,()=>inputProvider?.HasPendingOutsidePcOpen==true||outsideRecoveryPending||outsideRecoveryAppliedFrame==Time.frameCount,()=>CanRestoreOutsideRecovery,UseOutsideItemShortcut);
                 }
-                try{PrepareSelectedExplorationDeck();}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){outsideDepartureError=e.Message;outsideExplorationOpening=false;ShowDungeonSelection();return;}
+                try{ApplySavedOutsideEquipment();PrepareSelectedExplorationDeck();}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){outsideDepartureError=e.Message;outsideExplorationOpening=false;ShowDungeonSelection();return;}
                 var result=await outsideExploration.OpenAsync();
                 if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
@@ -703,6 +704,7 @@ namespace Olca.Application.Dungeon
         private void OnDisable()
         {
             AbortOutsideWheel();
+            if(outsideEquipmentDraft!=null&&outsideEquipmentView!=null&&outsideEquipmentView.gameObject.activeSelf){outsideEquipmentInterrupted=true;outsideEquipmentView.Close();}
             gameplayAudio?.SetPaused(true);
             combatFeedbackAudio?.Bind(null);
             CancelExplorationResume();
@@ -720,7 +722,8 @@ namespace Olca.Application.Dungeon
         private void OnEnable()
         {
             gameplayAudio?.SetPaused(IsUserPaused||outsideWheelPaused);
-            if(pauseViewRegistered&&IsUserPaused)SetPausePanelVisible(true);
+            if(pauseViewRegistered&&IsUserPaused&&outsideEquipmentDraft==null)SetPausePanelVisible(true);
+            if(outsideEquipmentInterrupted&&OutsideEquipmentOwnerLive){outsideEquipmentInterrupted=false;ShowOutsideEquipmentAsync().Forget();}
             if(hostPanels?.IsAlive==true)ShowCheckpointStatus(checkpointStatusOverride);
             if(progressActionDialog!=null)progressActionDialog.Resume(gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
             if(manager!=null&&!manager.IsSuspended)BindBattleFeedback(manager.CurrentBattle);
@@ -1206,6 +1209,91 @@ namespace Olca.Application.Dungeon
             inputProvider?.QueueSnapshot();
         }
 
+        private const string ManagedOutsideEquipment="outside-equipment";
+        private CustomizationLoadoutView outsideEquipmentView;
+        private Olca.Core.Logic.Customization.CustomizationEditDraft outsideEquipmentDraft;
+        private Olca.Core.Logic.Customization.ResolvedCustomizationAbilities outsideEquipmentCandidate;
+        private Olca.Application.Management.GameSystem.Session outsideEquipmentHost;
+        private PlayerCharacter outsideEquipmentActor;
+        private bool outsideEquipmentPending,outsideEquipmentInterrupted;
+        private long outsideEquipmentEpoch;
+        private bool OutsideEquipmentTargetCurrent=>this!=null&&gameSystem!=null&&ReferenceEquals(gameSystemSession,outsideEquipmentHost)&&
+            ReferenceEquals(gameSystem.OutsideExploration.Player,outsideEquipmentActor)&&gameSystem.OutsideExploration.CanReplaceEquipment;
+        // 保存失敗でHub可否が変わっても、同じ編集画面の再試行は生存させる。
+        private bool OutsideEquipmentOwnerLive=>OutsideEquipmentTargetCurrent&&CustomizationUiLive&&IsUserPaused&&outsideExploration?.IsOpen==true;
+        private bool OutsideEquipmentUiLive=>OutsideEquipmentOwnerLive&&outsideEquipmentDraft!=null&&outsideEquipmentView?.CanInteract==true;
+        private void ApplySavedOutsideEquipment()
+        {
+            if(customizationCatalog==null||customizationAbilityCatalog==null||gameSystem?.OutsideExploration.Player==null)return;
+            var state=clearReturnSession.CustomizationSnapshot;
+            if(state.EquippedAccessoryIds.Length==0&&state.Placements.Length==0&&gameSystem.OutsideExploration.Player.DepartureAbilities==null)return;
+            var value=customizationAbilityCatalog.Resolve(new Olca.Core.Logic.Customization.CustomizationLoadoutSources(customizationCatalog,state));
+            if(!gameSystem.OutsideExploration.TryApplyEquipment(value))throw new System.ArgumentException("外界の装備能力を反映できません");
+        }
+        private void OpenOutsideEquipment()
+        {
+            if(!CustomizationUiLive||!IsUserPaused||!OutsideHubEligible||outsideExploration?.IsOpen!=true||gameSystem==null||gameSystem.Views.CurrentKey!=null||gameSystem.Dialogs.ActiveCount!=0||
+                customizationCatalog==null||customizationAbilityCatalog==null||!gameSystem.OutsideExploration.CanReplaceEquipment)return;
+            try{outsideEquipmentDraft=new Olca.Core.Logic.Customization.CustomizationEditDraft(customizationCatalog,clearReturnSession.CustomizationSnapshot,clearReturnSession.Snapshot.Revision);}
+            catch(System.ArgumentException){return;}
+            outsideEquipmentEpoch++;outsideEquipmentHost=gameSystemSession;outsideEquipmentActor=gameSystem.OutsideExploration.Player;outsideEquipmentPending=false;outsideEquipmentCandidate=null;outsideEquipmentInterrupted=false;
+            ShowOutsideEquipmentAsync().Forget();
+        }
+        private async UniTaskVoid ShowOutsideEquipmentAsync()
+        {
+            var host=gameSystemSession;var draft=outsideEquipmentDraft;var result=await gameSystem.Views.ShowAsync(ManagedOutsideEquipment);
+            if(this!=null&&ReferenceEquals(host,gameSystemSession)&&ReferenceEquals(draft,outsideEquipmentDraft)&&!result.Succeeded&&!result.Cancelled){logger?.LogWarning(result.Error);outsideEquipmentDraft=null;SetPausePanelVisible(IsUserPaused);}
+        }
+        private void SaveOutsideEquipment()
+        {
+            if(!OutsideEquipmentUiLive||outsideEquipmentPending)return;
+            if(clearReturnSession.Snapshot.Revision!=outsideEquipmentDraft.Revision){outsideEquipmentView.SaveFailed(false);return;}
+            try{
+                var state=clearReturnSession.CustomizationSnapshot;state.EquippedAccessoryIds=outsideEquipmentDraft.Accessories.ToArray();state.Placements=outsideEquipmentDraft.Placements.Select(v=>new Olca.Core.Logic.Customization.SavedPartPlacement{InstanceId=v.InstanceId,PartId=v.PartId,X=v.Anchor.X,Y=v.Anchor.Y,Rotation=v.Rotation}).ToArray();
+                outsideEquipmentCandidate=customizationAbilityCatalog.Resolve(new Olca.Core.Logic.Customization.CustomizationLoadoutSources(customizationCatalog,state));
+            }catch(System.ArgumentException){outsideEquipmentView.SaveFailed(false);return;}
+            long epoch=outsideEquipmentEpoch;
+            if(!clearReturnSession.TrySetCustomizationLoadout(customizationCatalog,outsideEquipmentDraft.Accessories,outsideEquipmentDraft.Placements)){
+                if(epoch==outsideEquipmentEpoch&&OutsideEquipmentUiLive){outsideEquipmentPending=clearReturnSession.HasPendingSave;outsideEquipmentView.SaveFailed(outsideEquipmentPending);}return;
+            }
+            if(epoch==outsideEquipmentEpoch)FinishOutsideEquipmentSave();
+        }
+        private void RetryOutsideEquipment()
+        {
+            if(!OutsideEquipmentUiLive||!outsideEquipmentPending)return;
+            long epoch=outsideEquipmentEpoch;
+            if(!clearReturnSession.Retry()){if(epoch==outsideEquipmentEpoch&&OutsideEquipmentUiLive)outsideEquipmentView.SaveFailed(true);return;}
+            if(epoch==outsideEquipmentEpoch){outsideEquipmentPending=false;FinishOutsideEquipmentSave();}
+        }
+        private void FinishOutsideEquipmentSave()
+        {
+            if(OutsideEquipmentTargetCurrent)gameSystem.OutsideExploration.TryApplyEquipment(outsideEquipmentCandidate);
+            if(OutsideEquipmentUiLive)CloseOutsideEquipment();
+            else{outsideEquipmentEpoch++;outsideEquipmentDraft=null;outsideEquipmentCandidate=null;outsideEquipmentHost=null;outsideEquipmentActor=null;outsideEquipmentInterrupted=false;}
+        }
+        private void CloseOutsideEquipment()
+        {
+            if(!OutsideEquipmentUiLive||outsideEquipmentPending)return;
+            outsideEquipmentEpoch++;outsideEquipmentDraft=null;outsideEquipmentCandidate=null;outsideEquipmentHost=null;outsideEquipmentActor=null;outsideEquipmentInterrupted=false;
+            gameSystem.Views.CloseCurrent();pauseFocus="OutsideEquipmentButton";systemMenu?.Suspend();systemMenuRoot=null;
+            SetPausePanelVisible(IsUserPaused);
+        }
+        private void RegisterOutsideEquipment()
+        {
+            if(gameSystem==null)return;
+            gameSystem.Views.Register(this,ManagedOutsideEquipment,
+                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<CustomizationLoadoutView>("OutsideCustomizationLoadoutView",view=>{
+                    outsideEquipmentView=view;view.Initialize(panelFactory.Font,SaveOutsideEquipment,CloseOutsideEquipment,RetryOutsideEquipment);
+                    view.ConfigureManagement(()=>ShowOutsideEquipmentAsync().Forget(),()=>gameSystem.Views.CloseCurrent());
+                }).gameObject);},
+                (panel,context)=>{
+                    if(!OutsideEquipmentOwnerLive||outsideEquipmentDraft==null)throw new System.OperationCanceledException();
+                    SetPausePanelVisible(false);var view=panel.GetComponent<CustomizationLoadoutView>();view.ShowManaged(context);
+                    view.OpenForContext(outsideEquipmentDraft,"タンサク / ホゾンゴにハンエイ / ヒタイセイ "+outsideEquipmentActor.Resistances.Fire+"%");
+                    if(outsideEquipmentPending)view.SaveFailed(true);
+                },panel=>{if(panel!=null)panel.GetComponent<CustomizationLoadoutView>().HideManaged();});
+        }
+
         private const string ManagedOutsideItems="outside-item-registration";
         private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
         private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample,OutsideItemDisplayDefinition.PoisonSample};
@@ -1284,7 +1372,7 @@ namespace Olca.Application.Dungeon
                 ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideItemRegistrationView>("OutsideItemRegistrationView",view=>{outsideItemRegistrationView=view;view.Initialize(panelFactory.Font,clearReturnSession,outsideItemDefinitions,CloseOutsideItems);view.ConfigureUse(UseOutsideRecoveryItem,id=>gameSystem?.OutsideExploration?.ItemCooldownRemaining(id)??0);}).gameObject);},
                 (panel,context)=>{if(!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide();});
-            RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();
+            RegisterOutsideEquipment();RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();
             hostPanels.Register("dialogue","dialogue",()=>{
                 dialogueView=panelFactory.Component<DialogueView>("DialoguePanel",view=>view.Initialize(font,()=>SetUserPaused(true)));return dialogueView.gameObject;
             },(panel,context)=>{if(dialogue==null||!dialogue.IsOpen)throw new System.OperationCanceledException();panel.GetComponent<DialogueView>().BindManaged(dialogue,context,gameSystem.Dialogs);},panel=>{if(panel!=null)panel.GetComponent<DialogueView>().HideManaged();});
@@ -1294,13 +1382,14 @@ namespace Olca.Application.Dungeon
             },(panel,context)=>panel.SetActive(true),panel=>{if(panel!=null)panel.SetActive(false);});
             ShowCheckpointStatus();
         }
-        private static bool OutsidePauseControlAllowed(string name)=>name=="OutsideItemsButton"||name=="ResumeButton"||name=="KeyboardSettingsButton"||name=="GamepadSettingsButton"||name=="AudioSettingsButton"||name=="VibrationSetting"||name=="TransformationAnimationSetting"||name=="DialogueTextSpeedButton";
+        private static bool OutsidePauseControlAllowed(string name)=>name=="OutsideEquipmentButton"||name=="OutsideItemsButton"||name=="ResumeButton"||name=="KeyboardSettingsButton"||name=="GamepadSettingsButton"||name=="AudioSettingsButton"||name=="VibrationSetting"||name=="TransformationAnimationSetting"||name=="DialogueTextSpeedButton";
         private GameObject BuildPausePanel()
         {
             pauseOverlay=panelFactory.Pause();var bindings=hostPanels;
             Button Button(string name)=>pauseOverlay.transform.Find(name).GetComponent<Button>();
             void Bind(string name,System.Action action)=>Button(name).onClick.AddListener(()=>{if(this!=null&&bindings.IsAlive&&(!OutsideRouteBusy||OutsidePauseControlAllowed(name))&&Time.frameCount!=outsideClosedFrame)action();});
             Bind("OutsideItemsButton",OpenOutsideItems);
+            Bind("OutsideEquipmentButton",OpenOutsideEquipment);
             Bind("ResumeButton",ResumeFromPauseUi);Bind("LoadCheckpointButton",ContinueCheckpointFromUi);
             Bind("KeyboardSettingsButton",OpenKeyboardSettings);Bind("GamepadSettingsButton",OpenGamepadSettings);Bind("AudioSettingsButton",OpenAudioSettings);
             Bind("OwnedCardsButton",OpenOwnedCards);Bind("RetreatButton",RequestRetreat);

@@ -17,6 +17,13 @@ namespace Olca.Core.Domain
             if(departureAbilitiesFixed||DepartureAbilities!=null)throw new InvalidOperationException("攻略中の装備能力は変更できません");
             DepartureAbilities=value??throw new ArgumentNullException(nameof(value));
         }
+        internal bool CanReplaceOutsideEquipment=>!departureAbilitiesFixed;
+        // 外界Sessionだけが可変の装備を差し替える。攻略へ固定済みの個体は解除しない。
+        internal void ReplaceOutsideEquipment(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities value)
+        {
+            if(departureAbilitiesFixed)throw new InvalidOperationException("攻略中の装備能力は変更できません");
+            DepartureAbilities=value??throw new ArgumentNullException(nameof(value));
+        }
         public AttackMilestoneGrowth AttackGrowth { get; private set; }
         public void SetAttackGrowth(AttackMilestoneGrowth growth)
         {
