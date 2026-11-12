@@ -389,26 +389,41 @@ namespace Olca.Core.Domain
     }
     /// <summary>出撃保存と同時に固定する外界HP/持越し毒。未接続の時間状態は黙って落とさない。</summary>
     /// <summary>外界の最終保存個体。移動/手札の保存とは別。旧nullは従来の初期化を維持。</summary>
+    /// <summary>HP確定後の強靭蓄積と回復/のけぞり残時間。50unit=1論理frame、3unit=1ms。</summary>
+    public sealed class PlayerHitStateData
+    {
+        public int AccumulatedDamage;public long RecoveryUnits,StaggerUnits;
+        public PlayerHitStateData Copy()=>(PlayerHitStateData)MemberwiseClone();
+        public void Validate(int poise,int staggerFrames,int? recoveryFrames)
+        {
+            if(AccumulatedDamage<0||AccumulatedDamage>=Math.Max(1,poise)||RecoveryUnits<0||RecoveryUnits>0&&(!recoveryFrames.HasValue||RecoveryUnits>recoveryFrames.Value*50L)||StaggerUnits<0||StaggerUnits>staggerFrames*50L||AccumulatedDamage==0&&RecoveryUnits==0&&StaggerUnits==0)throw new ArgumentException("外界被弾状態と保存個体の定義が一致しません");
+        }
+    }
+    [System.Runtime.Serialization.DataContract]
     public sealed class OutsidePlayerSaveData
     {
-        public int Version=1;public string Id;public CheckpointPlayerDto Player;public int[] RawBaseElements;
-        public OutsidePlayerSaveData Copy()=>new OutsidePlayerSaveData{Version=Version,Id=Id,Player=Player?.Copy(),RawBaseElements=RawBaseElements?.ToArray()};
+        [System.Runtime.Serialization.DataMember] public int Version=1;
+        [System.Runtime.Serialization.DataMember] public string Id;
+        [System.Runtime.Serialization.DataMember] public CheckpointPlayerDto Player;
+        [System.Runtime.Serialization.DataMember] public int[] RawBaseElements;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public PlayerHitStateData HitState;
+        public OutsidePlayerSaveData Copy()=>new OutsidePlayerSaveData{Version=Version,Id=Id,Player=Player?.Copy(),RawBaseElements=RawBaseElements?.ToArray(),HitState=HitState?.Copy()};
         internal static void ValidatePlayer(CheckpointPlayerDto p)
         {
             if(p==null||p.MaxHp<=0||p.Hp<=0||p.Hp>p.MaxHp||p.AttackPower<0||p.Poise<0||p.StaggerFrames<0||p.PoiseRecoveryFrames<0||float.IsNaN(p.CustomSpeed)||float.IsInfinity(p.CustomSpeed)||p.CustomSpeed<=0||p.Poisons==null||p.Poisons.Any(v=>v==null)||p.Poisons.Select(v=>v.Kind).Distinct().Count()!=p.Poisons.Length)throw new ArgumentException("外界保存個体が不正です");
             p.ValidatePermanentAbilities();p.Style?.Restore();p.AttackGrowth?.Restore();foreach(var v in p.Poisons)v.Validate();
         }
-        public void Validate(){if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||RawBaseElements==null||RawBaseElements.Length!=4)throw new ArgumentException("外界保存形式が不正です");ValidatePlayer(Player);var compatible=new[]{Player.FireResistance,Player.WaterResistance,Player.WindResistance,Player.EarthResistance};for(int i=0;i<4;i++)if(compatible[i]!=Math.Min(100,RawBaseElements[i])||Player.CustomizationAbilities!=null&&new[]{Player.RawBaseFireResistance,Player.RawBaseWaterResistance,Player.RawBaseWindResistance,Player.RawBaseEarthResistance}[i]!=RawBaseElements[i])throw new ArgumentException("外界基礎耐性が一致しません");}
+        public void Validate(){if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||RawBaseElements==null||RawBaseElements.Length!=4)throw new ArgumentException("外界保存形式が不正です");ValidatePlayer(Player);HitState?.Validate(Player.Poise,Player.StaggerFrames,Player.PoiseRecoveryFrames);var compatible=new[]{Player.FireResistance,Player.WaterResistance,Player.WindResistance,Player.EarthResistance};for(int i=0;i<4;i++)if(compatible[i]!=Math.Min(100,RawBaseElements[i])||Player.CustomizationAbilities!=null&&new[]{Player.RawBaseFireResistance,Player.RawBaseWaterResistance,Player.RawBaseWindResistance,Player.RawBaseEarthResistance}[i]!=RawBaseElements[i])throw new ArgumentException("外界基礎耐性が一致しません");}
         private static OutsidePlayerSaveData Make(PlayerCharacter player,bool recovery)
         {
             if(player==null)throw new ArgumentException("外界個体が必要です");var p=Olca.Core.Logic.Dungeon.CheckpointPlayerMapper.Capture(player);
             if(recovery){p.Hp=p.MaxHp;p.Poisons=Array.Empty<PlayerPoisonDto>();p.TimedAilments=null;}
-            var v=new OutsidePlayerSaveData{Id=Guid.NewGuid().ToString("N"),Player=p,RawBaseElements=new[]{player.BaseElementResistances.Fire,player.BaseElementResistances.Water,player.BaseElementResistances.Wind,player.BaseElementResistances.Earth}};v.Validate();return v;
+            var v=new OutsidePlayerSaveData{Id=Guid.NewGuid().ToString("N"),Player=p,HitState=recovery?null:player.CaptureHitState(),RawBaseElements=new[]{player.BaseElementResistances.Fire,player.BaseElementResistances.Water,player.BaseElementResistances.Wind,player.BaseElementResistances.Earth}};v.Validate();return v;
         }
         public static OutsidePlayerSaveData Capture(PlayerCharacter player)=>Make(player,false);
         public static OutsidePlayerSaveData ForRecovery(PlayerCharacter player)=>Make(player,true);
         public string Key(){Validate();return Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>w.Write(Convert.ToBase64String(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(this))));}
-        public PlayerCharacter Restore(){Validate();var p=Olca.Core.Logic.Dungeon.CheckpointPlayerMapper.Restore(Player);p.SetElementResistances(ElementResistances.Restore(RawBaseElements[0],RawBaseElements[1],RawBaseElements[2],RawBaseElements[3],Player.AdditionalElementResistances));p.SetHp(Player.Hp);return p;}
+        public PlayerCharacter Restore(){Validate();var p=Olca.Core.Logic.Dungeon.CheckpointPlayerMapper.Restore(Player);p.SetElementResistances(ElementResistances.Restore(RawBaseElements[0],RawBaseElements[1],RawBaseElements[2],RawBaseElements[3],Player.AdditionalElementResistances));p.SetHp(Player.Hp);p.RestoreHitState(HitState);return p;}
     }
     /// <summary>初回クリアの確定境界。戦闘終了前の3状態捕捉を追加した意味ではない。</summary>
     public sealed class OutsideClearEndData
@@ -418,7 +433,7 @@ namespace Olca.Core.Domain
         public void Validate(){if(Version!=1||EntryLevel<1||Entry==null)throw new ArgumentException("初回帰還の捕捉が不正です");Entry.Validate();OutsidePlayerSaveData.ValidatePlayer(End);}
         public OutsidePlayerSaveData Build(string run,int level,ClearReturnSettings settings)
         {
-            Validate();settings.Validate();if(level<EntryLevel)throw new ArgumentException("帰還成長を巻き戻せません");var saved=Entry.Copy();saved.Id=run;var p=saved.Player;
+            Validate();settings.Validate();if(level<EntryLevel)throw new ArgumentException("帰還成長を巻き戻せません");var saved=Entry.Copy();saved.Id=run;saved.HitState=null;var p=saved.Player;
             // 最大HPの差ではなく、同じ固定成長定義の旧/新level差だけを加算する。
             int hpGrowth=checked(settings.MaxHp(level)-settings.MaxHp(EntryLevel));int attackGrowth=checked(settings.Attack(level)-settings.Attack(EntryLevel));
             p.MaxHp=checked(p.MaxHp+hpGrowth);p.AttackPower=checked(p.AttackPower+attackGrowth);p.Hp=Math.Min(p.MaxHp,checked(End.Hp+hpGrowth));
@@ -435,7 +450,7 @@ namespace Olca.Core.Domain
         public void Validate()
         {
             if(Version!=1||Player==null||Runtime==null||SourcePlayerKey==null||SourcePlayerKey.Length!=64||!SourcePlayerKey.All(Uri.IsHexDigit)||SourceRuntimeKey==null||SourceRuntimeKey.Length!=64||!SourceRuntimeKey.All(Uri.IsHexDigit))throw new ArgumentException("初回死亡復帰の保存が不正です");
-            Player.Validate();Runtime.Validate();var p=Player.Player;var c=Runtime.Core;if(Player.Id!=Runtime.Id||p.Hp!=p.MaxHp||p.Poisons.Length!=0||p.TimedAilments!=null||c.Height!=0||c.Velocity!=0||c.Moving||c.DashStartedAt!=-1||c.DashEndsAt!=-1||c.CooldownUntil!=-1||c.WallKickAt!=-1||c.Afterimages.Length!=0||c.GaugeUnits!=(long)c.GaugeMaximum*60)throw new ArgumentException("死亡復帰が全回復/停止位置と一致しません");
+            Player.Validate();Runtime.Validate();var p=Player.Player;var c=Runtime.Core;if(Player.HitState!=null||Player.Id!=Runtime.Id||p.Hp!=p.MaxHp||p.Poisons.Length!=0||p.TimedAilments!=null||c.Height!=0||c.Velocity!=0||c.Moving||c.DashStartedAt!=-1||c.DashEndsAt!=-1||c.CooldownUntil!=-1||c.WallKickAt!=-1||c.Afterimages.Length!=0||c.GaugeUnits!=(long)c.GaugeMaximum*60)throw new ArgumentException("死亡復帰が全回復/停止位置と一致しません");
             var geometry=Olca.Core.Logic.Integration.OutsideFirstRecoveryFactory.RecoveryCore(c);if(c.Position!=Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(geometry,PointId))throw new ArgumentException("死亡復帰の位置が復帰地点と一致しません");
             var cards=Runtime.Cards;if(cards!=null&&(cards.Selected!=0||cards.Drawn.Length!=3||cards.Returned.Length!=0||!cards.Hand.SequenceEqual(cards.Drawn)))throw new ArgumentException("死亡復帰の手札再装填が不正です");
         }
@@ -448,7 +463,7 @@ namespace Olca.Core.Domain
         public OutsideRetryReturnData Copy()=>new OutsideRetryReturnData{Version=Version,EntryLevel=EntryLevel,Entry=Entry?.Copy()};
         public void Validate(){if(Version!=1||EntryLevel<1||Entry==null)throw new ArgumentException("再挑戦の復帰個体が不正です");Entry.Validate();}
         public OutsidePlayerSaveData Build(string run,int level,ClearReturnSettings settings)
-        {Validate();return new OutsideClearEndData{EntryLevel=EntryLevel,Entry=Entry.Copy(),End=Entry.Player.Copy()}.Build(run,level,settings);}
+        {Validate();var saved=new OutsideClearEndData{EntryLevel=EntryLevel,Entry=Entry.Copy(),End=Entry.Player.Copy()}.Build(run,level,settings);saved.HitState=Entry.HitState?.Copy();saved.Validate();return saved;}
         public string Key(){Validate();return Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>w.Write(Convert.ToBase64String(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(this))));}
     }
     public sealed class OutsideDepartureVitals

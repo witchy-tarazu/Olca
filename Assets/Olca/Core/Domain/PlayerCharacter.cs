@@ -304,6 +304,20 @@ namespace Olca.Core.Domain
             poiseRecovery.Clear(); poiseRecovery.Configure(PoiseRecoveryDefinitionFrames);
             accumulatedDamage = 0;
         }
+        // 外界の確定済み被弾状態だけを復元する。Damage/のけぞり通知を再実行しない。
+        internal PlayerHitStateData CaptureHitState()
+        {
+            if(!CanCaptureTimedAilments||IsInvincible||PoiseRecoveryDelayFrames!=PoiseRecoveryDefinitionFrames)throw new ArgumentException("未確定フレーム/無敵/変更された回復定義は外界退避できません");
+            var value=new PlayerHitStateData{AccumulatedDamage=accumulatedDamage,RecoveryUnits=poiseRecovery.RemainingUnits,StaggerUnits=staggerTimer.RemainingUnits};
+            if(value.AccumulatedDamage==0&&value.RecoveryUnits==0&&value.StaggerUnits==0)return null;
+            value.Validate(poise,StaggerDurationFrames,PoiseRecoveryDefinitionFrames);return value;
+        }
+        internal void RestoreHitState(PlayerHitStateData value)
+        {
+            if(!CanCaptureTimedAilments||IsInvincible)throw new ArgumentException("反映途中の被弾状態へ復元できません");
+            value?.Validate(poise,StaggerDurationFrames,PoiseRecoveryDefinitionFrames);
+            accumulatedDamage=value?.AccumulatedDamage??0;poiseRecovery.RestoreUnits(value?.RecoveryUnits??0);staggerTimer.RestoreUnits(value?.StaggerUnits??0);frameStaggered=frameWasStaggered=false;
+        }
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;

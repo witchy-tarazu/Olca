@@ -149,7 +149,7 @@ namespace Olca.Core.Logic.Integration
             public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;
             public bool TrialEnemyAttackEnabled=>IsCurrent&&owner.trialEnemyAttack!=null;
             public int TrialEnemyWindupFrames=>IsCurrent&&owner.trialEnemyAttack!=null?(int)Math.Max(0,owner.trialEnemyAttack.NextFrame-owner.Core.Frame):0;
-            public bool ToggleTrialEnemyAttack()=>IsCurrent&&owner.SetTrialEnemyAttack(owner.trialEnemyAttack==null);
+            public bool ToggleTrialEnemyAttack()=>IsCurrent&&owner.SetTrialEnemyAttack(owner.trialEnemyAttack==null,true);
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this)){prior.current=null;prior.CancelAttackReservation();}}
         }
@@ -185,12 +185,12 @@ namespace Olca.Core.Logic.Integration
         private static Enemy CreateTrialTarget(OutsideTrialTargetData data){var e=new Enemy("grunt","シヨウ ヒョウテキ（カリ）",TrialTargetMaximum,ElementType.None,new Olca.Core.Domain.Vector2Int(0,0));if(data!=null)e.RestoreCheckpointHp(data.Hp);return e;}
         // 試用標的1だけの任意AI。正式な敵性能・索敵・地形配置ではない。
         private OutsideTrialEnemyAttackData trialEnemyAttack;
-        public const int TrialEnemyDamage=10,TrialEnemyInterval=90,TrialEnemyInitialDelay=60;
-        public bool SetTrialEnemyAttack(bool enabled)
+        public const int TrialEnemyDamage=10,TrialEnemyPoiseDamage=10,TrialEnemyInterval=90,TrialEnemyInitialDelay=60;
+        public bool SetTrialEnemyAttack(bool enabled,bool affectsPoise=false)
         {
             if(IsEnded||!IsPresented||Player==null||Player.IsDead||Core.Definition.Id!="validation-landing-32"||enabled&&TrialTarget.IsDead)return false;
             if(enabled==(trialEnemyAttack!=null))return false;
-            trialEnemyAttack=enabled?new OutsideTrialEnemyAttackData{NextFrame=checked(Core.Frame+TrialEnemyInitialDelay)}:null;return true;
+            trialEnemyAttack=enabled?new OutsideTrialEnemyAttackData{DefinitionId=affectsPoise?"trial-shield-enemy-v2":"trial-shield-enemy-v1",NextFrame=checked(Core.Frame+TrialEnemyInitialDelay)}:null;return true;
         }
         private void AdvanceTrialEnemyAttack()
         {
@@ -198,7 +198,7 @@ namespace Olca.Core.Logic.Integration
             if(TrialTarget.IsDead||Player.IsDead||Core.HasFallenOut){trialEnemyAttack=null;return;}
             if(Core.Frame<trialEnemyAttack.NextFrame)return;
             trialEnemyAttack.NextFrame=checked(Core.Frame+TrialEnemyInterval);
-            if(Math.Abs(Core.Position-TrialTargetX)<=90000&&Core.Height>=0&&Core.Height<=90000)Player.TakeDamage(TrialEnemyDamage,attackElement:ElementType.None,affectsPoise:false); // 試用攻撃はHP/バリア検証専用。未保存の強靭/怯みを発生させない。
+            if(Math.Abs(Core.Position-TrialTargetX)<=90000&&Core.Height>=0&&Core.Height<=90000)Player.TakeDamage(TrialEnemyDamage,attackElement:ElementType.None,affectsPoise:trialEnemyAttack.DefinitionId=="trial-shield-enemy-v2",poiseDamage:TrialEnemyPoiseDamage); // v1保存は従来のHP/バリア専用を維持。
         }
         private static bool ShieldDefinition(Card c)=>c!=null&&c.Id=="shield"&&c.Category==CardCategory.Defense&&c.ExceedLevel==ExceedLevel.Normal&&c.Power==15&&c.GetFinalPower()==15&&c.SubCategory==CardSubCategory.Barrier&&c.Modifier.AdditionalEffects.Count==0;
         private static bool HealDefinition(Card c)=>c!=null&&c.Id=="heal"&&c.Category==CardCategory.Defense&&c.SubCategory==CardSubCategory.Heal&&c.ExceedLevel==ExceedLevel.Normal&&c.Power>=0;
@@ -332,7 +332,7 @@ namespace Olca.Core.Logic.Integration
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
             long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);itemCooldowns.Clear();
             if(relocate){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}Cards?.Reload();Core.CardGauge.RestoreFull();
-            attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialEnemyAttack=null;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
+            attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialEnemyAttack=null;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.ClearInvincibility();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
         }
         private string savedPlayerId,savedPlayerKey;
         /// <summary>同じRoot/Actorの再表示では適用し直さない。coldは従来の復帰位置へ個体だけ復元する。</summary>
@@ -706,7 +706,7 @@ namespace Olca.Core.Logic.Integration
     {
         public string DefinitionId="trial-shield-enemy-v1";public long NextFrame;
         public OutsideTrialEnemyAttackData Copy()=>(OutsideTrialEnemyAttackData)MemberwiseClone();
-        public void Validate(long frame){if(DefinitionId!="trial-shield-enemy-v1"||frame<0||NextFrame<=frame||NextFrame-frame>OutsideExplorationSession.TrialEnemyInterval)throw new ArgumentException("試用敵攻撃の定義/時計が不正です");}
+        public void Validate(long frame){if((DefinitionId!="trial-shield-enemy-v1"&&DefinitionId!="trial-shield-enemy-v2")||frame<0||NextFrame<=frame||NextFrame-frame>OutsideExplorationSession.TrialEnemyInterval)throw new ArgumentException("試用敵攻撃の定義/時計が不正です");}
     }
     public sealed class OutsideTrialTargetData{public string Id="trial-sword-target-v1";public int Hp,Hits;public OutsideTrialTargetData Copy()=>(OutsideTrialTargetData)MemberwiseClone();public void Validate(string expectedId="trial-sword-target-v1"){if(Id!=expectedId||Hp<0||Hp>OutsideExplorationSession.TrialTargetMaximum||Hits<0)throw new ArgumentException("試用標的の保存が不正です");}}
     public sealed class OutsideTrialStrike{public long Frame,X,Y;public int Facing;public bool Hit;public OutsideTrialStrike Copy()=>(OutsideTrialStrike)MemberwiseClone();}

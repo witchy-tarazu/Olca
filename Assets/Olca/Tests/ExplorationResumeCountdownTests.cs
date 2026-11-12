@@ -9,6 +9,39 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static object Hit229(PlayerCharacter p,string method,params object[] args)=>typeof(PlayerCharacter).GetMethod(method,System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(p,args);
+        [Test] public void 無敵中の落下死亡から回復後は残無敵を解除して保存とackを完了できる()
+        {
+            using(var s=Sword161()){
+                s.Player.SetInvincible(3000);Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(s.Player));Hit229(s.Player,"TakeFallDamage",100);Assert.IsTrue(s.Player.IsDead);var recovered=OutsidePlayerSaveData.ForRecovery(s.Player);s.RecoverOutside(null);Assert.IsFalse(s.Player.IsInvincible);Assert.AreEqual(0,s.Player.InvincibleDurationMs);Assert.AreEqual(100,s.Player.CurrentHp);Assert.DoesNotThrow(()=>s.AcknowledgeRecovery(recovered));Assert.IsNull(OutsidePlayerSaveData.Capture(s.Player).HitState);
+            }
+        }
+        public sealed class LegacyHitActor229 {public int Version;public string Id;public CheckpointPlayerDto Player;public int[] RawBaseElements;}
+        [Test] public void 外界被弾ゼロ欄省略は旧Actorのbytesとkeyを維持する()
+        {
+            var actor=OutsidePlayerSaveData.Capture(new PlayerCharacter(100));var old=new LegacyHitActor229{Version=actor.Version,Id=actor.Id,Player=actor.Player,RawBaseElements=actor.RawBaseElements};var bytes=PortableCheckpointJson.Serialize(old);var loaded=PortableCheckpointJson.Deserialize<OutsidePlayerSaveData>(bytes);Assert.IsNull(loaded.HitState);CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(loaded));Assert.AreEqual(actor.Key(),loaded.Key());
+        }
+        [TestCase(false)] [TestCase(true)] public void 強靭蓄積と怯みの端数unitを厳密復元して二重被害通知を起こさない(bool stagger)
+        {
+            var p=new PlayerCharacter(100,poise:30,staggerDurationFrames:18,poiseRecoveryDelayFrames:180);p.TakeDamage(stagger?30:10);Hit229(p,"TickPoiseRecovery",1,false);if(stagger)Hit229(p,"TickStagger",1,false);var actor=OutsidePlayerSaveData.Capture(p);Assert.NotNull(actor.HitState);Assert.AreEqual(8997,actor.HitState.RecoveryUnits);Assert.AreEqual(stagger?897:0,actor.HitState.StaggerUnits);var q=PortableCheckpointJson.Deserialize<OutsidePlayerSaveData>(PortableCheckpointJson.Serialize(actor)).Restore();Assert.AreEqual(p.CurrentHp,q.CurrentHp);Assert.AreEqual(p.AccumulatedDamage,q.AccumulatedDamage);Assert.AreEqual(p.StaggerRemainingFrames,q.StaggerRemainingFrames);int notifications=0;q.OnHpChanged+=(_,__)=>notifications++;q.OnStaggered+=()=>notifications++;Hit229(q,"RestoreHitState",actor.HitState);Assert.AreEqual(0,notifications);
+            for(int i=0;i<180;i++){Hit229(p,"TickPoiseRecovery",0,true);Hit229(q,"TickPoiseRecovery",0,true);Hit229(p,"TickStagger",0,true);Hit229(q,"TickStagger",0,true);Assert.AreEqual(p.AccumulatedDamage,q.AccumulatedDamage);Assert.AreEqual(p.StaggerRemainingFrames,q.StaggerRemainingFrames);Assert.AreEqual(p.CurrentHp,q.CurrentHp);}Assert.AreEqual(0,q.AccumulatedDamage);
+        }
+        [Test] public void 不正被弾残時間と反映途中と無敵中は外界保存を拒否する()
+        {
+            var p=new PlayerCharacter(100);Hit229(p,"BeginHpFrame");Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(p));Hit229(p,"CommitHpFrame");Hit229(p,"PublishHpFrame");p.SetInvincible(10);Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(p));Hit229(p,"ClearInvincibility");var actor=OutsidePlayerSaveData.Capture(p);actor.HitState=new PlayerHitStateData{AccumulatedDamage=1,StaggerUnits=-1};Assert.Throws<ArgumentException>(()=>actor.Restore());actor.HitState.StaggerUnits=19*50;Assert.Throws<ArgumentException>(()=>actor.Validate());actor.HitState.StaggerUnits=0;actor.HitState.RecoveryUnits=1;Assert.Throws<ArgumentException>(()=>actor.Validate());actor.HitState.RecoveryUnits=0;actor.HitState.AccumulatedDamage=p.Poise;Assert.Throws<ArgumentException>(()=>actor.Validate());
+        }
+        [Test] public void 再挑戦の実Buildは入場前強靭を保持し初回帰還と回復個体は解除する()
+        {
+            var p=new PlayerCharacter(100);p.TakeDamage(10);var actor=OutsidePlayerSaveData.Capture(p);var retry=new OutsideRetryReturnData{EntryLevel=1,Entry=actor};var result=retry.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.AreEqual(10,result.Restore().AccumulatedDamage);Assert.AreNotSame(actor.HitState,result.HitState);var first=new OutsideClearEndData{EntryLevel=1,Entry=actor,End=actor.Player.Copy()}.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.IsNull(first.HitState);Assert.IsNull(OutsidePlayerSaveData.ForRecovery(p).HitState);Assert.NotNull(actor.HitState);
+        }
+        [Test] public void 試用敵v2の強靭被害は保存cold後の次撃で一度だけ怯みへ進む()
+        {
+            using(var s=Sword161(stagger:18)){
+                var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){Assert.IsTrue(s.SetTrialEnemyAttack(true,true));for(int i=0;i<150;i++)s.TickTraversal(0);}Assert.AreEqual(80,s.Player.CurrentHp);Assert.AreEqual(20,s.Player.AccumulatedDamage);var rt=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=rt.Id;Assert.AreEqual("trial-shield-enemy-v2",rt.TrialEnemyAttack.DefinitionId);
+                using(var q=new OutsideExplorationSession()){q.RestoreSavedState(actor,rt,null,defs);using(var a=s.AttachPresentation())using(var b=q.AttachPresentation()){for(int i=0;i<90;i++){s.TickTraversal(0);q.TickTraversal(0);}Assert.AreEqual(70,q.Player.CurrentHp);Assert.AreEqual(0,q.Player.AccumulatedDamage);Assert.IsTrue(q.Player.IsStaggered);Assert.AreEqual(s.Player.StaggerRemainingFrames,q.Player.StaggerRemainingFrames);}}
+            }
+        }
+
 
         [TestCase(0,true)] [TestCase(60000,true)] [TestCase(180000,false)]
         public void 任意試用敵の連続攻撃は地上と低空でバリアを削り破壊後にHPへ通す(long height,bool hit)
@@ -677,9 +710,9 @@ namespace Olca.Tests
             }
         }
 
-        private static OutsideExplorationSession Sword161(int tenths=170,int facing=1,int startup=0,int recovery=0,ExceedLevel level=ExceedLevel.Normal)
+        private static OutsideExplorationSession Sword161(int tenths=170,int facing=1,int startup=0,int recovery=0,ExceedLevel level=ExceedLevel.Normal,int stagger=0)
         {
-            var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(startup,recovery)}});var source=factory.CreateStarterDeck().GetAllCards().ToArray();if(level!=ExceedLevel.Normal){int index=Array.FindIndex(source,c=>c.Id=="sword");source[index]=factory.CreateExceeded(source[index],level);}Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(161),out _));for(int n=0;n<1000&&(s.Cards.Hand.Count(c=>c.Id=="sword")<2||!s.Cards.Hand.Any(c=>c.Id=="sword"&&c.ExceedLevel==level));n++)s.Cards.Reload();Assert.GreaterOrEqual(s.Cards.Hand.Count(c=>c.Id=="sword"),2);s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword"&&c.ExceedLevel==level));long x=tenths*6000L+(facing<0?6000:0);while(s.Core.Position<x)s.Core.TickFrame(1);if(facing<0)s.Core.TickFrame(-1);Assert.AreEqual(tenths*6000L,s.Core.Position);return s;
+            var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100,staggerDurationFrames:stagger));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(startup,recovery)}});var source=factory.CreateStarterDeck().GetAllCards().ToArray();if(level!=ExceedLevel.Normal){int index=Array.FindIndex(source,c=>c.Id=="sword");source[index]=factory.CreateExceeded(source[index],level);}Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(161),out _));for(int n=0;n<1000&&(s.Cards.Hand.Count(c=>c.Id=="sword")<2||!s.Cards.Hand.Any(c=>c.Id=="sword"&&c.ExceedLevel==level));n++)s.Cards.Reload();Assert.GreaterOrEqual(s.Cards.Hand.Count(c=>c.Id=="sword"),2);s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword"&&c.ExceedLevel==level));long x=tenths*6000L+(facing<0?6000:0);while(s.Core.Position<x)s.Core.TickFrame(1);if(facing<0)s.Core.TickFrame(-1);Assert.AreEqual(tenths*6000L,s.Core.Position);return s;
         }
         [TestCase(164,1,false)] [TestCase(165,1,true)] [TestCase(170,1,true)] [TestCase(180,1,true)] [TestCase(185,1,false)] [TestCase(190,-1,true)] [TestCase(196,-1,false)] public void 試用ソードは向きと暫定一点範囲を判定し実カード威力を一度だけ与える(int x,int facing,bool hit)
         {
@@ -993,7 +1026,7 @@ namespace Olca.Tests
                     Assert.IsTrue(s.TryApplyEquipment(new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(new Olca.Core.Logic.Customization.CustomizationAbilitiesDto{DefinitionId="equipment225",Sources=Array.Empty<Olca.Core.Logic.Customization.CustomizationAbilitySourceDto>()})));Assert.AreEqual(0,actor.Resistances.Fire);Assert.IsFalse(actor.TerrainState.IsFloating);
                     Assert.AreEqual(37,actor.CurrentHp);Assert.IsTrue(actor.IsInvincible);Assert.AreEqual(3000,actor.InvincibleDurationMs);Assert.AreEqual(poisons[0].RemainingUnits,actor.CapturePoisons()[0].RemainingUnits);Assert.AreSame(core,s.Core);Assert.AreSame(cards,s.Cards);CollectionAssert.AreEqual(hand,cards.Hand);Assert.AreEqual(frame,core.Frame);Assert.AreEqual(position,core.Position);Assert.AreEqual(gauge,core.CardGauge.CurrentUnits);
                 }
-                var saved=OutsidePlayerSaveData.Capture(actor);using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedPlayer(saved,null));Assert.IsTrue(cold.TryApplyEquipment(Abilities(7)));Assert.AreEqual(7,cold.Player.Resistances.Fire);}
+                Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(actor),"装備の状態保持と、未対応の無敵途中保存は区別する");actor.TickInvincible(3000);var saved=OutsidePlayerSaveData.Capture(actor);using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedPlayer(saved,null));Assert.IsTrue(cold.TryApplyEquipment(Abilities(7)));Assert.AreEqual(7,cold.Player.Resistances.Fire);}
                 typeof(PlayerCharacter).GetMethod("FreezeDepartureState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(actor,null);Assert.IsFalse(s.CanReplaceEquipment);Assert.IsFalse(s.TryApplyEquipment(Abilities(99)));Assert.AreEqual(0,actor.Resistances.Fire,"攻略固定後は変更不可");
             }
         }
