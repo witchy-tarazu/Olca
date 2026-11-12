@@ -10,6 +10,56 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        [TestCase(0,true)] [TestCase(60000,true)] [TestCase(180000,false)]
+        public void 任意試用敵の連続攻撃は地上と低空でバリアを削り破壊後にHPへ通す(long height,bool hit)
+        {
+            using(var s=Sword161())using(var lease=s.AttachPresentation()){
+                var state=s.Core.CaptureState();state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+                s.Player.SetBarrier(15);Assert.IsTrue(s.SetTrialEnemyAttack(true));long first=s.Core.Frame+OutsideExplorationSession.TrialEnemyInitialDelay;
+                // 空中の射程境界を明示し、最初の着弾だけ高度を維持する。
+                for(int i=0;i<60;i++){s.Core.TickFrame(0);var q=s.Core.CaptureState();q.Height=height;q.SupportId=height==0?"floor":null;q.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{q});s.AdvancePlayerFrame();}
+                Assert.AreEqual(first,s.Core.Frame);Assert.AreEqual(hit?5:15,s.Player.BarrierHp);Assert.AreEqual(100,s.Player.CurrentHp);
+                if(!hit)return;
+                for(int i=0;i<90;i++)s.TickTraversal(0);Assert.AreEqual(0,s.Player.BarrierHp);Assert.AreEqual(100,s.Player.CurrentHp);
+                for(int i=0;i<90;i++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 試用敵の本体被弾後も未保存の強靭状態を作らず厳密復元後の連続被弾が一致する()
+        {
+            using(var s=Sword161()){
+                var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){s.Player.SetBarrier(15);Assert.IsTrue(s.SetTrialEnemyAttack(true));for(int i=0;i<240;i++)s.TickTraversal(0);}
+                Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(0,s.Player.BarrierHp);Assert.AreEqual(0,s.Player.AccumulatedDamage);Assert.AreEqual(0,s.Player.PoiseRecoveryRemainingFrames);Assert.IsFalse(s.Player.IsStaggered);Assert.IsFalse(s.Player.IsInvincible);
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                using(var cold=new OutsideExplorationSession()){
+                    cold.RestoreSavedState(PortableCheckpointJson.Deserialize<OutsidePlayerSaveData>(PortableCheckpointJson.Serialize(actor)),PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime)),null,defs);
+                    Assert.AreEqual(90,cold.Player.CurrentHp);Assert.AreEqual(0,cold.Player.AccumulatedDamage);Assert.AreEqual(0,cold.Player.PoiseRecoveryRemainingFrames);Assert.IsFalse(cold.Player.IsStaggered);Assert.IsFalse(cold.Player.IsInvincible);
+                    using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){for(int i=0;i<90;i++){s.TickTraversal(0);cold.TickTraversal(0);}Assert.AreEqual(80,s.Player.CurrentHp);Assert.AreEqual(80,cold.Player.CurrentHp);Assert.AreEqual(0,cold.Player.AccumulatedDamage);Assert.IsFalse(cold.Player.IsStaggered);Assert.IsFalse(cold.Player.IsInvincible);}
+                }
+            }
+        }
+        [Test] public void 試用敵は任意OFFで旧標的動作を維持し敵撃破後に攻撃しない()
+        {
+            using(var s=Sword161())using(var lease=s.AttachPresentation()){
+                for(int i=0;i<240;i++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsTrue(s.SetTrialEnemyAttack(true));s.TrialTarget.TakeDamage(120,ElementType.None);s.TickTraversal(0);Assert.IsFalse(lease.TrialEnemyAttackEnabled);for(int i=0;i<200;i++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 試用敵の着弾予定とバリアを厳密保存し復元後に二重発動せず帰還と通常continueで解除する()
+        {
+            using(var s=Sword161()){
+                var defs=Kick214Definitions(s);using(var lease=s.AttachPresentation()){s.Player.SetBarrier(15);Assert.IsTrue(s.SetTrialEnemyAttack(true));for(int i=0;i<30;i++)s.TickTraversal(0);}
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var copy=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime));Assert.AreEqual(runtime.Key(),copy.Key());
+                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,copy,null,defs));using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){for(int i=0;i<30;i++){s.TickTraversal(0);cold.TickTraversal(0);}Assert.AreEqual(5,s.Player.BarrierHp);Assert.AreEqual(5,cold.Player.BarrierHp);Assert.AreEqual(100,cold.Player.CurrentHp);}}
+                var returned=runtime.ForRun(Guid.NewGuid().ToString("N"));Assert.IsNull(returned.TrialEnemyAttack);Assert.NotNull(runtime.TrialEnemyAttack);
+                using(var normal=new OutsideExplorationSession()){normal.ClassifyStartupRestore(true);normal.RestoreForPresentation(actor,runtime,null,defs);using(var l=normal.AttachPresentation()){Assert.IsFalse(l.TrialEnemyAttackEnabled);Assert.AreEqual(0,normal.Player.BarrierHp);}}
+            }
+        }
+        [Test] public void 不正な試用敵攻撃は旧個体を置換せず旧OFF保存には新欄を出力しない()
+        {
+            using(var s=Sword161()){
+                var defs=Kick214Definitions(s);var old=s.Player;var data=s.CaptureRuntime(defs);Assert.IsFalse(System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(data)).Contains("TrialEnemyAttack"));var actor=OutsidePlayerSaveData.Capture(old);actor.Id=data.Id;data.TrialEnemyAttack=new OutsideTrialEnemyAttackData{DefinitionId="unknown",NextFrame=data.Core.Frame+1};Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,defs));Assert.AreSame(old,s.Player);data.TrialEnemyAttack.DefinitionId="trial-shield-enemy-v1";data.TrialEnemyAttack.NextFrame=data.Core.Frame;Assert.Throws<ArgumentException>(()=>data.Validate());data.TrialEnemyAttack.NextFrame=data.Core.Frame+91;Assert.Throws<ArgumentException>(()=>data.Validate());
+            }
+        }
+
         private static OutsideExplorationSession Shield227()
         {
             var s=Heal158();for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="shield");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="shield")));return s;
