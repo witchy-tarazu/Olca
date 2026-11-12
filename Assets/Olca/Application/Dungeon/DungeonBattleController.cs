@@ -513,7 +513,7 @@ namespace Olca.Application.Dungeon
         private void RegisterOutsideShop()
         {
             if(gameSystem==null)return;gameSystem.Views.Register(this,ManagedOutsideShop,
-                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideShopView>("OutsideShopView",view=>view.Initialize(panelFactory.Font,clearReturnSession,OutsideShopDefinition.Trial,CloseOutsideShop,isAlive:()=>this!=null&&isActiveAndEnabled&&outsideShopActive&&IsUserPaused&&outsideExploration?.IsOpen==true)).gameObject);},
+                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideShopView>("OutsideShopView",view=>view.Initialize(panelFactory.Font,clearReturnSession,OutsideShopDefinition.TrialLimited,CloseOutsideShop,isAlive:()=>this!=null&&isActiveAndEnabled&&outsideShopActive&&IsUserPaused&&outsideExploration?.IsOpen==true)).gameObject);},
                 (panel,context)=>{if(!outsideShopActive||!isActiveAndEnabled||!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideShopView>().Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideShopView>().Hide();});
         }
