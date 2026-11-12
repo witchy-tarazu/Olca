@@ -219,7 +219,7 @@ namespace Olca.Application.Dungeon
                 battle.HasPlayerAction && !battle.CanCancelPlayerRecovery ? "固有攻撃中" :
                 GameplayPause.InputBlocked && !basicAttackInput.IsCharging ? "キーを離してください"+held : basicAttackInput.IsResumePending ? "再押下でタメ再開"+held :
                 chargeReady ? "タメ完了 / 離して攻撃" : basicAttackInput.IsCharging ? charge+" / 離すと通常攻撃" : "短押し: 通常 / 長押し: タメ";
-            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackInputAvailable, TouchCardAvailable,GameplayKeyboardProfile,chargeReady);
+            basicAttackHud.Render(GameplayKeyboardProfile.Bindings[("keyboard", "battle", "AttackPrimary")], state, BasicAttackInputAvailable, TouchCardAvailable,GameplayKeyboardProfile,chargeReady,selectingCards:battle.CustomScreen.IsOpen);
         }
         private bool battleFieldReady;
         private GameObject pauseCanvas;

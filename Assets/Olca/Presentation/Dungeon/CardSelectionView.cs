@@ -1270,6 +1270,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
+            var visibility=GetComponent<UnityEngine.CanvasGroup>();if(visibility!=null)visibility.alpha=1;
             // 操作ボタンの位置と当たり領域を維持し、探索では使わない説明領域だけを縮める。
             SetSurfaceSize(460, 132);if(surface!=null){surface.enabled=true;surface.color=surfaceColor;}if(battleSurface!=null)battleSurface.gameObject.SetActive(false);
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
@@ -1280,8 +1281,9 @@ namespace Olca.Presentation.Dungeon
             jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ"+Hint("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ"+Hint("DashPrimary");
             jumpButton.interactable=dashButton.interactable=available;
         }
-        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null,bool chargeReady=false)
+        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null,bool chargeReady=false,bool selectingCards=false)
         {
+            var visibility=GetComponent<UnityEngine.CanvasGroup>();if(visibility==null)visibility=gameObject.AddComponent<UnityEngine.CanvasGroup>();visibility.alpha=selectingCards?0:1;
             // 戦闘の操作領域は固定したまま、背後の敵や床が読める薄い水鏡にする。
             SetSurfaceSize(500, 210);if(surface!=null)surface.enabled=false;if(battleSurface!=null){var color=surfaceColor;color.a*=.68f;battleSurface.color=color;battleSurface.gameObject.SetActive(true);}
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);

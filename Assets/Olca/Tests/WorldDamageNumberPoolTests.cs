@@ -533,7 +533,11 @@ namespace Olca.Tests
                 var guide=(RectTransform)obj.transform.Find("BasicAttackKey");float top=panel.rectTransform.anchoredPosition.y+panel.rectTransform.rect.yMax;
                 Assert.Less(top,((RectTransform)obj.transform).rect.yMax);Assert.GreaterOrEqual(top,guide.anchoredPosition.y+guide.rect.yMax);Assert.Greater(guide.anchoredPosition.y+guide.rect.yMin,attack.anchoredPosition.y+attack.rect.yMax);
                 Assert.AreEqual(attackPosition,attack.anchoredPosition);Assert.AreEqual(cardPosition,card.anchoredPosition);Assert.AreEqual(attackSize,attack.sizeDelta);Assert.AreEqual(cardSize,card.sizeDelta);
-                hud.RenderExploration(true);Assert.IsTrue(obj.GetComponent<UnityEngine.UI.Image>().enabled);Assert.IsFalse(panel.gameObject.activeSelf);
+                hud.Render("Z","カスタム中",false,false,selectingCards:true);Assert.AreEqual(0,obj.GetComponent<CanvasGroup>().alpha);Assert.IsTrue(obj.activeSelf);Assert.IsFalse(attack.GetComponent<UnityEngine.UI.Button>().interactable);Assert.IsFalse(card.GetComponent<UnityEngine.UI.Button>().interactable);
+                Assert.AreEqual(attackPosition,attack.anchoredPosition);Assert.AreEqual(cardPosition,card.anchoredPosition);
+                hud.Render("Z","通常",true,true);Assert.AreEqual(1,obj.GetComponent<CanvasGroup>().alpha);Assert.IsTrue(attack.GetComponent<UnityEngine.UI.Button>().interactable);Assert.IsTrue(card.GetComponent<UnityEngine.UI.Button>().interactable);
+                hud.Render("Z","カスタム中",false,false,selectingCards:true);
+                hud.RenderExploration(true);Assert.IsTrue(obj.GetComponent<UnityEngine.UI.Image>().enabled);Assert.AreEqual(1,obj.GetComponent<CanvasGroup>().alpha);Assert.IsFalse(panel.gameObject.activeSelf);
             }
         }
         [Test] public void 本体素材のないボス名は校正を適用せず既存配置を保持する()

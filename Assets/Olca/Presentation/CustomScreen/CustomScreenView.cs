@@ -517,7 +517,7 @@ namespace Olca.Presentation.CustomScreen
         }
         private Vector2 AuthoredConfirmPosition => narrowLayout?.Position((RectTransform)confirmButton.transform) ?? ((RectTransform)confirmButton.transform).anchoredPosition;
 
-        private Text focusHeading, handHeading, selectionHeading, selectionHint;
+        private Text focusHeading, handHeading, selectionHeading, selectionHint, primaryGuide;
         private Image readingSurface;
         private bool processingHierarchyHidden, processingCostWasActive, processingQueueWasActive;
         internal int SelectionOrdinal(Card card)
@@ -559,6 +559,9 @@ namespace Olca.Presentation.CustomScreen
             var cost=costDisplay.rectTransform;cost.localPosition=new Vector3(center+200,cost.localPosition.y,cost.localPosition.z);costDisplay.alignment=TextAnchor.MiddleRight;
             var selected=HierarchyLabel(ref selectionHeading,"SelectionHeading");selected.gameObject.SetActive(visible);selected.text=processing?$"ソザイ　{customizeSelectedCards.Count} / 2":$"シヨウジュン　{customScreen?.SelectedCards.Count??0} / {customScreen?.MaxSelectionCount??5}";
             Place(selected,left,cost.localPosition.y,340,cost.rect.height,Mathf.RoundToInt(Mathf.Lerp(24,32,amount)));
+            var guide=HierarchyLabel(ref primaryGuide,"CustomSelectionGuide");
+            Place(guide,left,Mathf.Lerp(hand.localPosition.y,cost.localPosition.y,.62f),740,Mathf.Lerp(110,140,amount),Mathf.RoundToInt(Mathf.Lerp(22,30,amount)));
+            RefreshPrimaryGuide();RefreshConfirmCaption();
             var indicator=transform.Find("SelectionIndicator") as RectTransform;
             // 通常使用のコストと取消列は、加工中だけ元のactive状態を保管して退避する。
             if(processing&&!processingHierarchyHidden){processingCostWasActive=costDisplay.gameObject.activeSelf;processingQueueWasActive=indicator!=null&&indicator.gameObject.activeSelf;processingHierarchyHidden=true;}
@@ -711,7 +714,7 @@ namespace Olca.Presentation.CustomScreen
         private bool HandleCustomGamepad()
         {
             if(gamepadInput==null)return false;var commands=gamepadInput.Read();
-            if(customScreen!=null&&customScreen.IsOpen&&!customScreen.IsConfirming)EnsurePadGuide();else if(padGuidePanel!=null)padGuidePanel.SetActive(false);
+            if(customScreen!=null&&customScreen.IsOpen&&!customScreen.IsConfirming)EnsurePadGuide();else {if(padGuidePanel!=null)padGuidePanel.SetActive(false);if(primaryGuide!=null)primaryGuide.gameObject.SetActive(false);}
             foreach(var input in commands){lastPadFrame=Time.frameCount;var owner=customScreen;int view=padViewVersion;System.Action execute=()=>{
                 if(this==null||gamepadInput==null||input.Epoch!=gamepadInput.Epoch||view!=padViewVersion||!ReferenceEquals(owner,customScreen)||!owner.IsOpen||owner.IsConfirming||handAnimating||Olca.Unity.GameplayPause.InputBlocked)return;
                 ApplyCustomPad(input.Command);
@@ -758,7 +761,24 @@ namespace Olca.Presentation.CustomScreen
             authoredPadGuideText=FormatPadGuide(processing,false,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
             narrowPadGuideText=FormatPadGuide(processing,true,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
             padGuide.text=narrowLayoutAmount>0?narrowPadGuideText:authoredPadGuideText;
+            RefreshPrimaryGuide();
 
+        }
+        private void RefreshPrimaryGuide()
+        {
+            if(primaryGuide==null)return;
+            bool visible=customScreen!=null&&customScreen.IsOpen&&!customScreen.IsConfirming&&isScreenVisible&&
+                !(customizeModeView!=null&&customizeModeView.IsActive)&&!DetailsOpen&&!Olca.Unity.GameplayPause.InputBlocked;
+            primaryGuide.gameObject.SetActive(visible);
+            primaryGuide.text=FormatPrimaryGuide(Olca.Unity.InputGuideActivity.Current,Olca.Unity.UnityInputProvider.ActiveGamepadProfile);
+        }
+        private static string FormatPrimaryGuide(Olca.Unity.InputGuideDevice device,Olca.Core.Domain.InputBindingProfile profile)
+        {
+            if(device==Olca.Unity.InputGuideDevice.Touch)return "カードをタップ: 選択\n最後の1枚を戻す / 確定・戦闘へ";
+            string select=device==Olca.Unity.InputGuideDevice.Gamepad?CustomGuideKey(profile,"Decide"):"Space";
+            string cancel=device==Olca.Unity.InputGuideDevice.Gamepad?CustomGuideKey(profile,"Cancel"):"Esc";
+            string confirm=device==Olca.Unity.InputGuideDevice.Gamepad?CustomGuideKey(profile,"Confirm"):"Enter";
+            return select+": 選択　"+cancel+": 最後の1枚を取消\n"+confirm+": 確定して戦闘へ";
         }
         private static string CustomGuideKey(Olca.Core.Domain.InputBindingProfile profile,string action)
         {
@@ -773,6 +793,7 @@ namespace Olca.Presentation.CustomScreen
             string second=$"{Key("Confirm")}: {confirm} / {Key("Customize")}: {customize}";
             string third=processing?$"{Key("Undo")}: 加工を戻す / {Key("Details")}: 詳細":$"{Key("Undo")}: 加工を戻す / {Key("Transform")}: 変身";
             string fourth=(processing?"":$"{Key("Details")}: 詳細 / ")+$"{Key("PageUp")}: ガメン / {Key("PageDown")}: ジブン";
+            if(!processing)return $"{Key("Customize")}: 加工 / {Key("Undo")}: 加工を戻す / {Key("Transform")}: 変身\n{Key("Details")}: 詳細 / {Key("PageUp")}: ガメン / {Key("PageDown")}: ジブン";
             return first+(narrow?"\n":" / ")+second+"\n"+third+(narrow?"\n":" / ")+fourth;
         }
         private enum ProcessingHintKind { First, Second, Invalid, Candidate, Ready }
@@ -1683,11 +1704,18 @@ namespace Olca.Presentation.CustomScreen
         /// <summary>
         /// 確定ボタンの有効/無効を更新
         /// </summary>
+        private void RefreshConfirmCaption()
+        {
+            var label=confirmButton!=null?confirmButton.GetComponentInChildren<Text>(true):null;if(label==null)return;
+            label.text=CustomDisplay.Katakana("確定・戦闘へ");label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;
+            label.resizeTextForBestFit=true;label.resizeTextMinSize=Mathf.RoundToInt(Mathf.Lerp(18,24,narrowLayoutAmount));label.resizeTextMaxSize=label.fontSize;
+        }
         private void UpdateConfirmButton()
         {
             if (confirmButton != null)
             {
                 confirmButton.interactable = customScreen.CanConfirm();
+                RefreshConfirmCaption();
             }
         }
 
