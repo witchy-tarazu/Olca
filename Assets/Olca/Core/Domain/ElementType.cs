@@ -341,7 +341,7 @@ namespace Olca.Core.Domain
         public const string BasicId = "basic";
         public static DepartureStyleDefinition Basic { get; } = new DepartureStyleDefinition(BasicId, "基本 / 無属性", null);
         // 明示試用データ。常時選択可は仮解放で、正式能力・入手条件ではない。
-        public static DepartureStyleDefinition TrialFire { get; } = new DepartureStyleDefinition("trial-fire-kamui-v1","カエン（カリ・ダンジョン）",null,new TransformationAttackDefinition(ElementType.Fire,100,200,60,12));
+        public static DepartureStyleDefinition TrialFire { get; } = new DepartureStyleDefinition("trial-fire-kamui-v1","カエン（カリ）",null,new TransformationAttackDefinition(ElementType.Fire,100,200,60,12));
         public string Id { get; }
         public string Name { get; }
         public string RequiredClear { get; }

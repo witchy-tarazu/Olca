@@ -1502,13 +1502,18 @@ namespace Olca.Core.Domain
         // 試用毒の明示操作。一般Retryへ失敗計画を残さず、現個体は成功後にだけ変更する。
         internal bool TryCommitOutsideTrialPoison(OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
             =>TryCommitOutsideActorSnapshot(null,actor,runtime,itemState,out error);
-        private bool TryCommitOutsideActorSnapshot(string consumedItem,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
+        internal bool TryCommitOutsideStyle(DepartureStyleDefinition style,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
+        {
+            if(style==null||!style.IsUnlocked(current)||actor==null||(actor.Player?.Style?.Id??DepartureStyleDefinition.BasicId)!=style.Id){error="神依と保存個体が一致しません";return false;}
+            return TryCommitOutsideActorSnapshot(null,actor,runtime,itemState,out error,style);
+        }
+        private bool TryCommitOutsideActorSnapshot(string consumedItem,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error,DepartureStyleDefinition selectedStyle=null)
         {
             error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索中の保存完了後に使用してください";return false;}
             try{
                 actor.Validate();runtime.Validate();if(actor.Id!=runtime.Id){error="使用個体と外界状態が一致しません";return false;}
                 var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();if(consumedItem!=null){var count=inventory.Items.SingleOrDefault(v=>v.Id==consumedItem);if(count==null||count.Count==0){error="所持数がありません";return false;}count.Count--;}
-                next.OutsideInventory=inventory;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=itemState.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                if(selectedStyle==null)next.OutsideInventory=inventory;else next.SelectedStyleId=selectedStyle.Id==DepartureStyleDefinition.BasicId?null:selectedStyle.Id;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=itemState.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
         }

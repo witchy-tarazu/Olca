@@ -177,7 +177,7 @@ namespace Olca.Core.Logic.Integration
             if(normalKick?.IsHitWindow!=true||Core.Definition.Id!="validation-landing-32")return;
             void Hit(int id,long x,Enemy enemy){
                 if(enemy.IsDead||!OutsideKickTrialDefinition.Contains(normalKick.Kind,Core.Position,Core.Height,normalKick.AttackFacing,x)||!normalKick.TryMarkHit(id))return;
-                enemy.TakeDamage(OutsideKickTrialDefinition.Damage,ElementType.None);
+                enemy.TakeDamage(OutsideKickTrialDefinition.Damage,Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id?ElementType.Fire:ElementType.None); // カエンの外界キックも明示試用。
                 if(id==0){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}else secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
             }
             Hit(0,TrialTargetX,TrialTarget);Hit(1,OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget);
@@ -310,6 +310,23 @@ namespace Olca.Core.Logic.Integration
         }
         public bool CanPerformAttack=>BodyCanAttack&&!IsAttacking;
         private bool BodyCanAttack=>Core.Frame!=bodyPreventedFrame&&!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
+        private bool KnownOutsideStyle=>Player!=null&&(Player.DepartureStyle.Id==DepartureStyleDefinition.BasicId&&Player.BaseElementResistances.IsNeutral||Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id&&Player.BaseElementResistances.HasSameValues(ElementAffinity.CreatePlayerBase(ElementType.Fire)));
+        public bool CanSwitchOutsideStyle=>CanPerformAttack&&Player.CanReplaceOutsideEquipment&&KnownOutsideStyle&&Core.Definition.Id=="validation-landing-32";
+        public bool TrySwitchOutsideStyle(ClearReturnSession save,DepartureStyleDefinition style,CheckpointDefinitions definitions,out string error)
+        {
+            error=null;if(IsEnded||Player==null||style==null||save==null||!IsPresented||usingItem){error="外界の神依を確認できません";return false;}
+            if(!ReferenceEquals(style,DepartureStyleDefinition.Basic)&&!ReferenceEquals(style,DepartureStyleDefinition.TrialFire)){error="未登録の試用神依です";return false;}
+            if(style.Id==Player.DepartureStyle.Id)return true; // 同じ神依では保存/効果を発生させない。
+            if(!CanSwitchOutsideStyle||style.Id!=DepartureStyleDefinition.BasicId&&style.Id!=DepartureStyleDefinition.TrialFire.Id){error="今は神依を切り替えできません";return false;}
+            usingItem=true;
+            try{
+                var candidate=OutsidePlayerSaveData.Capture(Player).Restore();var basic=style.Id==DepartureStyleDefinition.BasicId?ElementResistances.Neutral:ElementAffinity.CreatePlayerBase(ElementType.Fire);candidate.ReplaceOutsideStyle(style,basic);var actor=OutsidePlayerSaveData.Capture(candidate);
+                var runtime=CaptureItemRuntime(definitions);runtime.Id=actor.Id;var items=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=itemCooldowns.Where(v=>v.Value>Core.Frame).Select(v=>new OutsideItemCooldownData{Id=v.Key,RemainingFrames=checked((int)(v.Value-Core.Frame))}).ToArray()};items.Validate(actor,runtime);
+                if(!save.TryCommitOutsideStyle(style,actor,runtime,items,out error))return false;
+                Player.ReplaceOutsideStyle(style,basic);CancelAttackReservation();appliedItemStateId=actor.Id;savedPlayerId=actor.Id;savedPlayerKey=actor.Key();savedRuntimeId=runtime.Id;savedRuntimeKey=runtime.Key();return true;
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException||e is InvalidOperationException){error=e.Message;return false;}
+            finally{usingItem=false;}
+        }
         public bool CanReplaceEquipment=>!IsEnded&&Player!=null&&Player.CanReplaceOutsideEquipment;
         /// <summary>保存成功後の装備補正だけを置換。個体・HP・状態・論理時間は変更しない。</summary>
         public bool TryApplyEquipment(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities abilities)

@@ -150,19 +150,37 @@ namespace Olca.Presentation.Management
         private UnityEngine.UI.Text status,hint;
         private OutsideKamuiWheelRing ring;
         private bool open,confirmHeld,pauseOwned;private long epoch;
+        private UnityEngine.UI.Button alternate;private UnityEngine.UI.Text normalLabel,alternateLabel;private UnityEngine.Font choiceFont;
+        private string[] choices={"ツウジョウ ジョウタイ"};private int selectedChoice=-1,currentChoice=-1;private System.Func<int,bool> tryChoice;private string choiceError;
+        public int SelectedChoice=>selectedChoice;
+        public void ConfigureChoices(string[] names,int current,System.Func<int,bool> apply)
+        {
+            if(open||names==null||names.Length<1||names.Length>2||System.Array.Exists(names,string.IsNullOrWhiteSpace))throw new System.ArgumentException("閉鎖中の試用ホイールへ1〜2項目を指定してください");
+            choices=(string[])names.Clone();currentChoice=current;tryChoice=apply;choiceError=null;
+            if(choices.Length==2&&alternate==null){var go=new UnityEngine.GameObject("KamuiWheelAlternate",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));go.transform.SetParent(transform,false);alternate=go.GetComponent<UnityEngine.UI.Button>();alternate.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.MenuButton(alternate);go.GetComponent<UnityEngine.UI.Image>().raycastTarget=false;alternateLabel=Text("KamuiWheelAlternateLabel","",choiceFont,UnityEngine.Vector2.zero,new UnityEngine.Vector2(340,100),24,go.transform);}
+            ((UnityEngine.RectTransform)confirm.transform).anchoredPosition=new UnityEngine.Vector2(0,choices.Length==1?0:75);((UnityEngine.RectTransform)confirm.transform).sizeDelta=choices.Length==1?new UnityEngine.Vector2(250,90):new UnityEngine.Vector2(350,110);normalLabel.rectTransform.sizeDelta=choices.Length==1?new UnityEngine.Vector2(240,80):new UnityEngine.Vector2(340,100);normalLabel.text=choices[0]+(current==0?"\n[ゲンザイ]":"");
+            if(alternate!=null){alternate.gameObject.SetActive(choices.Length==2);((UnityEngine.RectTransform)alternate.transform).anchoredPosition=new UnityEngine.Vector2(0,-75);((UnityEngine.RectTransform)alternate.transform).sizeDelta=new UnityEngine.Vector2(350,110);if(choices.Length==2)alternateLabel.text=choices[1]+(current==1?"\n[ゲンザイ]":"");}
+        }
+        private void TryConfirmChoice()
+        {
+            if(!open||!HasSelection||!confirm.interactable||owner?.IsCurrent!=true||parentAlive?.Invoke()!=true)return;
+            if(tryChoice!=null&&!tryChoice(selectedChoice)){choiceError="キリカエ デキマセン / サイカクテイ マタハ トジル";status.text=choiceError;return;}
+            confirm.onClick.Invoke();
+        }
+
         public bool IsOpen=>open;
         public bool HasSelection{get;private set;}
         public DialogResult? LastResult{get;private set;}
         public void Initialize(UnityEngine.Font font)
         {
-            var rect=(UnityEngine.RectTransform)transform;rect.anchorMin=UnityEngine.Vector2.zero;rect.anchorMax=UnityEngine.Vector2.one;rect.offsetMin=rect.offsetMax=UnityEngine.Vector2.zero;
+            choiceFont=font;var rect=(UnityEngine.RectTransform)transform;rect.anchorMin=UnityEngine.Vector2.zero;rect.anchorMax=UnityEngine.Vector2.one;rect.offsetMin=rect.offsetMax=UnityEngine.Vector2.zero;
             var overlay=gameObject.AddComponent<UnityEngine.UI.Image>();overlay.color=new UnityEngine.Color(.015f,.04f,.06f,.75f);
             var face=new UnityEngine.GameObject("KamuiWheelSurface",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));face.transform.SetParent(transform,false);
             var fr=(UnityEngine.RectTransform)face.transform;fr.sizeDelta=new UnityEngine.Vector2(800,670);var image=face.GetComponent<UnityEngine.UI.Image>();image.sprite=UnityEngine.Resources.Load<UnityEngine.Sprite>("OlcaUI/description");image.type=UnityEngine.UI.Image.Type.Sliced;image.color=image.sprite!=null?UnityEngine.Color.white:new UnityEngine.Color(.025f,.075f,.105f,.98f);image.raycastTarget=false;
             Text("KamuiWheelTitle","カムイ ホイール",font,new UnityEngine.Vector2(0,255),new UnityEngine.Vector2(700,60),32);
             var circle=new UnityEngine.GameObject("KamuiWheelRing",typeof(UnityEngine.RectTransform),typeof(OutsideKamuiWheelRing));circle.transform.SetParent(transform,false);((UnityEngine.RectTransform)circle.transform).sizeDelta=new UnityEngine.Vector2(300,300);ring=circle.GetComponent<OutsideKamuiWheelRing>();ring.raycastTarget=false;
             var item=new UnityEngine.GameObject("KamuiWheelNormal",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));item.transform.SetParent(transform,false);((UnityEngine.RectTransform)item.transform).sizeDelta=new UnityEngine.Vector2(250,90);confirm=item.GetComponent<UnityEngine.UI.Button>();confirm.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.MenuButton(confirm);item.GetComponent<UnityEngine.UI.Image>().raycastTarget=false;
-            Text("KamuiWheelNormalLabel","ツウジョウ ジョウタイ",font,UnityEngine.Vector2.zero,new UnityEngine.Vector2(240,80),24,item.transform);
+            normalLabel=Text("KamuiWheelNormalLabel","ツウジョウ ジョウタイ",font,UnityEngine.Vector2.zero,new UnityEngine.Vector2(240,80),24,item.transform);
             status=Text("KamuiWheelSelection","ミセンタク",font,new UnityEngine.Vector2(0,-195),new UnityEngine.Vector2(700,50),24);
             hint=Text("KamuiWheelHint","ヒダリ スティック: センタク / ケッテイ ボタン: カクテイ\nヒラク ボタンヲ ハナス: トジル",font,new UnityEngine.Vector2(0,-270),new UnityEngine.Vector2(740,85),22);
             var hidden=new UnityEngine.GameObject("KamuiWheelRelease",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Button));hidden.transform.SetParent(transform,false);((UnityEngine.RectTransform)hidden.transform).sizeDelta=UnityEngine.Vector2.zero;cancel=hidden.GetComponent<UnityEngine.UI.Button>();cancel.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};
@@ -183,7 +201,12 @@ namespace Olca.Presentation.Management
         }
         private void Select(UnityEngine.Vector2 direction)
         {
-            HasSelection=direction.sqrMagnitude>=.19f*.19f;confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);ring.Selected=HasSelection;status.text=HasSelection?"センタク: ツウジョウ ジョウタイ":"ミセンタク";
+            SelectChoice(direction.sqrMagnitude>=.19f*.19f?(choices.Length==2&&direction.y<0?1:0):-1);
+        }
+        private void SelectChoice(int index)
+        {
+            if(selectedChoice!=index)choiceError=null;selectedChoice=index;HasSelection=index>=0;confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);ring.Selected=HasSelection;status.text=choiceError??(HasSelection?"センタク: "+choices[index]:"ミセンタク");
+            normalLabel.color=index==0?new UnityEngine.Color(.6f,1,1):UnityEngine.Color.white;if(alternateLabel!=null)alternateLabel.color=index==1?new UnityEngine.Color(.6f,1,1):UnityEngine.Color.white;
         }
         public void Tick(bool held,bool decide,UnityEngine.Vector2 direction)
         {
@@ -192,7 +215,7 @@ namespace Olca.Presentation.Management
             bool edge=decide&&!confirmHeld;confirmHeld=decide;Select(direction);
             // 標準UI SubmitやB取消は所有しない。開始時A保持を新しい確定へ合成しない。
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-            if(edge&&confirm.interactable)confirm.onClick.Invoke();
+            if(edge&&confirm.interactable)TryConfirmChoice();
         }
         /// <summary>PCはトグル開閉。表示/所有/PauseはPadと同じDialogへ集め、入力方式だけを分ける。</summary>
         public bool OpenPc(DialogManager manager,IDialogOwner current,System.Func<bool> alive,System.Func<bool> allowed,System.Action<bool> paused,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input,string openLabel="Tab")
@@ -205,7 +228,7 @@ namespace Olca.Presentation.Management
             UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);return true;
         }
         private void SelectMouse(UnityEngine.Vector2 pointer,bool available)
-        {bool hit=available&&UnityEngine.RectTransformUtility.RectangleContainsScreenPoint((UnityEngine.RectTransform)confirm.transform,pointer,null);Select(hit?UnityEngine.Vector2.up:UnityEngine.Vector2.zero);}
+        {int index=-1;if(available){if(UnityEngine.RectTransformUtility.RectangleContainsScreenPoint((UnityEngine.RectTransform)confirm.transform,pointer,null))index=0;else if(choices.Length==2&&alternate!=null&&UnityEngine.RectTransformUtility.RectangleContainsScreenPoint((UnityEngine.RectTransform)alternate.transform,pointer,null))index=1;}SelectChoice(index);}
         public void TickPc(Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)
         {
             if(!open)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true||!input.KeyboardAvailable){Abort();return;}
@@ -217,11 +240,11 @@ namespace Olca.Presentation.Management
             if(input.ClickDown)SelectMouse(input.Pointer,input.PointerAvailable);
             // 選択入力が静止していても、現在の切替可否を確定直前に読み直す。
             confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);
-            if((input.EnterDown||input.ClickDown)&&confirm.interactable)confirm.onClick.Invoke();
+            if((input.EnterDown||input.ClickDown)&&confirm.interactable)TryConfirmChoice();
         }
         private void Finish(long ticket,DialogResult result)
         {
-            if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;HasSelection=false;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);
+            if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;HasSelection=false;selectedChoice=-1;tryChoice=null;choiceError=null;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);
         }
         public void Abort(){if(!open)return;var manager=dialogs;var current=owner;manager?.CancelActiveOwner(current);Finish(epoch,DialogResult.ParentClosed);if(this!=null&&gameObject.activeSelf)gameObject.SetActive(false);}
         private void OnDisable(){Abort();}

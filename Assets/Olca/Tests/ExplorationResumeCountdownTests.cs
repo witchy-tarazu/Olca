@@ -9,6 +9,36 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private sealed class Style231Store:IClearReturnStore
+        {
+            public ClearReturnProfile Value=new ClearReturnProfile{Tokens=7};public bool Fail;public int Writes;
+            public ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
+            public bool TryWrite(long expected,ClearReturnProfile next,out string error){Writes++;if(Fail){error="style231 explicit failure";return false;}Assert.AreEqual(Value.Revision,expected);ClearReturnProfile.Validate(next);Value=next.Copy();error=null;return true;}
+        }
+        [Test] public void 外界神依の失敗は個体と時計手札を保ち成功とcoldと通常復帰で火から通常へ戻せる()
+        {
+            using(var s=Sword161()){
+                var store=new Style231Store{Fail=true};var save=new ClearReturnSession(store);var defs=Kick214Definitions(s);var cooldowns=(System.Collections.Generic.Dictionary<string,long>)typeof(OutsideExplorationSession).GetField("itemCooldowns",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s);cooldowns["style231-cd"]=s.Core.Frame+120;s.Player.SetHp(80);s.Player.SetBarrier(5);var player=s.Player;var cards=s.Cards;var hand=cards.Hand.ToArray();
+                using(var l=s.AttachPresentation()){
+                    s.TickTraversal(1,true,true);var before=PortableCheckpointJson.Serialize(s.Core.CaptureState());Assert.IsFalse(s.Core.IsGrounded);Assert.IsFalse(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,defs,out _));Assert.AreSame(player,s.Player);Assert.AreEqual("basic",player.DepartureStyle.Id);Assert.IsNull(save.Snapshot.SelectedStyleId);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.Core.CaptureState()));
+                    store.Fail=false;Assert.IsTrue(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,defs,out var error),error);Assert.AreSame(player,s.Player);Assert.AreSame(cards,s.Cards);CollectionAssert.AreEqual(hand,cards.Hand);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.Core.CaptureState()));Assert.AreEqual(80,player.CurrentHp);Assert.AreEqual(5,player.BarrierHp);Assert.AreEqual(-50,player.BaseElementResistances.Water);int writes=store.Writes;Assert.IsTrue(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,defs,out _));Assert.AreEqual(writes,store.Writes);Assert.AreEqual(7,save.Snapshot.Tokens);
+                }
+                var saved=save.Snapshot;Assert.AreEqual(119,saved.OutsideItemState.Cooldowns.Single().RemainingFrames);using(var cold=new OutsideExplorationSession()){cold.RestoreForPresentation(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,null,defs,itemState:saved.OutsideItemState);Assert.AreEqual(119,cold.ItemCooldownRemaining("style231-cd"));Assert.AreEqual(ElementType.Fire,cold.Player.ActiveElement);Assert.AreEqual(5,cold.Player.BarrierHp);using(var l=cold.AttachPresentation()){Assert.IsTrue(cold.TrySwitchOutsideStyle(save,DepartureStyleDefinition.Basic,defs,out var error),error);Assert.IsTrue(cold.Player.BaseElementResistances.IsNeutral);Assert.AreEqual(ElementType.None,cold.Player.ActiveElement);}Assert.IsNull(save.Snapshot.SelectedStyleId);Assert.AreEqual(DepartureStyleDefinition.TrialFire.Id,saved.OutsidePlayerSave.Player.Style.Id);}
+                using(var normal=new OutsideExplorationSession()){normal.ClassifyStartupRestore(true);normal.RestoreForPresentation(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,null,defs);Assert.AreEqual(ElementType.Fire,normal.Player.ActiveElement);Assert.AreEqual(100,normal.Player.CurrentHp);Assert.AreEqual(0,normal.Player.BarrierHp);}
+            }
+        }
+        [Test] public void 外界神依は旧基礎耐性と攻略固定と反映できない無敵を上書きしない()
+        {
+            using(var s=Sword161())using(var l=s.AttachPresentation()){
+                var store=new Style231Store();var save=new ClearReturnSession(store);s.Player.SetElementResistances(new ElementResistances(fire:5));Assert.IsFalse(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,null,out _));Assert.AreEqual(5,s.Player.BaseElementResistances.Fire);s.Player.SetElementResistances(ElementResistances.Neutral);s.Player.SetInvincible(1000);Assert.IsFalse(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,null,out _));s.Player.TickInvincible(1000);Hit229(s.Player,"FreezeDepartureState");Assert.IsFalse(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,null,out _));Assert.AreEqual(0,store.Writes);
+            }
+        }
+        [Test] public void 外界カエンは火の試用キックを一回命中し動作中の切替を拒否する()
+        {
+            using(var s=Sword161())using(var l=s.AttachPresentation()){
+                var save=new ClearReturnSession(new Style231Store());s.EnableTrialNormalKick();ElementType? element=null;int hits=0;s.TrialTarget.OnDamageObserved+=hit=>{element=hit.Element;hits++;};Assert.IsTrue(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.TrialFire,Kick214Definitions(s),out _));Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.IsFalse(s.TrySwitchOutsideStyle(save,DepartureStyleDefinition.Basic,null,out _));for(int i=0;i<30;i++)Kick214Tick(s);Assert.AreEqual(ElementType.Fire,element);Assert.AreEqual(1,hits);Assert.AreEqual(110,s.TrialTarget.CurrentHp);
+            }
+        }
         private static object Hit229(PlayerCharacter p,string method,params object[] args)=>typeof(PlayerCharacter).GetMethod(method,System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(p,args);
         [Test] public void 無敵中の落下死亡から回復後は残無敵を解除して保存とackを完了できる()
         {

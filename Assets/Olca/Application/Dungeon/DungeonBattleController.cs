@@ -573,7 +573,9 @@ namespace Olca.Application.Dungeon
             if(outsideWheel==null)outsideWheel=panelFactory.Component<Olca.Presentation.Management.OutsideKamuiWheelDialog>("OutsideKamuiWheelDialog",v=>v.Initialize(panelFactory.Font));
             var owner=context;long epoch=++outsideWheelEpoch;
             System.Func<bool> alive=()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner);
-            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen&&!gameSystem.OutsideExploration.IsLandingLocked;
+            System.Func<bool> allowed=()=>!IsUserPaused&&!DialogueOpen;
+            var choices=departureStyles.Where(v=>(v.Id==DepartureStyleDefinition.BasicId||v.Id==DepartureStyleDefinition.TrialFire.Id)&&v.IsUnlocked(clearReturnSession.Snapshot)).ToArray();
+            outsideWheel.ConfigureChoices(choices.Select(v=>v.Id==DepartureStyleDefinition.BasicId?"ツウジョウ ジョウタイ":v.Name+" / ヒ・キック カリ").ToArray(),System.Array.FindIndex(choices,v=>v.Id==gameSystem.OutsideExploration.Player?.DepartureStyle.Id),index=>alive()&&epoch==outsideWheelEpoch&&index>=0&&index<choices.Length&&gameSystem.OutsideExploration.TrySwitchOutsideStyle(clearReturnSession,choices[index],memoryCheckpoints?.Definitions,out _));
             if(pcOpen){outsideWheelInputOwner=OutsideWheelInputOwner.Pc;outsideWheelKeyboard=keyboard;
                 string label=inputProvider.KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null?key:"ミワリアテ";
                 outsideWheel.OpenPc(gameSystem.Dialogs,owner,alive,allowed,value=>SetOutsideWheelPaused(epoch,value),pc,label);

@@ -32,6 +32,12 @@ namespace Olca.Core.Domain
             AttackGrowth=growth??throw new ArgumentNullException(nameof(growth));
         }
         public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
+        // 外界Session専用。攻略へ固定済みの個体は解除せず、HP/時計/装備/被弾状態へ触れない。
+        internal void ReplaceOutsideStyle(DepartureStyleDefinition style,ElementResistances basic)
+        {
+            if(departureAbilitiesFixed||style==null||basic==null)throw new InvalidOperationException("外界で変更できる個体と神依定義が必要です");
+            DepartureStyle=style;departureStyleFixed=true;BaseElementResistances=basic;
+        }
         private bool departureStyleFixed;
         internal void FreezeDepartureState(){departureStyleFixed=true;departureAbilitiesFixed=true;}
         internal Func<ElementType?> BattleElement;

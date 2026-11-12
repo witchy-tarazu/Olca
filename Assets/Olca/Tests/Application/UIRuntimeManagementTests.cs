@@ -72,6 +72,24 @@ namespace Olca.Tests.Application
         private static Olca.Unity.UnityInputProvider.OutsidePcWheelInput Pc(Vector2 direction=default,bool keyChanged=false,bool pointerChanged=false,long keyOrder=0,long pointerOrder=0,bool enter=false,bool click=false,bool toggle=false,bool available=true,Vector2 pointer=default)
             =>new Olca.Unity.UnityInputProvider.OutsidePcWheelInput(available,toggle,enter,click,direction,pointer,true,keyChanged,pointerChanged,keyOrder,pointerOrder);
         private static bool OpenPc(Fixture f,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)=>f.View.OpenPc(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,value=>{f.Paused=value;f.PauseTransitions++;},input);
+        [Test] public void 複数神依の保存失敗は停止と表示を保ち再確定成功後だけ閉じる()
+        {
+            using(var f=new Fixture()){
+                int calls=0;bool success=false;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{Assert.AreEqual(1,i);calls++;return success;});Assert.IsTrue(f.Open(direction:Vector2.down));Assert.AreEqual(1,f.View.SelectedChoice);f.View.Tick(true,true,Vector2.down);Assert.AreEqual(1,calls);Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);f.View.Tick(true,false,Vector2.down);success=true;f.View.Tick(true,true,Vector2.down);Assert.AreEqual(2,calls);Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(0,f.Dialogs.ActiveCount);
+            }
+        }
+        [Test] public void 複数神依の中央と解放取消は保存せず親終了後も古い入力は使えない()
+        {
+            using(var f=new Fixture()){
+                int calls=0;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{calls++;return true;});Assert.IsTrue(f.Open(direction:Vector2.down));f.View.Tick(true,true,Vector2.zero);Assert.IsTrue(f.View.IsOpen);Assert.AreEqual(0,calls);f.View.Tick(false,false,Vector2.down);Assert.IsFalse(f.View.IsOpen);f.View.Tick(true,true,Vector2.down);Assert.AreEqual(0,calls);Assert.IsFalse(f.Paused);
+            }
+        }
+        [Test] public void 複数神依のPC方向は上下別項目でEnterだけ一度確定する()
+        {
+            using(var f=new Fixture()){
+                int chosen=-1;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{chosen=i;return true;});Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.down)));Assert.AreEqual(1,f.View.SelectedChoice);f.View.TickPc(Pc(direction:Vector2.up,keyChanged:true,keyOrder:1));Assert.AreEqual(0,f.View.SelectedChoice);f.View.TickPc(Pc(enter:true));Assert.AreEqual(0,chosen);Assert.IsFalse(f.View.IsOpen);
+            }
+        }
         [Test] public void PCホイールは初期hoverと既保持方向を表示しTab解放では閉じず二度目だけ取消す()
         {
             using(var f=new Fixture()){
