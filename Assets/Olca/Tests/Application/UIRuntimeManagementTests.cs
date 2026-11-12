@@ -72,6 +72,24 @@ namespace Olca.Tests.Application
         private static Olca.Unity.UnityInputProvider.OutsidePcWheelInput Pc(Vector2 direction=default,bool keyChanged=false,bool pointerChanged=false,long keyOrder=0,long pointerOrder=0,bool enter=false,bool click=false,bool toggle=false,bool available=true,Vector2 pointer=default)
             =>new Olca.Unity.UnityInputProvider.OutsidePcWheelInput(available,toggle,enter,click,direction,pointer,true,keyChanged,pointerChanged,keyOrder,pointerOrder);
         private static bool OpenPc(Fixture f,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)=>f.View.OpenPc(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,value=>{f.Paused=value;f.PauseTransitions++;},input);
+        [Test] public void ポーズ経由ホイールは保存失敗後も停止し同じ選択を再確定して旧callbackを拒否する()
+        {
+            using(var f=new Fixture()){
+                int calls=0;bool success=false;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{Assert.AreEqual(1,i);calls++;return success;});
+                Assert.IsTrue(f.View.OpenMenu(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,v=>{f.Paused=v;f.PauseTransitions++;},"Enter / Esc"));
+                var back=f.View.transform.Find("KamuiWheelRelease").GetComponent<Button>();Assert.AreSame(back.GetComponent<Image>(),back.targetGraphic,"後付け画像も色変更先へ接続する");var alternate=f.View.transform.Find("KamuiWheelAlternate").GetComponent<Button>();var old=alternate.onClick;alternate.onClick.Invoke();Assert.AreEqual(1,calls);Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);f.View.RefreshMenu();Assert.IsTrue(f.View.transform.Find("KamuiWheelSelection").GetComponent<Text>().text.Contains("デキマセン"));
+                // DialogManagerの同frame再試行保護を次frameへ進める代わりに次のticketで成功経路を検証する。
+                f.View.transform.Find("KamuiWheelRelease").GetComponent<Button>().onClick.Invoke();Assert.IsFalse(f.Paused);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Cancelled,f.View.LastResult);old.Invoke();Assert.AreEqual(1,calls);
+                success=true;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{calls++;return true;});Assert.IsTrue(f.View.OpenMenu(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>true,v=>f.Paused=v,"Guide"));alternate.onClick.Invoke();Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(2,calls);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Confirmed,f.View.LastResult);Assert.IsTrue(f.Dialogs.Blocks(f.Parent));
+            }
+        }
+        [Test] public void ポーズ経由ホイールは親失効で解放し通常PC再表示へ戻るボタンを漏らさない()
+        {
+            using(var f=new Fixture()){
+                f.View.ConfigureChoices(new[]{"Normal","Trial"},0,_=>true);Assert.IsTrue(f.View.OpenMenu(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>true,v=>f.Paused=v,"Guide"));f.Parent.Alive=false;f.View.RefreshMenu();Assert.IsFalse(f.Paused);Assert.AreEqual(0,f.Dialogs.ActiveCount);
+                f.Parent.Alive=true;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,_=>true);Assert.IsTrue(OpenPc(f,Pc()));Assert.IsFalse(f.View.transform.Find("KamuiWheelRelease/KamuiMenuBack").gameObject.activeSelf);Assert.IsFalse(f.View.transform.Find("KamuiWheelNormal").GetComponent<Image>().raycastTarget);f.View.TickPc(Pc(toggle:true));Assert.IsFalse(f.View.IsOpen);
+            }
+        }
         [Test] public void 複数神依の保存失敗は停止と表示を保ち再確定成功後だけ閉じる()
         {
             using(var f=new Fixture()){

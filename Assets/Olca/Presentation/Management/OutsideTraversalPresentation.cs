@@ -199,6 +199,35 @@ namespace Olca.Presentation.Management
             try{var task=manager.Show(current,gameObject,confirm,cancel,result=>Finish(ticket,result),manageMenu:false,inputAllowed:()=>open&&this!=null&&parentAlive?.Invoke()==true);if(task.IsCompleted){Finish(ticket,task.Result);return false;}if(!open)return false;pauseOwned=true;pause?.Invoke(true);return true;}
             catch{Abort();throw;}
         }
+        /// <summary>Pause経由は既存のメニュー決定/取消で操作し、LB保持を要求しない。</summary>
+        public bool OpenMenu(DialogManager manager,IDialogOwner current,System.Func<bool> alive,System.Func<bool> allowed,System.Action<bool> paused,string guide)
+        {
+            if(open||manager==null||manager.ActiveCount!=0||current?.IsCurrent!=true||alive==null||!alive())return false;
+            dialogs=manager;owner=current;parentAlive=alive;canConfirm=allowed;pause=paused;open=true;LastResult=null;long ticket=++epoch;
+            confirm.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();cancel.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();
+            confirm.onClick.AddListener(()=>{if(open&&ticket==epoch)SelectChoice(0);});
+            if(alternate!=null){alternate.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();alternate.onClick.AddListener(()=>{if(!open||ticket!=epoch||owner?.IsCurrent!=true||parentAlive?.Invoke()!=true)return;SelectChoice(1);menuAlternate=true;try{confirm.onClick.Invoke();}finally{menuAlternate=false;}});}
+            menuMode=true;SetMenuSurface(true);hint.text=guide;SelectChoice(-1);confirm.interactable=true;
+            try{var task=manager.ShowPersistent(current,gameObject,confirm,cancel,()=>{if(menuAlternate)SelectChoice(1);if(parentAlive?.Invoke()!=true||canConfirm?.Invoke()!=true)return false;if(tryChoice!=null&&!tryChoice(selectedChoice)){choiceError="キリカエ デキマセン / サイカクテイ マタハ モドる";status.text=choiceError;return false;}return true;},result=>Finish(ticket,result));if(task.IsCompleted){Finish(ticket,task.Result);return false;}pauseOwned=true;pause?.Invoke(true);return true;}
+            catch{Abort();throw;}
+        }
+        private bool menuMode,menuAlternate;
+        private void SetMenuSurface(bool value)
+        {
+            confirm.GetComponent<UnityEngine.UI.Image>().raycastTarget=value;if(alternate!=null)alternate.GetComponent<UnityEngine.UI.Image>().raycastTarget=value;
+            var rect=(UnityEngine.RectTransform)cancel.transform;rect.sizeDelta=value?new UnityEngine.Vector2(280,60):UnityEngine.Vector2.zero;rect.anchoredPosition=new UnityEngine.Vector2(0,-230);
+            if(value&&cancel.GetComponent<UnityEngine.UI.Image>()==null){cancel.targetGraphic=cancel.gameObject.AddComponent<UnityEngine.UI.Image>();Olca.Presentation.Dungeon.UiLook.MenuButton(cancel);Text("KamuiMenuBack","モドる",choiceFont,UnityEngine.Vector2.zero,new UnityEngine.Vector2(260,55),24,cancel.transform);}
+            cancel.transform.Find("KamuiMenuBack")?.gameObject.SetActive(value);
+            status.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,value?-170:-195);hint.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,value?-295:-270);
+        }
+        public void RefreshMenu()
+        {
+            if(!open||!menuMode)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true){Abort();return;}
+            var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
+            normalLabel.color=selected==confirm.gameObject?new UnityEngine.Color(.6f,1,1):UnityEngine.Color.white;
+            if(alternateLabel!=null)alternateLabel.color=selected==alternate.gameObject?new UnityEngine.Color(.6f,1,1):UnityEngine.Color.white;
+            confirm.interactable=canConfirm?.Invoke()==true;if(alternate!=null)alternate.interactable=confirm.interactable;
+        }
         private void Select(UnityEngine.Vector2 direction)
         {
             SelectChoice(direction.sqrMagnitude>=.19f*.19f?(choices.Length==2&&direction.y<0?1:0):-1);
@@ -244,7 +273,7 @@ namespace Olca.Presentation.Management
         }
         private void Finish(long ticket,DialogResult result)
         {
-            if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;HasSelection=false;selectedChoice=-1;tryChoice=null;choiceError=null;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);
+            if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;if(menuMode){SetMenuSurface(false);menuMode=false;}HasSelection=false;selectedChoice=-1;tryChoice=null;choiceError=null;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);
         }
         public void Abort(){if(!open)return;var manager=dialogs;var current=owner;manager?.CancelActiveOwner(current);Finish(epoch,DialogResult.ParentClosed);if(this!=null&&gameObject.activeSelf)gameObject.SetActive(false);}
         private void OnDisable(){Abort();}
