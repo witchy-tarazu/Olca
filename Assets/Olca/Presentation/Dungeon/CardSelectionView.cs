@@ -263,7 +263,7 @@ namespace Olca.Presentation.Dungeon
     // 通常クリアの選択・経験値反映・帰還確認。保存判断はController/Coreへ委譲する。
     public sealed class ClearReturnView : MonoBehaviour
     {
-        private bool explorationDeckLibrary;private UnityEngine.UI.Text explorationEditingState;
+        private bool explorationDeckLibrary;private UnityEngine.UI.Text explorationEditingState,explorationOperationGuide;private bool explorationGuidePending;
         public void ConfigureExplorationDeckLibrary(){explorationDeckLibrary=true;}
         private Action ensureManagedVisible,hideManaged;
         private Olca.Presentation.Management.ReturnDialog activeDialog;
@@ -274,7 +274,7 @@ namespace Olca.Presentation.Dungeon
         public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){ManagementContext=context;gameObject.SetActive(true);}
         public void HideManaged(){StopMenu();ManagementContext=null;gameObject.SetActive(false);}
         public void Hide(){if(hideManaged!=null)hideManaged();else gameObject.SetActive(false);}
-        private void BeginRender(){explorationEditingState=null;shopGuide=null;if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
+        private void BeginRender(){explorationOperationGuide=null;explorationGuidePending=false;explorationEditingState=null;shopGuide=null;if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
         private bool CanOperateView=>this!=null&&gameObject.activeInHierarchy&&(ensureManagedVisible==null||ManagementContext?.IsCurrent==true&&!ManagementContext.DialogBlocksInput);
         private Font font;
         private Action<int> toggle;
@@ -416,7 +416,7 @@ namespace Olca.Presentation.Dungeon
             stats.rectTransform.anchoredPosition=new Vector2(stats.rectTransform.anchoredPosition.x,summaryY);
             Fit("ReturnSummary",summaryY,summaryHeight,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();RefreshShopGuide();}
+        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();RefreshShopGuide();RefreshExplorationDeckGuide();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
         public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
@@ -972,6 +972,29 @@ namespace Olca.Presentation.Dungeon
             if(input!=null){input.customCaretColor=true;input.caretColor=primary;input.selectionColor=new Color(.18f,.60f,.74f,.65f);}
         }
 
+        public static string ExplorationDeckGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad,bool typing=false,bool pending=false)
+        {
+            if(pending)return "ホゾンのサイシコウまち\n「ホゾンをサイシコウ」でつづけます";
+            if(typing)return "ナマエをヘンシュウチュウ\nデッキのホゾンはホゾンボタン";
+            return Olca.Presentation.Management.GameplayPauseView.InputGuideText(profile,gamepad)+"\n＋／−をエラんでケッテイ：1マイずつ";
+        }
+        private void RefreshExplorationDeckGuide()
+        {
+            if(explorationOperationGuide==null)return;
+            bool visible=explorationDeckLibrary&&CanOperateView&&!HasMenuModal&&content!=null&&content.name=="DepartureContents";explorationOperationGuide.gameObject.SetActive(visible);if(!visible)return;
+            bool typing=content.GetComponentsInChildren<InputField>().Any(input=>input.isFocused);
+            explorationOperationGuide.text=ExplorationDeckGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,typing,explorationGuidePending);
+        }
+        // 表示する理由だけを既存のButton判定から求める。追加/削除の可否や制約は変更しない。
+        private static string ExplorationChangeReason(bool pending,bool defined,int count,int owned,int total,bool adding)
+        {
+            if(pending)return "ホゾンのサイシコウまち";
+            if(!adding)return count<=0?"ヘンセイ0マイ":null;
+            if(!defined)return "テイギミカイケツ";
+            if(count>=owned)return "ショジ"+owned+"マイまで";
+            return total>=ExplorationDeckRules.RequiredCards?"デッキ30マイまで":null;
+        }
+
         // 編集状態の案内だけ。dirty/使用中の判断と保存は呼出側Sessionに残す。
         public void SetExplorationDeckEditingState(bool isNew,bool isSelected,bool dirty,bool pending)
         {
@@ -996,7 +1019,7 @@ namespace Olca.Presentation.Dungeon
             var owner=content;
             Action Live(Action action,bool allowPending=false)=>()=>{if(CanOperateView&&owner!=null&&content==owner&&owner.activeInHierarchy&&(allowPending||!pending)&&readonlyDetails==null)action?.Invoke();};
             Text("DepartureTitle", explorationDeckLibrary?"探索デッキを編成":"所持から出撃デッキを編成", 0, 455, 1750, 60, 36);
-            if(explorationDeckLibrary)explorationEditingState=Text("ExplorationDeckEditingState","編集中",610,455,480,60,23);
+            if(explorationDeckLibrary){explorationEditingState=Text("ExplorationDeckEditingState","編集中",610,455,480,60,23);explorationOperationGuide=Text("ExplorationDeckOperationGuide","",-610,455,600,60,20);explorationGuidePending=pending;}
             Button nameSaveButton=null;Func<bool> nameCanSave=()=>true;Action refreshNameState=null;
             if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(SavedDeckNameInputField));inputObj.transform.SetParent(content.transform,false);
                 var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(-150,400);ir.sizeDelta=new Vector2(1000,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
@@ -1047,8 +1070,13 @@ namespace Olca.Presentation.Dungeon
                 var quantity=Text("DepartureDraftQuantity_"+index,count.ToString(),515,y,64,50,28);quantity.resizeTextForBestFit=true;quantity.resizeTextMinSize=18;quantity.resizeTextMaxSize=28;
                 Text("DepartureOwnedQuantity_"+index,owned.Count.ToString(),775,y,140,50,27);
                 Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;
-                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1))).interactable = !pending && count > 0;
-                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1))).interactable = !pending && option != null && (save!=null&&!explorationDeckLibrary||(count < owned.Count && draft.Count < (explorationDeckLibrary?ExplorationDeckRules.RequiredCards:20)));
+                var remove=Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1)));remove.interactable = !pending && count > 0;
+                var add=Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1)));add.interactable = !pending && option != null && (save!=null&&!explorationDeckLibrary||(count < owned.Count && draft.Count < (explorationDeckLibrary?ExplorationDeckRules.RequiredCards:20)));
+                if(explorationDeckLibrary){
+                    string plus=add.IsInteractable()?null:ExplorationChangeReason(pending,option!=null,count,owned.Count,draft.Count,true),minus=remove.IsInteractable()?null:ExplorationChangeReason(pending,option!=null,count,owned.Count,draft.Count,false);
+                    string reason=plus!=null&&plus==minus?"＋／−: "+plus:string.Join(" / ",new[]{plus==null?null:"＋: "+plus,minus==null?null:"−: "+minus}.Where(value=>value!=null));
+                    if(reason.Length>0){metrics.text=(option==null?"テイギミカイケツ":metrics.text)+"  /  "+reason;metrics.fontSize=20;metrics.resizeTextForBestFit=true;metrics.resizeTextMinSize=17;metrics.resizeTextMaxSize=20;metrics.rectTransform.sizeDelta=new Vector2(850,36);metrics.rectTransform.anchoredPosition=new Vector2(-335,y-22);}
+                }
             }
             if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);
             Text("DeparturePage", $"{departurePage+1}/{pages}", 0, -340, 250, 50, 24);
@@ -1072,7 +1100,7 @@ namespace Olca.Presentation.Dungeon
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureDetails_",StringComparison.Ordinal)&&b.IsInteractable())?.name??
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureRow_",StringComparison.Ordinal)&&b.name.EndsWith("Details",StringComparison.Ordinal)&&b.IsInteractable())?.name??"CloseOwnedDeparture";
             ApplyDeckReadingLook(valid&&error==null);
-            SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();
+            SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();RefreshExplorationDeckGuide();
         }
 
         // 一覧の最も狭い700幅へ、装備注記と枚数を含めて収める。raw入力は書き換えない。
