@@ -130,6 +130,8 @@ namespace Olca.Core.Logic.Integration
         public const string CardSupplyId="validation-exploration-card-chest-v1";
         public const long CardSupplyX=10*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanClaimCardSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-CardSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
+        public const long ShopX=8*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanVisitShop(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-ShopX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
         public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long PoisonSupplyX=16*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;

@@ -566,3 +566,54 @@ namespace Olca.Presentation.Exploration
         private void ClearTrialSword(){if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
     }
 }
+
+namespace Olca.Presentation.Management
+{
+    /// <summary>外界店の表示・選択・操作寿命。取引の原子保存はClearReturnSessionへ委譲する。</summary>
+    public sealed class OutsideShopView:UnityEngine.MonoBehaviour
+    {
+        private UnityEngine.Font font;private Olca.Core.Domain.ClearReturnSession session;private Olca.Core.Domain.OutsideShopDefinition shop;private System.Action closed;
+        private ManagedScreenContext context;private UnityEngine.Transform content;private Olca.Unity.MenuPadScope menu;private string selected,message;private long renderEpoch;private int attemptFrame=-1;private System.Func<int> frame;private System.Func<bool> alive;private UnityEngine.UI.Text guide;
+        private bool CanOperate=>this!=null&&isActiveAndEnabled&&context?.IsCurrent==true&&!context.DialogBlocksInput&&(alive?.Invoke()??true);
+        public void Initialize(UnityEngine.Font value,Olca.Core.Domain.ClearReturnSession source,Olca.Core.Domain.OutsideShopDefinition definition,System.Action close,System.Func<int> readFrame=null,System.Func<bool> isAlive=null){alive=isAlive;font=value;session=source;shop=definition;closed=close;frame=readFrame??(()=>UnityEngine.Time.frameCount);gameObject.SetActive(false);}
+        public void Open(ManagedScreenContext owner){context=owner;selected=message=null;gameObject.SetActive(true);transform.SetAsLastSibling();Render();}
+        private UnityEngine.UI.Text Text(string name,string value,float x,float y,float width,float height,int size)
+        {
+            var go=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Text));go.transform.SetParent(content,false);var text=go.GetComponent<UnityEngine.UI.Text>();text.font=font;text.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value);text.fontSize=size;text.alignment=UnityEngine.TextAnchor.MiddleCenter;text.color=UnityEngine.Color.white;text.raycastTarget=false;text.rectTransform.anchoredPosition=new UnityEngine.Vector2(x,y);text.rectTransform.sizeDelta=new UnityEngine.Vector2(width,height);return text;
+        }
+        private UnityEngine.UI.Button Button(string name,string text,float x,float y,float width,System.Action action)
+        {
+            var go=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image),typeof(UnityEngine.UI.Button));go.transform.SetParent(content,false);var rect=(UnityEngine.RectTransform)go.transform;rect.anchoredPosition=new UnityEngine.Vector2(x,y);rect.sizeDelta=new UnityEngine.Vector2(width,90);var button=go.GetComponent<UnityEngine.UI.Button>();Olca.Presentation.Dungeon.UiLook.MenuButton(button);var label=Text(name+"Label",text,0,0,width-30,84,26);label.transform.SetParent(go.transform,false);var owner=context;long epoch=renderEpoch;button.onClick.AddListener(()=>{if(button!=null&&button.isActiveAndEnabled&&button.IsInteractable()&&CanOperate&&ReferenceEquals(context,owner)&&epoch==renderEpoch)action();});return button;
+        }
+        private void Attempt(bool funds)
+        {
+            if(attemptFrame==frame())return;attemptFrame=frame();
+            bool success=funds?session.TryClaimOutsideShopTrialFunds(out message):session.TryPurchaseOutsideShop(shop,selected,out message);if(success)message=funds?"シヨウ シキン"+Olca.Core.Domain.OutsideShopDefinition.TrialFunds+"を ウケトリ・ホゾンしました":"1コ コウニュウ・ホゾンしました";Render();
+        }
+        private void Render()
+        {
+            renderEpoch++;menu?.Dispose();menu=null;if(content!=null){content.gameObject.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content.gameObject);else DestroyImmediate(content.gameObject);}
+            var go=new UnityEngine.GameObject("OutsideShopContents",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));go.transform.SetParent(transform,false);content=go.transform;((UnityEngine.RectTransform)content).sizeDelta=new UnityEngine.Vector2(1480,850);go.GetComponent<UnityEngine.UI.Image>().color=new UnityEngine.Color(.025f,.075f,.105f,.98f);
+            var inventory=session.OutsideInventorySnapshot;Text("OutsideShopTitle","シヨウ ショップ（カリ）",0,340,1400,65,38);Text("OutsideShopWallet","エイゾク ツウカ: "+inventory.Currency+" / カード チョウカ トークンとはベツ",0,270,1380,55,25);
+            for(int i=0;i<shop.Offers.Count;i++){var offer=shop.Offers[i];int count=inventory.Items.SingleOrDefault(v=>v.Id==offer.ItemId)?.Count??0;var button=Button("OutsideShopOffer_"+offer.Id,offer.Name+" / 1コ "+offer.Price+"ツウカ\nショジ "+count+" / "+offer.Maximum+" ・ザイコ ムセイゲン",i==0?-350:350,155,640,()=>{selected=offer.Id;message=null;Render();});if(selected==offer.Id)button.GetComponent<UnityEngine.UI.Image>().color=Olca.Presentation.Dungeon.UiLook.Chosen;}
+            bool canBuy=session.CanPurchaseOutsideShop(shop,selected,out var error);var chosen=shop.Offers.SingleOrDefault(v=>v.Id==selected);Text("OutsideShopSelection",chosen==null?"ショウヒンを エラんでください":chosen.Name+" / コウニュウゴ "+(canBuy?(inventory.Currency-chosen.Price).ToString():"—")+"ツウカ",0,45,1380,60,27);
+            Text("OutsideShopStatus",message??(chosen==null?"コウニュウで ツウカとショウヒンを イッカツ ホゾン":canBuy?"1カイのコウニュウで1コ。キンガク・シキン・ハイチはカリ。":error),0,-20,1380,65,24);
+            Button("OutsideShopBuy","コウニュウする",0,-105,520,()=>Attempt(false)).interactable=canBuy;
+            Button("OutsideShopFunds","シヨウ シキン"+Olca.Core.Domain.OutsideShopDefinition.TrialFunds+" / 1カイだけ",-350,-245,640,()=>Attempt(true)).interactable=!session.HasClaimedOutsideSupply(Olca.Core.Domain.OutsideShopDefinition.TrialFundsId)&&!session.HasPendingSave;
+            Button("OutsideShopBack","モドる（コウニュウずみは ホゾンずみ）",350,-245,640,()=>closed?.Invoke());
+            guide=Text("OutsideShopGuide","",0,-350,1380,55,23);RefreshGuide();menu=new Olca.Unity.MenuPadScope(()=>CanOperate&&Olca.Unity.MenuPadScope.IsTopmost(transform));menu.NavigationResolver=FindShopNavigation;menu.Bind(transform,selected==null?"OutsideShopBack":"OutsideShopOffer_"+selected,()=>closed?.Invoke());
+        }
+        // 試用2商品の表示行列に沿い、斜めに近い購入ボタンへ横移動が吸われないようにする。
+        private UnityEngine.UI.Selectable FindShopNavigation(UnityEngine.UI.Selectable from,UnityEngine.Vector2 direction)
+        {
+            var cells=new[]{(Name:"OutsideShopOffer_"+shop.Offers[0].Id,Row:0,First:0,Last:0),(Name:shop.Offers.Count>1?"OutsideShopOffer_"+shop.Offers[1].Id:null,Row:0,First:1,Last:1),(Name:"OutsideShopBuy",Row:1,First:0,Last:1),(Name:"OutsideShopFunds",Row:2,First:0,Last:0),(Name:"OutsideShopBack",Row:2,First:1,Last:1)};
+            var buttons=content.GetComponentsInChildren<UnityEngine.UI.Button>();var origin=cells.FirstOrDefault(v=>v.Name==from.name);if(origin.Name==null)return null;var enabled=cells.Where(v=>v.Name!=null&&buttons.Any(b=>b.name==v.Name&&b.IsInteractable()));
+            var target=direction.x!=0?enabled.Where(v=>v.Row==origin.Row&&(direction.x>0?v.First>origin.Last:v.Last<origin.First)).OrderBy(v=>direction.x>0?v.First-origin.Last:origin.First-v.Last).FirstOrDefault():enabled.Where(v=>v.First<=origin.Last&&v.Last>=origin.First&&(direction.y>0?v.Row<origin.Row:v.Row>origin.Row)).OrderBy(v=>System.Math.Abs(v.Row-origin.Row)).ThenBy(v=>v.First).FirstOrDefault();return target.Name==null?null:buttons.First(v=>v.name==target.Name);
+        }
+        private void RefreshGuide(){if(guide!=null)guide.text=GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);}
+        private void Update(){if(CanOperate)menu?.Tick();RefreshGuide();}
+        public void Hide(){renderEpoch++;context=null;menu?.Dispose();menu=null;gameObject.SetActive(false);}
+        private void OnDisable(){menu?.Dispose();menu=null;}
+        private void OnDestroy(){menu?.Dispose();menu=null;context=null;closed=null;session=null;}
+    }
+}

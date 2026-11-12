@@ -1575,3 +1575,47 @@ namespace Olca.Core.Domain
         }
     }
 }
+
+namespace Olca.Core.Domain
+{
+    /// <summary>外界店の明示商品。今回は消耗品の無制限在庫だけを扱う。</summary>
+    public sealed class OutsideShopOffer
+    {
+        public string Id{get;}public string ItemId{get;}public string Name{get;}public long Price{get;}public int Maximum{get;}
+        public OutsideShopOffer(string id,string itemId,string name,long price,int maximum){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(itemId)||string.IsNullOrWhiteSpace(name)||price<=0||maximum<=0)throw new ArgumentException("外界商品の定義が不正です");Id=id;ItemId=itemId;Name=name;Price=price;Maximum=maximum;}
+    }
+    public sealed class OutsideShopDefinition
+    {
+        public string Id{get;}public System.Collections.Generic.IReadOnlyList<OutsideShopOffer> Offers{get;}
+        public OutsideShopDefinition(string id,System.Collections.Generic.IEnumerable<OutsideShopOffer> offers){var copy=offers?.ToArray();if(string.IsNullOrWhiteSpace(id)||copy==null||copy.Length==0||copy.Any(v=>v==null)||copy.Select(v=>v.Id).Distinct().Count()!=copy.Length)throw new ArgumentException("外界店の定義が不正です");Id=id;Offers=Array.AsReadOnly(copy);}
+        public const string TrialFundsId="validation-shop-funds-v1";public const long TrialFunds=10;
+        public static readonly OutsideShopDefinition Trial=new OutsideShopDefinition("validation-outside-shop-v1",new[]{new OutsideShopOffer("heal",OutsideRecoveryItemDefinition.Provisional.Id,"カイフクヤク（カリ）",2,99),new OutsideShopOffer("poison",OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99)});
+    }
+    public sealed partial class ClearReturnSession
+    {
+        public bool CanPurchaseOutsideShop(OutsideShopDefinition shop,string offerId,out string error)
+        {
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に購入してください";return false;}
+            var offer=shop?.Offers.SingleOrDefault(v=>v.Id==offerId);if(offer==null){error="商品がありません";return false;}
+            var inventory=OutsideInventorySnapshot;int count=inventory.Items.SingleOrDefault(v=>v.Id==offer.ItemId)?.Count??0;
+            if(count>=offer.Maximum){error="ショジ ジョウゲン（"+offer.Maximum+"）です";return false;}
+            if(inventory.Currency<offer.Price){error="エイゾク ツウカ フソク / アト "+(offer.Price-inventory.Currency);return false;}return true;
+        }
+        public bool TryPurchaseOutsideShop(OutsideShopDefinition shop,string offerId,out string error)
+        {
+            if(!CanPurchaseOutsideShop(shop,offerId,out error))return false;
+            try{var offer=shop.Offers.Single(v=>v.Id==offerId);var inventory=OutsideInventorySnapshot;inventory.Currency=checked(inventory.Currency-offer.Price);var items=inventory.Items.ToList();var item=items.SingleOrDefault(v=>v.Id==offer.ItemId);if(item==null){item=new OutsideItemCount{Id=offer.ItemId};items.Add(item);}item.Count=checked(item.Count+1);inventory.Items=items.ToArray();return TryWriteOutsideShopInventory(inventory,out error);}catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        /// <summary>任意に押した時だけ、一度限りの試用資金を受け取る。自動配布しない。</summary>
+        public bool TryClaimOutsideShopTrialFunds(out string error)
+        {
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に受け取ってください";return false;}
+            try{var inventory=OutsideInventorySnapshot;var claimed=inventory.ClaimedSources??Array.Empty<string>();if(claimed.Contains(OutsideShopDefinition.TrialFundsId)){error="シヨウ シキンは ウケトリズミです";return false;}inventory.Currency=checked(inventory.Currency+OutsideShopDefinition.TrialFunds);inventory.ClaimedSources=claimed.Concat(new[]{OutsideShopDefinition.TrialFundsId}).ToArray();return TryWriteOutsideShopInventory(inventory,out error);}catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        private bool TryWriteOutsideShopInventory(OutsideInventoryData inventory,out string error)
+        {
+            var next=current.Copy();next.OutsideInventory=inventory.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+            writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;return true;}finally{writing=false;}
+        }
+    }
+}

@@ -61,6 +61,33 @@ namespace Olca.Tests.Application
             Register("screen",ct=>Task.FromResult(screen),(go,ctx)=>{context=ctx;go.SetActive(true);});
             Assert.IsTrue((await views.ShowAsync("screen")).Succeeded);return(context,popup,confirm,cancel);
         }
+        [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
+        {
+            var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigureShop(()=>calls++,()=>true,()=>"シヨウ ショップ（カリ）\nEnter デ ハイル");view.ConfigureRecovery(()=>{},()=>false,()=>"カイフク");view.ConfigureCardSupply(()=>{},()=>false,()=>"カード");view.Render();var shop=view.GetComponentsInChildren<Button>(true).Single(v=>v.name=="OutsideShopPoint");Rect Area(RectTransform rect){var corners=new Vector3[4];rect.GetWorldCorners(corners);return Rect.MinMaxRect(corners[0].x,corners[0].y,corners[2].x,corners[2].y);}Assert.IsTrue(shop.gameObject.activeInHierarchy);Assert.IsFalse(Area((RectTransform)shop.transform).Overlaps(Area(view.transform.Find("OutsideMapName").GetComponent<RectTransform>())));for(int i=0;i<180;i++)model.Core.TickFrame(0);view.Render();foreach(var name in new[]{"OutsideRecoveryPoint","OutsideCardSupplyChest"})Assert.IsFalse(Area((RectTransform)shop.transform).Overlaps(Area(view.transform.Find(name).GetComponent<RectTransform>())));var old=shop.onClick;old.Invoke();Assert.AreEqual(1,calls);view.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);binding.ReturnToHub();old.Invoke();Assert.AreEqual(1,calls);
+            }
+        }
+
+        [Test] public async Task 外界店の会話B保持は即取消せず解放後の新Bだけで一度閉じる()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var store=new Shop233Store();var session=new Olca.Core.Domain.ClearReturnSession(store);OutsideShopView shop=null;int closed=0;
+            void State(bool held){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,held?new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East):new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();if(shop!=null)typeof(OutsideShopView).GetMethod("Update",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(shop,null);}
+            try{State(true);Register("shop233",ct=>{var panel=Panel("Shop233Pad");shop=panel.AddComponent<OutsideShopView>();shop.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),session,Olca.Core.Domain.OutsideShopDefinition.Trial,()=>{closed++;views.CloseCurrent();});return Task.FromResult(panel);},(panel,context)=>shop.Open(context));Assert.IsTrue((await views.ShowAsync("shop233")).Succeeded);var old=shop.GetComponentsInChildren<Button>().Single(v=>v.name=="OutsideShopBack").onClick;State(true);Assert.AreEqual(0,closed);Assert.AreEqual("shop233",views.CurrentKey);State(false);State(true);Assert.AreEqual(1,closed);Assert.IsNull(views.CurrentKey);old.Invoke();Assert.AreEqual(1,closed);Assert.AreEqual(0,store.Writes);
+            }finally{UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        private sealed class Shop233Store:Olca.Core.Domain.IClearReturnStore
+        {
+            public int Writes;public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return new Olca.Core.Domain.ClearReturnProfile();}public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){Writes++;error="No purchase expected";return false;}
+        }
+
+        [Test] public async Task 外界店はController無効化で現Viewと操作世代を閉じる()
+        {
+            var controllerRoot=new GameObject("Shop233Controller");controllerRoot.SetActive(false);var controller=controllerRoot.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            try{Register("outside-trial-shop",ct=>Task.FromResult(Panel("Shop")));Assert.IsTrue((await views.ShowAsync("outside-trial-shop")).Succeeded);var prior=views.CurrentKey;Assert.AreEqual("outside-trial-shop",prior);type.GetField("gameSystem",flags).SetValue(controller,system);type.GetField("outsideShopActive",flags).SetValue(controller,true);type.GetField("outsideShopOpening",flags).SetValue(controller,true);type.GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsNull(views.CurrentKey);Assert.IsFalse((bool)type.GetField("outsideShopActive",flags).GetValue(controller));Assert.IsFalse((bool)type.GetField("outsideShopOpening",flags).GetValue(controller));Assert.Greater((long)type.GetField("outsideShopEpoch",flags).GetValue(controller),0);
+            }finally{type.GetField("gameSystem",flags).SetValue(controller,null);controller.StopManagedHost();UnityEngine.Object.DestroyImmediate(controllerRoot);}
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 外界Pauseの行列ナビは同じ軸の有効項目だけを選び端で止まり他画面へ残らない(bool skipAudio)
         {
@@ -268,9 +295,9 @@ namespace Olca.Tests.Application
                 Assert.IsFalse(sounds.Router.IsPaused);
                 controller.enabled=false;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsTrue(sounds.Router.IsPaused);
                 controller.enabled=true;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnEnable",flags).Invoke(controller,null);Assert.IsFalse(sounds.Router.IsPaused);
-                Assert.AreEqual(5,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(5,views.RegisteredCount);
+                Assert.AreEqual(6,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(6,views.RegisteredCount);
                 var entries=(System.Collections.IDictionary)typeof(ViewManager).GetField("entries",flags).GetValue(views);
-                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings","outside-item-registration","outside-equipment"},entries.Keys);
+                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings","outside-item-registration","outside-equipment","outside-trial-shop"},entries.Keys);
             } finally {
                 var canvas=(GameObject)typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("pauseCanvas",flags).GetValue(controller);if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);
                 // 反射StartのEditMode fixtureでは破棄通知も明示し、実行中購読を残さない。

@@ -345,7 +345,7 @@ namespace Olca.Application.Dungeon
             if(managedCardRewardPresentation!=null){managedCardRewardPresentation.Dispose();managedCardRewardPresentation=null;cardSelectionView=null;}
             if(managedBattlePresentation!=null){battleSession?.Detach();battleSession=null;managedBattlePresentation.Dispose();managedBattlePresentation=null;battleView=null;customScreenView=null;}
             if(managedDungeonHud){gameFieldView?.ConfigureDungeonHud(null);dungeonHudView=null;managedDungeonHud=false;}
-            AbortOutsideWheel(release:true);hostPanels?.Dispose();hostPanels=null;panelFactory=null;
+            AbortOutsideShop();AbortOutsideWheel(release:true);hostPanels?.Dispose();hostPanels=null;panelFactory=null;
             managedCameraBinding?.Dispose();managedCameraBinding=null;
             if(managedWorldPresentation!=null){managedWorldPresentation.Dispose();managedWorldPresentation=null;gameFieldView=null;}
         }
@@ -503,6 +503,21 @@ namespace Olca.Application.Dungeon
         private void ClaimOutsideCardSupply(){if(!OutsideCardSupplyReady)return;outsideCardSupplyAttemptFrame=Time.frameCount;outsideExploration.Pump(false);outsideCardSupplyMessage=clearReturnSession.TryClaimTrialExplorationCards(ReturnSettings(),out var count,out var tokens,out var error)?"カード "+count+"マイ / チョウカ "+tokens+"トークン\nヘンセイチテンに モドって30マイへ":error;outsideExploration.View.Render();}
         private void BindOutsideCardSupply(){outsideCardSupplyMessage=null;outsideExploration.View.ConfigureCardSupply(ClaimOutsideCardSupply,()=>OutsideCardSupplyReady,()=>"シヨウ カードバコ（カリ）\n"+(outsideCardSupplyMessage??(clearReturnSession.HasClaimedOutsideSupply(Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId)?"ウケトリズミ":"ソード★4 / ボム★4 / ソード★★2\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ ウケトル":"チカヅイテ シラベル"))));}
 
+        private const string ManagedOutsideShop="outside-trial-shop";private bool outsideShopOpening,outsideShopActive;private long outsideShopEpoch;
+        private bool OutsideShopReady=>!outsideShopOpening&&!outsideShopActive&&OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanVisitShop(gameSystem.OutsideExploration.Core);
+        private void BindOutsideShop()=>outsideExploration.View.ConfigureShop(OpenOutsideShop,()=>OutsideShopReady,()=>"シヨウ ショップ（カリ）\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanVisitShop(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ ハイル":"チカヅイテ シラベル"));
+        private void OpenOutsideShop(){if(!OutsideShopReady)return;outsideExploration.Pump(false);outsideShopOpening=outsideShopActive=true;long epoch=++outsideShopEpoch;SetUserPaused(true);SetPausePanelVisible(false);ShowOutsideShopAsync(epoch).Forget();}
+        private async UniTaskVoid ShowOutsideShopAsync(long epoch){var owner=gameSystemSession;var result=await gameSystem.Views.ShowAsync(ManagedOutsideShop);if(this==null||epoch!=outsideShopEpoch||!ReferenceEquals(owner,gameSystemSession))return;outsideShopOpening=false;if(!result.Succeeded){outsideShopActive=false;if(!result.Cancelled)logger?.LogWarning(result.Error);SetUserPaused(false);}}
+        private void AbortOutsideShop(){outsideShopEpoch++;outsideShopOpening=outsideShopActive=false;if(gameSystem?.Views.CurrentKey==ManagedOutsideShop)gameSystem.Views.CloseCurrent();}
+        private void CloseOutsideShop(){if(!outsideShopActive)return;AbortOutsideShop();SetUserPaused(false);ResetOutsideRouteInput();}
+        private void RegisterOutsideShop()
+        {
+            if(gameSystem==null)return;gameSystem.Views.Register(this,ManagedOutsideShop,
+                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideShopView>("OutsideShopView",view=>view.Initialize(panelFactory.Font,clearReturnSession,OutsideShopDefinition.Trial,CloseOutsideShop,isAlive:()=>this!=null&&isActiveAndEnabled&&outsideShopActive&&IsUserPaused&&outsideExploration?.IsOpen==true)).gameObject);},
+                (panel,context)=>{if(!outsideShopActive||!isActiveAndEnabled||!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideShopView>().Open(context);},
+                panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideShopView>().Hide();});
+        }
+
         private string outsideTrialPoisonMessage;private int outsideTrialPoisonAttemptFrame=-1;
         private bool OutsideTrialPoisonReady=>OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideTrialPoisonAttemptFrame&&gameSystem.OutsideExploration.CanTryTrialPoison;
         private void ApplyOutsideTrialPoison()
@@ -619,7 +634,7 @@ namespace Olca.Application.Dungeon
                 }
                 try{ApplySavedOutsideEquipment();PrepareSelectedExplorationDeck();}catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OverflowException){outsideDepartureError=e.Message;outsideExplorationOpening=false;ShowDungeonSelection();return;}
                 var result=await outsideExploration.OpenAsync();
-                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();}
+                if(result.Succeeded&&CustomizationUiLive&&outsideExploration.View!=null){outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();BindOutsideShop();}
                 if(!result.Succeeded&&!result.Cancelled&&CustomizationUiLive){clearReturnError=result.Error;ShowDungeonSelection();}
             }finally{outsideExplorationOpening=false;if(CustomizationUiLive)ResetOutsideRouteInput();}
         }
@@ -721,7 +736,7 @@ namespace Olca.Application.Dungeon
         private bool customizationSavePending, customizationEditorInterrupted;
         private void OnDisable()
         {
-            AbortOutsideWheel();
+            AbortOutsideShop();AbortOutsideWheel();
             if(outsideEquipmentDraft!=null&&outsideEquipmentView!=null&&outsideEquipmentView.gameObject.activeSelf){outsideEquipmentInterrupted=true;outsideEquipmentView.Close();}
             gameplayAudio?.SetPaused(true);
             combatFeedbackAudio?.Bind(null);
@@ -1208,6 +1223,7 @@ namespace Olca.Application.Dungeon
 
         private void ApplyUserPauseImmediate(bool paused)
         {
+            if(!paused&&outsideShopActive)AbortOutsideShop();
             if(paused)StopGamepadVibration();
             if (manager == null || manager.IsUserPaused == paused || (paused&&manager.IsBattleEndPresentationPending)) return;
             systemMenu?.Suspend();systemMenuRoot=null;if(paused)pauseFocus="ResumeButton";
@@ -1390,7 +1406,7 @@ namespace Olca.Application.Dungeon
                 ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideItemRegistrationView>("OutsideItemRegistrationView",view=>{outsideItemRegistrationView=view;view.Initialize(panelFactory.Font,clearReturnSession,outsideItemDefinitions,CloseOutsideItems);view.ConfigureUse(UseOutsideRecoveryItem,id=>gameSystem?.OutsideExploration?.ItemCooldownRemaining(id)??0);}).gameObject);},
                 (panel,context)=>{if(!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide();});
-            RegisterOutsideEquipment();RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();
+            RegisterOutsideShop();RegisterOutsideEquipment();RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();
             hostPanels.Register("dialogue","dialogue",()=>{
                 dialogueView=panelFactory.Component<DialogueView>("DialoguePanel",view=>view.Initialize(font,()=>SetUserPaused(true)));return dialogueView.gameObject;
             },(panel,context)=>{if(dialogue==null||!dialogue.IsOpen)throw new System.OperationCanceledException();panel.GetComponent<DialogueView>().BindManaged(dialogue,context,gameSystem.Dialogs);},panel=>{if(panel!=null)panel.GetComponent<DialogueView>().HideManaged();});
@@ -1548,7 +1564,7 @@ namespace Olca.Application.Dungeon
             // 保存成功の同じ通知を再受信しても、現世代の表示や入力を再度破棄しない。
             var generation=clearReturnSession.Snapshot.CheckpointGeneration;
             if(gameSystem!=null&&gameSystem.OutsideProgressGeneration!=generation){
-                AbortOutsideWheel(release:true);outsideExploration?.Dispose();outsideExploration=null;
+                AbortOutsideShop();AbortOutsideWheel(release:true);outsideExploration?.Dispose();outsideExploration=null;
                 gameSystem.ResetOutsideForNewProgress(generation);
                 outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();
             }
@@ -2457,6 +2473,7 @@ namespace Olca.Application.Dungeon
                 if(gameSystem.OutsideExploration.Player?.IsDead==true&&!outsideRecoveryPending&&!progressStartupBlocked&&!IsUserPaused&&!outsideWheelPaused&&Time.timeScale>0){outsideExploration.Pump(false);outsideRecoveryRelocate=true;try{bool saved=clearReturnSession.TrySaveOutsideDeathRecovery(gameSystem.OutsideExploration.Player);outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;}else if(!outsideRecoveryPending)progressStartupBlocked=true;}catch(System.ArgumentException e){outsideRecoveryError=e.Message;progressStartupBlocked=true;}outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();outsideExploration.View.Render();return;}
                 if(OutsideTrialPoisonReady&&inspect){ApplyOutsideTrialPoison();return;}
                 if(OutsideRecoveryReady&&inspect){UseOutsideRecovery();return;}
+                if(OutsideShopReady&&inspect){OpenOutsideShop();return;}
                 if(inspect)foreach(var supply in outsideSupplies)if(OutsideSupplyReady(supply)){ClaimOutsideSupply(supply);return;}
                 if(OutsideCardSupplyReady&&inspect){ClaimOutsideCardSupply();return;}
                 if(OutsideEntranceReady&&inspect){EnterOutsideDungeon();return;}
@@ -3132,7 +3149,7 @@ namespace Olca.Application.Dungeon
             if(runtimeReleased||runtimeReleasing)return;
             runtimeReleasing=true;
             try {
-            AbortOutsideWheel(release:true);
+            AbortOutsideShop();AbortOutsideWheel(release:true);
             // UnityのDestroy完了を待たずに、host終了時点で未移行親のDialog寿命も切る。
             if(progressActionDialog!=null)progressActionDialog.Abort();if(retreatDialog!=null)retreatDialog.Abort();
             transitionCts?.Cancel();transitionCts?.Dispose();transitionCts=null;
