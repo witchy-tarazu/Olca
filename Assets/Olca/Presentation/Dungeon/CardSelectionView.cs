@@ -706,7 +706,7 @@ namespace Olca.Presentation.Dungeon
 
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
-            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null, Action explorationDecks = null, string departureDeck = null, Action prepareDepartureDeck = null, bool departureDeckEditable = true)
+            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null, Action explorationDecks = null, string departureDeck = null, Action prepareDepartureDeck = null, bool departureDeckEditable = true,bool retrySaveAvailable = true)
         {
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
@@ -743,8 +743,8 @@ namespace Olca.Presentation.Dungeon
             // 行き先名は選択行だけに置き、必要な地形/敵情報を静かな説明へまとめる。
             if(preview){var detail=Text("DungeonPreviewInformation",valid?(info??"トウロクされたツイカジョウホウはありません。"):"ミカイホウのイきサキはジョウケンをカクニンしてください。",0,bottom-72,1450,100,24);detail.color=new Color(.78f,.9f,.95f,1);detail.alignment=TextAnchor.MiddleLeft;detail.supportRichText=false;AddOverflowTextDetails(detail,"イキサキのジョウホウ");}
             if(pages>1){
-            Button("PreviousDungeonPage", "前へ", departureDeck==null?-380:-780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable); }).interactable = !blocked && dungeonPage > 0;
-            Button("NextDungeonPage", "次へ", departureDeck==null?380:780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Button("PreviousDungeonPage", "前へ", departureDeck==null?-380:-780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable,retrySaveAvailable); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", departureDeck==null?380:780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable,retrySaveAvailable); }).interactable = !blocked && dungeonPage + 1 < pages;
             Text("DungeonPage", $"{dungeonPage+1}/{pages}", departureDeck==null?0:780, departureDeck==null?pageY:guideY, 250, 40, 24).color=Color.white;
             }
             if(departureDeck!=null){var deckLabel=Text("OutsideDepartureDeck",departureDeck,0,deckY,pages>1?1200:1700,70,24);deckLabel.color=new Color(.88f,.97f,1f);deckLabel.supportRichText=false;AddTrailingTextDetails(deckLabel,"OutsideDepartureDeckDetails","攻略用デッキ");outsideDepartureGuide=Text("OutsideDepartureGuide","",0,guideY,pages>1?1250:1700,40,20);outsideDepartureGuide.color=new Color(.88f,.97f,1f);}
@@ -752,7 +752,7 @@ namespace Olca.Presentation.Dungeon
             var cancel=Button("CancelDungeonSelection", "変更せず戻る", 430, actionY, 800, 75, cancelSelection);cancel.interactable=!blocked;QuietDepartureAction(cancel);
             if (chooseStyle != null && !blocked && error == null) QuietDepartureAction(Button("SelectDepartureStyle", "スタイルを変更", -430, auxiliaryY, 480, 58, chooseStyle));
             if (openTokenExchange != null && !blocked && error == null) QuietDepartureAction(Button("OpenTokenExchange", "トークン交換所", 430, auxiliaryY, 480, 58, openTokenExchange));
-            if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, auxiliaryY, 850, 58, retrySave);
+            if (retrySaveAvailable && (error != null || blocked)) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, auxiliaryY, 850, 58, retrySave);
                     SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryDungeonDeparture":"DungeonChoice_"+selected,blocked);RefreshOutsideDepartureGuide();
         }
         private Button QuietPreparationButton(Action open,GameObject owner,bool editable)

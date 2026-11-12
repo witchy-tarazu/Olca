@@ -17,6 +17,7 @@ namespace Olca.Core.Domain
             if(departureAbilitiesFixed||DepartureAbilities!=null)throw new InvalidOperationException("攻略中の装備能力は変更できません");
             DepartureAbilities=value??throw new ArgumentNullException(nameof(value));
         }
+        public int RewardQualityBonus=>DepartureAbilities?.RewardQualityBonus??0;
         internal bool CanReplaceOutsideEquipment=>!departureAbilitiesFixed;
         // 外界Sessionだけが可変の装備を差し替える。攻略へ固定済みの個体は解除しない。
         internal void ReplaceOutsideEquipment(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities value)

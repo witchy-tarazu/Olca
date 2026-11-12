@@ -2,24 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.Serialization;
 using Olca.Core.Domain;
 namespace Olca.Core.Logic.Customization
 {
-    /// <summary>既に規則が確定した耐性と常時フロートだけを定義する。製品値は外部登録。</summary>
+    /// <summary>既に規則が確定した耐性・常時フロート・報酬の質を定義する。製品値は外部登録。</summary>
     public sealed class CustomizationAbilityValue
     {
         public ElementResistances Elements { get; }
         public TimedStatusResistances Statuses { get; }
         public bool Floating { get; }
-        public CustomizationAbilityValue(ElementResistances elements=null,TimedStatusResistances statuses=null,bool floating=false)
-        { Elements=elements??ElementResistances.Neutral;Statuses=statuses??TimedStatusResistances.Neutral;Floating=floating; }
+        public int RewardQualityBonus { get; }
+        public CustomizationAbilityValue(ElementResistances elements=null,TimedStatusResistances statuses=null,bool floating=false,int rewardQualityBonus=0)
+        { if(rewardQualityBonus<0)throw new ArgumentOutOfRangeException(nameof(rewardQualityBonus));RewardQualityBonus=rewardQualityBonus;Elements=elements??ElementResistances.Neutral;Statuses=statuses??TimedStatusResistances.Neutral;Floating=floating; }
     }
+    [DataContract]
     public sealed class CustomizationAbilitySourceDto
     {
-        public string Kind,SourceId,ItemId;
-        public int Fire,Water,Wind,Earth,Poison,Paralyze,Confusion,Blind;
-        public int[] AdditionalElements; // 金/木/陰/陽。旧欠損は0。
-        public bool Floating;
+        [DataMember] public string Kind,SourceId,ItemId;
+        [DataMember] public int Fire,Water,Wind,Earth,Poison,Paralyze,Confusion,Blind;
+        [DataMember] public int[] AdditionalElements; // 金/木/陰/陽。旧欠損は0。
+        [DataMember] public bool Floating;
+        [DataMember(EmitDefaultValue=false)] public int RewardQualityBonus;
         public CustomizationAbilitySourceDto Copy(){var copy=(CustomizationAbilitySourceDto)MemberwiseClone();copy.AdditionalElements=AdditionalElements==null?null:(int[])AdditionalElements.Clone();return copy;}
     }
     /// <summary>出撃時の解決入力を保存する。復帰時に現在の製品定義を再適用しない。</summary>
@@ -32,7 +36,7 @@ namespace Olca.Core.Logic.Customization
         public void Validate()
         {
             if(Sources!=null)foreach(var source in Sources)if(source!=null)ElementResistances.ValidateAdditional(source.AdditionalElements);
-            if(Version!=1||string.IsNullOrWhiteSpace(DefinitionId)||Sources==null||Sources.Any(v=>v==null||(v.Kind!="accessory"&&v.Kind!="part")||string.IsNullOrWhiteSpace(v.SourceId)||string.IsNullOrWhiteSpace(v.ItemId)||(v.Kind=="accessory"&&v.SourceId!=v.ItemId)||v.Poison<0||v.Paralyze<0||v.Confusion<0||v.Blind<0)||Sources.Select(v=>(v.Kind,v.SourceId)).Distinct().Count()!=Sources.Length)throw new ArgumentException("出撃能力の保存が不正です");
+            if(Version!=1||string.IsNullOrWhiteSpace(DefinitionId)||Sources==null||Sources.Any(v=>v==null||(v.Kind!="accessory"&&v.Kind!="part")||string.IsNullOrWhiteSpace(v.SourceId)||string.IsNullOrWhiteSpace(v.ItemId)||(v.Kind=="accessory"&&v.SourceId!=v.ItemId)||v.RewardQualityBonus<0||v.Poison<0||v.Paralyze<0||v.Confusion<0||v.Blind<0)||Sources.Select(v=>(v.Kind,v.SourceId)).Distinct().Count()!=Sources.Length)throw new ArgumentException("出撃能力の保存が不正です");
         }
     }
     public sealed class ResolvedCustomizationAbilities
@@ -41,6 +45,7 @@ namespace Olca.Core.Logic.Customization
         private readonly ElementResistances[] elementSources;
         private readonly TimedStatusResistances[] statusSources;
         public bool Floating { get; }
+        public int RewardQualityBonus { get; }
         public ResolvedCustomizationAbilities(CustomizationAbilitiesDto value)
         {
             if(value==null)throw new ArgumentNullException(nameof(value));value.Validate();snapshot=value.Copy();
@@ -48,6 +53,7 @@ namespace Olca.Core.Logic.Customization
             elementSources=snapshot.Sources.Select(v=>ElementResistances.Restore(v.Fire,v.Water,v.Wind,v.Earth,v.AdditionalElements)).ToArray();
             statusSources=snapshot.Sources.Select(v=>new TimedStatusResistances(v.Poison,v.Paralyze,v.Confusion,v.Blind)).ToArray();
             Floating=snapshot.Sources.Any(v=>v.Floating);
+            int quality=0;foreach(var source in snapshot.Sources)quality=(int)Math.Min(4L,(long)quality+source.RewardQualityBonus);RewardQualityBonus=quality;
         }
         public CustomizationAbilitiesDto Capture()=>snapshot.Copy();
         public ElementResistances CombineElements(ElementResistances baseline)=>ElementResistances.CombineSources(baseline,elementSources);
@@ -66,7 +72,7 @@ namespace Olca.Core.Logic.Customization
         public ResolvedCustomizationAbilities Resolve(CustomizationLoadoutSources loadout)
         {
             if(loadout==null)throw new ArgumentNullException(nameof(loadout));var values=new List<CustomizationAbilitySourceDto>();
-            void Add(string kind,string source,string item,IReadOnlyDictionary<string,CustomizationAbilityValue> map){if(!map.TryGetValue(item,out var value))throw new ArgumentException("ソウビノウリョクのタイオウがミトウロクです");values.Add(new CustomizationAbilitySourceDto{Kind=kind,SourceId=source,ItemId=item,AdditionalElements=value.Elements.CaptureAdditional(),Fire=value.Elements.Fire,Water=value.Elements.Water,Wind=value.Elements.Wind,Earth=value.Elements.Earth,Poison=value.Statuses.Poison,Paralyze=value.Statuses.Paralyze,Confusion=value.Statuses.Confusion,Blind=value.Statuses.Blind,Floating=value.Floating});}
+            void Add(string kind,string source,string item,IReadOnlyDictionary<string,CustomizationAbilityValue> map){if(!map.TryGetValue(item,out var value))throw new ArgumentException("ソウビノウリョクのタイオウがミトウロクです");values.Add(new CustomizationAbilitySourceDto{Kind=kind,SourceId=source,ItemId=item,AdditionalElements=value.Elements.CaptureAdditional(),Fire=value.Elements.Fire,Water=value.Elements.Water,Wind=value.Elements.Wind,Earth=value.Elements.Earth,Poison=value.Statuses.Poison,Paralyze=value.Statuses.Paralyze,Confusion=value.Statuses.Confusion,Blind=value.Statuses.Blind,Floating=value.Floating,RewardQualityBonus=value.RewardQualityBonus});}
             foreach(var id in loadout.Accessories)Add("accessory",id,id,accessories);
             foreach(var part in loadout.Parts)Add("part",part.InstanceId,part.PartId,parts);
             return new ResolvedCustomizationAbilities(new CustomizationAbilitiesDto{DefinitionId=DefinitionId,Sources=values.ToArray()});

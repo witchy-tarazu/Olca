@@ -986,7 +986,7 @@ namespace Olca.Core.Logic.Dungeon
                     GridOriginX = contact.EnemyCellIndex - 4, HandLimit = new CustomScreenSystem(new Deck()).MaxHandSize };
                 int seed = randomProvider.Range(0, int.MaxValue);
                 if (!CheckpointBattlePlan.TryCreate(dto, encounter, checkpointSession.Definitions, seed, rewardPoolForCheckpoint,
-                    card => checkpointSession.Definitions.CaptureKnownCard("candidate", card).DefinitionKey, out var plan, out var error, hasNextFloor, evaluation: evaluationRewards?.Resolve(new BattleRewardContext(checkpointSession.Definitions.DungeonId,encounter,hasNextFloor)) ?? (evaluationRewards==null?null:throw new ArgumentException("評価報酬定義が見つかりません"))))
+                    card => checkpointSession.Definitions.CaptureKnownCard("candidate", card).DefinitionKey, out var plan, out var error, hasNextFloor, evaluation: evaluationRewards?.Resolve(new BattleRewardContext(checkpointSession.Definitions.DungeonId,encounter,hasNextFloor,Player.RewardQualityBonus)) ?? (evaluationRewards==null?null:throw new ArgumentException("評価報酬定義が見つかりません"))))
                     throw new ArgumentException(error);
                 var snapshot = plan.Snapshot;
                 playerMovement.Pause();
@@ -1055,7 +1055,8 @@ namespace Olca.Core.Logic.Dungeon
             // 全帯の計画は開始時保存済み。評価確定後は選択だけで乱数・外部定義を呼ばない。
             if(activeCheckpoint.Battle.EvaluationRewards!=null){
                 var grade=evaluateRewardGrade(currentBattle);
-                var chosen=activeCheckpoint.Battle.EvaluationRewards.Single(v=>v.Grade==(int)grade);
+                int band=EvaluationRewardDefinition.ResolveBandIndex(grade,Player.RewardQualityBonus,activeCheckpoint.Battle.EvaluationRewards.Length);
+                var chosen=activeCheckpoint.Battle.EvaluationRewards.Single(v=>v.Grade==band);
                 plannedRewards=chosen.RewardCandidates.Select(id=>plannedRewardCards[id]).ToList();
                 activeCheckpoint.Battle.RewardOffered=chosen.RewardOffered;
                 plannedItemReward=chosen.ItemRewardIndex.HasValue?map.ItemRewards[chosen.ItemRewardIndex.Value].Item:null;
@@ -1646,15 +1647,20 @@ namespace Olca.Core.Logic.Dungeon
             plan=null;error=null;
             try{
                 var branches=new List<EvaluationRewardPlanDto>();var records=new List<CheckpointCardDto>();CheckpointDto combined=null;int calls=0;
-                for(int grade=0;grade<4;grade++){
+                int quality=state.Player?.CustomizationAbilities==null?0:new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(state.Player.CustomizationAbilities).RewardQualityBonus;
+                EvaluationRewardDefinition.ResolveBandIndex(BattleEvaluationGrade.Fair,quality,evaluation.Bands.Count);
+                // 各帯の抽選だけを組み立てる作業用コピー。未完成の単帯計画は公開しない。
+                // 最終結合時に元の固定Playerを戻し、5帯条件を含むCodecで全体を検証する。
+                var branchInput=state;if(quality>0){branchInput=state.Copy();foreach(var source in branchInput.Player.CustomizationAbilities.Sources)source.RewardQualityBonus=0;}
+                for(int grade=0;grade<evaluation.Bands.Count;grade++){
                     var band=evaluation.Bands[grade];
                     if(band.CurrencyAmounts.Count!=encounter.ParticipantCells.Length||band.ItemWeights.Count!=definitions.ItemRewards.Count||
                         band.ItemWeights.Where((v,i)=>v>0&&definitions.ItemRewards[i].Weight==0).Any())throw new ArgumentException("評価報酬の参加者/候補表が一致しません");
                     var e=encounter.Copy();e.CurrencyAmounts=band.CurrencyAmounts.ToArray();
-                    if(!TryCreateSingle(state,e,definitions,seed,band.CardPool,key,out var part,out error,nextFloor,
+                    if(!TryCreateSingle(branchInput,e,definitions,seed,band.CardPool,key,out var part,out error,nextFloor,
                         (int)Math.Max(0L,Math.Min(10000L,(long)band.NormalCardChanceBasisPoints+rateBonus))-5000,band))return false;
                     var d=part.Snapshot;calls=checked(calls+part.RandomCalls);
-                    if(combined==null){combined=d.Copy();records.AddRange(state.Cards.Select(v=>v.Copy()));}
+                    if(combined==null){combined=d.Copy();combined.Player=state.Player.Copy();records.AddRange(state.Cards.Select(v=>v.Copy()));}
                     var ids=new List<string>();
                     foreach(var id in d.Battle.RewardCandidates){var c=d.Cards.Single(v=>v.InstanceId==id).Copy();c.InstanceId=id+":grade:"+grade;records.Add(c);ids.Add(c.InstanceId);}
                     branches.Add(new EvaluationRewardPlanDto{Grade=grade,RewardOffered=d.Battle.RewardOffered,RewardCandidates=ids.ToArray(),CurrencyAmounts=band.CurrencyAmounts.ToArray(),ItemRewardIndex=d.Battle.ItemRewardIndex});
@@ -1670,6 +1676,7 @@ namespace Olca.Core.Logic.Dungeon
             out CheckpointBattlePlan plan, out string error, bool hasNextFloor=false, int normalRewardRateBonusBasisPoints=0, EvaluationRewardDefinition evaluation=null)
         {
             plan = null;
+            if(evaluation==null&&state?.Player?.CustomizationAbilities?.Sources?.Any(v=>v!=null&&v.RewardQualityBonus>0)==true){error="質補正の明示5評価帯が未登録です";return false;}
             if(evaluation!=null&&(state==null||definitions==null||encounter?.ParticipantCells==null||rewardDefinitionKey==null)){error="評価報酬開始計画の入力が不正です";return false;}
             if(evaluation!=null)return TryCreateEvaluation(state,encounter,definitions,planningSeed,rewardDefinitionKey,evaluation,hasNextFloor,normalRewardRateBonusBasisPoints,out plan,out error);
             return TryCreateSingle(state,encounter,definitions,planningSeed,rewardPool,rewardDefinitionKey,out plan,out error,hasNextFloor,normalRewardRateBonusBasisPoints,null);

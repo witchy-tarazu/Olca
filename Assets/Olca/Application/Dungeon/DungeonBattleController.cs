@@ -650,7 +650,7 @@ namespace Olca.Application.Dungeon
             EnsureReturnView();
             clearReturnView.RenderDungeonSelection(dungeonChoices.Select(c => c.Label).ToArray(),
                 Enumerable.Range(0, dungeonChoices.Count).Select(DungeonUnlocked).ToArray(), selectedDungeon,
-                i => { if (!exchangeOpen && !styleSelectionOpen && dungeonSelectionOpen && CanSelectDungeon && DungeonUnlocked(i)) { selectedDungeon = i; ShowDungeonSelection(); } },
+                i => { if (!exchangeOpen && !styleSelectionOpen && dungeonSelectionOpen && CanSelectDungeon && DungeonUnlocked(i)) { selectedDungeon = i; outsideDepartureError=null; ShowDungeonSelection(); } },
                 () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; bool depart=initialHub||outsideDungeonSelection;if(depart)StartNextDeparture();else{dungeonSelectionOpen=false;outsideDungeonSelection=false;ShowClearReturn();} },
                 () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
                     if(outsideDungeonSelection){outsideDungeonSelection=false;OpenOutsideExplorationAsync().Forget();return;}
@@ -660,7 +660,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null,outsideDungeonSelection?(System.Action)OpenOutsideDepartureDeckMenu:null,CanEditOwnedDeparture);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null,outsideDungeonSelection?(System.Action)OpenOutsideDepartureDeckMenu:null,CanEditOwnedDeparture,retrySaveAvailable:!CanSelectDungeon||outsideDepartureError==null||clearReturnError!=null||clearReturnSession.Error!=null||clearReturnSession.HasPendingSave);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
@@ -1909,13 +1909,23 @@ namespace Olca.Application.Dungeon
             }finally{if(returning&&outsideLandingRoute&&OutsideHubEligible)OpenOutsideExplorationAsync().Forget();}
         }
 
+        private string DepartureQualityError(DungeonChoice choice)
+        {
+            if(customizationAbilityCatalog==null)return null;
+            if(!TryGetCustomizationSources(out var sources,out var error))return error;
+            try{var quality=customizationAbilityCatalog.Resolve(sources).RewardQualityBonus;
+                return quality>0&&choice.Rewards==null?"ホウシュウシツの5タイがミトウロクです。シヨウ カードホウシュウ（カリ）をエラぶか、シツソウビをハズしてください。":null;
+            }catch(System.ArgumentException e){return e.Message;}
+        }
         private void StartNextDeparture() => StartNextDepartureWithDeck(null);
         private void StartNextDepartureWithDeck(Deck ownedDeck)
         {
             if(departureQuoteOpen||departureWriting||!clearReturnVisible||clearReturnSession==null||!clearReturnSession.Ready||clearReturnSession.HasPendingSave||progressStartupBlocked)return;
             string parent=clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent;
             if(clearReturnSession.Snapshot.NextDeparture?.ParentRunId==parent){CommitNextDepartureWithDeck(ownedDeck,null);return;}
-            if(!DungeonUnlocked(selectedDungeon))return;var choice=dungeonChoices[selectedDungeon];var terms=new DepartureTermsData{DungeonId=choice.Id,DefinitionKey=choice.Key,Cost=DepartureCost(choice.Id),ReturnSettings=ReturnSettings().Copy()};
+            if(!DungeonUnlocked(selectedDungeon))return;var choice=dungeonChoices[selectedDungeon];
+            var qualityError=DepartureQualityError(choice);if(qualityError!=null){outsideDepartureError=qualityError;ShowDungeonSelection();return;}
+            var terms=new DepartureTermsData{DungeonId=choice.Id,DefinitionKey=choice.Key,Cost=DepartureCost(choice.Id),ReturnSettings=ReturnSettings().Copy()};
             // 非表示の互換呼出しは旧無料経路だけ。費用付き出撃を確認なしで通さない。
             if(!isActiveAndEnabled){if(terms.Cost.Currency==0&&terms.Cost.Items.Length==0)CommitNextDepartureWithDeck(ownedDeck,terms);return;}
             EnsureReturnView();var runtime=manager;int index=selectedDungeon;bool selection=dungeonSelectionOpen;var frozenDeck=ownedDeck==null?null:new Deck(ownedDeck.GetAllCards().Select(c=>c.Clone()).ToList());departureQuoteOpen=true;
@@ -1926,6 +1936,7 @@ namespace Olca.Application.Dungeon
         {
             if (progressDialogOpen || exchangeOpen || styleSelectionOpen || departureQuoteOpen || departureWriting || collectionOpen || !clearReturnVisible || progressStartupBlocked || !clearReturnSession.Ready ||
                 (!initialHub && clearReturnSession.Snapshot.Flow?.Stage != ClearReturnStage.Returned)) return;
+            if(clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent)){var qualityError=DepartureQualityError(dungeonChoices[selectedDungeon]);if(qualityError!=null){outsideDepartureError=qualityError;ShowDungeonSelection();return;}}
             bool outsideEntryRejected=false;departureWriting = true;dungeonSelectionOpen=false;outsideDungeonSelection=false;ownedDepartureEditing=false;
             try {
                 if (clearReturnSession.HasPendingSave) { ShowClearReturn(); return; }

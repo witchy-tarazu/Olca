@@ -132,6 +132,13 @@ namespace Olca.Application.Management
             public EvaluationRewardDefinition Resolve(BattleRewardContext context)
             {
                 if(context==null||context.DungeonId!=TrialRewardMapId||context.HasNextFloor)throw new ArgumentException("試用報酬の対象マップが一致しません");
+                if(context.QualityBonus>0){
+                    if(context.BaseCurrencyAmounts.Any(v=>v>int.MaxValue-4))throw new ArgumentException("試用の秀＋通貨が上限を超えています");
+                    // 装備試用専用の明示5帯。旧4帯・旧IDを変更せず、秀＋を自動補完しない。
+                    var bands=Enumerable.Range(0,4).Select(_=>new EvaluationRewardBand(pool,5000,0,Array.Empty<int>(),context.BaseCurrencyAmounts)).ToList();
+                    bands.Add(new EvaluationRewardBand(pool,10000,0,Array.Empty<int>(),context.BaseCurrencyAmounts.Select(v=>checked(v+4))));
+                    return new EvaluationRewardDefinition("trial-card-quality-rewards-v1",bands);
+                }
                 // 製品の評価差を仮決定しない。全帯を既存50%/同額・等重みの暫定入手表に揃える。
                 return new EvaluationRewardDefinition("trial-card-rewards-v1",Enumerable.Range(0,4).Select(_=>new EvaluationRewardBand(pool,5000,0,Array.Empty<int>(),context.BaseCurrencyAmounts)));
             }
@@ -157,19 +164,20 @@ namespace Olca.Application.Management
     public static class TrialCustomizationDefinitions
     {
         public const string BoardId="trial-equipment-board-v1",AbilityId="trial-equipment-abilities-v1";
+        public const string QualityAccessory="カリ・ホウシュウシツ+1";
         public const string Accessory="カリ・ヒタイセイ+10",Part="カリ・ヒタイセイ+5パーツ",Unlock="カリ・ミギ3マス";
         public static Olca.Core.Logic.Customization.CustomizationCatalog Catalog()
             =>new Olca.Core.Logic.Customization.CustomizationCatalog(BoardId,new Olca.Core.Logic.Customization.PartsBoardDefinition(3,3,
-                Enumerable.Range(0,3).SelectMany(y=>Enumerable.Range(0,2).Select(x=>new Vector2Int(x,y)))),new[]{Accessory},
+                Enumerable.Range(0,3).SelectMany(y=>Enumerable.Range(0,2).Select(x=>new Vector2Int(x,y)))),new[]{Accessory,QualityAccessory},
                 new Dictionary<string,Olca.Core.Logic.Customization.PartShape>{{Part,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0),new Vector2Int(1,0)})}},
                 new Dictionary<string,IEnumerable<Vector2Int>>{{Unlock,Enumerable.Range(0,3).Select(y=>new Vector2Int(2,y))}});
         public static Olca.Core.Logic.Customization.CustomizationAbilityCatalog Abilities()
             =>new Olca.Core.Logic.Customization.CustomizationAbilityCatalog(AbilityId,
-                new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Accessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:10))}},
+                new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Accessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:10))},{QualityAccessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(rewardQualityBonus:1)}},
                 new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Part,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:5))}});
         // 別の登録/将来の所持品を自動変換しない。読込も保存も行わない。
         public static bool CanRegister(Olca.Core.Logic.Customization.CustomizationProgress state)
-            =>state==null||(state.BoardId==null||state.BoardId==BoardId)&&state.OwnedAccessoryIds.All(x=>x==Accessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>x.Id==Unlock);
+            =>state==null||(state.BoardId==null||state.BoardId==BoardId)&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>x.Id==Unlock);
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();
         private sealed class TrialProvider:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
         {
@@ -179,7 +187,12 @@ namespace Olca.Application.Management
                 string origin=context.IsClearReward?"clear:"+context.ClearRunId:"trial-equipment-event-v1",id;
                 using(var hash=System.Security.Cryptography.SHA256.Create())id=string.Concat(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes("trial-equipment-v1:"+origin)).Take(16).Select(b=>b.ToString("x2")));
                 var grant=new Olca.Core.Logic.Customization.CustomizationGrant(id,new[]{Accessory},new Dictionary<string,int>{{Part,2}},new Dictionary<string,int>{{Unlock,1}},context.ClearRunId);
-                return new Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition(origin,1,new[]{grant},new Dictionary<string,string>{{id,"シヨウ ソウビセット（カリ）"}});
+                var candidates=new List<Olca.Core.Logic.Customization.CustomizationGrant>{grant};var names=new Dictionary<string,string>{{id,"シヨウ ソウビセット（カリ）"}};
+                if(context.IsClearReward){
+                    string qualityId;using(var hash=System.Security.Cryptography.SHA256.Create())qualityId=string.Concat(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes("trial-quality-v1:"+origin)).Take(16).Select(b=>b.ToString("x2")));
+                    candidates.Add(new Olca.Core.Logic.Customization.CustomizationGrant(qualityId,new[]{QualityAccessory},clearRunId:context.ClearRunId));names.Add(qualityId,"ホウシュウシツ+1（カリ） / カードホウシュウ ルートヨウ / ソウビチュウ");
+                }
+                return new Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition(origin,1,candidates,names);
             }
         }
     }

@@ -2665,6 +2665,14 @@ namespace Olca.Tests.Integration
         }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
+        [Test] public void 質試用の未登録行き先は保存せず拒否しHub復帰と対応先の再試行を妨げない()
+        {
+            var controller=Start(configure:c=>{c.ConfigureTrialCustomizationDefaults();Set(c,"debugUnlockDungeons",true);},production:true);var session=(ClearReturnSession)Get(controller,"clearReturnSession");var catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();string quality=Olca.Application.Management.TrialCustomizationDefinitions.QualityAccessory;
+            Assert.IsTrue(session.TryGrantCustomization(catalog,new Olca.Core.Logic.Customization.CustomizationGrant(System.Guid.NewGuid().ToString("N"),new[]{quality})),session.Error);Assert.IsTrue(session.TrySetCustomizationLoadout(catalog,new[]{quality},System.Array.Empty<Olca.Core.Logic.Customization.PartPlacement>()),session.Error);var store=(Olca.Unity.ClearReturnFileStore)Get(controller,"clearReturnStore");var before=System.IO.File.ReadAllBytes(store.ActivePath);Set(controller,"outsideDungeonSelection",true);Set(controller,"selectedDungeon",0);Call(controller,"StartNextDepartureWithDeck",new object[]{null});
+            Assert.IsNull(Get(controller,"clearReturnError"));StringAssert.Contains("5タイ",(string)Get(controller,"outsideDepartureError"));Assert.IsTrue((bool)Get(controller,"OutsideHubEligible"));Assert.IsNull(session.Snapshot.NextDeparture);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));
+            Set(controller,"selectedDungeon",3);Call(controller,"StartNextDepartureWithDeck",new object[]{null});Assert.IsNotNull(session.Snapshot.NextDeparture,session.Error);Assert.AreEqual(1,Model(controller).Dungeon.Player.RewardQualityBonus);Assert.IsNull(Get(controller,"outsideDepartureError"));
+        }
+
         [Test]
         public void 停止地点なしでアイテム報酬だけある帰還進行を再起動しても保存依存を満たす()
         {
