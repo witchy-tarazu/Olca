@@ -794,6 +794,30 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [TestCase(1920,1080,0f)] [TestCase(1440,1080,0f)] [TestCase(3840,2160,0f)]
+        [TestCase(1920,1080,-700f)] [TestCase(1920,1080,700f)]
+        public async Task 外界試用標的の名札は主人公を避け画面内に収まり非接触時は動かない(int width,int height,float actorX)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var type=view.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var actor=((Image)type.GetField("player",flags).GetValue(view)).rectTransform;
+                var plate=new GameObject("TrialNamePlate",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>();plate.SetParent(view.transform,false);plate.sizeDelta=new Vector2(316,48);
+                var name=new GameObject("TrialName",typeof(RectTransform),typeof(Text)).GetComponent<Text>();name.transform.SetParent(view.transform,false);name.rectTransform.sizeDelta=new Vector2(300,40);name.raycastTarget=false;
+                type.GetField("trialTargetPlate",flags).SetValue(view,plate);type.GetField("trialTargetName",flags).SetValue(view,name);
+                actor.anchorMin=actor.anchorMax=new Vector2(.5f,.5f);actor.pivot=new Vector2(.5f,.5f);actor.anchoredPosition=new Vector2(actorX,0);actor.sizeDelta=new Vector2(256,256);
+                var original=actor.anchoredPosition;var pose=model.Core.CaptureState();long frame=model.Core.Frame;int hp=model.Player.CurrentHp;
+                var place=type.GetMethod("PlaceTrialTargetName",flags);var bounds=type.GetMethod("BoundsInView",flags);
+                name.rectTransform.anchoredPosition=plate.anchoredPosition=new Vector2(actorX,100);place.Invoke(view,null);
+                var actual=(Rect)bounds.Invoke(view,new object[]{plate});var body=(Rect)bounds.Invoke(view,new object[]{actor});var viewport=((RectTransform)view.transform).rect;
+                Assert.IsFalse(actual.Overlaps(body));Assert.GreaterOrEqual(actual.xMin,viewport.xMin);Assert.LessOrEqual(actual.xMax,viewport.xMax);Assert.AreEqual(name.rectTransform.anchoredPosition,plate.anchoredPosition);Assert.AreEqual(100,plate.anchoredPosition.y);
+                name.rectTransform.anchoredPosition=plate.anchoredPosition=new Vector2(0,300);place.Invoke(view,null);Assert.AreEqual(new Vector2(0,300),plate.anchoredPosition);
+                Assert.AreEqual(original,actor.anchoredPosition);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(pose.Position,model.Core.CaptureState().Position);Assert.AreEqual(hp,model.Player.CurrentHp);Assert.IsFalse(name.raycastTarget);
+            }
+        }
+
         [TestCase(1920,1080)] [TestCase(1440,1080)] [TestCase(3840,2160)] public async Task 外界回復数値は表示中マップ名を避け終了後は不可視領域を使わない(int width,int height)
         {
             ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(50);

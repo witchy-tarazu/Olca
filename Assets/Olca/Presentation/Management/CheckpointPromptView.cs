@@ -121,13 +121,18 @@ namespace Olca.Presentation.Exploration
             if(!Fits(target))target=Fits(left)?left:right;
             return target-label.center.x;
         }
+        private Rect BoundsInView(RectTransform value)
+        {
+            var corners=new Vector3[4];value.GetWorldCorners(corners);var min=(Vector2)transform.InverseTransformPoint(corners[0]);var max=min;
+            foreach(var point in corners){var local=(Vector2)transform.InverseTransformPoint(point);min=Vector2.Min(min,local);max=Vector2.Max(max,local);}
+            return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
+        }
         // 操作領域は固定したまま、空中で重なる入口名だけをキャラの横へ避ける。
         private void PlaceEntranceTitle(bool grounded)
         {
             entranceTitle.rectTransform.anchoredPosition=new Vector2(0,22);entranceTitle.text="ダンジョン イリグチ";
             if(grounded||!entrance.gameObject.activeInHierarchy)return;
-            Rect Bounds(RectTransform value){var corners=new Vector3[4];value.GetWorldCorners(corners);var min=(Vector2)transform.InverseTransformPoint(corners[0]);var max=min;foreach(var point in corners){var local=(Vector2)transform.InverseTransformPoint(point);min=Vector2.Min(min,local);max=Vector2.Max(max,local);}return Rect.MinMaxRect(min.x,min.y,max.x,max.y);}
-            float shift=EntranceTitleOffset(Bounds(entranceTitle.rectTransform),Bounds(player.rectTransform),((RectTransform)transform).rect);
+            float shift=EntranceTitleOffset(BoundsInView(entranceTitle.rectTransform),BoundsInView(player.rectTransform),((RectTransform)transform).rect);
             entranceTitle.rectTransform.anchoredPosition+=new Vector2(shift,0);
             if(shift!=0)entranceTitle.text=shift>0?"< ダンジョン イリグチ":"ダンジョン イリグチ >";
         }
