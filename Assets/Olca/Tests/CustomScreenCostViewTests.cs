@@ -993,6 +993,32 @@ namespace Olca.Tests
         }
 
         [Test]
+        public void ダンジョン店の購入情報は不足額と購入後残高を表示しイベントの表示を変えない()
+        {
+            var root=new GameObject("ShopPurchaseClarity",typeof(RectTransform));try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);
+                var options=new[]{new DungeonVisitOption("sword",5,Create("sword",CardSeries.Sword))};int confirmed=0,cancelled=0,exited=0;
+                Text Label(string name)=>root.GetComponentsInChildren<Text>().Single(t=>t.name==name);Button Control(string name)=>root.GetComponentsInChildren<Button>().Single(t=>t.name==name);
+                void Draw(int selected,long money,bool can,bool shop)=>view.RenderDungeonVisit("店",new[]{"sword"},new[]{true},selected,false,can,_=>{},()=>confirmed++,()=>cancelled++,()=>exited++,()=>{},true,options,new[]{false},money,shop:shop);
+                Draw(0,2,false,true);Assert.AreEqual(Color.white,Label("VisitOperationGuide").color);using(var generator=new TextGenerator()){var guide=Label("VisitOperationGuide");generator.Populate(guide.text,guide.GetGenerationSettings(guide.rectTransform.rect.size));Assert.AreEqual(guide.text.Length,generator.characterCountVisible);}StringAssert.Contains("3",Label("VisitPurchaseBalance").text);StringAssert.Contains(CustomDisplay.Katakana("不足"),Label("VisitPurchaseBalance").text);Assert.IsFalse(Control("ConfirmVisit").interactable);StringAssert.Contains(CustomDisplay.Katakana("選択取消"),Label("VisitOperationGuide").text);
+                Draw(0,10,true,true);StringAssert.Contains(CustomDisplay.Katakana("購入後 5"),Label("VisitPurchaseBalance").text);Assert.AreEqual(CustomDisplay.Katakana("購入する"),Control("ConfirmVisit").GetComponentInChildren<Text>().text);Control("ConfirmVisit").onClick.Invoke();Assert.AreEqual(1,confirmed);Assert.AreEqual(5,options[0].Price);
+                Control("CancelVisit").onClick.Invoke();Assert.AreEqual(1,cancelled);Assert.AreEqual(0,exited);
+                Draw(-1,10,false,true);Assert.IsFalse(Control("CancelVisit").interactable);StringAssert.Contains(CustomDisplay.Katakana("退出して保存"),Label("VisitOperationGuide").text);StringAssert.Contains(CustomDisplay.Katakana("退出時に保存"),Label("VisitHelp").text);
+                Draw(0,10,true,false);Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(t=>t.name=="VisitOperationGuide"));Assert.AreEqual(CustomDisplay.Katakana("選択を確定"),Control("ConfirmVisit").GetComponentInChildren<Text>().text);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void ダンジョン店の五商品は三行スクロールに収まり購入情報と操作部が交差しない()
+        {
+            var root=new GameObject("ShopPurchaseLayout",typeof(RectTransform));try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var options=Enumerable.Range(0,5).Select(i=>new DungeonVisitOption("item"+i,5,Create("sword",CardSeries.Sword))).ToArray();
+                view.RenderDungeonVisit("店",options.Select(o=>o.Label).ToArray(),Enumerable.Repeat(true,5).ToArray(),0,false,true,_=>{},()=>{},()=>{},()=>{},()=>{},true,options,new bool[5],10,shop:true);Canvas.ForceUpdateCanvases();
+                var area=root.GetComponentsInChildren<ScrollRect>().Single(s=>s.name=="VisitOptionsScroll");Assert.Greater(area.content.rect.height,area.viewport.rect.height);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(b=>b.name=="VisitOption_4").transform.IsChildOf(area.content));
+                var guide=root.GetComponentsInChildren<Text>().Single(t=>t.name=="VisitOperationGuide").rectTransform;var confirm=(RectTransform)root.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmVisit").transform;Assert.Greater(guide.anchoredPosition.y-guide.rect.height/2,confirm.anchoredPosition.y+confirm.rect.height/2);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
+        [Test]
         public void 店の型付き表示は表示順の価格と専用アイコンを借用し不足通貨での選択と他画面の面を保つ()
         {
             var root=new GameObject("ShopTypedPresentation",typeof(RectTransform));var texture=new Texture2D(8,8);var sprite=Sprite.Create(texture,new Rect(0,0,8,8),new Vector2(.5f,.5f));

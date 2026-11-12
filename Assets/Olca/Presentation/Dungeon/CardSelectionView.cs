@@ -274,7 +274,7 @@ namespace Olca.Presentation.Dungeon
         public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){ManagementContext=context;gameObject.SetActive(true);}
         public void HideManaged(){StopMenu();ManagementContext=null;gameObject.SetActive(false);}
         public void Hide(){if(hideManaged!=null)hideManaged();else gameObject.SetActive(false);}
-        private void BeginRender(){if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
+        private void BeginRender(){shopGuide=null;if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
         private bool CanOperateView=>this!=null&&gameObject.activeInHierarchy&&(ensureManagedVisible==null||ManagementContext?.IsCurrent==true&&!ManagementContext.DialogBlocksInput);
         private Font font;
         private Action<int> toggle;
@@ -316,6 +316,14 @@ namespace Olca.Presentation.Dungeon
 
         // 現在の画面か、その画面を覆う読取専用モーダルだけが入力を所有する。
         private bool OwnsContent(GameObject owner)=>CanOperateView&&owner!=null&&owner.activeInHierarchy&&(readonlyDetails!=null?readonlyDetails==owner:content==owner);
+        private UnityEngine.UI.Text shopGuide;private bool shopGuideSelected,shopGuideBlocked;
+        private void RefreshShopGuide()
+        {
+            if(shopGuide==null||!shopGuide.gameObject.activeInHierarchy)return;
+            bool pad=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad;
+            string Key(string action,string keyboard)=>pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null):keyboard;
+            shopGuide.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(shopGuideBlocked?"保存待ち: 操作を停止しています":Key("Decide","Enter")+": 商品選択 / 購入する    "+Key("Cancel","Esc")+": "+(shopGuideSelected?"選択取消":"退出して保存"));
+        }
         private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true,bool resetMissing=false)
         {
             var owner=root.gameObject;Action guardedBack=back==null?null:(Action)(()=>{if(OwnsContent(owner))back();});
@@ -408,7 +416,7 @@ namespace Olca.Presentation.Dungeon
             stats.rectTransform.anchoredPosition=new Vector2(stats.rectTransform.anchoredPosition.x,summaryY);
             Fit("ReturnSummary",summaryY,summaryHeight,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
+        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();RefreshShopGuide();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
         public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
@@ -737,7 +745,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
             Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true,
-            IReadOnlyList<DungeonVisitOption> details=null,IReadOnlyList<bool> purchased=null,long? balance=null,Func<Card,Sprite> icon=null)
+            IReadOnlyList<DungeonVisitOption> details=null,IReadOnlyList<bool> purchased=null,long? balance=null,Func<Card,Sprite> icon=null,bool shop=false)
         {
             BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
@@ -746,9 +754,9 @@ namespace Olca.Presentation.Dungeon
             var titleLabel=Text("VisitTitle",title,-140,balance.HasValue?455:430,1400,66,36);titleLabel.color=Color.white;
             if(balance.HasValue){var value=Text("VisitBalance",$"所持 {balance.Value} 通貨",-140,397,1360,44,26);value.color=Color.white;}
             Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit);
-            float rowHeight=Mathf.Min(176,580f/Mathf.Max(1,Mathf.Min(5,names.Length)));float bodyHeight=Mathf.Min(5,names.Length)*rowHeight+48,bodyBottom=310-bodyHeight;
+            int visibleRows=Math.Min(shop?3:5,names.Length);float rowHeight=Mathf.Min(176,580f/Mathf.Max(1,visibleRows));float bodyHeight=visibleRows*rowHeight+48,bodyBottom=310-bodyHeight;
             CommerceFace("VisitBody",0,310-bodyHeight/2,1760,bodyHeight);
-            var listScroll=names.Length>5?CreateRowScroll("VisitOptionsScroll",1700,580,names.Length*rowHeight,-4):null;
+            float listHeight=shop?visibleRows*rowHeight:580;var listScroll=names.Length>(shop?3:5)?CreateRowScroll("VisitOptionsScroll",1700,listHeight,names.Length*rowHeight,shop?286-listHeight/2:-4):null;
             for(int i=0;i<names.Length;i++){
                 int firstChild=content.transform.childCount;int slot=i;float y=286-rowHeight/2-i*rowHeight;var option=details!=null&&i<details.Count?details[i]:null;
                 var button=Button("VisitOption_"+i,option==null?(selected==i?"［選択中］ ":"")+names[i]:"",0,y,1660,rowHeight-16,()=>choose(slot));button.interactable=!blocked&&enabled[i];
@@ -762,8 +770,17 @@ namespace Olca.Presentation.Dungeon
                 if(listScroll!=null)foreach(var child in content.transform.Cast<Transform>().Skip(firstChild).ToArray()){var rect=(RectTransform)child;var position=rect.anchoredPosition;child.SetParent(listScroll.content,false);rect.anchorMin=rect.anchorMax=new Vector2(.5f,1);rect.anchoredPosition=position-new Vector2(0,286);}
             }
             float footer=Mathf.Max(-440,bodyBottom-210);
-            var help=Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,bodyBottom-50,1700,60,24);help.color=Color.white;
-            Button("ConfirmVisit","選択を確定",-560,footer,520,72,confirmVisit).interactable=!blocked&&canConfirm;
+            if(shop){
+                var option=details!=null&&selected>=0&&selected<details.Count?details[selected]:null;
+                string selection=option==null?"商品を選択してください":"選択: "+option.Label;
+                var summary=Text("VisitPurchaseSummary",selection,-340,bodyBottom-30,1000,50,24);summary.color=Color.white;summary.resizeTextForBestFit=true;summary.resizeTextMinSize=20;summary.resizeTextMaxSize=24;
+                string money=option==null?"":!balance.HasValue?$"価格 {option.Price} 通貨":balance.Value<option.Price?$"通貨が {option.Price-balance.Value} 不足（価格 {option.Price}）":$"価格 {option.Price} / 購入後 {balance.Value-option.Price} 通貨";
+                if(option!=null&&balance.HasValue&&balance.Value>=option.Price&&!canConfirm)money+=" / 今は購入不可";
+                var purchaseBalance=Text("VisitPurchaseBalance",money,515,bodyBottom-30,630,50,24);purchaseBalance.color=Color.white;purchaseBalance.resizeTextForBestFit=true;purchaseBalance.resizeTextMinSize=20;purchaseBalance.resizeTextMaxSize=24;
+                var help=Text("VisitHelp",blocked?"退出保存が未完了です。同じ内容の保存を再試行してください。":"購入確定で支払い・効果を反映。選択取消は購入前のみ。退出時に保存します。",0,bodyBottom-79,1700,34,22);help.color=Color.white;
+                shopGuide=Text("VisitOperationGuide","",0,bodyBottom-117,1700,40,20);shopGuide.color=Color.white;shopGuideSelected=selected>=0;shopGuideBlocked=blocked;RefreshShopGuide();
+            }else{var help=Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,bodyBottom-50,1700,60,24);help.color=Color.white;}
+            Button("ConfirmVisit",shop?"購入する":"選択を確定",-560,footer,520,72,confirmVisit).interactable=!blocked&&canConfirm;
             Button("CancelVisit","選択取消",0,footer,520,72,cancelVisit).interactable=!blocked&&selected>=0;
             Button("ExitVisit","退出して保存",560,footer,520,72,exitVisit).interactable=!blocked&&canExit;
             SetMenu(content.transform,blocked?null:selected>=0?cancelVisit:canExit?exitVisit:null,selected>=0?"VisitOption_"+selected:"VisitOption_0",scroll:listScroll,directionScroll:false);

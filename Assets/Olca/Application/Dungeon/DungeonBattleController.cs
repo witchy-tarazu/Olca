@@ -2279,7 +2279,7 @@ namespace Olca.Application.Dungeon
                     if(selectedVisit>=0&&selectedVisit<state.Options.Length&&definition.Options[state.Options[selectedVisit]].RemoveCount>0&&d.CanChooseVisit(selectedVisit))selectingVisitRemoval=true;
                     else{d.ChooseVisit(selectedVisit);ResetVisitSelection();}ShowDungeonVisit();},
                 ()=>{ResetVisitSelection();ShowDungeonVisit();},
-                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true),d.CanExitVisit,state.Options.Select(n=>definition.Options[n]).ToArray(),state.Purchased,d.Currency,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null);
+                ()=>{if(IsUserPaused||!ReferenceEquals(d,manager.Dungeon))return;d.ExitVisit();RefreshDungeonVisit();},()=>SetUserPaused(true),d.CanExitVisit,state.Options.Select(n=>definition.Options[n]).ToArray(),state.Purchased,d.Currency,card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,shop:definition.IsShop);
         }
 
         private void LateUpdate()
