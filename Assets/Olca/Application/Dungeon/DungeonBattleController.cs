@@ -409,7 +409,7 @@ namespace Olca.Application.Dungeon
                     if(clearReturnSession.Retry()) {exchangeSelectedId=exchangeRequestId=exchangeRound=null;EnsureTokenExchange();}ShowTokenExchange(); });
         }
 
-        private DepartureStyleDefinition[] departureStyles = { DepartureStyleDefinition.Basic };
+        private DepartureStyleDefinition[] departureStyles = { DepartureStyleDefinition.Basic, DepartureStyleDefinition.TrialFire };
         private bool styleSelectionOpen;
         private int styleDraft;
         /// <summary>製品定義の登録口。基本以外の種類・数値はここで生成しない。</summary>
@@ -1959,6 +1959,8 @@ namespace Olca.Application.Dungeon
                     var factory = CreateCoreFactory(rewardChoice:choice);
                     var player = factory.CreatePlayer(ReturnSettings(),clearReturnSession.Snapshot.Level,battleStaggerFrames,playerPoiseRecoveryFrames);
                     player.SetDepartureStyle(style);
+                    // 新しい明示試用だけに現行相性を設定し、旧神依/旧保存へ遡及しない。
+                    if(style.Id==DepartureStyleDefinition.TrialFire.Id)player.SetElementResistances(ElementAffinity.CreatePlayerBase(ElementType.Fire));
                     ApplyDepartureCustomization(player);
                     outsideEntry?.ApplyToStart(player);
                     factory.CreatePreview(map,player,deck,frozen);

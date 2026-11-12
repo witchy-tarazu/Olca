@@ -3201,6 +3201,20 @@ namespace Olca.Tests.Integration
             var old=new ClearReturnProfile();ClearReturnProfile.Validate(old);Assert.IsNull(old.ExchangeStock);Assert.IsNull(old.ExchangeReceipts);
             var invalid=session.Snapshot;invalid.ExchangeStock.Offers[0].Price=0;Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(invalid));
         }
+        [Test]
+        public void 登録済み試用火神依は取消で保存せず選択保存coldと出撃固定と火属性の通常攻撃へ届く()
+        {
+            var c=StartSelection();var registered=(DepartureStyleDefinition[])Get(c,"departureStyles");Assert.AreEqual(2,registered.Length);Assert.AreSame(DepartureStyleDefinition.Basic,registered[0]);Assert.AreSame(DepartureStyleDefinition.TrialFire,registered[1]);Assert.IsTrue(registered[1].IsUnlocked(c.PersistentProgress));long revision=c.PersistentProgress.Revision;
+            KeyboardButton(c,"SelectDepartureStyle");KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"CancelStyleSelection");Assert.AreEqual(revision,c.PersistentProgress.Revision);Assert.IsNull(c.PersistentProgress.SelectedStyleId);
+            KeyboardButton(c,"SelectDepartureStyle");KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"ConfirmStyleSelection");Assert.AreEqual("trial-fire-kamui-v1",c.PersistentProgress.SelectedStyleId);var cold=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory));Assert.AreEqual(c.PersistentProgress.SelectedStyleId,cold.Snapshot.SelectedStyleId);
+            KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);var battle=Model(c).CurrentBattle;Assert.AreEqual(ElementType.Fire,battle.ActivePlayerElement);Assert.AreEqual(-50,battle.Player.BaseElementResistances.Water);Assert.AreEqual(50,battle.Player.BaseElementResistances.Get(ElementType.Metal));Assert.AreEqual(0,battle.Player.BaseElementResistances.Wind);Assert.AreEqual("trial-fire-kamui-v1",battle.Player.DepartureStyle.Id);var enemy=battle.Enemies[0];enemy.ApplyStun(100000);battle.Player.MoveTo(new Vector2Int(enemy.GridPosition.X-1,enemy.GridPosition.Y));battle.Resume(BattlePauseReason.CustomScreen);int before=enemy.CurrentHp;var input=new Olca.Application.Battle.BasicAttackInputState();input.Tick(battle,new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true},60,12);input.Tick(battle,new LogicalInput{BasicAttackButtonUp=true},60,12);Assert.AreEqual(before-10,enemy.CurrentHp);Assert.Throws<System.InvalidOperationException>(()=>battle.Player.SetDepartureStyle(DepartureStyleDefinition.Basic));Assert.AreEqual("trial-fire-kamui-v1",c.PersistentProgress.NextDeparture.Start.Player.Style.Id);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(ElementType.Fire,Model(c).Dungeon.Player.ActiveElement);Assert.AreEqual(100,Model(c).Dungeon.Player.DepartureStyle.Attack.NormalPowerPercent);
+        }
+        [Test]
+        public void 試用火神依の値は固定DTOへ復元でき通常状態を神依へ読み替えない()
+        {
+            var original=DepartureStyleDefinition.TrialFire;var copy=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<DepartureStyleDto>(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(original.Capture())).Restore();Assert.AreEqual(original.Id,copy.Id);Assert.AreEqual(ElementType.Fire,copy.Attack.Element);Assert.AreEqual(100,copy.Attack.NormalPowerPercent);Assert.AreEqual(200,copy.Attack.ChargedPowerPercent);Assert.AreEqual(60,copy.Attack.ChargeFrames);Assert.AreEqual(12,copy.Attack.IntervalFrames);Assert.AreEqual(0,copy.TransformationPhaseBonus);Assert.IsNull(DepartureStyleDefinition.Basic.Attack);Assert.AreEqual("basic",DepartureStyleDefinition.Basic.Id);
+        }
         private static DepartureStyleDefinition[] StyleFixtures() => new[] {
             DepartureStyleDefinition.Basic,
             new DepartureStyleDefinition("fixture-fire", "既存攻撃の外部設定fixture", "selection-a", new TransformationAttackDefinition(ElementType.Fire, 150, 250, 30, 12)),
