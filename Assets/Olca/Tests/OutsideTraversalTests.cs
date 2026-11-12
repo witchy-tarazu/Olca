@@ -35,10 +35,10 @@ namespace Olca.Tests
                 for(int n=12;n<=15;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(OutsideKickKind.GroundSecond,s.NormalKick.Kind);Assert.AreEqual(15,s.NormalKick.StartedAt);
             }
         }
-        [Test] public void 蹴りの停止再表示は論理時計を進めず保存拒否は既存保存を書き換えない()
+        [Test] public void 蹴りの停止再表示は論理時計を進めず登録済み試用状態を退避する()
         {
             using(var s=TrialKick212()){
-                var l=s.AttachPresentation();s.ProcessCardUseInput(false,false,true,0,1,out _);long frame=s.Core.Frame;long x=s.Core.Position;l.Dispose();Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(1));Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);Assert.Throws<ArgumentException>(()=>s.CaptureRuntime());
+                var l=s.AttachPresentation();s.ProcessCardUseInput(false,false,true,0,1,out _);long frame=s.Core.Frame;long x=s.Core.Position;l.Dispose();Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(1));Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);Assert.IsTrue(s.CaptureRuntime().NormalKick.Active);
                 using(var next=s.AttachPresentation()){Assert.IsTrue(s.NormalKick.IsActive);s.CancelAttackReservation();for(int n=0;n<39;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.IsFalse(s.NormalKick.HasProgress);next.Dispose();Assert.DoesNotThrow(()=>s.CaptureRuntime());}
             }
         }

@@ -10,6 +10,73 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        private static CheckpointDefinitions Kick214Definitions(OutsideExplorationSession s)
+        {var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);return DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;}
+        private static void Kick214Tick(OutsideExplorationSession s,float horizontal=0){s.TickTraversal(horizontal);s.ProcessCardUseInput(false,false,false,0,0,out _);}
+        [TestCase(0)] [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(9)] [TestCase(20)] [TestCase(21)] [TestCase(25)] [TestCase(38)]
+        public void 試用蹴りは前隙と命中済みと後隙と継続猶予を同じ論理位置から復元する(int age)
+        {
+            using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));for(int n=0;n<age;n++)Kick214Tick(s);}
+                var runtime=s.CaptureRuntime(defs);Assert.NotNull(runtime.NormalKick);Assert.AreEqual(age<21,runtime.NormalKick.Active);Assert.AreEqual(age>=6&&age<21?2:0,runtime.NormalKick.HitTargets.Length);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                var round=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime));Assert.AreEqual(runtime.Key(),round.Key());using(var cold=new OutsideExplorationSession()){
+                    Assert.IsTrue(cold.RestoreSavedState(actor,round,null,defs));Assert.IsFalse(cold.RestoreSavedState(actor,round,null,defs));Assert.AreEqual(AttackReservationKind.None,cold.PendingAttack);
+                    using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<45;n++){Kick214Tick(s);Kick214Tick(cold);Assert.AreEqual(s.Core.Frame,cold.Core.Frame);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.AreEqual(s.TrialTarget.CurrentHp,cold.TrialTarget.CurrentHp);Assert.AreEqual(s.SecondTrialTarget.CurrentHp,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(s.NormalKick.IsActive,cold.NormalKick.IsActive);Assert.AreEqual(s.NormalKick.NextGroundStage,cold.NormalKick.NextGroundStage);}
+                    Assert.AreEqual(110,cold.TrialTarget.CurrentHp);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);
+                }
+            }
+        }
+        [Test] public void 一体だけ命中済みの保存は対象IDを分離して復元し再命中しない()
+        {
+            using(var s=Sword161(182)){
+                s.EnableTrialNormalKick();var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=0;n<6;n++)Kick214Tick(s);}
+                var runtime=s.CaptureRuntime(defs);CollectionAssert.AreEqual(new[]{1},runtime.NormalKick.HitTargets);var player=OutsidePlayerSaveData.Capture(s.Player);player.Id=runtime.Id;using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(player,runtime,null,defs);using(var l=cold.AttachPresentation())for(int n=0;n<10;n++)Kick214Tick(cold);Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);}
+                var copy=runtime.Copy();copy.NormalKick.HitTargets[0]=0;CollectionAssert.AreEqual(new[]{1},runtime.NormalKick.HitTargets);
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)]
+        public void 不正な蹴り保存は既存Sessionを一部変更せず拒否する(int fault)
+        {
+            using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=0;n<6;n++)Kick214Tick(s);}var runtime=s.CaptureRuntime(defs);var player=OutsidePlayerSaveData.Capture(s.Player);player.Id=runtime.Id;var state=runtime.NormalKick;long frame=s.Core.Frame;var actor=s.Player;var sequence=s.NormalKick;
+                switch(fault){case 0:state.DefinitionKey=new string('a',64);break;case 1:state.Kind=(OutsideKickKind)99;break;case 2:state.EndsAt++;break;case 3:state.HitTargets=new[]{0,0};break;case 4:state.HitTargets=new[]{2};break;case 5:state.StartedAt=frame;state.EndsAt=frame+21;break;case 6:state.AttackFacing=-s.Core.Facing;break;case 7:runtime.SecondTrialTarget=null;break;}
+                Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(player,runtime,null,defs));Assert.AreSame(actor,s.Player);Assert.AreSame(sequence,s.NormalKick);Assert.AreEqual(frame,s.Core.Frame);Assert.IsTrue(s.NormalKick.IsActive);Assert.AreEqual(110,s.TrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void 空中蹴り保存は向きと横移動と落下を保ち着地で中断する()
+        {
+            using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();Position188(s,175*6000,60000);var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _, -1);for(int n=0;n<6;n++)Kick214Tick(s,-1);}
+                var runtime=s.CaptureRuntime(defs);Assert.AreEqual(OutsideKickKind.AirDown,runtime.NormalKick.Kind);Assert.AreEqual(1,runtime.NormalKick.AttackFacing);Assert.AreEqual(-1,runtime.Core.Facing);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(actor,runtime,null,defs);using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<50;n++){Kick214Tick(s,-1);Kick214Tick(cold,-1);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.AreEqual(s.Core.VerticalVelocity,cold.Core.VerticalVelocity);Assert.AreEqual(s.SecondTrialTarget.CurrentHp,cold.SecondTrialTarget.CurrentHp);}Assert.IsTrue(cold.Core.IsGrounded);Assert.IsFalse(cold.IsAttacking);}
+            }
+        }
+        [Test] public void 蹴り継続猶予は保存後も十八frame境界で失効し入力予約は復元しない()
+        {
+            using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=0;n<22;n++)Kick214Tick(s);}
+                var runtime=s.CaptureRuntime(defs);var player=OutsidePlayerSaveData.Capture(s.Player);player.Id=runtime.Id;using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(player,runtime,null,defs);using(var l=cold.AttachPresentation()){Assert.IsFalse(cold.ProcessCardUseInput(false,false,true,0,2,out _));Assert.IsFalse(cold.IsAttacking);for(int n=0;n<17;n++)Kick214Tick(cold);Assert.AreEqual(1,cold.NormalKick.NextGroundStage);cold.TickTraversal(0);Assert.IsTrue(cold.ProcessCardUseInput(false,false,true,0,3,out _));Assert.AreEqual(OutsideKickKind.GroundFirst,cold.NormalKick.Kind);}}
+            }
+        }
+        [Test] public void 試用登録外の地形へ蹴り保存を混入させても旧Sessionへ採用しない()
+        {
+            using(var source=Sword161(175))using(var foreign=new OutsideExplorationSession()){
+                source.EnableTrialNormalKick();var defs=Kick214Definitions(source);using(var l=source.AttachPresentation())source.ProcessCardUseInput(false,false,true,0,1,out _);var runtime=source.CaptureRuntime(defs);var player=OutsidePlayerSaveData.Capture(source.Player);player.Id=runtime.Id;
+                // 試験だけでreadonly地形を故障注入し、通常経路では作れない外国定義を検証する。
+                var core=new OutsideExplorationCore(new OutsideMovementDefinition("unregistered-kick-map",32*60000,6*60000,6*60000));typeof(OutsideExplorationSession).GetField("<Core>k__BackingField",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(foreign,core);foreign.TryInitializePlayer(()=>new PlayerCharacter(100));var actor=foreign.Player;var sequence=foreign.NormalKick;
+                runtime.Core=core.CaptureState();runtime.NormalKick.StartedAt=0;runtime.NormalKick.EndsAt=21;Assert.Throws<ArgumentException>(()=>foreign.RestoreSavedState(player,runtime,null,defs));Assert.AreSame(actor,foreign.Player);Assert.AreSame(core,foreign.Core);Assert.IsFalse(sequence.IsConfigured);
+                sequence.Configure(OutsideKickTrialDefinition.Timings());using(var l=foreign.AttachPresentation())sequence.TryRequest(0,true,1);Assert.Throws<ArgumentException>(()=>foreign.CaptureRuntime());
+            }
+        }
+        [Test] public void 命中済みの途中保存が失敗しても旧bytesを保ち同じ計画の再試行で二重命中しない()
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"kick214-"+Guid.NewGuid().ToString("N"));try{using(var s=Sword161(175)){
+                s.EnableTrialNormalKick();var defs=Kick214Definitions(s);var old=s.CaptureRuntime(defs);var oldPlayer=OutsidePlayerSaveData.Capture(s.Player);oldPlayer.Id=old.Id;var io=new Action159Io{Fail=false};var store=new Olca.Unity.ClearReturnFileStore(dir,io);
+                var baseline=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=oldPlayer,OutsideRuntimeSave=old,OutsideItemState=new OutsideItemStateData{ActorKey=oldPlayer.Key(),RuntimeKey=old.Key()}};Assert.IsTrue(store.TryWrite(0,baseline,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);
+                using(var l=s.AttachPresentation()){s.ProcessCardUseInput(false,false,true,0,1,out _);for(int n=0;n<6;n++)Kick214Tick(s);}var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                var plan=new ClearReturnProfile{Revision=2,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=actor,OutsideRuntimeSave=runtime,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};io.Fail=true;Assert.IsFalse(store.TryWrite(1,plan,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(1,plan,out error),error);Assert.IsTrue(store.TryWrite(1,plan,out _));var loaded=store.Read(out error);Assert.IsTrue(loaded.OutsideRuntimeSave.NormalKick.Active);
+                using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null,defs);using(var l=cold.AttachPresentation())for(int n=0;n<10;n++)Kick214Tick(cold);Assert.AreEqual(110,cold.TrialTarget.CurrentHp);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);}
+            }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
         [Test] public void 試用蹴り三段は範囲内の二体へ各段一度だけ命中し手札とゲージを消費しない()
         {
             using(var s=Sword161(175))using(var l=s.AttachPresentation()){
