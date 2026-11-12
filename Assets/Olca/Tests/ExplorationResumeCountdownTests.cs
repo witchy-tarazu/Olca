@@ -10,6 +10,52 @@ namespace Olca.Tests
     public class ExplorationResumeCountdownTests
     {
 
+        private static OutsideExplorationSession Shield227()
+        {
+            var s=Heal158();for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="shield");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="shield")));return s;
+        }
+        [TestCase(false)] [TestCase(true)] public void 試用外界シールドは地上空中で一度だけ消費し既存防御で耐久以上も本体へ通さない(bool air)
+        {
+            using(var s=Shield227())using(var l=s.AttachPresentation()){
+                if(air)s.TickTraversal(0,true,true);var c=s.Cards.SelectedCard;long rev=s.Cards.HandRevision;long gauge=s.Core.CardGauge.CurrentUnits;
+                Assert.IsTrue(s.TryUseSelectedCard(c,rev,out _));Assert.AreEqual(15,s.Player.BarrierHp);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.AreEqual(gauge-c.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.IsFalse(s.TryUseSelectedCard(c,rev,out _));
+                s.Player.TakeDamage(10,affectsPoise:false);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(5,s.Player.BarrierHp);s.Player.TakeDamage(50,affectsPoise:false);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(0,s.Player.BarrierHp);
+            }
+        }
+        [Test] public void 試用バリアは残量をcold復元し帰還のForRunでは解除して元保存を変更しない()
+        {
+            using(var s=Shield227()){
+                var defs=Kick214Definitions(s);using(var l=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));s.Player.TakeDamage(4,affectsPoise:false);}
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;Assert.AreEqual(11,runtime.TrialBarrierHp);
+                var round=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime));Assert.AreEqual(runtime.Key(),round.Key());using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,round,null,defs));Assert.AreEqual(11,cold.Player.BarrierHp);Assert.IsFalse(cold.RestoreSavedState(actor,round,null,defs));}
+                var returned=runtime.ForRun(Guid.NewGuid().ToString("N"));Assert.AreEqual(0,returned.TrialBarrierHp);Assert.AreEqual(11,runtime.TrialBarrierHp);Assert.AreEqual(0,actor.Restore().BarrierHp);
+                round.TrialBarrierHp=16;Assert.Throws<ArgumentException>(()=>round.Validate());round.TrialBarrierHp=-1;Assert.Throws<ArgumentException>(()=>round.Validate());
+            }
+        }
+        [Test] public void 旧Runtimeのバリア0は新欄を出力せず未反映フレームの保存は拒否する()
+        {
+            using(var s=Shield227()){
+                var defs=Kick214Definitions(s);Assert.IsFalse(System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(s.CaptureRuntime(defs))).Contains("TrialBarrierHp"));s.Player.SetBarrier(15);
+                typeof(PlayerCharacter).GetMethod("BeginHpFrame",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Player,null);Assert.Throws<ArgumentException>(()=>s.CaptureRuntime(defs));
+            }
+        }
+
+        [Test] public void 試用バリアの通常continueは既存の回復地点契約で解除し厳密保存を変更しない()
+        {
+            using(var s=Shield227()){
+                var defs=Kick214Definitions(s);s.Player.SetBarrier(15);var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                using(var cold=new OutsideExplorationSession()){cold.ClassifyStartupRestore(true);Assert.IsTrue(cold.RestoreForPresentation(actor,runtime,null,defs));Assert.AreEqual(0,cold.Player.BarrierHp);Assert.AreEqual(15,runtime.TrialBarrierHp);Assert.IsFalse(cold.RestoreForPresentation(actor,runtime,null,defs));}
+            }
+        }
+        [Test] public void 試用バリアの再付与は加算せず時間停止と風剥離は既存防御に従う()
+        {
+            using(var s=Shield227()){
+                using(var l=s.AttachPresentation()){s.Player.SetBarrier(4);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Assert.AreEqual(15,s.Player.BarrierHp);}
+                for(int i=0;i<20;i++)s.Core.TickFrame(0);Assert.AreEqual(15,s.Player.BarrierHp);
+                s.Player.TakeDamage(1,affectsPoise:false,attackProperties:AttackProperty.Wind);Assert.AreEqual(0,s.Player.BarrierHp);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
+
         private static CheckpointDefinitions Kick214Definitions(OutsideExplorationSession s)
         {var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);return DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;}
         private static void Kick214Tick(OutsideExplorationSession s,float horizontal=0){s.TickTraversal(horizontal);s.ProcessCardUseInput(false,false,false,0,0,out _);}
@@ -272,11 +318,11 @@ namespace Olca.Tests
             }
         }
 
-        [Test] public void 外界空中使用は明示した通常二種だけを許可し未知と上位を自動登録しない()
+        [Test] public void 外界空中使用は明示した通常三種だけを許可し未知と上位を自動登録しない()
         {
             Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().First(c=>c.Id=="heal")));
             using(var s=Sword161(level:ExceedLevel.Lv1)){Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(s.Cards.SelectedCard));using(var view=s.AttachPresentation()){s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsFalse(s.TryUseSelectedCard(s.Cards.SelectedCard,revision,out _));Assert.AreEqual(revision,s.Cards.HandRevision);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);}}
-            Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(2,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir));
+            Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(3,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir));
         }
         [TestCase(50,70)] [TestCase(100,100)] public void 空中ヒールは一度だけ消費し未使用と同じ軌道と着地になる(int hp,int expected)
         {
