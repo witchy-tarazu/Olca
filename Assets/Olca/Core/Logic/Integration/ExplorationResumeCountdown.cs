@@ -121,10 +121,10 @@ namespace Olca.Core.Logic.Integration
         public string CardId {get;}public ExceedLevel Level {get;}public bool CanUseInAir {get;}
         public OutsideCardUseDefinition(string cardId,ExceedLevel level,bool canUseInAir)
         {if(string.IsNullOrWhiteSpace(cardId)||!Enum.IsDefined(typeof(ExceedLevel),level))throw new ArgumentException("外界使用定義が不正です");CardId=cardId;Level=level;CanUseInAir=canUseInAir;}
-        // 通常ヒールと通常ソードだけの暫定指定。未登録カードや上位を自動的に許可しない。
+        // 登録した6種だけの暫定指定。未知ID/未登録レベルへ空中許可を自動付与しない。
         public static IReadOnlyList<OutsideCardUseDefinition> TrialDefinitions {get;}=Array.AsReadOnly(new[]{
             new OutsideCardUseDefinition("shield",ExceedLevel.Normal,true),new OutsideCardUseDefinition("heal",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Normal,true),
-            new OutsideCardUseDefinition("fire_sword",ExceedLevel.Normal,false),new OutsideCardUseDefinition("sword",ExceedLevel.Lv1,false),new OutsideCardUseDefinition("sword",ExceedLevel.Lv2,false)});
+            new OutsideCardUseDefinition("fire_sword",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Lv1,true),new OutsideCardUseDefinition("sword",ExceedLevel.Lv2,true)});
         public static bool AllowsAir(Card card)=>card!=null&&TrialDefinitions.Any(d=>d.CardId==card.Id&&d.Level==card.ExceedLevel&&d.CanUseInAir);
     }
 
@@ -207,7 +207,7 @@ namespace Olca.Core.Logic.Integration
         // 静止標的に対する試用の縦範囲。正式な敵の当たり形状ではない。
         public const long TrialSwordVerticalRange=90000;
         private void ApplyTrialSword(Card card){
-            long dx=(TrialTargetX-Core.Position)*Core.Facing;bool vertical=Core.IsGrounded||(card.Id=="sword"&&card.ExceedLevel==ExceedLevel.Normal&&Core.Height>=0&&Core.Height<=TrialSwordVerticalRange);bool hit=vertical&&dx>=0&&dx<=TrialSwordRange&&!TrialTarget.IsDead;
+            long dx=(TrialTargetX-Core.Position)*Core.Facing;bool vertical=Core.IsGrounded||(OutsideCardUseDefinition.AllowsAir(card)&&Core.Height>=0&&Core.Height<=TrialSwordVerticalRange);bool hit=vertical&&dx>=0&&dx<=TrialSwordRange&&!TrialTarget.IsDead;
             trialStrike=new OutsideTrialStrike{Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=hit};
             if(hit){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);TrialTarget.TakeDamage(card.GetFinalPower(),card.GetFinalElement(),card.Properties,card.PoiseDamage,card.HitInvincibilityMs);}
         }
