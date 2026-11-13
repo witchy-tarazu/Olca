@@ -394,7 +394,13 @@ namespace Olca.Core.Logic.Integration
             key=CheckpointValues.Hash(w=>{w.Write(key);w.Write(cards.Count);foreach(var card in cards)w.Write(CollectionDisplay.DefinitionHash(card));});
             if(Cards?.SourceKey==key){EnableDeckLocations();pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=key;return true;}
             if(pendingLocationDeck!=null&&queuedDeckKey==key)return true;
-            EnableDeckLocations();pendingLocationDeck=deck;pendingLocationRandom=random;queuedDeckKey=key;return true;
+            EnableDeckLocations();
+            // 死亡保存はRuntimeを持たない。扉到着点からのcold復帰だけ、最初の論理境界で選択30枚を再装填する。
+            // 通常の再表示や保存Runtimeの手札は再抽選しない。編成地点への立入り/退出規則も変えない。
+            if(!IsPresented&&Cards==null&&savedPlayerId!=null&&Core.Frame==0&&Core.IsGrounded&&Core.Height==0&&
+                ((Core.TrialMapId==OutsideTrialRoute.AnnexMapId&&Core.Position==OutsideTrialRoute.AnnexDoorX)||
+                 (Core.TrialMapId==null&&Core.Position==OutsideTrialRoute.HomeDoorX)))deckLocationArmed=true;
+            pendingLocationDeck=deck;pendingLocationRandom=random;queuedDeckKey=key;return true;
         }
         private void EnableDeckLocations(){if(!managedDeckLocations){managedDeckLocations=true;deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core)&&(deckLocationArmed||OutsideTrialRoute.CanEditDeck(Core));reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);}}
         public bool AdvanceDeckLocation()

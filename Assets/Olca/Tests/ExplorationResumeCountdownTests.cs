@@ -12,6 +12,15 @@ namespace Olca.Tests
     {
         private static CheckpointDefinitions Door239Definitions(OutsideExplorationSession session)
             =>DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(((Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(session.Cards)).GetAllCards().ToList())).Definitions;
+        [TestCase(false)] [TestCase(true)] public void 扉到着点で死亡後にcold復帰しても選択30枚を一度だけ再装填する(bool annex)
+        {
+            using(var source=Reload182())using(var cold=new OutsideExplorationSession()){
+                var defs=Door239Definitions(source);string point=annex?OutsideTrialRoute.DoorAnnexPoint:OutsideTrialRoute.DoorHomePoint;source.RecoverOutside(point);var actor=OutsidePlayerSaveData.ForRecovery(source.Player);
+                cold.ClassifyStartupRestore(true);Assert.IsTrue(cold.RestoreForPresentation(actor,null,point,defs));var data=Deck155();var random=new SeededBattleRandom(239);Assert.IsTrue(cold.QueueSelectedDeck("reload182",data,Owned(data),random,out _));Assert.IsFalse(cold.IsDeckEditingLocation);Assert.IsNull(cold.Cards);Assert.AreEqual(0,random.Draws);
+                using(var lease=cold.AttachPresentation()){cold.Core.TickFrame(0);Assert.IsTrue(cold.AdvanceDeckLocation());Assert.AreEqual(30,cold.Cards.TotalCount);Assert.AreEqual(3,cold.Cards.Hand.Count);Assert.AreEqual(0,cold.Cards.SelectedIndex);}
+                Assert.IsTrue(OutsideTrialRoute.CanUseDoor(cold.Core));Assert.IsTrue(cold.Cards.TryConsumeSelected(cold.Cards.SelectedCard,cold.Cards.HandRevision,cold.Core.CardGauge,out _));string hand=cold.Cards.CaptureState(defs).Key();long draws=random.Draws;var cards=cold.Cards;Assert.IsFalse(cold.RestoreForPresentation(actor,null,point,defs));Assert.IsTrue(cold.QueueSelectedDeck("reload182",data,Owned(data),new SeededBattleRandom(999),out _));using(var lease=cold.AttachPresentation()){cold.Core.TickFrame(0);Assert.IsFalse(cold.AdvanceDeckLocation());}Assert.AreSame(cards,cold.Cards);Assert.AreEqual(hand,cold.Cards.CaptureState(defs).Key());Assert.AreEqual(draws,random.Draws);Assert.AreEqual(annex?OutsideTrialRoute.AnnexMapId:null,cold.Core.TrialMapId);
+            }
+        }
         [Test] public void 試用扉の保存失敗は個体カード時計と表示世代を維持し再試行後だけ到着する()
         {
             using(var s=Reload182()){
@@ -65,6 +74,20 @@ namespace Olca.Tests
             }
             using(var s=new OutsideExplorationSession()){
                 s.TryInitializePlayer(()=>new PlayerCharacter(100));var data=CardFixture();s.TryInitializeCards(data,Owned(data),new SeededBattleRandom(239),out _);Walk155(s,OutsideTrialRoute.HomeDoorX);var defs=Door239Definitions(s);string before=s.Cards.CaptureState(defs).Key();using(var lease=s.AttachPresentation())Assert.IsFalse(s.TryTravelThroughDoor(save,defs,out _));Assert.AreEqual(20,s.Cards.TotalCount);Assert.AreEqual(before,s.Cards.CaptureState(defs).Key());
+            }
+        }
+        [Test] public void 初回復帰DTOと受領台帳は同じ座標でも別マップの復帰地点を拒否する()
+        {
+            using(var session=Reload182()){
+                Walk155(session,OutsideTrialRoute.HomeDoorX);var definitions=Door239Definitions(session);var save=new ClearReturnSession(new Style231Store());using(var lease=session.AttachPresentation())Assert.IsTrue(session.TryTravelThroughDoor(save,definitions,out _));
+                OutsideRecoveryData Recovery(string point){var entry=OutsideDepartureVitals.Capture(session.Player,false);entry.Runtime=session.CaptureRuntime(definitions);entry.Template.Id=entry.Runtime.Id;return OutsideFirstRecoveryFactory.Create(entry,point,definitions,Guid.NewGuid().ToString("N"));}
+                foreach(bool annex in new[]{true,false}){
+                    if(!annex)session.RecoverOutside(OutsideTrialRoute.RecoveryPointId);
+                    var dto=Recovery(annex?OutsideTrialRoute.DoorAnnexPoint:OutsideTrialRoute.RecoveryPointId);Assert.DoesNotThrow(()=>dto.Validate());Assert.AreEqual(6*60000,dto.Runtime.Core.Position);
+                    var receipt=new ClearReceipt{RunId=dto.Player.Id,Fingerprint=new string('a',64),Outcome=RunReturnOutcome.Defeated,OutsideRecovery=dto};var profile=new ClearReturnProfile{Receipts=new[]{receipt}};Assert.DoesNotThrow(()=>ClearReturnProfile.Validate(profile));
+                    dto.PointId=annex?OutsideTrialRoute.RecoveryPointId:OutsideTrialRoute.DoorAnnexPoint;
+                    StringAssert.Contains("外界マップと復帰地点",Assert.Throws<ArgumentException>(()=>dto.Validate()).Message);StringAssert.Contains("外界マップと復帰地点",Assert.Throws<ArgumentException>(()=>ClearReturnProfile.Validate(profile)).Message);
+                }
             }
         }
         private sealed class Style231Store:IClearReturnStore
