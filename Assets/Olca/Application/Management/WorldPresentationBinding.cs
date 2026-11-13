@@ -106,6 +106,9 @@ namespace Olca.Application.Management
         }
         public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
         {if(disposed||(!allowed()&&restoreAllowed?.Invoke()!=true))return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
+        // 表示世代だけを交換し、Root所有Sessionと保存結果は維持する。
+        public async Task<ScreenOpenResult> ReopenAfterMapTravelAsync()
+        {if(disposed)throw new ObjectDisposedException(nameof(OutsideExplorationPresentationBinding));layer.CloseCurrent();return await OpenAsync();}
         public bool ReturnToHub(){if(disposed||!allowed()||!IsOpen)return false;layer.CloseCurrent();returned?.Invoke();return true;}
         public void ResetInputForFocus(bool focused=true){if(!disposed)runtime?.ResetInputForFocus(this,focused);}
         public void SetCovered(bool covered){runtime?.SetCovered(this,covered);if(View!=null)View.SetCovered(covered);}
