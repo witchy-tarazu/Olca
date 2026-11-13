@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -60,6 +61,73 @@ namespace Olca.Tests.Application
             var confirm=Button(popup,"confirm");var cancel=Button(popup,"cancel");
             Register("screen",ct=>Task.FromResult(screen),(go,ctx)=>{context=ctx;go.SetActive(true);});
             Assert.IsTrue((await views.ShowAsync("screen")).Succeeded);return(context,popup,confirm,cancel);
+        }
+        [Test] public void 保存済みマップ移動の案内はページ移動でも保存エラーと区別し再表示入口を保つ()
+        {
+            var panel=Panel("DoorNotice");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);int opens=0;
+            view.RenderDungeonSelection(Enumerable.Range(0,6).Select(i=>"試用"+i).ToArray(),Enumerable.Repeat(true,6).ToArray(),0,_=>{},()=>{},()=>{},false,null,()=>{},outsideExploration:()=>opens++,presentationNotice:"マップ移動は保存済みです。外界探索から再表示してください。");
+            string Message()=>view.GetComponentsInChildren<Text>(true).Single(t=>t.name=="DungeonSelectionHelp").text;
+            Button Control(string name)=>view.GetComponentsInChildren<Button>(true).Single(b=>b.name==name);
+            var notice=Message();Assert.IsFalse(string.IsNullOrWhiteSpace(notice));Assert.IsTrue(Control("OutsideExplorationEntry").interactable);Control("NextDungeonPage").onClick.Invoke();Assert.AreEqual(notice,Message());Control("PreviousDungeonPage").onClick.Invoke();Assert.AreEqual(notice,Message());Control("OutsideExplorationEntry").onClick.Invoke();Assert.AreEqual(1,opens);
+        }
+        private sealed class DoorBoundaryStore : Olca.Core.Domain.IClearReturnStore
+        {
+            public Olca.Core.Domain.ClearReturnProfile Profile=new Olca.Core.Domain.ClearReturnProfile();public Action Committed;public bool Fail;public int Attempts,Writes;
+            public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return Profile.Copy();}
+            public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){Attempts++;error=Fail?"fixture door save":null;if(Fail)return false;Assert.AreEqual(Profile.Revision,expected);Profile=value.Copy();Writes++;Committed?.Invoke();return true;}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+        public async Task 扉の実Controllerは再生成待機中の無効化旧Host読込失敗と保存再試行を分離する(int boundary)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=typeof(Olca.Application.Dungeon.DungeonBattleController);
+            var controllerObject=new GameObject("DoorBoundaryController");controllerObject.SetActive(false);var controller=controllerObject.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            var directory=Path.Combine(Path.GetTempPath(),"olca-door-boundary-"+Guid.NewGuid().ToString("N"));var waiting=new TaskCompletionSource<GameObject>();OutsideExplorationPresentationBinding binding=null,replacement=null;GameObject late=null;var provider=new UnityInputProvider();int creates=0;
+            void Set(string key,object value)=>type.GetField(key,flags).SetValue(controller,value);
+            object Get(string key)=>type.GetField(key,flags).GetValue(controller);
+            void Call(string key)=>type.GetMethod(key,flags).Invoke(controller,null);
+            Task Travel()=>((Cysharp.Threading.Tasks.UniTask)type.GetMethod("TravelOutsideMap",flags).Invoke(controller,null)).AsTask();
+            GameObject Create()=>Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources);
+            bool Eligible()=>(bool)type.GetProperty("OutsideHubEligible",flags).GetValue(controller);
+            var factory=new Olca.Application.Battle.SimpleCardFactory();
+            var cards=factory.CreateStarterDeck().GetAllCards().Concat(Enumerable.Repeat(factory.CollectionCards.Single(c=>c.Id=="sword"&&c.ExceedLevel==Olca.Core.Domain.ExceedLevel.Lv1),4)).Concat(Enumerable.Repeat(factory.CollectionCards.Single(c=>c.Id=="bomb"&&c.ExceedLevel==Olca.Core.Domain.ExceedLevel.Lv1),4)).Concat(Enumerable.Repeat(factory.CollectionCards.Single(c=>c.Id=="sword"&&c.ExceedLevel==Olca.Core.Domain.ExceedLevel.Lv2),2)).ToArray();
+            var store=new DoorBoundaryStore();store.Profile.CheckpointGeneration=Guid.NewGuid().ToString("N");store.Profile.Owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).Select(g=>new Olca.Core.Domain.OwnedCardCount{Id=g.First().Id,Name=g.First().Name,Rarity=g.First().Rarity,Level=g.First().ExceedLevel,Count=g.Count(),DefinitionHash=Olca.Core.Domain.CollectionDisplay.DefinitionHash(g.First())}).ToArray();var progress=new Olca.Core.Domain.ClearReturnSession(store);
+            var model=system.OutsideExploration;var owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var random=new Olca.Core.Logic.Battle.SeededBattleRandom(239);
+            try{
+                var session=system.BeginSession(controller,directory,Path.Combine(directory,"checkpoints"),Path.Combine(directory,"progress"));
+                var checkpoint=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(Olca.Core.Domain.DungeonConfig.CreateTestDungeon(8,30,2),new Olca.Core.Domain.Deck(cards.ToList()));
+                using(var decks=new Olca.Core.Domain.ExplorationDeckSession(session.Storage.ExplorationDecks(store.Profile.CheckpointGeneration))){Assert.IsTrue(decks.Save(null,"試用",cards.Select(c=>new Olca.Core.Domain.SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=Olca.Core.Domain.CollectionDisplay.DefinitionHash(c)}).ToArray(),store.Profile));var selected=decks.Snapshot.Decks.Single().Id;Assert.IsTrue(decks.Select(selected,store.Profile));model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));Assert.IsTrue(model.QueueSelectedDeck(selected,cards,owned,random,out _));}
+                for(int i=0;i<20;i++){model.Core.TickFrame(1);model.AdvanceDeckLocation();}
+                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.HomeDoorX});
+                Set("gameSystem",system);Set("gameSystemSession",session);Set("clearReturnSession",progress);Set("memoryCheckpoints",checkpoint);Set("inputProvider",provider);Set("initialHub",true);Set("clearReturnVisible",true);Set("outsideLandingRoute",true);
+                Set("panelFactory",new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null));var panels=new HostPanelBindings(controller,host.transform,resources,views);Set("hostPanels",panels);Call("RegisterReturnViews");Set("dungeonChoices",Activator.CreateInstance(type.GetField("dungeonChoices",flags).FieldType));
+                controllerObject.SetActive(true);
+                binding=new OutsideExplorationPresentationBinding(views,model,ct=>++creates==2?waiting.Task:boundary==2&&creates==3?Task.FromException<GameObject>(new IOException("fixture repeated view load")):Task.FromResult(Create()),()=>controller!=null&&controller.isActiveAndEnabled&&Eligible(),()=>{});Set("outsideExploration",binding);Assert.IsTrue((await binding.OpenAsync()).Succeeded);
+                var first=binding.View;var before=model.Cards.CaptureState(checkpoint.Definitions).Key();var actor=model.Player;store.Committed=()=>UnityEngine.Object.DestroyImmediate(first.gameObject);
+                if(boundary==3){store.Fail=true;await Travel();Assert.AreEqual(0,store.Writes);Assert.AreSame(first,binding.View);Assert.AreSame(actor,model.Player);Assert.AreEqual(before,model.Cards.CaptureState(checkpoint.Definitions).Key());Assert.IsTrue(model.IsPresented);Assert.IsNull(progress.Error);store.Fail=false;}
+                var travel=Travel();Assert.IsFalse(travel.IsCompleted);Assert.AreEqual(1,store.Writes);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId,model.Core.TrialMapId);Assert.IsTrue((bool)Get("outsideMapTravelBusy"));
+                if(boundary==0){controller.enabled=false;Call("OnDisable");late=Create();waiting.SetResult(late);await travel;Assert.IsFalse((bool)Get("outsideMapTravelBusy"));Assert.IsTrue((bool)Get("outsideMapTravelNeedsBind"));controller.enabled=true;
+                    // このfixtureにはcheckpoint status画面を登録しない。外界の実OnEnable復帰だけを実行する。
+                    Set("hostPanels",null);Call("OnEnable");Set("hostPanels",panels);for(int i=0;i<40&&!binding.IsOpen;i++)await Task.Yield();Assert.IsTrue(binding.IsOpen);Assert.IsFalse((bool)Get("outsideMapTravelNeedsBind"));Assert.IsTrue(binding.View.CanPlay);
+                }else if(boundary==1){controller.StopManagedHost();var next=system.BeginSession(new object(),directory,Path.Combine(directory,"checkpoints2"),Path.Combine(directory,"progress"));replacement=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Create()),()=>true,()=>{});Assert.IsTrue((await replacement.OpenAsync()).Succeeded);var current=replacement.View;var hand=model.Cards.CaptureState(checkpoint.Definitions).Key();late=Create();waiting.SetResult(late);await travel;Assert.AreSame(current,replacement.View);Assert.IsTrue(current.CanPlay);Assert.AreEqual(hand,model.Cards.CaptureState(checkpoint.Definitions).Key());Assert.IsFalse((bool)Get("outsideMapTravelBusy"));Assert.IsFalse((bool)Get("outsideMapTravelNeedsBind"));Assert.IsNull(Get("clearReturnError"));Assert.IsTrue(late==null);next.Dispose();
+                }else if(boundary==2){waiting.SetException(new IOException("fixture view load"));await travel;Assert.IsFalse((bool)Get("outsideMapTravelBusy"));Assert.IsTrue(Eligible(),"View読込失敗を保存エラーとして外界入口を永久遮断しない");var hub=(Olca.Presentation.Dungeon.ClearReturnView)Get("clearReturnView");var retry=hub.GetComponentsInChildren<Button>(true).Single(b=>b.name=="OutsideExplorationEntry");Assert.IsTrue(retry.gameObject.activeSelf);retry.onClick.Invoke();for(int i=0;i<40&&(bool)Get("outsideExplorationOpening");i++)await Task.Yield();Assert.IsTrue(Eligible(),"再読込の連続失敗でも再試行を保つ");Assert.IsFalse(binding.IsOpen);Assert.AreEqual(1,store.Writes);hub=(Olca.Presentation.Dungeon.ClearReturnView)Get("clearReturnView");retry=hub.GetComponentsInChildren<Button>(true).Single(b=>b.name=="OutsideExplorationEntry");retry.onClick.Invoke();for(int i=0;i<40&&!binding.IsOpen;i++)await Task.Yield();Assert.IsTrue(binding.IsOpen);Assert.IsTrue(binding.View.CanPlay);Assert.AreEqual(1,store.Writes);
+                }else{late=Create();waiting.SetResult(late);await travel;Assert.IsFalse((bool)Get("outsideMapTravelBusy"));Assert.IsTrue(binding.IsOpen);Assert.IsTrue(binding.View.CanPlay);Assert.AreEqual(2,store.Attempts);}
+                Assert.AreEqual(Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId,model.Core.TrialMapId);Assert.AreEqual(30,model.Cards.TotalCount);Assert.IsFalse(progress.HasPendingSave);
+            }finally{if(!waiting.Task.IsCompleted)waiting.TrySetCanceled();replacement?.Dispose();binding?.Dispose();controller.StopManagedHost();UnityEngine.Object.DestroyImmediate(controllerObject);if(late!=null)UnityEngine.Object.DestroyImmediate(late);provider.Dispose();if(Directory.Exists(directory))Directory.Delete(directory,true);}
+        }
+        [Test] public async Task 試用扉は最新の可否と表示世代で操作し覆い旧callbackと非表示を拒否する()
+        {
+            var model=system.OutsideExploration;int calls=0;bool ready=true;var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.HomeDoorX});
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigureMapDoor(()=>calls++,()=>ready,()=>"シヨウ マップ イドウ（カリ）\nEnter デ シラベル");view.Render();
+                var button=view.transform.Find("OutsideMapDoor").GetComponent<Button>();Assert.IsTrue(button.gameObject.activeInHierarchy);Assert.AreEqual(Navigation.Mode.None,button.navigation.mode);Assert.AreEqual(Selectable.Transition.ColorTint,button.transition);Assert.Greater(button.GetComponentInChildren<Text>().color.r,.9f);Assert.Less(button.colors.normalColor.r,.1f);Assert.IsFalse(view.transform.Find("OutsideMapDoorMarker").GetComponent<Image>().raycastTarget);
+                var old=button.onClick;EventSystem.current.SetSelectedGameObject(button.gameObject);old.Invoke();Assert.AreEqual(1,calls);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
+                ready=false;old.Invoke();Assert.AreEqual(1,calls);ready=true;view.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);
+                Assert.IsTrue((await binding.ReopenAfterMapTravelAsync()).Succeeded);old.Invoke();Assert.AreEqual(1,calls);view=binding.View;view.ConfigureMapDoor(()=>calls++,()=>ready,()=>"イドウ");view.Render();view.transform.Find("OutsideMapDoor").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(2,calls);
+                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("SetRecoveryMap",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint});view.Render();Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").gameObject.activeSelf);Assert.IsFalse(view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().enabled);
+                Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(2,calls);
+            }
         }
         [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
         {

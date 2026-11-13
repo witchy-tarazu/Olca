@@ -106,7 +106,7 @@ namespace Olca.Core.Logic.Integration
     public static class OutsideTrialRoute
     {
         // 通常導線の仮拠点と既存回復地点の横範囲。新規利用はCanEditDeckの接地が必要で、利用後の地点内ジャンプはSessionで保持する。
-        public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit||IsReloadZone(core));
+        public static bool IsDeckEditingZone(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&(Math.Abs(core.Position-core.Definition.Start)<=OutsideMovementDefinition.UnitsPerWorldUnit||Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit||IsReloadZone(core));
         public static bool CanEditDeck(OutsideExplorationCore core)=>IsDeckEditingZone(core)&&core.IsGrounded&&core.Height==0;
         public static OutsideTraversalProfile ResolveTraversal(OutsideRuntimeSaveData runtime)
         {
@@ -118,27 +118,36 @@ namespace Olca.Core.Logic.Integration
         }
         // 回復/入口/壁と接触範囲を重ねない、追加の試用リロード専用地点。
         public const long ReloadX=22*OutsideMovementDefinition.UnitsPerWorldUnit,ReloadRadius=OutsideMovementDefinition.UnitsPerWorldUnit/2;
-        public static bool IsReloadZone(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&Math.Abs(core.Position-ReloadX)<=ReloadRadius;
+        public static bool IsReloadZone(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&Math.Abs(core.Position-ReloadX)<=ReloadRadius;
         public const string RecoveryPointId="validation-recovery-left-v1";
         public const long RecoveryX=6*OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        // A/Bは既存地形を使った往復確認用。正式マップや解放条件ではない。
+        public const string AnnexMapId="trial-annex-v1",DoorHomePoint="trial-door-home-v1",DoorAnnexPoint="trial-door-annex-v1";
+        public const long HomeDoorX=1050000,AnnexDoorX=360000,DoorRadius=30000;
+        public static bool KnownMap(string id)=>id==null||id==AnnexMapId;
+        public static bool KnownRecovery(string point)=>point==null||point==RecoveryPointId||point==DoorHomePoint||point==DoorAnnexPoint;
+        public static string MapForRecovery(string point){if(!KnownRecovery(point))throw new ArgumentException("復帰先が未登録です");return point==DoorAnnexPoint?AnnexMapId:null;}
+        public static void ValidateMapRecovery(string map,string point){if(!KnownMap(map)||MapForRecovery(point)!=map)throw new ArgumentException("外界マップと復帰地点が一致しません");}
+        public static long DoorPosition(OutsideExplorationCore core)=>core.TrialMapId==AnnexMapId?AnnexDoorX:HomeDoorX;
+        public static bool CanUseDoor(OutsideExplorationCore core)=>core!=null&&KnownMap(core.TrialMapId)&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&!core.IsDashing&&Math.Abs(core.Position-DoorPosition(core))<=DoorRadius;
         public static long ResolveRecovery(OutsideExplorationCore core,string id)
-        {if(core==null||core.Definition.Id!="validation-landing-32"||id!=null&&id!=RecoveryPointId)throw new ArgumentException("復帰先の外界マップ/地点が未登録です");return id==null?core.Definition.Start:RecoveryX;}
+        {if(core==null||core.Definition.Id!="validation-landing-32"||!KnownRecovery(id))throw new ArgumentException("復帰先の外界マップ/地点が未登録です");return id==null?core.Definition.Start:id==DoorHomePoint?HomeDoorX:RecoveryX;}
         public const long PoisonTrialX=2*OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanTryPoison(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonTrialX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanTryPoison(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonTrialX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         // 既存の地点/接触半径と重ならない試用配置。正式な入手源ではない。
         public const string CardSupplyId="validation-exploration-card-chest-v1";
         public const long CardSupplyX=10*OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanClaimCardSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-CardSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
+        public static bool CanClaimCardSupply(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-CardSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
         public const long ShopX=8*OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanVisitShop(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-ShopX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
+        public static bool CanVisitShop(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-ShopX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
         public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long PoisonSupplyX=16*OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanClaimSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-SupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanClaimSupply(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-SupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceX=20*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceRadius=OutsideMovementDefinition.UnitsPerWorldUnit;
-        public static bool CanInspect(OutsideExplorationCore core)=>core!=null&&core.IsGrounded&&Math.Abs(core.Position-EntranceX)<=EntranceRadius;
+        public static bool CanInspect(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.IsGrounded&&Math.Abs(core.Position-EntranceX)<=EntranceRadius;
     }
     public enum OutsideAfterimagePose {Dash,JumpRise,JumpApex,JumpFall}
     public readonly struct OutsideAfterimage
