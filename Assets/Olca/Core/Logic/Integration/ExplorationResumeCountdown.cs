@@ -989,7 +989,7 @@ namespace Olca.Core.Logic.Integration
     /// <summary>仕様で調整を許された試用値。移動定義・旧Core hashとは独立。</summary>
     public static class OutsideFallRules
     {
-        public const long SafeHeight=390000; // 調整用6.5 world。平地の通常二段ジャンプ最大6.2を上回る。
+        public const long SafeHeight=600000; // 調整用10 world。通常二段ジャンプ最大6.2に加えて余裕を設ける。
         public const int PercentPerWorld=10, LandingFrames=12;
         public static int Damage(long distance,int maximumHp)
         {

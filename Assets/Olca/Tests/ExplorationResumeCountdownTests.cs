@@ -737,8 +737,8 @@ namespace Olca.Tests
             using(var s=Fall164(420000,true))using(var view=s.AttachPresentation()){
                 typeof(OutsideExplorationSession).GetField("fallPeak",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(s,20L*60000);
                 if(kick){FallTick164(s,1,true);Assert.IsTrue(s.Core.IsWallKicking);}else{FallTick164(s,1);FallTick164(s,1);Assert.IsTrue(s.Core.IsWallSliding);for(int n=0;n<40;n++)FallTick164(s,1);}
-                // 蹴り後は次frameにボタンを離す。新頂点から7.56worldの落下は10ダメージ。旧20world分は加算しない。
-                Land164(s);Assert.AreEqual(kick?90:100,s.Player.CurrentHp);Assert.AreEqual(kick,s.IsLandingLocked);
+                // 蹴り後は次frameにボタンを離す。新頂点7.56worldは安全高度10world以下。旧20world分は加算しない。
+                Land164(s);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsFalse(s.IsLandingLocked);
             }
         }
         [Test] public void 外界硬直は表示閉鎖中に進まず回復地点でのみ初期化する()
@@ -757,8 +757,9 @@ namespace Olca.Tests
         {
             using(var s=Fall164()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;if(mode==0)data.Fall.Peak=long.MaxValue;else data.Fall.LockedUntil=100;var old=s.Player;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,null,s.Core.TraversalProfile));Assert.AreSame(old,s.Player);}
         }
-        [TestCase(390000L,100,0)] [TestCase(395999L,100,0)] [TestCase(396000L,100,1)]
-        [TestCase(420000L,100,5)] [TestCase(450000L,101,10)] [TestCase(long.MaxValue,int.MaxValue,int.MaxValue)]
+        [TestCase(390000L,100,0)] [TestCase(450000L,100,0)] [TestCase(600000L,100,0)]
+        [TestCase(605999L,100,0)] [TestCase(606000L,100,1)]
+        [TestCase(630000L,100,5)] [TestCase(660000L,101,10)] [TestCase(long.MaxValue,int.MaxValue,int.MaxValue)]
         public void 外界落下は安全高度超過分を最大HP比で切り捨て最低一補正しない(long distance,int hp,int expected)
         {Assert.AreEqual(expected,OutsideFallRules.Damage(distance,hp));}
         [TestCase(1)] [TestCase(15)] [TestCase(29)] [TestCase(40)]
@@ -775,7 +776,7 @@ namespace Olca.Tests
                 }
             }
         }
-        private static OutsideExplorationSession Fall164(long height=420000,bool wall=false)
+        private static OutsideExplorationSession Fall164(long height=630000,bool wall=false)
         {
             var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(wall));var state=s.Core.CaptureState();if(wall)state.Position=24*60000-31200;state.Height=height;state.SupportId=null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;
         }
@@ -783,7 +784,7 @@ namespace Olca.Tests
         {s.Core.TickFrame(horizontal,jump,jump,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
         private static void Land164(OutsideExplorationSession s)
         {for(int i=0;i<200&&!s.Core.IsGrounded;i++)FallTick164(s);Assert.IsTrue(s.Core.IsGrounded);}
-        [TestCase(390000L,100,0)] [TestCase(395999L,100,0)] [TestCase(420000L,95,12)]
+        [TestCase(420000L,100,0)] [TestCase(600000L,100,0)] [TestCase(605999L,100,0)] [TestCase(630000L,95,12)]
         public void 外界落下は接地で一度だけ集計し正ダメージだけ十二フレーム拘束する(long height,int hp,int locked)
         {
             using(var s=Fall164(height))using(var view=s.AttachPresentation()){
