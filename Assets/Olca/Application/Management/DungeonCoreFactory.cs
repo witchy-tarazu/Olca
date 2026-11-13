@@ -179,11 +179,13 @@ namespace Olca.Application.Management
         public static bool CanRegister(Olca.Core.Logic.Customization.CustomizationProgress state)
             =>state==null||(state.BoardId==null||state.BoardId==BoardId)&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>x.Id==Unlock);
         // 既存の試用盤面/能力定義だけを明示登録。別の製品定義へ仮商品を混ぜない。
-        public static OutsideShopDefinition OutsideShop(Olca.Core.Logic.Customization.CustomizationCatalog catalog,Olca.Core.Logic.Customization.CustomizationAbilityCatalog abilities)
+        public static OutsideShopDefinition OutsideShop(Olca.Core.Logic.Customization.CustomizationCatalog catalog,Olca.Core.Logic.Customization.CustomizationAbilityCatalog abilities,IReadOnlyList<Card> cards=null,ClearReturnSettings settings=null)
             {
             if(catalog?.BoardId!=BoardId||abilities?.DefinitionId!=AbilityId||!catalog.Parts.ContainsKey(Part))return OutsideShopDefinition.TrialLimited;
             var offers=OutsideShopDefinition.TrialLimited.Offers.Concat(new[]{OutsideShopOffer.ForPart("fire-part-v1",Part,"ヒタイセイ+5（カリ）",4,1)}).ToList();
             if(catalog.Accessories.Contains(QualityAccessory))offers.Add(OutsideShopOffer.ForAccessory("quality-accessory-v1",QualityAccessory,"ホウシュウシツ+1（カリ）",5,1));
+            var fire=cards?.Where(c=>c!=null&&c.Id=="fire_sword"&&c.ExceedLevel==ExceedLevel.Normal).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
+            if(fire?.Length==1&&settings!=null){settings.Validate();offers.Add(OutsideShopOffer.ForCard("fire-sword-v1",fire[0],3,settings.Tokens(fire[0].Rarity,fire[0].ExceedLevel),4));}
             return new OutsideShopDefinition(OutsideShopDefinition.TrialLimited.Id,offers,catalog);
         }
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();
