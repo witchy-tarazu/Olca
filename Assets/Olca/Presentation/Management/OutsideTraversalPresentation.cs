@@ -95,6 +95,7 @@ namespace Olca.Presentation.Exploration
         }
         private Sprite TraversalSprite(OutsideExplorationCore core)
         {
+            if(presentation?.IsDashAttacking==true&&core.IsMoving)return traversalDashSprite; // 専用本体素材未登録のため既存ダッシュ姿勢を試用
             if(core.IsWallSliding){
                 if(wallSlideFrames==null)wallSlideFrames=new[]{traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_01"),traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_02")};
                 return wallSlideFrames[(int)(core.WallSlideFrame/6%wallSlideFrames.Length)];

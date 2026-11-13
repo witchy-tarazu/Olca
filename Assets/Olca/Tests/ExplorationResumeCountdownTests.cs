@@ -399,13 +399,13 @@ namespace Olca.Tests
                 round.SecondTrialTarget.Id="unknown";Assert.Throws<ArgumentException>(()=>round.Validate());round.SecondTrialTarget.Id="trial-kick-target-v1";round.SecondTrialTarget.Hp=121;Assert.Throws<ArgumentException>(()=>round.Validate());
             }
         }
-        [Test] public void ダッシュ中の後入力蹴りが拒否されても古いカード予約を復活させない()
+        [Test] public void ダッシュ中の後入力専用攻撃は古いカード予約を上書きし追加消費しない()
         {
-            using(var s=Sword161(startup:3,recovery:8))using(var l=s.AttachPresentation()){
+            using(var s=Sword161(startup:3,recovery:6))using(var l=s.AttachPresentation()){
                 s.EnableTrialNormalKick();s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsDashing);Assert.IsTrue(s.ProcessCardUseInput(true,false,false,1,0,out _));long rev=s.Cards.HandRevision;
                 for(int n=1;n<=9;n++){s.TickTraversal(0);s.ProcessCardUseInput(n==8,false,n==9,2,3,out _);if(n==8)Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);}
-                Assert.IsTrue(s.Core.IsDashing);Assert.IsFalse(s.NormalKick.IsActive);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);
-                for(int n=0;n<15;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(rev,s.Cards.HandRevision);Assert.IsFalse(s.NormalKick.IsActive);
+                Assert.IsTrue(s.Core.IsDashing);Assert.IsTrue(s.NormalKick.IsDashAttack);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);
+                for(int n=0;n<25;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(rev,s.Cards.HandRevision);Assert.IsFalse(s.NormalKick.IsActive);
             }
         }
         [TestCase(false)] [TestCase(true)] public void 蹴り中のカード予約は六frame境界と取消可能化で一枚だけ消費する(bool late)
