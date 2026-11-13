@@ -383,7 +383,10 @@ namespace Olca.Tests
 
         private static async Task Completed(Task task)
         {
-            Assert.AreSame(task, await Task.WhenAny(task, Task.Delay(3000)), "表示の終了待ちが完了しない");
+            // Editor主スレッド停止中のwall-clockタイマー勝利だけで失敗させない。
+            // 通常時の待機上限は従来どおり約3秒。再開ごとに実Taskの完了を確認する。
+            for(int poll=0;poll<150&&!task.IsCompleted;poll++)await Task.Delay(20);
+            Assert.IsTrue(task.IsCompleted, "表示の終了待ちが完了しない");
             await task;
         }
     }

@@ -847,6 +847,19 @@ namespace Olca.Tests.Application
             Rect Area(RectTransform t){var c=new Vector3[4];t.GetWorldCorners(c);return Rect.MinMaxRect(c[0].x,c[0].y,c[2].x,c[2].y);}var bounds=Area((RectTransform)root.transform);var message=Area(warning.rectTransform);var confirm=Area((RectTransform)view.ConfirmButton.transform);var cancel=Area((RectTransform)view.CancelButton.transform);foreach(var area in new[]{message,confirm,cancel}){Assert.GreaterOrEqual(area.xMin,bounds.xMin);Assert.LessOrEqual(area.xMax,bounds.xMax);Assert.GreaterOrEqual(area.yMin,bounds.yMin);Assert.LessOrEqual(area.yMax,bounds.yMax);}Assert.IsFalse(message.Overlaps(confirm));Assert.IsFalse(message.Overlaps(cancel));Assert.IsFalse(confirm.Overlaps(cancel));
             view.CancelButton.onClick.Invoke();Assert.IsFalse(view.IsOpen);
         }
+        [TestCase(false)][TestCase(true)]
+        public void 撤退確認は選択後の比率変更でも同じ操作を保ち枠と実割当案内を表示する(bool accept)
+        {
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var root=factory.Panel("RetreatFocus",true);var view=root.AddComponent<RetreatConfirmationDialog>();view.Initialize(factory);int effects=0;view.Confirmed+=()=>effects++;
+            view.Open(()=>new RetreatDialogState(true,false,false,false,false,false),null,null,null,()=>true);var selected=accept?view.ConfirmButton:view.CancelButton;EventSystem.current.SetSelectedGameObject(selected.gameObject);
+            foreach(var size in new[]{new Vector2(1920,1080),new Vector2(3840,2160),new Vector2(1440,1080),new Vector2(1920,1080)}){
+                ((RectTransform)host.transform).sizeDelta=size;Canvas.ForceUpdateCanvases();var dialog=root.GetComponentInChildren<ConfirmationDialog>(true);typeof(ReturnDialog).GetMethod("LateUpdate",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(dialog,null);view.RefreshLifetime();typeof(RetreatConfirmationDialog).GetMethod("LateUpdate",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);
+                Assert.AreSame(selected.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(0,effects);
+                Assert.IsTrue(selected.transform.Find("RetreatSelectionFrame").gameObject.activeSelf);Assert.IsFalse((accept?view.CancelButton:view.ConfirmButton).transform.Find("RetreatSelectionFrame").gameObject.activeSelf);
+                var guide=root.GetComponentsInChildren<Text>(true).Single(t=>t.name=="RetreatInputGuide");Assert.AreEqual(BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true),guide.text);Assert.IsFalse(guide.raycastTarget);
+            }
+            selected.onClick.Invoke();Assert.IsFalse(view.IsOpen);Assert.AreEqual(accept?1:0,effects);
+        }
         [Test] public void 撤退Dialogは最新可否で判断し取消後の旧確定は次世代へ作用しない()
         {
             var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var pause=Panel("legacy-pause");pause.SetActive(true);var origin=Button(pause,"RetreatButton");EventSystem.current.SetSelectedGameObject(origin.gameObject);

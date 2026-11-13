@@ -536,6 +536,13 @@ namespace Olca.Presentation.Management
     {
         private Func<RetreatDialogState> state;private GameplayPauseView pause;private GameObject legacyPause,legacyOrigin;private Func<bool> hostLive;private Font font;private Action<string> feedback;
         private ConfirmationDialog dialog;
+        private GameObject confirmFocus,cancelFocus;private Text inputGuide;
+        private void LateUpdate()
+        {
+            if(dialog==null||!dialog.IsOpen)return;var selected=EventSystem.current?.currentSelectedGameObject;bool visible=dialog.gameObject.activeInHierarchy;
+            confirmFocus?.SetActive(visible&&selected==dialog.ConfirmButton.gameObject&&dialog.ConfirmButton.IsInteractable());cancelFocus?.SetActive(visible&&selected==dialog.CancelButton.gameObject&&dialog.CancelButton.IsInteractable());
+            if(inputGuide!=null)inputGuide.text=BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true);
+        }
         public bool IsOpen=>dialog!=null&&dialog.IsOpen;
         public Button ConfirmButton=>dialog!=null?dialog.ConfirmButton:null;public Button CancelButton=>dialog!=null?dialog.CancelButton:null;
         public event Action Confirmed;
@@ -551,6 +558,9 @@ namespace Olca.Presentation.Management
             // 撤退確認だけを既存の水鏡面へ載せる。背面の戦闘文字は透過させない。
             var readingFace=popup.GetComponentsInChildren<Image>(true).Single(v=>v.name=="RetreatReadingFace");readingFace.color=new Color(.1f,.3f,.38f,1);readingFace.transform.SetAsFirstSibling();
             foreach(var label in popup.GetComponentsInChildren<Text>(true))if(label.name=="RetreatWarning"||label.name=="RetreatTitle")label.color=label.name=="RetreatTitle"?new Color(.58f,.94f,1,1):new Color(.88f,.97f,1,1);
+            // 既存の確認画面と同じ選択枠を使い、入力・判定は従来のままにする。
+            confirmFocus=BootstrapTitleView.AddFocusFrame(popup.ConfirmButton);cancelFocus=BootstrapTitleView.AddFocusFrame(popup.CancelButton);confirmFocus.name=cancelFocus.name="RetreatSelectionFrame";
+            var guide=new GameObject("RetreatInputGuide",typeof(RectTransform),typeof(Text));guide.transform.SetParent(readingFace.transform.parent,false);inputGuide=guide.GetComponent<Text>();inputGuide.font=font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;inputGuide.rectTransform.anchoredPosition=new Vector2(0,-220);inputGuide.rectTransform.sizeDelta=new Vector2(1400,80);
             dialog=popup;popup.CanConfirm=()=>this!=null&&state?.Invoke().CanConfirm==true;
             popup.Finished+=result=>{if(this!=null&&ReferenceEquals(dialog,popup))Finish(result);};
             if(!popup.Open(gameObject,manager,owner,()=>this!=null&&(hostLive?.Invoke()??false),false)){if(parent!=null)parent.RestoreAfterDialog();dialog=null;Clear();gameObject.SetActive(false);return;}
@@ -565,7 +575,7 @@ namespace Olca.Presentation.Management
             if(result!=DialogResult.ParentClosed&&(hostLive?.Invoke()??false)){if(pause!=null)pause.RestoreAfterDialog();else if(legacyPause!=null){legacyPause.SetActive(true);if(legacyOrigin!=null&&legacyOrigin.activeInHierarchy&&legacyOrigin.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(legacyOrigin);}}
             bool accepted=result==DialogResult.Confirmed;Clear();gameObject.SetActive(false);if(accepted)Confirmed?.Invoke();
         }
-        private void Clear(){state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
+        private void Clear(){confirmFocus=cancelFocus=null;inputGuide=null;state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
         private void OnDisable(){Abort();}
         private void OnDestroy(){Abort();Clear();dialog=null;font=null;feedback=null;Confirmed=null;}
     }
