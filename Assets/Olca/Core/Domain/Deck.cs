@@ -389,26 +389,41 @@ namespace Olca.Core.Domain
     }
     /// <summary>出撃保存と同時に固定する外界HP/持越し毒。未接続の時間状態は黙って落とさない。</summary>
     /// <summary>外界の最終保存個体。移動/手札の保存とは別。旧nullは従来の初期化を維持。</summary>
+    /// <summary>HP確定後の強靭蓄積と回復/のけぞり残時間。50unit=1論理frame、3unit=1ms。</summary>
+    public sealed class PlayerHitStateData
+    {
+        public int AccumulatedDamage;public long RecoveryUnits,StaggerUnits;
+        public PlayerHitStateData Copy()=>(PlayerHitStateData)MemberwiseClone();
+        public void Validate(int poise,int staggerFrames,int? recoveryFrames)
+        {
+            if(AccumulatedDamage<0||AccumulatedDamage>=Math.Max(1,poise)||RecoveryUnits<0||RecoveryUnits>0&&(!recoveryFrames.HasValue||RecoveryUnits>recoveryFrames.Value*50L)||StaggerUnits<0||StaggerUnits>staggerFrames*50L||AccumulatedDamage==0&&RecoveryUnits==0&&StaggerUnits==0)throw new ArgumentException("外界被弾状態と保存個体の定義が一致しません");
+        }
+    }
+    [System.Runtime.Serialization.DataContract]
     public sealed class OutsidePlayerSaveData
     {
-        public int Version=1;public string Id;public CheckpointPlayerDto Player;public int[] RawBaseElements;
-        public OutsidePlayerSaveData Copy()=>new OutsidePlayerSaveData{Version=Version,Id=Id,Player=Player?.Copy(),RawBaseElements=RawBaseElements?.ToArray()};
+        [System.Runtime.Serialization.DataMember] public int Version=1;
+        [System.Runtime.Serialization.DataMember] public string Id;
+        [System.Runtime.Serialization.DataMember] public CheckpointPlayerDto Player;
+        [System.Runtime.Serialization.DataMember] public int[] RawBaseElements;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public PlayerHitStateData HitState;
+        public OutsidePlayerSaveData Copy()=>new OutsidePlayerSaveData{Version=Version,Id=Id,Player=Player?.Copy(),RawBaseElements=RawBaseElements?.ToArray(),HitState=HitState?.Copy()};
         internal static void ValidatePlayer(CheckpointPlayerDto p)
         {
             if(p==null||p.MaxHp<=0||p.Hp<=0||p.Hp>p.MaxHp||p.AttackPower<0||p.Poise<0||p.StaggerFrames<0||p.PoiseRecoveryFrames<0||float.IsNaN(p.CustomSpeed)||float.IsInfinity(p.CustomSpeed)||p.CustomSpeed<=0||p.Poisons==null||p.Poisons.Any(v=>v==null)||p.Poisons.Select(v=>v.Kind).Distinct().Count()!=p.Poisons.Length)throw new ArgumentException("外界保存個体が不正です");
             p.ValidatePermanentAbilities();p.Style?.Restore();p.AttackGrowth?.Restore();foreach(var v in p.Poisons)v.Validate();
         }
-        public void Validate(){if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||RawBaseElements==null||RawBaseElements.Length!=4)throw new ArgumentException("外界保存形式が不正です");ValidatePlayer(Player);var compatible=new[]{Player.FireResistance,Player.WaterResistance,Player.WindResistance,Player.EarthResistance};for(int i=0;i<4;i++)if(compatible[i]!=Math.Min(100,RawBaseElements[i])||Player.CustomizationAbilities!=null&&new[]{Player.RawBaseFireResistance,Player.RawBaseWaterResistance,Player.RawBaseWindResistance,Player.RawBaseEarthResistance}[i]!=RawBaseElements[i])throw new ArgumentException("外界基礎耐性が一致しません");}
+        public void Validate(){if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||RawBaseElements==null||RawBaseElements.Length!=4)throw new ArgumentException("外界保存形式が不正です");ValidatePlayer(Player);HitState?.Validate(Player.Poise,Player.StaggerFrames,Player.PoiseRecoveryFrames);var compatible=new[]{Player.FireResistance,Player.WaterResistance,Player.WindResistance,Player.EarthResistance};for(int i=0;i<4;i++)if(compatible[i]!=Math.Min(100,RawBaseElements[i])||Player.CustomizationAbilities!=null&&new[]{Player.RawBaseFireResistance,Player.RawBaseWaterResistance,Player.RawBaseWindResistance,Player.RawBaseEarthResistance}[i]!=RawBaseElements[i])throw new ArgumentException("外界基礎耐性が一致しません");}
         private static OutsidePlayerSaveData Make(PlayerCharacter player,bool recovery)
         {
             if(player==null)throw new ArgumentException("外界個体が必要です");var p=Olca.Core.Logic.Dungeon.CheckpointPlayerMapper.Capture(player);
             if(recovery){p.Hp=p.MaxHp;p.Poisons=Array.Empty<PlayerPoisonDto>();p.TimedAilments=null;}
-            var v=new OutsidePlayerSaveData{Id=Guid.NewGuid().ToString("N"),Player=p,RawBaseElements=new[]{player.BaseElementResistances.Fire,player.BaseElementResistances.Water,player.BaseElementResistances.Wind,player.BaseElementResistances.Earth}};v.Validate();return v;
+            var v=new OutsidePlayerSaveData{Id=Guid.NewGuid().ToString("N"),Player=p,HitState=recovery?null:player.CaptureHitState(),RawBaseElements=new[]{player.BaseElementResistances.Fire,player.BaseElementResistances.Water,player.BaseElementResistances.Wind,player.BaseElementResistances.Earth}};v.Validate();return v;
         }
         public static OutsidePlayerSaveData Capture(PlayerCharacter player)=>Make(player,false);
         public static OutsidePlayerSaveData ForRecovery(PlayerCharacter player)=>Make(player,true);
         public string Key(){Validate();return Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>w.Write(Convert.ToBase64String(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(this))));}
-        public PlayerCharacter Restore(){Validate();var p=Olca.Core.Logic.Dungeon.CheckpointPlayerMapper.Restore(Player);p.SetElementResistances(ElementResistances.Restore(RawBaseElements[0],RawBaseElements[1],RawBaseElements[2],RawBaseElements[3],Player.AdditionalElementResistances));p.SetHp(Player.Hp);return p;}
+        public PlayerCharacter Restore(){Validate();var p=Olca.Core.Logic.Dungeon.CheckpointPlayerMapper.Restore(Player);p.SetElementResistances(ElementResistances.Restore(RawBaseElements[0],RawBaseElements[1],RawBaseElements[2],RawBaseElements[3],Player.AdditionalElementResistances));p.SetHp(Player.Hp);p.RestoreHitState(HitState);return p;}
     }
     /// <summary>初回クリアの確定境界。戦闘終了前の3状態捕捉を追加した意味ではない。</summary>
     public sealed class OutsideClearEndData
@@ -418,7 +433,7 @@ namespace Olca.Core.Domain
         public void Validate(){if(Version!=1||EntryLevel<1||Entry==null)throw new ArgumentException("初回帰還の捕捉が不正です");Entry.Validate();OutsidePlayerSaveData.ValidatePlayer(End);}
         public OutsidePlayerSaveData Build(string run,int level,ClearReturnSettings settings)
         {
-            Validate();settings.Validate();if(level<EntryLevel)throw new ArgumentException("帰還成長を巻き戻せません");var saved=Entry.Copy();saved.Id=run;var p=saved.Player;
+            Validate();settings.Validate();if(level<EntryLevel)throw new ArgumentException("帰還成長を巻き戻せません");var saved=Entry.Copy();saved.Id=run;saved.HitState=null;var p=saved.Player;
             // 最大HPの差ではなく、同じ固定成長定義の旧/新level差だけを加算する。
             int hpGrowth=checked(settings.MaxHp(level)-settings.MaxHp(EntryLevel));int attackGrowth=checked(settings.Attack(level)-settings.Attack(EntryLevel));
             p.MaxHp=checked(p.MaxHp+hpGrowth);p.AttackPower=checked(p.AttackPower+attackGrowth);p.Hp=Math.Min(p.MaxHp,checked(End.Hp+hpGrowth));
@@ -435,7 +450,7 @@ namespace Olca.Core.Domain
         public void Validate()
         {
             if(Version!=1||Player==null||Runtime==null||SourcePlayerKey==null||SourcePlayerKey.Length!=64||!SourcePlayerKey.All(Uri.IsHexDigit)||SourceRuntimeKey==null||SourceRuntimeKey.Length!=64||!SourceRuntimeKey.All(Uri.IsHexDigit))throw new ArgumentException("初回死亡復帰の保存が不正です");
-            Player.Validate();Runtime.Validate();var p=Player.Player;var c=Runtime.Core;if(Player.Id!=Runtime.Id||p.Hp!=p.MaxHp||p.Poisons.Length!=0||p.TimedAilments!=null||c.Height!=0||c.Velocity!=0||c.Moving||c.DashStartedAt!=-1||c.DashEndsAt!=-1||c.CooldownUntil!=-1||c.WallKickAt!=-1||c.Afterimages.Length!=0||c.GaugeUnits!=(long)c.GaugeMaximum*60)throw new ArgumentException("死亡復帰が全回復/停止位置と一致しません");
+            Player.Validate();Runtime.Validate();var p=Player.Player;var c=Runtime.Core;if(Player.HitState!=null||Player.Id!=Runtime.Id||p.Hp!=p.MaxHp||p.Poisons.Length!=0||p.TimedAilments!=null||c.Height!=0||c.Velocity!=0||c.Moving||c.DashStartedAt!=-1||c.DashEndsAt!=-1||c.CooldownUntil!=-1||c.WallKickAt!=-1||c.Afterimages.Length!=0||c.GaugeUnits!=(long)c.GaugeMaximum*60)throw new ArgumentException("死亡復帰が全回復/停止位置と一致しません");
             var geometry=Olca.Core.Logic.Integration.OutsideFirstRecoveryFactory.RecoveryCore(c);if(c.Position!=Olca.Core.Logic.Integration.OutsideTrialRoute.ResolveRecovery(geometry,PointId))throw new ArgumentException("死亡復帰の位置が復帰地点と一致しません");
             var cards=Runtime.Cards;if(cards!=null&&(cards.Selected!=0||cards.Drawn.Length!=3||cards.Returned.Length!=0||!cards.Hand.SequenceEqual(cards.Drawn)))throw new ArgumentException("死亡復帰の手札再装填が不正です");
         }
@@ -448,7 +463,7 @@ namespace Olca.Core.Domain
         public OutsideRetryReturnData Copy()=>new OutsideRetryReturnData{Version=Version,EntryLevel=EntryLevel,Entry=Entry?.Copy()};
         public void Validate(){if(Version!=1||EntryLevel<1||Entry==null)throw new ArgumentException("再挑戦の復帰個体が不正です");Entry.Validate();}
         public OutsidePlayerSaveData Build(string run,int level,ClearReturnSettings settings)
-        {Validate();return new OutsideClearEndData{EntryLevel=EntryLevel,Entry=Entry.Copy(),End=Entry.Player.Copy()}.Build(run,level,settings);}
+        {Validate();var saved=new OutsideClearEndData{EntryLevel=EntryLevel,Entry=Entry.Copy(),End=Entry.Player.Copy()}.Build(run,level,settings);saved.HitState=Entry.HitState?.Copy();saved.Validate();return saved;}
         public string Key(){Validate();return Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>w.Write(Convert.ToBase64String(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(this))));}
     }
     public sealed class OutsideDepartureVitals
@@ -1487,13 +1502,18 @@ namespace Olca.Core.Domain
         // 試用毒の明示操作。一般Retryへ失敗計画を残さず、現個体は成功後にだけ変更する。
         internal bool TryCommitOutsideTrialPoison(OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
             =>TryCommitOutsideActorSnapshot(null,actor,runtime,itemState,out error);
-        private bool TryCommitOutsideActorSnapshot(string consumedItem,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
+        internal bool TryCommitOutsideStyle(DepartureStyleDefinition style,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error)
+        {
+            if(style==null||!style.IsUnlocked(current)||actor==null||(actor.Player?.Style?.Id??DepartureStyleDefinition.BasicId)!=style.Id){error="神依と保存個体が一致しません";return false;}
+            return TryCommitOutsideActorSnapshot(null,actor,runtime,itemState,out error,style);
+        }
+        private bool TryCommitOutsideActorSnapshot(string consumedItem,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,OutsideItemStateData itemState,out string error,DepartureStyleDefinition selectedStyle=null)
         {
             error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索中の保存完了後に使用してください";return false;}
             try{
                 actor.Validate();runtime.Validate();if(actor.Id!=runtime.Id){error="使用個体と外界状態が一致しません";return false;}
                 var next=current.Copy();var inventory=(next.OutsideInventory??new OutsideInventoryData()).Copy();if(consumedItem!=null){var count=inventory.Items.SingleOrDefault(v=>v.Id==consumedItem);if(count==null||count.Count==0){error="所持数がありません";return false;}count.Count--;}
-                next.OutsideInventory=inventory;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=itemState.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                if(selectedStyle==null)next.OutsideInventory=inventory;else next.SelectedStyleId=selectedStyle.Id==DepartureStyleDefinition.BasicId?null:selectedStyle.Id;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=itemState.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
         }
@@ -1552,6 +1572,63 @@ namespace Olca.Core.Domain
                 int other=id==null?-1:Array.IndexOf(inventory.Shortcuts,id);string previous=inventory.Shortcuts[slot];inventory.Shortcuts[slot]=id;if(other>=0)inventory.Shortcuts[other]=previous;
                 var next=current.Copy();next.OutsideInventory=inventory;return Stage(next);
             }catch(Exception e) when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
+        }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>外界店の明示商品。消耗品とパーツの無制限・永続個数制限を扱う。</summary>
+    public sealed class OutsideShopOffer
+    {
+        public string Id{get;}public string ItemId{get;}public string Name{get;}public long Price{get;}public int Maximum{get;}public int PurchaseLimit{get;}public string PartId{get;}
+        public OutsideShopOffer(string id,string itemId,string name,long price,int maximum,int purchaseLimit=0){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(itemId)||string.IsNullOrWhiteSpace(name)||price<=0||maximum<=0||purchaseLimit<0)throw new ArgumentException("外界商品の定義が不正です");Id=id;ItemId=itemId;Name=name;Price=price;Maximum=maximum;PurchaseLimit=purchaseLimit;}
+        private OutsideShopOffer(string id,string partId,string name,long price,int purchaseLimit,bool part):this(id,partId,name,price,int.MaxValue,purchaseLimit){PartId=partId;ItemId=null;}
+        public static OutsideShopOffer ForPart(string id,string partId,string name,long price,int purchaseLimit=1)=>new OutsideShopOffer(id,partId,name,price,purchaseLimit,true);
+    }
+    public sealed class OutsideShopDefinition
+    {
+        public string Id{get;}public System.Collections.Generic.IReadOnlyList<OutsideShopOffer> Offers{get;}public Olca.Core.Logic.Customization.CustomizationCatalog EquipmentCatalog{get;}
+        public OutsideShopDefinition(string id,System.Collections.Generic.IEnumerable<OutsideShopOffer> offers,Olca.Core.Logic.Customization.CustomizationCatalog equipmentCatalog=null){var copy=offers?.ToArray();if(string.IsNullOrWhiteSpace(id)||copy==null||copy.Length==0||copy.Any(v=>v==null)||copy.Select(v=>v.Id).Distinct().Count()!=copy.Length)throw new ArgumentException("外界店の定義が不正です");if(copy.Any(v=>v.PartId!=null&&(equipmentCatalog==null||!equipmentCatalog.Parts.ContainsKey(v.PartId))))throw new ArgumentException("ショップのパーツ定義が未登録です");Id=id;Offers=Array.AsReadOnly(copy);EquipmentCatalog=equipmentCatalog;}
+        public const string TrialFundsId="validation-shop-funds-v1";public const long TrialFunds=10;
+        public static readonly OutsideShopDefinition Trial=new OutsideShopDefinition("validation-outside-shop-v1",new[]{new OutsideShopOffer("heal",OutsideRecoveryItemDefinition.Provisional.Id,"カイフクヤク（カリ）",2,99),new OutsideShopOffer("poison",OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99)});
+        // 新商品IDだけに永続2個制限を設定。旧無制限商品の取引を遡って数えない。
+        public static readonly OutsideShopDefinition TrialLimited=new OutsideShopDefinition("validation-outside-shop-v1",new[]{Trial.Offers[0],new OutsideShopOffer("poison-limited-v1",OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99,2)});
+    }
+    public sealed partial class ClearReturnSession
+    {
+        // 長さ付き識別子と終端で他店・他商品とのprefix衝突を防ぐ。履歴は削除しない。
+        private static string OutsideShopPurchasePrefix(OutsideShopDefinition shop,OutsideShopOffer offer)=>"outside-shop-purchase-v1/"+shop.Id.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)+":"+shop.Id+"/"+offer.Id.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)+":"+offer.Id+"/";
+        public int OutsideShopRemaining(OutsideShopDefinition shop,string offerId)
+        {
+            var offer=shop?.Offers.SingleOrDefault(v=>v.Id==offerId);if(offer==null)throw new ArgumentException("商品がありません");if(offer.PurchaseLimit==0)return int.MaxValue;
+            string prefix=OutsideShopPurchasePrefix(shop,offer);int used=(current?.OutsideInventory?.ClaimedSources??Array.Empty<string>()).Count(v=>v.StartsWith(prefix,StringComparison.Ordinal));return Math.Max(0,offer.PurchaseLimit-used);
+        }
+        public bool CanPurchaseOutsideShop(OutsideShopDefinition shop,string offerId,out string error)
+        {
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に購入してください";return false;}
+            var offer=shop?.Offers.SingleOrDefault(v=>v.Id==offerId);if(offer==null){error="商品がありません";return false;}
+            if(offer.PartId!=null){if(!ExchangeAvailable()){error="装備は拠点・保存完了後に購入してください";return false;}try{BindCustomization(current.Copy(),shop.EquipmentCatalog);}catch(ArgumentException e){error=e.Message;return false;}}
+            if(OutsideShopRemaining(shop,offerId)==0){error="ウリキレ / ホジュウなし";return false;}
+            var inventory=OutsideInventorySnapshot;int count=offer.PartId==null?(inventory.Items.SingleOrDefault(v=>v.Id==offer.ItemId)?.Count??0):(CustomizationSnapshot.OwnedParts.SingleOrDefault(v=>v.Id==offer.PartId)?.Count??0);
+            if(count>=offer.Maximum){error="ショジ ジョウゲン（"+offer.Maximum+"）です";return false;}
+            if(inventory.Currency<offer.Price){error="エイゾク ツウカ フソク / アト "+(offer.Price-inventory.Currency);return false;}return true;
+        }
+        public bool TryPurchaseOutsideShop(OutsideShopDefinition shop,string offerId,out string error)
+        {
+            if(!CanPurchaseOutsideShop(shop,offerId,out error))return false;
+            try{var offer=shop.Offers.Single(v=>v.Id==offerId);var inventory=OutsideInventorySnapshot;inventory.Currency=checked(inventory.Currency-offer.Price);Olca.Core.Logic.Customization.CustomizationProgress equipment=null;if(offer.PartId==null){var items=inventory.Items.ToList();var item=items.SingleOrDefault(v=>v.Id==offer.ItemId);if(item==null){item=new OutsideItemCount{Id=offer.ItemId};items.Add(item);}item.Count=checked(item.Count+1);inventory.Items=items.ToArray();}else{equipment=BindCustomization(current.Copy(),shop.EquipmentCatalog);var parts=equipment.OwnedParts.ToList();var part=parts.SingleOrDefault(v=>v.Id==offer.PartId);if(part==null){part=new Olca.Core.Logic.Customization.CustomizationItemCount{Id=offer.PartId};parts.Add(part);}part.Count=checked(part.Count+1);equipment.OwnedParts=parts.ToArray();}if(offer.PurchaseLimit>0){var claimed=inventory.ClaimedSources??Array.Empty<string>();string prefix=OutsideShopPurchasePrefix(shop,offer);int ordinal=1;while(claimed.Contains(prefix+ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture)))ordinal=checked(ordinal+1);inventory.ClaimedSources=claimed.Concat(new[]{prefix+ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture)}).ToArray();}return TryWriteOutsideShopInventory(inventory,out error,equipment);}catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        /// <summary>任意に押した時だけ、一度限りの試用資金を受け取る。自動配布しない。</summary>
+        public bool TryClaimOutsideShopTrialFunds(out string error)
+        {
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に受け取ってください";return false;}
+            try{var inventory=OutsideInventorySnapshot;var claimed=inventory.ClaimedSources??Array.Empty<string>();if(claimed.Contains(OutsideShopDefinition.TrialFundsId)){error="シヨウ シキンは ウケトリズミです";return false;}inventory.Currency=checked(inventory.Currency+OutsideShopDefinition.TrialFunds);inventory.ClaimedSources=claimed.Concat(new[]{OutsideShopDefinition.TrialFundsId}).ToArray();return TryWriteOutsideShopInventory(inventory,out error);}catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        private bool TryWriteOutsideShopInventory(OutsideInventoryData inventory,out string error,Olca.Core.Logic.Customization.CustomizationProgress equipment=null)
+        {
+            var next=current.Copy();next.OutsideInventory=inventory.Copy();if(equipment!=null)next.Customization=equipment.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+            writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;return true;}finally{writing=false;}
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using NUnit.Framework;
 using Olca.Core.Logic.Integration;
 
@@ -6,6 +7,141 @@ namespace Olca.Tests
 {
     public sealed class OutsideTraversalTests
     {
+        private static OutsideExplorationSession TrialKick212()
+        {var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.EnableTrialNormalKick();return s;}
+        [Test] public void 試用蹴り入力は地上移動向きを固定しジャンプで中断する()
+        {
+            using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
+                Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));long x=s.Core.Position;int facing=s.Core.Facing;
+                for(int n=0;n<10;n++){s.TickTraversal(-facing);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(facing,s.Core.Facing);Assert.IsTrue(s.IsAttacking);}
+                s.TickTraversal(0,true,true);Assert.IsFalse(s.Core.IsGrounded);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(1,s.NormalKick.NextGroundStage);
+            }
+        }
+        [TestCase(-1,OutsideKickKind.AirDown)] [TestCase(0,OutsideKickKind.AirForward)] [TestCase(1,OutsideKickKind.AirUp)]
+        public void 実Session空中蹴りは通常の横移動落下を保ち着地中断する(int vertical,OutsideKickKind kind)
+        {
+            using(var s=TrialKick212())using(var control=TrialKick212())using(var a=s.AttachPresentation())using(var b=control.AttachPresentation()){
+                s.TickTraversal(0,true,true);control.TickTraversal(0,true,true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _,vertical));Assert.AreEqual(kind,s.NormalKick.Kind);int facing=s.NormalKick.AttackFacing;
+                for(int n=0;n<200&&!s.Core.IsGrounded;n++){s.TickTraversal(-1,jumpHeld:n<8);control.TickTraversal(-1,jumpHeld:n<8);Assert.AreEqual(control.Core.Position,s.Core.Position);Assert.AreEqual(control.Core.Height,s.Core.Height);Assert.AreEqual(control.Core.VerticalVelocity,s.Core.VerticalVelocity);Assert.AreEqual(facing,s.NormalKick.AttackFacing);}
+                Assert.IsTrue(s.Core.IsGrounded);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(1,s.NormalKick.NextGroundStage);
+            }
+        }
+        [Test] public void 試用蹴りは同フレーム重複せず保持だけで次段へ進まず六フレーム予約で次段へ進む()
+        {
+            using(var s=TrialKick212())using(var l=s.AttachPresentation()){
+                Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,2,out _));long start=s.NormalKick.StartedAt;
+                for(int n=1;n<=10;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(start,s.NormalKick.StartedAt);
+                s.TickTraversal(0);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,3,out _));
+                for(int n=12;n<=15;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(OutsideKickKind.GroundSecond,s.NormalKick.Kind);Assert.AreEqual(15,s.NormalKick.StartedAt);
+            }
+        }
+        [Test] public void 蹴りの停止再表示は論理時計を進めず登録済み試用状態を退避する()
+        {
+            using(var s=TrialKick212()){
+                var l=s.AttachPresentation();s.ProcessCardUseInput(false,false,true,0,1,out _);long frame=s.Core.Frame;long x=s.Core.Position;l.Dispose();Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(1));Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);Assert.IsTrue(s.CaptureRuntime().NormalKick.Active);
+                using(var next=s.AttachPresentation()){Assert.IsTrue(s.NormalKick.IsActive);s.CancelAttackReservation();for(int n=0;n<39;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.IsFalse(s.NormalKick.HasProgress);next.Dispose();Assert.DoesNotThrow(()=>s.CaptureRuntime());}
+            }
+        }
+        [Test] public void ダッシュ中の未定蹴りと行動不能は発動せず回復後も古い予約を実行しない()
+        {
+            using(var s=TrialKick212())using(var l=s.AttachPresentation()){
+                s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsDashing);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.IsFalse(s.IsAttacking);
+                s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);s.Player.ApplyParalysis(3);s.TickTraversal(0);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,2,out _));Assert.IsFalse(s.IsAttacking);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,s.PendingAttack);
+            }
+        }
+        private static OutsideNormalKickSequence Kick(out Olca.Core.Logic.Battle.AttackInputReservation buffer,int startup=1,int active=2,int recovery=3,int? cancel=1)
+        {buffer=new Olca.Core.Logic.Battle.AttackInputReservation();var k=new OutsideNormalKickSequence(buffer);k.Configure(System.Linq.Enumerable.Repeat(new OutsideKickTiming(startup,active,recovery,cancel),6).ToArray());return k;}
+        [Test] public void 通常蹴りは時間六種が未登録なら発動せず製品の性能仮値を作らない()
+        {
+            var b=new Olca.Core.Logic.Battle.AttackInputReservation();var k=new OutsideNormalKickSequence(b);Assert.IsFalse(k.IsConfigured);Assert.IsFalse(k.TryRequest(0,true,1));Assert.IsFalse(k.IsActive);
+            Assert.Throws<ArgumentException>(()=>k.Configure(new OutsideKickTiming(1,1,1)));Assert.Throws<ArgumentOutOfRangeException>(()=>new OutsideKickTiming(0,0,0));Assert.Throws<ArgumentOutOfRangeException>(()=>new OutsideKickTiming(0,1,1,2));
+        }
+        [Test] public void 空振りの地上三段は有効な先行入力で最速取消し三段目は後隙終了まで待つ()
+        {
+            var k=Kick(out var b);Assert.IsTrue(k.TryRequest(0,true,1));Assert.IsFalse(k.TryRequest(1,true,1));Assert.IsFalse(k.TryExecuteReserved(3,true,1));Assert.IsTrue(k.TryExecuteReserved(4,true,1));Assert.AreEqual(OutsideKickKind.GroundSecond,k.Kind);
+            Assert.IsFalse(k.TryRequest(5,true,1));Assert.IsTrue(k.TryExecuteReserved(8,true,1));Assert.AreEqual(OutsideKickKind.GroundThird,k.Kind);
+            Assert.IsFalse(k.TryRequest(9,true,1));Assert.IsFalse(k.TryExecuteReserved(12,true,1));Assert.IsTrue(k.TryExecuteReserved(14,true,1));Assert.AreEqual(OutsideKickKind.GroundFirst,k.Kind);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,b.Kind);
+        }
+        [TestCase(1,false)] [TestCase(2,true)] public void 六フレーム目の開始で失効しそのフレームの取消可能化でも復活しない(int press,bool starts)
+        {
+            var k=Kick(out var b,2,1,6,4);k.TryRequest(0,true,1);Assert.IsFalse(k.TryRequest(press,true,1));Assert.IsFalse(k.TryExecuteReserved(6,true,1));Assert.AreEqual(starts,k.TryExecuteReserved(7,true,1));Assert.AreEqual(starts?OutsideKickKind.GroundSecond:OutsideKickKind.GroundFirst,k.Kind);
+        }
+        [TestCase(17,OutsideKickKind.GroundSecond)] [TestCase(18,OutsideKickKind.GroundFirst)] public void 後隙終了後十八フレームの継続猶予は期限端で一段目へ戻る(int after,OutsideKickKind expected)
+        {
+            var k=Kick(out _);k.TryRequest(0,true,1);k.Observe(6,true,1);Assert.IsFalse(k.IsActive);Assert.AreEqual(24,k.ComboExpiresAt);Assert.IsTrue(k.TryRequest(6+after,true,1));Assert.AreEqual(expected,k.Kind);
+        }
+        [Test] public void 継続猶予は期限切れ予約を復活させず押し直しだけ予約期限を更新する()
+        {
+            var a=Kick(out _,2,1,5,null);a.TryRequest(0,true,1);a.TryRequest(1,true,1);Assert.IsFalse(a.TryExecuteReserved(8,true,1));Assert.AreEqual(2,a.NextGroundStage);Assert.IsTrue(a.TryRequest(9,true,1));Assert.AreEqual(OutsideKickKind.GroundSecond,a.Kind);
+            var b=Kick(out _,2,1,5,null);b.TryRequest(0,true,1);b.TryRequest(1,true,1);b.TryRequest(5,true,1);Assert.IsTrue(b.TryExecuteReserved(8,true,1));Assert.AreEqual(OutsideKickKind.GroundSecond,b.Kind);
+        }
+        [Test] public void 時間観測や保持だけでは攻撃せず同一フレームの重複要求も二重実行しない()
+        {
+            var k=Kick(out var b);k.TryRequest(0,true,1);for(int i=0;i<20;i++){k.Observe(0,true,1);Assert.IsFalse(k.TryRequest(0,true,1));}Assert.AreEqual(0,k.StartedAt);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,b.Kind);
+            k.Observe(100,true,1);Assert.IsFalse(k.IsActive);Assert.AreEqual(1,k.NextGroundStage);Assert.Throws<ArgumentOutOfRangeException>(()=>k.Observe(99,true,1));
+        }
+        [Test] public void 各段の有効期間だけ範囲内の各敵を一度ずつ受け付ける()
+        {
+            var k=Kick(out _);k.TryRequest(0,true,1);Assert.IsFalse(k.TryMarkHit(7));k.Observe(1,true,1);Assert.IsTrue(k.TryMarkHit(7));Assert.IsTrue(k.TryMarkHit(8));Assert.IsFalse(k.TryMarkHit(7));k.Observe(2,true,1);Assert.IsFalse(k.TryMarkHit(7));Assert.IsTrue(k.TryMarkHit(9));k.Observe(3,true,1);Assert.IsFalse(k.TryMarkHit(10));
+            k.TryRequest(4,true,1);k.Observe(5,true,1);Assert.IsTrue(k.TryMarkHit(7));Assert.IsTrue(k.TryMarkHit(8));Assert.IsFalse(k.TryMarkHit(8));k.TryRequest(8,true,1);k.Observe(9,true,1);Assert.IsTrue(k.TryMarkHit(7));
+        }
+        [Test] public void 地上は反対方向でも移動と向きを固定し空中では横移動と通常落下を継続する()
+        {
+            var ground=Kick(out _);ground.TryRequest(0,true,1);Assert.AreEqual(0,ground.ResolveHorizontal(-1));Assert.AreEqual(1,ground.ResolveFacing(-1));Assert.AreEqual(1,ground.AttackFacing);
+            var core=Core(OutsideTraversalProfile.ValidationDoubleJump);core.TickFrame(0,true,true);var air=Kick(out _);air.TryRequest(0,false,1,-1);long x=core.Position;long velocity=core.VerticalVelocity;core.TickFrame(air.ResolveHorizontal(-1),jumpHeld:true);Assert.Less(core.Position,x);Assert.Less(core.VerticalVelocity,velocity);Assert.AreEqual(-1,air.ResolveFacing(-1));Assert.AreEqual(1,air.AttackFacing);
+            var plain=Core(OutsideTraversalProfile.ValidationDoubleJump);plain.TickFrame(0,true,true);plain.TickFrame(-1,jumpHeld:true);Assert.AreEqual(plain.Height,core.Height);Assert.AreEqual(plain.VerticalVelocity,core.VerticalVelocity);
+        }
+        [TestCase(-1,OutsideKickKind.AirDown)] [TestCase(0,OutsideKickKind.AirForward)] [TestCase(1,OutsideKickKind.AirUp)] public void 空中の三方向は別攻撃で各敵一回かつ着地で中断する(int vertical,OutsideKickKind kind)
+        {
+            var k=Kick(out _);k.TryRequest(0,false,-1,vertical);Assert.AreEqual(kind,k.Kind);Assert.IsFalse(k.LocksGroundMotion);k.Observe(1,false,-1);Assert.IsTrue(k.TryMarkHit(1));Assert.IsTrue(k.TryMarkHit(2));Assert.IsFalse(k.TryMarkHit(1));k.Observe(2,true,-1);Assert.IsFalse(k.IsActive);Assert.IsFalse(k.TryMarkHit(2));Assert.AreEqual(1,k.NextGroundStage);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] public void ジャンプと被弾とカード使用は地上コンボと固有攻撃予約をリセットする(int reason)
+        {
+            var k=Kick(out var b);k.TryRequest(0,true,1);k.TryRequest(1,true,1);if(reason==0)k.Observe(2,false,1);else if(reason==1)k.Observe(2,true,1,false);else k.CardStarted();Assert.IsFalse(k.IsActive);Assert.AreEqual(1,k.NextGroundStage);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,b.Kind);
+        }
+        [Test] public void 共通一枠はカード上書きを尊重し中断でカード予約まで勝手に破棄しない()
+        {
+            var k=Kick(out var b);k.TryRequest(0,true,1);k.TryRequest(1,true,1);b.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,2);Assert.IsFalse(k.TryExecuteReserved(4,true,1));Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.Card,b.Kind);k.CardStarted();Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.Card,b.Kind);
+        }
+        [TestCase(false,false)] [TestCase(true,true)] public void 同フレームの時刻前後不明はカード優先で後入力と確定できた場合だけ上書きする(bool knownLater,bool starts)
+        {
+            var k=Kick(out var b);b.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,0);Assert.AreEqual(starts,k.TryRequest(0,true,1,knownLaterThanCard:knownLater));Assert.AreEqual(starts?Olca.Core.Logic.Battle.AttackReservationKind.None:Olca.Core.Logic.Battle.AttackReservationKind.Card,b.Kind);
+        }
+        [Test] public void 前フレームのカード予約より新しい蹴りの即時開始は古い予約を残さない()
+        {
+            var k=Kick(out var b);b.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,0);Assert.IsTrue(k.TryRequest(1,true,1));Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,b.Kind);Assert.AreEqual(OutsideKickKind.GroundFirst,k.Kind);
+        }
+        [Test] public void 向きと離地着地で予約を取り消しダッシュ中の未定攻撃を仮実装しない()
+        {
+            var k=Kick(out var b);k.TryRequest(0,false,1);k.TryRequest(1,false,1);k.Observe(2,false,-1);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,b.Kind);Assert.AreEqual(1,k.AttackFacing);k.Interrupt();Assert.IsFalse(k.TryRequest(3,true,-1,dashing:true));Assert.IsFalse(k.IsActive);
+        }
+        [Test] public void 蹴り状態はViewleaseを越えて同じSessionに残り論理frameだけで進み終了時に解放する()
+        {
+            var s=new OutsideExplorationSession();try{
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var k=s.NormalKick;k.Configure(System.Linq.Enumerable.Repeat(new OutsideKickTiming(1,2,3),6).ToArray());var lease=s.AttachPresentation();Assert.IsTrue(k.TryRequest(s.Core.Frame,true,s.Core.Facing));s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsFalse(k.TryRequest(s.Core.Frame,true,s.Core.Facing));Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.Basic,s.PendingAttack);lease.Dispose();Assert.IsTrue(k.IsActive);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,s.PendingAttack);
+                using(var next=s.AttachPresentation()){Assert.AreSame(k,s.NormalKick);Assert.AreEqual(0,k.StartedAt);for(int n=0;n<5;n++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}Assert.IsFalse(k.IsActive);Assert.AreEqual(2,k.NextGroundStage);}
+                s.Dispose();Assert.IsFalse(k.HasProgress);Assert.Throws<ObjectDisposedException>(()=>{var unused=s.NormalKick;});
+            }finally{s.Dispose();}
+        }
+        [TestCase(false)] [TestCase(true)] public void 回復成功は蹴りの実行中と継続猶予を消して旧形式で退避できる(bool grace)
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var k=s.NormalKick;k.Configure(System.Linq.Enumerable.Repeat(new OutsideKickTiming(1,2,3),6).ToArray());using(var lease=s.AttachPresentation()){k.TryRequest(s.Core.Frame,true,s.Core.Facing);if(grace)for(int n=0;n<6;n++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}}Assert.IsTrue(k.HasProgress);Assert.AreEqual(!grace,k.IsActive);s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.AreSame(k,s.NormalKick);Assert.IsTrue(k.IsConfigured);Assert.IsFalse(k.HasProgress);Assert.AreEqual(1,k.NextGroundStage);Assert.DoesNotThrow(()=>s.CaptureRuntime());
+            }
+        }
+        [Test] public void 不明な回復先では既存の蹴り進行も先に消さない()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var k=s.NormalKick;k.Configure(System.Linq.Enumerable.Repeat(new OutsideKickTiming(1,2,3),6).ToArray());k.TryRequest(s.Core.Frame,true,s.Core.Facing);Assert.Throws<ArgumentException>(()=>s.RecoverOutside("unknown-kick-recovery"));Assert.IsTrue(k.IsActive);Assert.IsTrue(k.HasProgress);
+            }
+        }
+        [Test] public void Session所有の蹴りは製品未登録のまま旧保存を変えず進行中の未接続保存は拒否する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                Assert.IsFalse(s.NormalKick.IsConfigured);var before=s.Core.CaptureState();string key=s.Core.StateDefinitionKey();Assert.IsFalse(s.NormalKick.TryRequest(s.Core.Frame,true,1));Assert.AreEqual(key,s.Core.StateDefinitionKey());
+                s.NormalKick.Configure(System.Linq.Enumerable.Repeat(new OutsideKickTiming(1,2,3),6).ToArray());s.NormalKick.TryRequest(1,true,1);Assert.Throws<ArgumentException>(()=>s.CaptureRuntime());s.NormalKick.Reset();Assert.IsFalse(s.NormalKick.HasProgress);Assert.AreEqual(before.Position,s.Core.Position);Assert.AreEqual(before.Frame,s.Core.Frame);
+            }
+        }
         [Test] public void 二段ジャンプは空中の押し直し一回だけで保持や三回目を拒否し接地で回復する()
         {
             var c=Core(OutsideTraversalProfile.ValidationDoubleJump);c.TickFrame(0,true,true);for(int n=0;n<8;n++)c.TickFrame(0,jumpHeld:true);Assert.IsFalse(c.AirJumpUsed);
@@ -201,7 +337,7 @@ namespace Olca.Tests
             using(var s=new OutsideExplorationSession()){
                 int made=0;Assert.IsTrue(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(100);}));var actor=s.Player;actor.SetHp(46);actor.ApplyParalysis(3);
                 using(var first=s.AttachPresentation()){Assert.AreSame(actor,first.Player);s.Core.TickFrame(0);Assert.IsTrue(s.AdvancePlayerFrame());Assert.IsFalse(s.CanPerformAttack);Assert.AreEqual(2,actor.ParalysisRemainingFrames);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(2,actor.ParalysisRemainingFrames);}
-                Assert.IsFalse(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(200);}));using(var second=s.AttachPresentation()){Assert.AreSame(actor,second.Player);Assert.AreEqual(46,second.Player.CurrentHp);Assert.AreEqual(2,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(1,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.CanPerformAttack);}
+                Assert.IsFalse(s.TryInitializePlayer(()=>{made++;return new Olca.Core.Domain.PlayerCharacter(200);}));using(var second=s.AttachPresentation()){Assert.AreSame(actor,second.Player);Assert.AreEqual(46,second.Player.CurrentHp);Assert.AreEqual(2,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.AreEqual(1,actor.ParalysisRemainingFrames);s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsFalse(s.CanPerformAttack,"麻痺最終frameは移動と同様に禁止");s.Core.TickFrame(0);s.AdvancePlayerFrame();Assert.IsTrue(s.CanPerformAttack);}
                 Assert.AreEqual(1,made);Assert.AreEqual(46,actor.CurrentHp);
             }
         }

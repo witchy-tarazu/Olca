@@ -61,6 +61,88 @@ namespace Olca.Tests.Application
             Register("screen",ct=>Task.FromResult(screen),(go,ctx)=>{context=ctx;go.SetActive(true);});
             Assert.IsTrue((await views.ShowAsync("screen")).Succeeded);return(context,popup,confirm,cancel);
         }
+        [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
+        {
+            var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigureShop(()=>calls++,()=>true,()=>"シヨウ ショップ（カリ）\nEnter デ ハイル");view.ConfigureRecovery(()=>{},()=>false,()=>"カイフク");view.ConfigureCardSupply(()=>{},()=>false,()=>"カード");view.Render();var shop=view.GetComponentsInChildren<Button>(true).Single(v=>v.name=="OutsideShopPoint");Rect Area(RectTransform rect){var corners=new Vector3[4];rect.GetWorldCorners(corners);return Rect.MinMaxRect(corners[0].x,corners[0].y,corners[2].x,corners[2].y);}Assert.IsTrue(shop.gameObject.activeInHierarchy);Assert.IsFalse(Area((RectTransform)shop.transform).Overlaps(Area(view.transform.Find("OutsideMapName").GetComponent<RectTransform>())));for(int i=0;i<180;i++)model.Core.TickFrame(0);view.Render();foreach(var name in new[]{"OutsideRecoveryPoint","OutsideCardSupplyChest"})Assert.IsFalse(Area((RectTransform)shop.transform).Overlaps(Area(view.transform.Find(name).GetComponent<RectTransform>())));var old=shop.onClick;old.Invoke();Assert.AreEqual(1,calls);view.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);binding.ReturnToHub();old.Invoke();Assert.AreEqual(1,calls);
+            }
+        }
+
+        [Test] public async Task 外界店の会話B保持は即取消せず解放後の新Bだけで一度閉じる()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var store=new Shop233Store();var session=new Olca.Core.Domain.ClearReturnSession(store);OutsideShopView shop=null;int closed=0;
+            void State(bool held){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,held?new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East):new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();if(shop!=null)typeof(OutsideShopView).GetMethod("Update",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(shop,null);}
+            try{State(true);Register("shop233",ct=>{var panel=Panel("Shop233Pad");shop=panel.AddComponent<OutsideShopView>();shop.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),session,Olca.Core.Domain.OutsideShopDefinition.Trial,()=>{closed++;views.CloseCurrent();});return Task.FromResult(panel);},(panel,context)=>shop.Open(context));Assert.IsTrue((await views.ShowAsync("shop233")).Succeeded);var old=shop.GetComponentsInChildren<Button>().Single(v=>v.name=="OutsideShopBack").onClick;State(true);Assert.AreEqual(0,closed);Assert.AreEqual("shop233",views.CurrentKey);State(false);State(true);Assert.AreEqual(1,closed);Assert.IsNull(views.CurrentKey);old.Invoke();Assert.AreEqual(1,closed);Assert.AreEqual(0,store.Writes);
+            }finally{UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+        private sealed class Shop233Store:Olca.Core.Domain.IClearReturnStore
+        {
+            public int Writes;public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return new Olca.Core.Domain.ClearReturnProfile();}public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){Writes++;error="No purchase expected";return false;}
+        }
+
+        [Test] public async Task 外界店はController無効化で現Viewと操作世代を閉じる()
+        {
+            var controllerRoot=new GameObject("Shop233Controller");controllerRoot.SetActive(false);var controller=controllerRoot.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var type=controller.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            try{Register("outside-trial-shop",ct=>Task.FromResult(Panel("Shop")));Assert.IsTrue((await views.ShowAsync("outside-trial-shop")).Succeeded);var prior=views.CurrentKey;Assert.AreEqual("outside-trial-shop",prior);type.GetField("gameSystem",flags).SetValue(controller,system);type.GetField("outsideShopActive",flags).SetValue(controller,true);type.GetField("outsideShopOpening",flags).SetValue(controller,true);type.GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsNull(views.CurrentKey);Assert.IsFalse((bool)type.GetField("outsideShopActive",flags).GetValue(controller));Assert.IsFalse((bool)type.GetField("outsideShopOpening",flags).GetValue(controller));Assert.Greater((long)type.GetField("outsideShopEpoch",flags).GetValue(controller),0);
+            }finally{type.GetField("gameSystem",flags).SetValue(controller,null);controller.StopManagedHost();UnityEngine.Object.DestroyImmediate(controllerRoot);}
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void 外界Pauseの行列ナビは同じ軸の有効項目だけを選び端で止まり他画面へ残らない(bool skipAudio)
+        {
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var panel=factory.Pause();panel.SetActive(true);var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);view.SetOutsidePresentation(true);view.RestrictControls(new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"});var buttons=panel.GetComponentsInChildren<Button>(true).ToDictionary(b=>b.name);if(skipAudio)buttons["AudioSettingsButton"].interactable=false;
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var scope=new MenuPadScope(()=>true);int actions=0,cancels=0;foreach(var b in buttons.Values)b.onClick.AddListener(()=>actions++);
+            void State(params UnityEngine.InputSystem.LowLevel.GamepadButton[] keys){var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in keys)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();scope.Tick();}
+            void Move(UnityEngine.InputSystem.LowLevel.GamepadButton key,string expected){State();State(key);Assert.AreEqual(expected,scope.FocusName);}
+            try{
+                scope.NavigationResolver=view.FindNavigation;scope.Bind(panel.transform,"ResumeButton",()=>cancels++);scope.Tick();var resume=buttons["ResumeButton"].navigation;Assert.AreSame(buttons["OutsideItemsButton"],resume.selectOnDown);Assert.IsNull(resume.selectOnLeft);Assert.IsNull(resume.selectOnUp);Assert.AreSame(buttons["KeyboardSettingsButton"],resume.selectOnRight);
+                Assert.AreSame(buttons[skipAudio?"TransformationAnimationSetting":"AudioSettingsButton"],buttons["KeyboardSettingsButton"].navigation.selectOnDown);Assert.AreSame(buttons["DialogueTextSpeedButton"],buttons["TransformationAnimationSetting"].navigation.selectOnRight);Assert.AreSame(buttons["ResumeButton"],buttons["OutsideItemsButton"].navigation.selectOnUp);Assert.AreSame(buttons["OutsideEquipmentButton"],buttons["OutsideItemsButton"].navigation.selectOnDown);Assert.AreSame(buttons["OutsideKamuiButton"],buttons["OutsideEquipmentButton"].navigation.selectOnDown);Assert.IsNull(buttons["OutsideKamuiButton"].navigation.selectOnDown);Assert.IsNull(buttons["OutsideItemsButton"].navigation.selectOnLeft);Assert.AreSame(buttons[skipAudio?"VibrationSetting":"AudioSettingsButton"],buttons["OutsideItemsButton"].navigation.selectOnRight);
+                Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"OutsideItemsButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"OutsideEquipmentButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"OutsideKamuiButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"OutsideKamuiButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp,"OutsideEquipmentButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp,"OutsideItemsButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp,"ResumeButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,"KeyboardSettingsButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,"GamepadSettingsButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,"GamepadSettingsButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"VibrationSetting");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"DialogueTextSpeedButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft,"TransformationAnimationSetting");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadRight,"DialogueTextSpeedButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadDown,"DialogueTextSpeedButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft,"TransformationAnimationSetting");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp,skipAudio?"KeyboardSettingsButton":"AudioSettingsButton");if(!skipAudio)Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp,"KeyboardSettingsButton");Move(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadLeft,"ResumeButton");Assert.AreEqual(0,actions);State();State(UnityEngine.InputSystem.LowLevel.GamepadButton.East);Assert.AreEqual(1,cancels);
+                buttons["AudioSettingsButton"].interactable=true;buttons["VibrationSetting"].gameObject.SetActive(false);scope.Tick();Assert.AreSame(buttons["DialogueTextSpeedButton"],buttons["GamepadSettingsButton"].navigation.selectOnDown,"非表示行も同じ列だけで飛ばす");
+                scope.Suspend();Assert.IsNull(scope.NavigationResolver);var other=Panel("OtherMenu");other.SetActive(true);var a=Button(other,"OtherA");var b2=Button(other,"OtherB");((RectTransform)a.transform).anchoredPosition=new Vector2(0,100);((RectTransform)b2.transform).anchoredPosition=new Vector2(100,0);scope.Bind(other.transform,"OtherA",()=>{});scope.Tick();Assert.AreSame(b2,a.navigation.selectOnDown,"他画面は従来の距離ナビのまま");
+            }finally{scope.Dispose();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
+        }
+
+        [Test] public async Task ポーズ神依ホイールは仮想パッドの保持決定を再発動せず失敗後に再確定して元項目へ戻る()
+        {
+            var screen=await Screen();screen.Panel.SetActive(true);var panel=new GameObject("MenuWheel",typeof(RectTransform));panel.transform.SetParent(host.transform,false);var wheel=panel.AddComponent<OutsideKamuiWheelDialog>();wheel.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();int calls=0;bool success=false,paused=false;
+            void State(params UnityEngine.InputSystem.LowLevel.GamepadButton[] keys){frame++;var state=new UnityEngine.InputSystem.LowLevel.GamepadState();foreach(var key in keys)state=state.WithButton(key);UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,state);UnityEngine.InputSystem.InputSystem.Update();dialogs.Tick();wheel.RefreshMenu();}
+            try{
+                State(UnityEngine.InputSystem.LowLevel.GamepadButton.South);EventSystem.current.SetSelectedGameObject(screen.Confirm.gameObject);wheel.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{Assert.AreEqual(1,i);calls++;return success;});Assert.IsTrue(wheel.OpenMenu(dialogs,screen.Context,()=>screen.Context.IsCurrent,()=>true,v=>paused=v,"A: Confirm / B: Back"));State(UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(0,calls);Assert.IsTrue(paused);State();State(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp);Assert.AreEqual("KamuiWheelAlternate",EventSystem.current.currentSelectedGameObject.name);State();State(UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(1,calls);Assert.IsTrue(wheel.IsOpen);Assert.IsTrue(paused);
+                success=true;State();State(UnityEngine.InputSystem.LowLevel.GamepadButton.DpadUp);State();State(UnityEngine.InputSystem.LowLevel.GamepadButton.South);Assert.AreEqual(2,calls);Assert.IsFalse(wheel.IsOpen);Assert.IsFalse(paused);Assert.AreSame(screen.Confirm.gameObject,EventSystem.current.currentSelectedGameObject);Assert.IsTrue(dialogs.Blocks(screen.Context));
+            }finally{wheel.Abort();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.Object.DestroyImmediate(panel);}
+        }
+
+        [Test] public void 外界Pauseの分類配置はダンジョン側の表示と矩形を復元する()
+        {
+            var panel=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Pause();panel.SetActive(true);var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);
+            var item=(RectTransform)panel.transform.Find("OutsideItemsButton");var before=item.anchoredPosition;var size=item.sizeDelta;var heading=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="PausePlayHeading");var title=heading.text;
+            view.SetOutsidePresentation(true);Assert.AreEqual(new Vector2(-480,0),item.anchoredPosition);Assert.AreEqual(new Vector2(360,88),item.sizeDelta);Assert.AreEqual("タンサク",heading.text);
+            foreach(var name in new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"})Assert.IsFalse(panel.transform.Find(name).gameObject.activeSelf);
+            view.SetOutsidePresentation(true);view.SetOutsidePresentation(false);Assert.AreEqual(before,item.anchoredPosition);Assert.AreEqual(size,item.sizeDelta);Assert.AreEqual(title,heading.text);Assert.IsFalse(panel.transform.Find("OutsideEquipmentButton").gameObject.activeSelf);Assert.IsFalse(panel.transform.Find("OutsideKamuiButton").gameObject.activeSelf);
+            foreach(var name in new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"})Assert.IsTrue(panel.transform.Find(name).gameObject.activeSelf);
+        }
+
+        [Test] public void 外界Pauseの選択枠は有効な現在項目だけで表示し他場面では消える()
+        {
+            var panel=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Pause();panel.SetActive(true);
+            var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);var buttons=panel.GetComponentsInChildren<Button>(true).ToDictionary(b=>b.name);
+            Assert.IsNull(panel.transform.Find("OutsidePauseInputGuide"),"外界で表示するまでは作らない");view.SetOutsidePresentation(true);buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();
+            Assert.IsTrue(buttons["ResumeButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);Assert.IsFalse(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
+            buttons["KeyboardSettingsButton"].Select();view.RefreshOutsidePresentation();Assert.IsFalse(buttons["ResumeButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);Assert.IsTrue(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
+            buttons["KeyboardSettingsButton"].interactable=false;view.RefreshOutsidePresentation();Assert.IsFalse(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
+            view.SetOutsidePresentation(false);Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
+            view.SetOutsidePresentation(true);Assert.AreEqual(1,buttons["ResumeButton"].transform.Cast<Transform>().Count(x=>x.name=="OutsidePauseFocusFrame"),"再表示でも生成を重ねない");panel.SetActive(false);typeof(GameplayPauseView).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);
+        }
+        [Test] public void 外界Pause案内はメニュー割当を表示しゲーム割当と混同しない()
+        {
+            var profile=UnityInputProvider.CreateDefaultGamepadProfile();Assert.AreEqual("A / × : ケッテイ    B / ○ : モドる",GameplayPauseView.InputGuideText(profile,true));
+            profile=new Olca.Core.Domain.InputBindingProfile(new Dictionary<(string,string,string),string>{{("gamepad","menu","Decide"),"North"},{("gamepad","menu","Cancel"),"West"}},Array.Empty<(string,string,string)>());
+            Assert.AreEqual("Y / △ : ケッテイ    X / □ : モドる",GameplayPauseView.InputGuideText(profile,true));Assert.AreEqual("Enter : ケッテイ    Esc : モドる",GameplayPauseView.InputGuideText(profile,false));
+            Assert.AreEqual("未割当 : ケッテイ    未割当 : モドる",GameplayPauseView.InputGuideText(null,true));
+        }
+
         [Test] public async Task 同じ画面の連打は一度だけ生成し表示を共有する()
         {
             var pending=new TaskCompletionSource<GameObject>();int created=0,shown=0;
@@ -213,9 +295,9 @@ namespace Olca.Tests.Application
                 Assert.IsFalse(sounds.Router.IsPaused);
                 controller.enabled=false;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnDisable",flags).Invoke(controller,null);Assert.IsTrue(sounds.Router.IsPaused);
                 controller.enabled=true;typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("OnEnable",flags).Invoke(controller,null);Assert.IsFalse(sounds.Router.IsPaused);
-                Assert.AreEqual(4,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(4,views.RegisteredCount);
+                Assert.AreEqual(6,views.RegisteredCount);start.Invoke(controller,null);Assert.AreSame(session,system.CurrentSession);Assert.AreEqual(6,views.RegisteredCount);
                 var entries=(System.Collections.IDictionary)typeof(ViewManager).GetField("entries",flags).GetValue(views);
-                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings","outside-item-registration"},entries.Keys);
+                CollectionAssert.AreEquivalent(new[]{"keyboard-settings","gamepad-settings","audio-settings","outside-item-registration","outside-equipment","outside-trial-shop"},entries.Keys);
             } finally {
                 var canvas=(GameObject)typeof(Olca.Application.Dungeon.DungeonBattleController).GetField("pauseCanvas",flags).GetValue(controller);if(canvas!=null)UnityEngine.Object.DestroyImmediate(canvas);
                 // 反射StartのEditMode fixtureでは破棄通知も明示し、実行中購読を残さない。
@@ -749,6 +831,30 @@ namespace Olca.Tests.Application
             var failed=layer.ShowAsync("screen").GetAwaiter().GetResult();Assert.IsFalse(failed.Succeeded);Assert.IsFalse(failed.Cancelled);Assert.IsNull(layer.CurrentKey);Assert.IsFalse(prior.IsCurrent);Assert.IsFalse(context.IsCurrent);Assert.AreEqual(0,resources.OwnedInstanceCount);Assert.AreEqual(0,dialogs.ActiveCount,"Tick前に旧ticketを返す");Assert.AreEqual(DialogResult.ParentClosed,pending.GetAwaiter().GetResult());old.Invoke();Assert.AreEqual(0,callbacks);
             fail=false;Assert.IsTrue(layer.ShowAsync("screen").GetAwaiter().GetResult().Succeeded);Assert.IsTrue(context.IsCurrent);Assert.AreEqual(1,resources.OwnedInstanceCount);views.UnregisterOwner(owner);Assert.AreEqual(0,resources.OwnedInstanceCount);
         }
+        [TestCase(1920,1080,0f)] [TestCase(1440,1080,0f)] [TestCase(3840,2160,0f)]
+        [TestCase(1920,1080,-700f)] [TestCase(1920,1080,700f)]
+        public async Task 外界試用標的の名札は主人公を避け画面内に収まり非接触時は動かない(int width,int height,float actorX)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var type=view.GetType();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var actor=((Image)type.GetField("player",flags).GetValue(view)).rectTransform;
+                var plate=new GameObject("TrialNamePlate",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>();plate.SetParent(view.transform,false);plate.sizeDelta=new Vector2(316,48);
+                var name=new GameObject("TrialName",typeof(RectTransform),typeof(Text)).GetComponent<Text>();name.transform.SetParent(view.transform,false);name.rectTransform.sizeDelta=new Vector2(300,40);name.raycastTarget=false;
+                type.GetField("trialTargetPlate",flags).SetValue(view,plate);type.GetField("trialTargetName",flags).SetValue(view,name);
+                actor.anchorMin=actor.anchorMax=new Vector2(.5f,.5f);actor.pivot=new Vector2(.5f,.5f);actor.anchoredPosition=new Vector2(actorX,0);actor.sizeDelta=new Vector2(256,256);
+                var original=actor.anchoredPosition;var pose=model.Core.CaptureState();long frame=model.Core.Frame;int hp=model.Player.CurrentHp;
+                var place=type.GetMethod("PlaceTrialTargetName",flags);var bounds=type.GetMethod("BoundsInView",flags);
+                name.rectTransform.anchoredPosition=plate.anchoredPosition=new Vector2(actorX,100);place.Invoke(view,null);
+                var actual=(Rect)bounds.Invoke(view,new object[]{plate});var body=(Rect)bounds.Invoke(view,new object[]{actor});var viewport=((RectTransform)view.transform).rect;
+                Assert.IsFalse(actual.Overlaps(body));Assert.GreaterOrEqual(actual.xMin,viewport.xMin);Assert.LessOrEqual(actual.xMax,viewport.xMax);Assert.AreEqual(name.rectTransform.anchoredPosition,plate.anchoredPosition);Assert.AreEqual(100,plate.anchoredPosition.y);
+                name.rectTransform.anchoredPosition=plate.anchoredPosition=new Vector2(0,300);place.Invoke(view,null);Assert.AreEqual(new Vector2(0,300),plate.anchoredPosition);
+                Assert.AreEqual(original,actor.anchoredPosition);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(pose.Position,model.Core.CaptureState().Position);Assert.AreEqual(hp,model.Player.CurrentHp);Assert.IsFalse(name.raycastTarget);
+            }
+        }
+
         [TestCase(1920,1080)] [TestCase(1440,1080)] [TestCase(3840,2160)] public async Task 外界回復数値は表示中マップ名を避け終了後は不可視領域を使わない(int width,int height)
         {
             ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(50);
@@ -1128,6 +1234,23 @@ namespace Olca.Tests.Application
                 Step(new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,CardUseButtonDown=true});model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal"));Step(new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,CardUseButtonDown=true});Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.Card,model.PendingAttack);long frame=model.Core.Frame;runtime.Pump(driver,false);now+=f;runtime.Pump(driver,false);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,model.PendingAttack);for(int i=0;i<25;i++)Step(new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true});Assert.AreEqual(70,model.Player.CurrentHp);Assert.AreEqual(rev+1,model.Cards.HandRevision);Assert.IsFalse(model.IsAttacking);
             }finally{lease.Dispose();}}}finally{Olca.Unity.GameplayPause.SetPaused(paused);rel.SetValue(null,oldRel);res.SetValue(null,oldRes);model.Dispose();}
         }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(8)]
+        public void 外界の明示Pause復帰だけが保持横移動を許し旧actionと再入を遮断する(int mode)
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(50);var cards=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(model.TryInitializeCards(cards,cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(197),out _));for(int i=0;i<100&&!model.Cards.Hand.Any(c=>c.Id=="heal");i++)model.Cards.Reload();model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal"));
+            var pt=typeof(Olca.Unity.GameplayPause);var flags=BindingFlags.Static|BindingFlags.NonPublic;var rel=pt.GetField("awaitRelease",flags);var res=pt.GetField("resumeFrames",flags);bool oldPause=Olca.Unity.GameplayPause.IsPaused;var oldRel=rel.GetValue(null);var oldRes=res.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);rel.SetValue(null,false);res.SetValue(null,0);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                object driver=new object();runtime.Attach(driver,input);var ff=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",ff).GetValue(runtime);long freq=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+freq*10;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",ff).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",ff).GetValue(input);
+                void Step(bool held){events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,HasOutsideHorizontalSample=true,OutsideHorizontal=held?1:0,Horizontal=0,AnyKey=held&&mode!=5&&mode!=8,JumpButtonDown=held&&mode!=5&&mode!=8,JumpButton=held&&mode!=5&&mode!=8,DashButtonDown=held&&mode!=5&&mode!=8,DashButton=held&&mode!=5&&mode!=8,CardUseButtonDown=held&&mode!=5&&mode!=8,OutsideItemDownMask=held&&mode!=5&&mode!=8?1:0}));now+=freq/60+1;runtime.Pump(driver,true);}
+                Assert.IsFalse(runtime.ResumeDirectionAfterExplicitPause(driver),"初回/非被覆では許可しない");
+                if(mode!=0){runtime.SetCovered(driver,true);runtime.Pump(driver,false);Assert.IsFalse(runtime.ResumeDirectionAfterExplicitPause(new object()));Assert.IsTrue(runtime.ResumeDirectionAfterExplicitPause(driver));if(mode==2)runtime.ResetInputForFocus(driver);if(mode==3){runtime.Detach(driver);driver=new object();runtime.Attach(driver,input);}if(mode==4){runtime.SetCovered(driver,false);runtime.SetCovered(driver,true);}runtime.SetCovered(driver,false);}
+                long x=model.Core.Position,rev=model.Cards.HandRevision;Step(true);Assert.AreEqual(x,model.Core.Position,"再開同frameでは背面を動かさない");Step(true);Assert.AreEqual(x,model.Core.Position,"2論理frame保護");for(int i=0;i<15;i++)Step(true);
+                if(mode==1||mode==5||mode==6||mode==7||mode==8)Assert.Greater(model.Core.Position,x,"明示Pause後の保持横方向だけ復帰");else Assert.AreEqual(x,model.Core.Position,"初回/取消/focus相当/host再入の保持で自走しない");Assert.IsTrue(model.Core.IsGrounded);Assert.IsFalse(model.Core.IsDashing);Assert.IsFalse(model.IsAttacking);Assert.AreEqual(50,model.Player.CurrentHp);Assert.AreEqual(rev,model.Cards.HandRevision);
+                if(mode==6){long moved=model.Core.Position;runtime.ResetInputForFocus(driver);for(int n=0;n<6;n++)Step(true);Assert.AreEqual(moved,model.Core.Position,"有効化後のfocusでも保持方向の例外を解除する");}
+                if(mode==7||mode==8){long moved=model.Core.Position;runtime.ResetInputForFocus(driver,false);for(int n=0;n<6;n++)Step(false);Assert.IsFalse(runtime.ResumeDirectionAfterExplicitPause(driver));runtime.ResetInputForFocus(driver,true);for(int n=0;n<6;n++)Step(true);Assert.AreEqual(moved,model.Core.Position,"背景の機器resetを実中立として再武装しない");}
+                Step(false);Step(false);Step(false);events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,CardUseButtonDown=true}));now+=freq/60+1;runtime.Pump(driver,true);Assert.AreEqual(rev+1,model.Cards.HandRevision,"全中立後の新規actionは通常どおり");
+            }}finally{Olca.Unity.GameplayPause.SetPaused(oldPause);rel.SetValue(null,oldRel);res.SetValue(null,oldRes);model.Dispose();}
+        }
         [Test] public void 外界Runtimeは単一driverだけを許し解放後も同じRoot状態と時計を再利用する()
         {
             var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();
@@ -1182,6 +1305,22 @@ namespace Olca.Tests.Application
             Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);var old=load.onClick;view.RestrictControls(new[]{"LoadCheckpointButton"});Assert.IsFalse(load.interactable);old.Invoke();Assert.AreEqual(0,loaded);
             layer.CloseCurrent();Assert.IsTrue(load.interactable);Assert.IsFalse(resume.interactable);old.Invoke();Assert.AreEqual(0,loaded);
             Assert.IsTrue((await layer.ShowAsync("restricted")).Succeeded);load.onClick.Invoke();Assert.AreEqual(1,loaded);Assert.IsFalse(resume.interactable);
+        }
+
+        [TestCase(false)] [TestCase(true)] public void 外界フォーカス入力破棄は現ownerの未消化edgeだけを捨て時計と方向受付を保つ(bool currentOwner)
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            bool paused=Olca.Unity.GameplayPause.IsPaused;var pt=typeof(Olca.Unity.GameplayPause);var release=pt.GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);var resume=pt.GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);var priorRelease=release.GetValue(null);var priorResume=resume.GetValue(null);Olca.Unity.GameplayPause.SetPaused(false);release.SetValue(null,false);resume.SetValue(null,0);
+            try{using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                var driver=new object();runtime.Attach(driver,input);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);long frequency=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);var events=(List<Olca.Unity.TimestampedLogicalInput>)typeof(Olca.Unity.UnityInputProvider).GetField("events",flags).GetValue(input);
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true}));now+=frequency/60+1;runtime.Pump(driver,true);
+                long frame=runtime.Frame,x=model.Core.Position;int oldCommand=0;
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now+frequency/10,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,JumpButtonDown=true,JumpButton=true}));loop.QueueTimestampedCommand(now+frequency/10,()=>oldCommand++);runtime.Pump(driver,true);
+                runtime.ResetInputForFocus(currentOwner?driver:new object());Assert.AreEqual(frame,runtime.Frame);Assert.AreEqual(x,model.Core.Position);
+                events.Add(new Olca.Unity.TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,AnyKey=true,Horizontal=1}));now+=frequency/10+frequency/60+1;runtime.Pump(driver,true);
+                Assert.Greater(runtime.Frame,frame);Assert.Greater(model.Core.Position,x);Assert.AreEqual(currentOwner?0:1,oldCommand);
+                if(currentOwner)Assert.AreEqual(0,model.Core.Height,"既にruntimeへ取り込んだ旧ジャンプを再生しない");else Assert.Greater(model.Core.Height,0,"旧ownerからの破棄要求では現入力を変えない");
+            }}finally{Olca.Unity.GameplayPause.SetPaused(paused);release.SetValue(null,priorRelease);resume.SetValue(null,priorResume);model.Dispose();}
         }
 
         [TestCase(false)] [TestCase(true)] public void 外界行動不能は移動前に判定し自走と保持再発動を止め重力時計は進む(bool stagger)

@@ -80,8 +80,8 @@ namespace Olca.Application.Management
                 string traversal=device==InputGuideDevice.Gamepad?"outside":"exploration";
                 string Label(string context,string action)=>profile.Bindings.TryGetValue((kind,context,action),out var key)&&key!=null?(device==InputGuideDevice.Gamepad?UnityInputProvider.GamepadBindingLabel(key):key):"ミワリアテ";
                 string Group(params string[] actions){var keys=actions.Select(action=>profile.Bindings.TryGetValue((kind,"battle",action),out var key)?key:null).Where(key=>key!=null).Distinct().Select(key=>device==InputGuideDevice.Gamepad?UnityInputProvider.GamepadBindingLabel(key):key);return keys.Any()?string.Join("/",keys):"ミワリアテ";}
-                movementGuide=device==InputGuideDevice.Touch?"":Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Gamepad?"イドウ: ヒダリ スティック":"イドウ  ヒダリ: "+Group("LeftPrimary","LeftSecondary")+"  ミギ: "+Group("RightPrimary","RightSecondary"))+"\nジャンプ: "+Label(traversal,"JumpPrimary")+"  /  ダッシュ: "+Label(traversal,"DashPrimary")+(device==InputGuideDevice.Gamepad?"":"/"+Label(traversal,"DashSecondary")))+"\nカムイ ホイール: "+Label("outside","WheelPrimary");
-                cardUseGuide=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Touch?"オナジ カードを サイ タップ":"カード シヨウ: "+Label("outside","CardPrimary")+" / サイクリック")+"（クウチュウ: ヒール・ツウジョウ ソード カリ）");
+                movementGuide=device==InputGuideDevice.Touch?"":Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Gamepad?"イドウ: ヒダリ スティック":"イドウ  ヒダリ: "+Group("LeftPrimary","LeftSecondary")+"  ミギ: "+Group("RightPrimary","RightSecondary"))+"\nジャンプ: "+Label(traversal,"JumpPrimary")+"  /  ダッシュ: "+Label(traversal,"DashPrimary")+(device==InputGuideDevice.Gamepad?"":"/"+Label(traversal,"DashSecondary")))+"\nシラベル / ハナす: "+Label("outside","InteractionPrimary")+" / カムイ ホイール: "+Label("outside","WheelPrimary");
+                cardUseGuide=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((device==InputGuideDevice.Touch?"オナジ カードを サイ タップ":"カード シヨウ: "+Label("outside","CardPrimary")+" / サイクリック")+"（クウチュウ: ヒール・ソードケイ・シールド カリ）");
                 selectionGuide=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(device==InputGuideDevice.Touch?"カード タップ: センタク":"カード センタク  マエ: "+Label(traversal,"SelectionPrevious")+"  /  ツギ: "+Label(traversal,"SelectionNext"));
             }
             return selectionGuide;
@@ -96,7 +96,7 @@ namespace Olca.Application.Management
             layer.Register(registrationOwner,ScreenKey,factory,(panel,context)=>{
                 if(disposed||(!this.allowed()&&this.restoreAllowed?.Invoke()!=true))throw new OperationCanceledException();
                 View=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()??throw new InvalidOperationException("外界Viewがありません");
-                Context=context;var lease=session.AttachPresentation();try{runtime?.Attach(this,input,useItem);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide,entered,canEnter,()=>input?.OutsideInteractionLabel??"Enter / Space",trialRoute,inputBlocked,runtime!=null&&input!=null?(Action<Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease,Olca.Core.Logic.Integration.OutsideExplorationCards,int,long>)input.QueueOutsideHandPress:null,CardUseGuide);}catch{runtime?.Detach(this);lease.Dispose();throw;}
+                Context=context;var lease=session.AttachPresentation();try{runtime?.Attach(this,input,useItem);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide,entered,canEnter,()=>input?.OutsideInteractionLabel??"Enter",trialRoute,inputBlocked,runtime!=null&&input!=null?(Action<Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease,Olca.Core.Logic.Integration.OutsideExplorationCards,int,long>)input.QueueOutsideHandPress:null,CardUseGuide);}catch{runtime?.Detach(this);lease.Dispose();throw;}
             },panel=>{
                 runtime?.Detach(this);
                 // 管理側の閉鎖は復旧対象から外す。表示中の外部破棄ではこの経路を通らない。
@@ -107,7 +107,10 @@ namespace Olca.Application.Management
         public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
         {if(disposed||(!allowed()&&restoreAllowed?.Invoke()!=true))return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
         public bool ReturnToHub(){if(disposed||!allowed()||!IsOpen)return false;layer.CloseCurrent();returned?.Invoke();return true;}
+        public void ResetInputForFocus(bool focused=true){if(!disposed)runtime?.ResetInputForFocus(this,focused);}
         public void SetCovered(bool covered){runtime?.SetCovered(this,covered);if(View!=null)View.SetCovered(covered);}
+        public void ResumeDirectionAfterExplicitPause(){if(IsOpen)runtime?.ResumeDirectionAfterExplicitPause(this);}
+        public void CancelDirectionResume()=>runtime?.CancelDirectionResume(this);
         public void Pump(bool active){runtime?.Pump(this,active&&IsOpen&&View.CanPlay);if(View!=null)View.Render();}
         public void Dispose(){if(disposed)return;disposed=true;runtime?.Detach(this);layer.UnregisterOwner(registrationOwner);Context=null;View=null;allowed=null;restoreAllowed=null;returned=null;paused=null;icon=null;}
     }
@@ -172,8 +175,10 @@ namespace Olca.Application.Management
             var cards=ResolveDraftCards(source,options,slots);
             valid&=cards.All(c=>c!=null);
             view.RenderOwnedDeparture(source,options,cards,session.Error??(valid?null:invalid??"定義未解決のカードがあります"),valid,(index,delta)=>ChangeDraft(source,options,index,delta),null,RequestCloseEditor,()=>RenderEditor(),discard,
-            SaveDraft,name,value=>{if(!Operate||session.HasPendingSave)return;name=value;dirty=true;},session.HasPendingSave,Retry,draft.Select(c=>c.DefinitionKey).ToArray(),persistedName);
+            SaveDraft,name,value=>{if(!Operate||session.HasPendingSave)return;name=value;dirty=true;RefreshEditingState();},session.HasPendingSave,Retry,draft.Select(c=>c.DefinitionKey).ToArray(),persistedName);
+            RefreshEditingState();
         }
+        private void RefreshEditingState()=>view?.SetExplorationDeckEditingState(editingId==null,editingId!=null&&editingId==session.Snapshot?.SelectedDeckId,dirty,session.HasPendingSave);
         private void ChangeDraft(Olca.Core.Domain.ClearReturnProfile source,Olca.Core.Domain.Card[] options,int index,int delta)
         {
             if(!Operate||session.HasPendingSave||index<0||index>=source.Owned.Length)return;

@@ -17,6 +17,14 @@ namespace Olca.Core.Domain
             if(departureAbilitiesFixed||DepartureAbilities!=null)throw new InvalidOperationException("攻略中の装備能力は変更できません");
             DepartureAbilities=value??throw new ArgumentNullException(nameof(value));
         }
+        public int RewardQualityBonus=>DepartureAbilities?.RewardQualityBonus??0;
+        internal bool CanReplaceOutsideEquipment=>!departureAbilitiesFixed;
+        // 外界Sessionだけが可変の装備を差し替える。攻略へ固定済みの個体は解除しない。
+        internal void ReplaceOutsideEquipment(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities value)
+        {
+            if(departureAbilitiesFixed)throw new InvalidOperationException("攻略中の装備能力は変更できません");
+            DepartureAbilities=value??throw new ArgumentNullException(nameof(value));
+        }
         public AttackMilestoneGrowth AttackGrowth { get; private set; }
         public void SetAttackGrowth(AttackMilestoneGrowth growth)
         {
@@ -24,6 +32,12 @@ namespace Olca.Core.Domain
             AttackGrowth=growth??throw new ArgumentNullException(nameof(growth));
         }
         public DepartureStyleDefinition DepartureStyle { get; private set; } = DepartureStyleDefinition.Basic;
+        // 外界Session専用。攻略へ固定済みの個体は解除せず、HP/時計/装備/被弾状態へ触れない。
+        internal void ReplaceOutsideStyle(DepartureStyleDefinition style,ElementResistances basic)
+        {
+            if(departureAbilitiesFixed||style==null||basic==null)throw new InvalidOperationException("外界で変更できる個体と神依定義が必要です");
+            DepartureStyle=style;departureStyleFixed=true;BaseElementResistances=basic;
+        }
         private bool departureStyleFixed;
         internal void FreezeDepartureState(){departureStyleFixed=true;departureAbilitiesFixed=true;}
         internal Func<ElementType?> BattleElement;
@@ -295,6 +309,20 @@ namespace Olca.Core.Domain
         {
             poiseRecovery.Clear(); poiseRecovery.Configure(PoiseRecoveryDefinitionFrames);
             accumulatedDamage = 0;
+        }
+        // 外界の確定済み被弾状態だけを復元する。Damage/のけぞり通知を再実行しない。
+        internal PlayerHitStateData CaptureHitState()
+        {
+            if(!CanCaptureTimedAilments||IsInvincible||PoiseRecoveryDelayFrames!=PoiseRecoveryDefinitionFrames)throw new ArgumentException("未確定フレーム/無敵/変更された回復定義は外界退避できません");
+            var value=new PlayerHitStateData{AccumulatedDamage=accumulatedDamage,RecoveryUnits=poiseRecovery.RemainingUnits,StaggerUnits=staggerTimer.RemainingUnits};
+            if(value.AccumulatedDamage==0&&value.RecoveryUnits==0&&value.StaggerUnits==0)return null;
+            value.Validate(poise,StaggerDurationFrames,PoiseRecoveryDefinitionFrames);return value;
+        }
+        internal void RestoreHitState(PlayerHitStateData value)
+        {
+            if(!CanCaptureTimedAilments||IsInvincible)throw new ArgumentException("反映途中の被弾状態へ復元できません");
+            value?.Validate(poise,StaggerDurationFrames,PoiseRecoveryDefinitionFrames);
+            accumulatedDamage=value?.AccumulatedDamage??0;poiseRecovery.RestoreUnits(value?.RecoveryUnits??0);staggerTimer.RestoreUnits(value?.StaggerUnits??0);frameStaggered=frameWasStaggered=false;
         }
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;

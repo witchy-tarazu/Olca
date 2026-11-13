@@ -2665,6 +2665,14 @@ namespace Olca.Tests.Integration
         }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
+        [Test] public void 質試用の未登録行き先は保存せず拒否しHub復帰と対応先の再試行を妨げない()
+        {
+            var controller=Start(configure:c=>{c.ConfigureTrialCustomizationDefaults();Set(c,"debugUnlockDungeons",true);},production:true);var session=(ClearReturnSession)Get(controller,"clearReturnSession");var catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();string quality=Olca.Application.Management.TrialCustomizationDefinitions.QualityAccessory;
+            Assert.IsTrue(session.TryGrantCustomization(catalog,new Olca.Core.Logic.Customization.CustomizationGrant(System.Guid.NewGuid().ToString("N"),new[]{quality})),session.Error);Assert.IsTrue(session.TrySetCustomizationLoadout(catalog,new[]{quality},System.Array.Empty<Olca.Core.Logic.Customization.PartPlacement>()),session.Error);var store=(Olca.Unity.ClearReturnFileStore)Get(controller,"clearReturnStore");var before=System.IO.File.ReadAllBytes(store.ActivePath);Set(controller,"outsideDungeonSelection",true);Set(controller,"selectedDungeon",0);Call(controller,"StartNextDepartureWithDeck",new object[]{null});
+            Assert.IsNull(Get(controller,"clearReturnError"));StringAssert.Contains("5タイ",(string)Get(controller,"outsideDepartureError"));Assert.IsTrue((bool)Get(controller,"OutsideHubEligible"));Assert.IsNull(session.Snapshot.NextDeparture);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));
+            Set(controller,"selectedDungeon",3);Call(controller,"StartNextDepartureWithDeck",new object[]{null});Assert.IsNotNull(session.Snapshot.NextDeparture,session.Error);Assert.AreEqual(1,Model(controller).Dungeon.Player.RewardQualityBonus);Assert.IsNull(Get(controller,"outsideDepartureError"));
+        }
+
         [Test]
         public void 停止地点なしでアイテム報酬だけある帰還進行を再起動しても保存依存を満たす()
         {
@@ -3192,6 +3200,20 @@ namespace Olca.Tests.Integration
             Assert.IsFalse(session.PurchaseExchange(System.Guid.NewGuid().ToString("N"),round,"limited"));Assert.AreEqual(7,session.Snapshot.Tokens);
             var old=new ClearReturnProfile();ClearReturnProfile.Validate(old);Assert.IsNull(old.ExchangeStock);Assert.IsNull(old.ExchangeReceipts);
             var invalid=session.Snapshot;invalid.ExchangeStock.Offers[0].Price=0;Assert.Throws<System.ArgumentException>(()=>ClearReturnProfile.Validate(invalid));
+        }
+        [Test]
+        public void 登録済み試用火神依は取消で保存せず選択保存coldと出撃固定と火属性の通常攻撃へ届く()
+        {
+            var c=StartSelection();var registered=(DepartureStyleDefinition[])Get(c,"departureStyles");Assert.AreEqual(2,registered.Length);Assert.AreSame(DepartureStyleDefinition.Basic,registered[0]);Assert.AreSame(DepartureStyleDefinition.TrialFire,registered[1]);Assert.IsTrue(registered[1].IsUnlocked(c.PersistentProgress));long revision=c.PersistentProgress.Revision;
+            KeyboardButton(c,"SelectDepartureStyle");KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"CancelStyleSelection");Assert.AreEqual(revision,c.PersistentProgress.Revision);Assert.IsNull(c.PersistentProgress.SelectedStyleId);
+            KeyboardButton(c,"SelectDepartureStyle");KeyboardButton(c,"StyleChoice_1");KeyboardButton(c,"ConfirmStyleSelection");Assert.AreEqual("trial-fire-kamui-v1",c.PersistentProgress.SelectedStyleId);var cold=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(c.ProgressDirectory));Assert.AreEqual(c.PersistentProgress.SelectedStyleId,cold.Snapshot.SelectedStyleId);
+            KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);var battle=Model(c).CurrentBattle;Assert.AreEqual(ElementType.Fire,battle.ActivePlayerElement);Assert.AreEqual(-50,battle.Player.BaseElementResistances.Water);Assert.AreEqual(50,battle.Player.BaseElementResistances.Get(ElementType.Metal));Assert.AreEqual(0,battle.Player.BaseElementResistances.Wind);Assert.AreEqual("trial-fire-kamui-v1",battle.Player.DepartureStyle.Id);var enemy=battle.Enemies[0];enemy.ApplyStun(100000);battle.Player.MoveTo(new Vector2Int(enemy.GridPosition.X-1,enemy.GridPosition.Y));battle.Resume(BattlePauseReason.CustomScreen);int before=enemy.CurrentHp;var input=new Olca.Application.Battle.BasicAttackInputState();input.Tick(battle,new LogicalInput{BasicAttackButtonDown=true,BasicAttackButton=true},60,12);input.Tick(battle,new LogicalInput{BasicAttackButtonUp=true},60,12);Assert.AreEqual(before-10,enemy.CurrentHp);Assert.Throws<System.InvalidOperationException>(()=>battle.Player.SetDepartureStyle(DepartureStyleDefinition.Basic));Assert.AreEqual("trial-fire-kamui-v1",c.PersistentProgress.NextDeparture.Start.Player.Style.Id);
+            Assert.IsTrue(c.TryRestoreMemoryCheckpoint(out var error),error);Assert.AreEqual(ElementType.Fire,Model(c).Dungeon.Player.ActiveElement);Assert.AreEqual(100,Model(c).Dungeon.Player.DepartureStyle.Attack.NormalPowerPercent);
+        }
+        [Test]
+        public void 試用火神依の値は固定DTOへ復元でき通常状態を神依へ読み替えない()
+        {
+            var original=DepartureStyleDefinition.TrialFire;var copy=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Deserialize<DepartureStyleDto>(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(original.Capture())).Restore();Assert.AreEqual(original.Id,copy.Id);Assert.AreEqual(ElementType.Fire,copy.Attack.Element);Assert.AreEqual(100,copy.Attack.NormalPowerPercent);Assert.AreEqual(200,copy.Attack.ChargedPowerPercent);Assert.AreEqual(60,copy.Attack.ChargeFrames);Assert.AreEqual(12,copy.Attack.IntervalFrames);Assert.AreEqual(0,copy.TransformationPhaseBonus);Assert.IsNull(DepartureStyleDefinition.Basic.Attack);Assert.AreEqual("basic",DepartureStyleDefinition.Basic.Id);
         }
         private static DepartureStyleDefinition[] StyleFixtures() => new[] {
             DepartureStyleDefinition.Basic,
@@ -3741,13 +3763,27 @@ namespace Olca.Tests.Integration
             finally {c.gameObject.SetActive(false);}
         }
 
+        [TestCase("Editor")][TestCase("Unlocks")][TestCase("Acquisitions")]
+        public void 外界入口からの試用装備を閉じると同じ行き先一覧へ戻り閉鎖では保存しない(string kind)
+        {
+            var c=Start(new[]{Empty(3),DungeonConfig.CreateTestDungeon(8)},configure:x=>x.ConfigureTrialCustomizationDefaults());c.gameObject.SetActive(true);
+            try{
+                c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");Assert.AreEqual(ClearReturnStage.Returned,c.PersistentProgress.Flow.Stage);
+                Set(c,"outsideDungeonSelection",true);Call(c,"ShowDungeonSelection");var model=Model(c);int selected=(int)Get(c,"selectedDungeon");
+                Call(c,"OpenCustomization"+kind);var progress=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(progress.ActivePath);
+                Assert.IsTrue((bool)Get(c,kind=="Editor"?"CustomizationEditorOpen":kind=="Unlocks"?"CustomizationUnlockOpen":"CustomizationAcquisitionOpen"));Call(c,"CloseCustomization"+kind);
+                var view=(Olca.Presentation.Dungeon.ClearReturnView)Get(c,"clearReturnView");Assert.IsTrue(view.GetComponentsInChildren<UnityEngine.UI.Button>().Any(b=>b.name=="PrepareDungeonDeck"&&b.gameObject.activeInHierarchy),"入口の行き先一覧へ戻す");
+                Assert.IsTrue((bool)Get(c,"dungeonSelectionOpen"));Assert.IsTrue((bool)Get(c,"outsideDungeonSelection"));Assert.AreEqual(selected,Get(c,"selectedDungeon"));Assert.AreSame(model,Model(c));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(progress.ActivePath));
+            }finally{c.gameObject.SetActive(false);}
+        }
+
         [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)][TestCase(2199.64f,942.70f)]
         public void 拠点の補助操作は画面比率が変わっても図鑑と重ならず基準位置を保つ(float width,float height)
         {
             var c=Start();var viewport=new UnityEngine.GameObject("HubButtonViewport",typeof(UnityEngine.RectTransform));var rect=(UnityEngine.RectTransform)viewport.transform;rect.sizeDelta=new UnityEngine.Vector2(width,height);
             try{
                 var names=new[]{"CardCollectionButton","OpenCustomizationEditor","OpenCustomizationUnlocks","OpenCustomizationAcquisitions","ManualSaveButton","NewGameButton"};var areas=new System.Collections.Generic.List<UnityEngine.Rect>();
-                foreach(var name in names){var button=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b=>b.name==name);var r=(UnityEngine.RectTransform)button.transform;r.SetParent(rect,false);var corners=new UnityEngine.Vector3[4];r.GetWorldCorners(corners);var points=corners.Select(p=>rect.InverseTransformPoint(p)).ToArray();var area=UnityEngine.Rect.MinMaxRect(points.Min(p=>p.x),points.Min(p=>p.y),points.Max(p=>p.x),points.Max(p=>p.y));Assert.GreaterOrEqual(area.xMin,rect.rect.xMin);Assert.LessOrEqual(area.xMax,rect.rect.xMax);Assert.GreaterOrEqual(area.yMin,rect.rect.yMin);Assert.LessOrEqual(area.yMax,rect.rect.yMax);foreach(var other in areas)Assert.IsFalse(area.Overlaps(other),name);areas.Add(area);if(width==1920&&name=="OpenCustomizationEditor"){Assert.AreEqual(650,area.center.x,.1);Assert.AreEqual(380,area.center.y,.1);}}
+                foreach(var name in names){var button=((UnityEngine.GameObject)Get(c,"pauseCanvas")).GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(b=>b.name==name);var r=(UnityEngine.RectTransform)button.transform;r.SetParent(rect,false);var corners=new UnityEngine.Vector3[4];r.GetWorldCorners(corners);var points=corners.Select(p=>rect.InverseTransformPoint(p)).ToArray();var area=UnityEngine.Rect.MinMaxRect(points.Min(p=>p.x),points.Min(p=>p.y),points.Max(p=>p.x),points.Max(p=>p.y));Assert.GreaterOrEqual(area.xMin,rect.rect.xMin);Assert.LessOrEqual(area.xMax,rect.rect.xMax);Assert.GreaterOrEqual(area.yMin,rect.rect.yMin);Assert.LessOrEqual(area.yMax,rect.rect.yMax);foreach(var other in areas)Assert.IsFalse(area.Overlaps(other),name);areas.Add(area);if(width==1920&&name=="OpenCustomizationEditor"){Assert.AreEqual(650,area.center.x,.1);Assert.AreEqual(400,area.center.y,.1);}}
             }finally{UnityEngine.Object.DestroyImmediate(viewport);}
         }
 
@@ -4821,7 +4857,7 @@ namespace Olca.Tests.Integration
         public void 探索アイテムは満タン麻痺非表示未知定義不足所持を拒否し回復地点でCDをリセットする()
         {
             var definition=OutsideRecoveryItemDefinition.Provisional;var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=3}}}}));var save=new ClearReturnSession(store);
-            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));using(var lease=world.AttachPresentation()){Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));world.Player.SetHp(20);world.Player.ApplyParalysis(5);world.Core.TickFrame(0);world.AdvancePlayerFrame();Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));for(int i=0;i<4;i++){world.Core.TickFrame(0);world.AdvancePlayerFrame();}Assert.IsFalse(world.TryUseRecoveryItem(save,new OutsideRecoveryItemDefinition("unknown",25,180),null,out _));Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out _));Assert.AreEqual(45,world.Player.CurrentHp);world.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId);Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));Assert.AreEqual(2,save.OutsideInventorySnapshot.Items[0].Count);}}
+            using(var world=new Olca.Core.Logic.Integration.OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));using(var lease=world.AttachPresentation()){Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));world.Player.SetHp(20);world.Player.ApplyParalysis(5);world.Core.TickFrame(0);world.AdvancePlayerFrame();Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));for(int i=0;i<4;i++){world.Core.TickFrame(0);world.AdvancePlayerFrame();}Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _),"麻痺最終frameは消費しない");Assert.AreEqual(3,save.OutsideInventorySnapshot.Items[0].Count);world.Core.TickFrame(0);world.AdvancePlayerFrame();Assert.IsFalse(world.TryUseRecoveryItem(save,new OutsideRecoveryItemDefinition("unknown",25,180),null,out _));Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out _));Assert.AreEqual(45,world.Player.CurrentHp);world.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId);Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));Assert.AreEqual(2,save.OutsideInventorySnapshot.Items[0].Count);}}
         }
         [Test]
         public void アイテム保存はCD終端のoverflowと個体時計の取り違えを読込前に拒否する()

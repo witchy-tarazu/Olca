@@ -61,6 +61,12 @@ namespace Olca.Core.Domain
             if (hit && DelayFrames.HasValue) timer.SetFrames(DelayFrames.Value);
             frameOpen = false; hit = expired = false; return recover;
         }
+        internal void RestoreUnits(long units)
+        {
+            if(frameOpen||units<0||units>0&&(!DelayFrames.HasValue||units>DelayFrames.Value*50L))throw new ArgumentException("強靭回復待ちの復元値が不正です");
+            timer.RestoreUnits(units);hit=expired=false;
+        }
+        internal long RemainingUnits=>timer.RemainingUnits;
         internal void Clear() { Configure(null); frameOpen = false; }
     }
 

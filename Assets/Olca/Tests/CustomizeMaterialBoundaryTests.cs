@@ -76,7 +76,16 @@ namespace Olca.Tests
             var touch=Hint("Ready",Olca.Unity.InputGuideDevice.Touch);StringAssert.Contains("タップ",touch);StringAssert.DoesNotContain("Enter",touch);StringAssert.DoesNotContain("LT",touch);
             var guide=typeof(CustomScreenView).GetMethod("FormatPadGuide",BindingFlags.Static|BindingFlags.NonPublic);
             var normal=(string)guide.Invoke(null,new object[]{false,false,profile});var processing=(string)guide.Invoke(null,new object[]{true,true,profile});
-            StringAssert.Contains("LT: 決定",normal);StringAssert.Contains("LT: 加工実行",processing);StringAssert.Contains("RT: 取消して戻る",processing);Assert.AreEqual(4,processing.Split('\n').Length);
+            StringAssert.DoesNotContain("LT:",normal);StringAssert.Contains("LT: 加工実行",processing);StringAssert.Contains("RT: 取消して戻る",processing);Assert.AreEqual(4,processing.Split('\n').Length);
+            var primary=typeof(CustomScreenView).GetMethod("FormatPrimaryGuide",BindingFlags.Static|BindingFlags.NonPublic);
+            string Main(Olca.Unity.InputGuideDevice device)=>(string)primary.Invoke(null,new object[]{device,profile});
+            var padPrimary=Main(Olca.Unity.InputGuideDevice.Gamepad);StringAssert.Contains("LT: 確定して戦闘へ",padPrimary);StringAssert.Contains("RT: 最後の1枚を取消",padPrimary);StringAssert.Contains("A / ×: 選択",padPrimary);StringAssert.DoesNotContain("Start",padPrimary);
+            var keyboardPrimary=Main(Olca.Unity.InputGuideDevice.KeyboardMouse);StringAssert.Contains("Space: 選択",keyboardPrimary);StringAssert.Contains("Esc: 最後の1枚を取消",keyboardPrimary);StringAssert.Contains("Enter: 確定して戦闘へ",keyboardPrimary);
+            var font=UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf");
+            foreach(var text in new[]{padPrimary,keyboardPrimary})foreach(int size in new[]{22,30})using(var generator=new TextGenerator()){
+                var obj=new GameObject("GuideMetrics",typeof(RectTransform),typeof(Text));try{var label=obj.GetComponent<Text>();label.font=font;label.fontSize=size;label.text=CustomDisplay.Katakana(text);label.rectTransform.sizeDelta=new Vector2(740,size==22?110:140);generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.AreEqual(label.text.Length,generator.characterCountVisible);}finally{Object.DestroyImmediate(obj);}
+            }
+            var captionObject=new GameObject("ConfirmCaption",typeof(RectTransform),typeof(Text));try{var label=captionObject.GetComponent<Text>();label.font=font;label.fontSize=40;label.resizeTextForBestFit=true;label.resizeTextMinSize=24;label.resizeTextMaxSize=40;label.text=CustomDisplay.Katakana("確定・戦闘へ");label.rectTransform.sizeDelta=new Vector2(260,72);using(var generator=new TextGenerator()){generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.AreEqual(label.text.Length,generator.characterCountVisible);}}finally{Object.DestroyImmediate(captionObject);}
             Assert.AreEqual("Start",profile.Bindings[("gamepad","menu","Confirm")]);
         }
         [Test]

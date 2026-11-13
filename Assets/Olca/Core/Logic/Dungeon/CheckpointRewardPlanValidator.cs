@@ -34,9 +34,11 @@ namespace Olca.Core.Logic.Dungeon
         private static void ValidateEvaluationBands(CheckpointDto checkpoint,CheckpointDefinitions definitions,Dictionary<string,Card> cards,string contactId)
         {
             var battle=checkpoint.Battle;var bands=battle.EvaluationRewards;
-            if(bands==null){CheckpointValues.Require(battle.EvaluationRewardDefinitionId==null,"評価報酬帯が欠落しています");return;}
-            CheckpointValues.Require(!string.IsNullOrWhiteSpace(battle.EvaluationRewardDefinitionId)&&bands.Length==4&&
-                bands.All(v=>v!=null)&&bands.Select(v=>v.Grade).OrderBy(v=>v).SequenceEqual(new[]{0,1,2,3}),"4評価帯の保存が不正です");
+            if(bands==null){CheckpointValues.Require((checkpoint.Player.CustomizationAbilities==null||new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(checkpoint.Player.CustomizationAbilities).RewardQualityBonus==0)&&battle.EvaluationRewardDefinitionId==null,"評価報酬帯が欠落しています");return;}
+            CheckpointValues.Require(!string.IsNullOrWhiteSpace(battle.EvaluationRewardDefinitionId)&&(bands.Length==4||bands.Length==5)&&
+                bands.All(v=>v!=null)&&bands.Select(v=>v.Grade).OrderBy(v=>v).SequenceEqual(Enumerable.Range(0,bands.Length)),"評価報酬帯の保存が不正です");
+            int quality=checkpoint.Player.CustomizationAbilities==null?0:new Olca.Core.Logic.Customization.ResolvedCustomizationAbilities(checkpoint.Player.CustomizationAbilities).RewardQualityBonus;
+            EvaluationRewardDefinition.ResolveBandIndex(Olca.Core.Logic.Battle.BattleEvaluationGrade.Fair,quality,bands.Length);
             foreach(var band in bands){
                 CheckpointCodec.ValidateReferences(band.RewardCandidates,cards);
                 CheckpointValues.Require(band.CurrencyAmounts!=null&&band.CurrencyAmounts.Length==battle.ParticipantCells.Length&&

@@ -48,6 +48,40 @@ namespace Olca.Tests
             }finally{Object.DestroyImmediate(root);}
         }
 
+        [TestCase(1920f,true)][TestCase(1920f,false)][TestCase(1662.77f,true)][TestCase(1662.77f,false)][TestCase(2199.64f,true)][TestCase(2199.64f,false)]
+        public void 入口の攻略編成は既存可否と区別表示を保ち旧入口callbackを拒否する(float width,bool editable)
+        {
+            var root=new GameObject("PrepareEntrance",typeof(RectTransform));try{((RectTransform)root.transform).sizeDelta=new Vector2(width,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);int opened=0;
+                void Draw(){view.RenderDungeonSelection(new[]{"イキサキ"},new[]{true},0,_=>{},()=>{},()=>{},false,null,()=>{},departureDeck:ClearReturnView.FormatDepartureDeckDisplay("スターター",20),prepareDepartureDeck:()=>opened++,departureDeckEditable:editable);}
+                Draw();var button=root.GetComponentsInChildren<Button>().Single(b=>b.name=="PrepareDungeonDeck");Assert.AreEqual(editable,button.interactable);StringAssert.Contains(editable?"20マイ":"キカンゴ",button.GetComponentInChildren<Text>().text);button.onClick.Invoke();Assert.AreEqual(editable?1:0,opened);var old=button.onClick;Draw();old.Invoke();Assert.AreEqual(editable?1:0,opened);
+                var help=root.GetComponentsInChildren<Text>().Single(x=>x.name=="DungeonSelectionHelp");Assert.LessOrEqual(help.rectTransform.anchoredPosition.x+help.rectTransform.rect.width/2,((RectTransform)root.GetComponentsInChildren<Button>().Single(b=>b.name=="PrepareDungeonDeck").transform).anchoredPosition.x-170);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(false)][TestCase(true)] public void 入口からの攻略保存デッキは戻る先を明示し旧閉鎖を再実行しない(bool pending)
+        {
+            var root=new GameObject("PrepareDeckBack",typeof(RectTransform));try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);int closed=0;void Draw(){view.RenderSavedDeckMenu(new ClearReturnProfile(),null,pending,()=>{},_=>{},_=>{},_=>{},_=>{},()=>closed++,()=>{},closeLabel:"シュツゲキサキへモドる");}Draw();var b=root.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseSavedDeckMenu");Assert.AreEqual(!pending,b.interactable);StringAssert.Contains("シュツゲキサキ",b.GetComponentInChildren<Text>().text);var old=b.onClick;Draw();old.Invoke();Assert.AreEqual(0,closed);root.GetComponentsInChildren<Button>().Single(x=>x.name=="CloseSavedDeckMenu").onClick.Invoke();Assert.AreEqual(pending?0:1,closed);}finally{Object.DestroyImmediate(root);}
+        }
+
+        [TestCase(1920f,1)][TestCase(1920f,5)][TestCase(1920f,7)]
+        [TestCase(1662.77f,1)][TestCase(1662.77f,5)][TestCase(1662.77f,7)]
+        [TestCase(2199.64f,1)][TestCase(2199.64f,5)][TestCase(2199.64f,7)]
+        public void 入口の攻略デッキと操作案内は行や確定ボタンと重ならず既存処理を保つ(float width,int count)
+        {
+            var root=new GameObject("EntranceDeck",typeof(RectTransform));try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(width,1080);var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);int starts=0,backs=0;
+                string deck=ClearReturnView.FormatDepartureDeckDisplay("スターター",20);var names=Enumerable.Range(0,count).Select(i=>"イキサキ"+i).ToArray();
+                v.RenderDungeonSelection(names,Enumerable.Repeat(true,count).ToArray(),0,_=>{},()=>starts++,()=>backs++,false,null,()=>{},styleName:"キホン",descriptions:Enumerable.Repeat("テキゾクセイとチケイ",count).ToArray(),departureDeck:deck);
+                var all=root.GetComponentsInChildren<Text>();var summary=all.Single(x=>x.name=="OutsideDepartureDeck");var guide=all.Single(x=>x.name=="OutsideDepartureGuide");StringAssert.Contains("スターター / 20マイ",summary.text);StringAssert.Contains("30マイとはベツ",summary.text);bool pad=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad;StringAssert.Contains(pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","menu","Decide")]):"Enter",guide.text);StringAssert.Contains(pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings[("gamepad","menu","Cancel")]):"Esc",guide.text);Assert.Greater(summary.color.r,.8f);Assert.Greater(guide.color.r,.8f);
+                var button=root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection");StringAssert.Contains("ヒヨウ",button.GetComponentInChildren<Text>().text);Assert.IsTrue(button.interactable);
+                foreach(var label in new[]{summary,guide}){using(var g=new TextGenerator()){g.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.GreaterOrEqual(g.characterCountVisible,label.text.Length,label.name);}}
+                Assert.Greater(summary.rectTransform.anchoredPosition.y-35,guide.rectTransform.anchoredPosition.y+20);Assert.Greater(guide.rectTransform.anchoredPosition.y-20,((RectTransform)button.transform).anchoredPosition.y+37.5f);
+                button.onClick.Invoke();root.GetComponentsInChildren<Button>().Single(x=>x.name=="CancelDungeonSelection").onClick.Invoke();Assert.AreEqual(1,starts);Assert.AreEqual(1,backs);
+                v.RenderDungeonSelection(names,Enumerable.Repeat(true,count).ToArray(),0,_=>{},()=>{},()=>{},false,null,()=>{});Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(x=>x.name=="OutsideDepartureDeck"||x.name=="OutsideDepartureGuide"));StringAssert.Contains("シュツゲキ",root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").GetComponentInChildren<Text>().text);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(6)][TestCase(20)][TestCase(30)] public void 攻略デッキ表示は実枚数を20枚へ偽装しない(int count)
+        {string s=ClearReturnView.FormatDepartureDeckDisplay("なまえ",count,"定義が未解決です");StringAssert.Contains("なまえ / "+count+"マイ",s);StringAssert.Contains("シヨウフカ",s);}
+
         [TestCase(false)][TestCase(true)] public void 費用結果表示は保存失敗の未確定と既存単独表示を区別する(bool blocked)
         {
             var root=new GameObject("CostPending137",typeof(RectTransform));try{((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var profile=new ClearReturnProfile{Flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Choosing}};var flow=new ClearReturnData{RunId="cost-ui",Stage=ClearReturnStage.Awarded,Outcome=RunReturnOutcome.Cleared,ExperienceAward=100,NewLevel=2,ReturnedMaxHp=105,ReturnedAttack=11,Terms=new DepartureTermsData{DungeonId="test",DefinitionKey="display-only",Cost=new DepartureCostData{Currency=10},ReturnSettings=new ClearReturnSettings()}};view.Render(profile,flow,blocked,blocked?"ホゾンシッパイ":null);var title=root.GetComponentsInChildren<Text>().Single(t=>t.name=="Title").text;var summary=root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardSummary").text;Assert.AreEqual(blocked,title.Contains("ミカクテイ"));Assert.AreEqual(blocked,summary.Contains("ミカクテイ"));StringAssert.Contains("ヒヨウ",root.GetComponentsInChildren<Text>().Single(t=>t.name=="AwardTokens").text);}finally{Object.DestroyImmediate(root);}
@@ -58,6 +92,69 @@ namespace Olca.Tests
             var root=new GameObject("DeckSizeFixture",typeof(RectTransform));try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});if(exploration)view.ConfigureExplorationDeckLibrary();var card=new Card("count-fixture","検証",0,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"");var row=new OwnedCardCount{Id=card.Id,Name=card.Name,Count=40,Rarity=card.Rarity};var profile=new ClearReturnProfile{Owned=new[]{row}};
                 void Render(int count)=>view.RenderOwnedDeparture(profile,new[]{card},Enumerable.Repeat(card,count).ToArray(),null,true,(_,__)=>{},()=>{},_=>{},()=>{},false,save:exploration?(System.Action)(()=>{}):null,deckName:"検証",rename:_=>{});
                 Render(required-1);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());Render(required);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());StringAssert.Contains(required.ToString(),root.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureDraftCount").text);if(exploration)StringAssert.Contains("30",root.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureValidation").text);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [TestCase(true,false,false,false,"シンキヘンセイ","ミホゾン")]
+        [TestCase(false,true,false,false,"シヨウチュウをヘンシュウ","ホゾンズみ")]
+        [TestCase(false,true,true,false,"シヨウチュウをヘンシュウ","ミホゾン")]
+        [TestCase(false,false,false,false,"ホゾンデッキをヘンシュウ","ホゾンズみ")]
+        [TestCase(false,false,true,false,"ホゾンデッキをヘンシュウ","ミホゾン")]
+        [TestCase(false,true,true,true,"シヨウチュウをヘンシュウ","ホゾンのサイシコウ")]
+        public void 探索編成の状態案内だけを更新し編成や保存callbackを変更しない(bool isNew,bool selected,bool dirty,bool pending,string kind,string state)
+        {
+            var root=new GameObject("ExplorationDeckState",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);view.ConfigureExplorationDeckLibrary();var profile=new ClearReturnProfile();byte[] before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);int saved=0;
+                view.RenderOwnedDeparture(profile,new Card[0],new Card[0],"30マイヒツヨウ",false,(_,__)=>{},null,_=>{},()=>{},false,save:()=>saved++,deckName:"テスト",rename:_=>{});
+                view.SetExplorationDeckEditingState(isNew,selected,dirty,pending);var label=root.GetComponentsInChildren<Text>().Single(x=>x.name=="ExplorationDeckEditingState");StringAssert.Contains(kind,label.text);StringAssert.Contains(state,label.text);StringAssert.Contains("シヨウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="DepartureRules").text);
+                CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));Assert.AreEqual(0,saved);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="SaveNamedDeck").IsInteractable());
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [TestCase(false,true,4,0,29,true,false,"ヘンセイ0マイ")]
+        [TestCase(false,true,4,4,29,false,true,"ショジ4マイまで")]
+        [TestCase(false,true,4,3,30,false,true,"デッキ30マイまで")]
+        [TestCase(false,true,4,3,29,true,true,null)]
+        [TestCase(true,true,4,3,29,false,false,"サイシコウまち")]
+        [TestCase(false,false,4,3,29,false,true,"テイギミカイケツ")]
+        [TestCase(false,false,4,0,29,false,false,"ヘンセイ0マイ")]
+        [TestCase(false,true,0,0,0,false,false,"ショジ0マイまで")]
+        [TestCase(false,true,4,4,30,false,true,"ショジ4マイまで")]
+        public void 探索増減の無効理由は既存のButton可否と一致し編成や保存を変更しない(bool pending,bool defined,int owned,int count,int total,bool canAdd,bool canRemove,string reason)
+        {
+            var root=new GameObject("ExplorationChangeReason",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);view.ConfigureExplorationDeckLibrary();var card=new Card("guide-reason","テスト",0,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,10,"");var other=new Card("other","ベツ",0,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,10,"");var profile=new ClearReturnProfile{Owned=new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Count=owned,Rarity=card.Rarity}}};var draft=Enumerable.Repeat(card,count).Concat(Enumerable.Repeat(other,total-count)).ToArray();byte[] before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);int changed=0,saved=0;
+                view.RenderOwnedDeparture(profile,new[]{defined?card:null},draft,"ケンショウ",false,(_,delta)=>changed+=delta,null,_=>{},()=>{},false,save:()=>saved++,deckName:"テスト",rename:_=>{},pending:pending,retrySave:()=>{});
+                Assert.AreEqual(canAdd,root.GetComponentsInChildren<Button>().Single(b=>b.name=="AddDepartureCard_0").IsInteractable());Assert.AreEqual(canRemove,root.GetComponentsInChildren<Button>().Single(b=>b.name=="RemoveDepartureCard_0").IsInteractable());var text=root.GetComponentsInChildren<Text>().Single(t=>t.name=="DeparturePerformance_0");if(reason==null){StringAssert.DoesNotContain("＋",text.text);StringAssert.DoesNotContain("−",text.text);}else StringAssert.Contains(reason,text.text);
+                using(var generated=new TextGenerator()){Assert.IsTrue(generated.Populate(text.text,text.GetGenerationSettings(text.rectTransform.rect.size)));Assert.GreaterOrEqual(generated.characterCountVisible,text.text.Length);}
+                CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));Assert.AreEqual(0,changed);Assert.AreEqual(0,saved);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 探索増減案内はmenuの現在割当を使い入力欄と保存再試行中を区別する()
+        {
+            var bindings=new Dictionary<(string,string,string),string>{{("gamepad","menu","Decide"),"North"},{("gamepad","menu","Cancel"),"West"}};var profile=new InputBindingProfile(bindings,bindings.Keys);
+            string pad=ClearReturnView.ExplorationDeckGuideText(profile,true);StringAssert.Contains(Olca.Unity.UnityInputProvider.GamepadBindingLabel("North"),pad);StringAssert.Contains(Olca.Unity.UnityInputProvider.GamepadBindingLabel("West"),pad);StringAssert.Contains("エラんで",pad);StringAssert.Contains("1マイずつ",pad);var keyboard=ClearReturnView.ExplorationDeckGuideText(profile,false);StringAssert.Contains("Enter",keyboard);StringAssert.Contains("Esc",keyboard);
+            StringAssert.DoesNotContain("ケッテイ",ClearReturnView.ExplorationDeckGuideText(profile,false,true));StringAssert.DoesNotContain("モドる",ClearReturnView.ExplorationDeckGuideText(profile,true,false,true));
+        }
+        [TestCase(1920f,1080f)][TestCase(1662.77f,1247.08f)][TestCase(2199.64f,942.70f)]
+        public void 探索編成の三行案内と状態は実メニューフォントで欠けず画面内に収まる(float width,float height)
+        {
+            var root=new GameObject("ExplorationStateViewport",typeof(RectTransform));var viewport=(RectTransform)root.transform;viewport.sizeDelta=new Vector2(width,height);try{
+                var host=new GameObject("ExplorationStateView",typeof(RectTransform));host.transform.SetParent(root.transform,false);var view=host.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);view.ConfigureExplorationDeckLibrary();
+                view.RenderOwnedDeparture(new ClearReturnProfile(),new Card[0],new Card[0],null,false,(_,__)=>{},null,_=>{},()=>{},false,save:()=>{},deckName:"テスト",rename:_=>{});view.SetExplorationDeckEditingState(false,true,true,false);
+                foreach(string name in new[]{"DepartureRules","ExplorationDeckEditingState","DepartureValidation","ExplorationDeckOperationGuide"}){
+                    var label=host.GetComponentsInChildren<Text>().Single(t=>t.name==name);RequireInside(viewport,label.rectTransform);using(var generated=new TextGenerator()){Assert.IsTrue(generated.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)));Assert.GreaterOrEqual(generated.characterCountVisible,label.text.Length,name);}
+                }
+                StringAssert.Contains("シヨウ",host.GetComponentsInChildren<Text>().Single(t=>t.name=="DepartureRules").text);
+                var profile=new ClearReturnProfile{SavedDecks=new[]{new SavedDepartureDeck{Id="active",Name="テスト",Cards=new SavedDeckCard[30]}},EquippedDeckId="active"};view.RenderSavedDeckMenu(profile,null,false,()=>{},_=>{},null,_=>{},_=>{},()=>{},()=>{});var help=host.GetComponentsInChildren<Text>().Single(t=>t.name=="SavedDeckHelp");
+                using(var generated=new TextGenerator()){var settings=help.GetGenerationSettings(help.rectTransform.rect.size);Assert.IsTrue(generated.Populate(help.text,settings));Assert.GreaterOrEqual(generated.characterCountVisible,help.text.Length);foreach(var line in help.text.Split('\n'))Assert.Less(generated.GetPreferredWidth(line,settings),help.rectTransform.rect.width-160,"Playerの丸めと全文入口用の余裕を残す");}
+                Assert.IsFalse(host.GetComponentsInChildren<Button>().Any(b=>b.name=="SavedDeckHelpDetails"));
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 探索一覧は使用中を名前でも明示し保存と切替の違いだけを案内する()
+        {
+            var root=new GameObject("ExplorationUsageLabel",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);view.ConfigureExplorationDeckLibrary();var profile=new ClearReturnProfile{EquippedDeckId="active",SavedDecks=new[]{new SavedDepartureDeck{Id="active",Name="なまえ",Cards=new SavedDeckCard[30]},new SavedDepartureDeck{Id="other",Name="別",Cards=new SavedDeckCard[30]}}};byte[] before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);int calls=0;
+                view.RenderSavedDeckMenu(profile,null,false,()=>calls++,_=>calls++,null,_=>calls++,_=>calls++,()=>calls++,()=>calls++);
+                StringAssert.Contains("シヨウチュウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="SavedDeckRow_active").text);StringAssert.DoesNotContain("シヨウチュウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="SavedDeckRow_other").text);StringAssert.Contains("キリカエ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="SavedDeckHelp").text);Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="DeleteDeck_active").IsInteractable());CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));Assert.AreEqual(0,calls);
             }finally{UnityEngine.Object.DestroyImmediate(root);}
         }
         [Test] public void 探索使用中は使用ボタンに表示し削除を無効化して旧20枚の選択も拒否する()
@@ -990,6 +1087,32 @@ namespace Olca.Tests
                     if(size.y==1080)Assert.AreEqual(-5,((RectTransform)items[0].transform).anchoredPosition.y,.01f);
                 }finally{Object.DestroyImmediate(root);}
             }
+        }
+
+        [Test]
+        public void ダンジョン店の購入情報は不足額と購入後残高を表示しイベントの表示を変えない()
+        {
+            var root=new GameObject("ShopPurchaseClarity",typeof(RectTransform));try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);
+                var options=new[]{new DungeonVisitOption("sword",5,Create("sword",CardSeries.Sword))};int confirmed=0,cancelled=0,exited=0;
+                Text Label(string name)=>root.GetComponentsInChildren<Text>().Single(t=>t.name==name);Button Control(string name)=>root.GetComponentsInChildren<Button>().Single(t=>t.name==name);
+                void Draw(int selected,long money,bool can,bool shop)=>view.RenderDungeonVisit("店",new[]{"sword"},new[]{true},selected,false,can,_=>{},()=>confirmed++,()=>cancelled++,()=>exited++,()=>{},true,options,new[]{false},money,shop:shop);
+                Draw(0,2,false,true);Assert.AreEqual(Color.white,Label("VisitOperationGuide").color);using(var generator=new TextGenerator()){var guide=Label("VisitOperationGuide");generator.Populate(guide.text,guide.GetGenerationSettings(guide.rectTransform.rect.size));Assert.AreEqual(guide.text.Length,generator.characterCountVisible);}StringAssert.Contains("3",Label("VisitPurchaseBalance").text);StringAssert.Contains(CustomDisplay.Katakana("不足"),Label("VisitPurchaseBalance").text);Assert.IsFalse(Control("ConfirmVisit").interactable);StringAssert.Contains(CustomDisplay.Katakana("選択取消"),Label("VisitOperationGuide").text);
+                Draw(0,10,true,true);StringAssert.Contains(CustomDisplay.Katakana("購入後 5"),Label("VisitPurchaseBalance").text);Assert.AreEqual(CustomDisplay.Katakana("購入する"),Control("ConfirmVisit").GetComponentInChildren<Text>().text);Control("ConfirmVisit").onClick.Invoke();Assert.AreEqual(1,confirmed);Assert.AreEqual(5,options[0].Price);
+                Control("CancelVisit").onClick.Invoke();Assert.AreEqual(1,cancelled);Assert.AreEqual(0,exited);
+                Draw(-1,10,false,true);Assert.IsFalse(Control("CancelVisit").interactable);StringAssert.Contains(CustomDisplay.Katakana("退出して保存"),Label("VisitOperationGuide").text);StringAssert.Contains(CustomDisplay.Katakana("退出時に保存"),Label("VisitHelp").text);
+                Draw(0,10,true,false);Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(t=>t.name=="VisitOperationGuide"));Assert.AreEqual(CustomDisplay.Katakana("選択を確定"),Control("ConfirmVisit").GetComponentInChildren<Text>().text);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void ダンジョン店の五商品は三行スクロールに収まり購入情報と操作部が交差しない()
+        {
+            var root=new GameObject("ShopPurchaseLayout",typeof(RectTransform));try{
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);var options=Enumerable.Range(0,5).Select(i=>new DungeonVisitOption("item"+i,5,Create("sword",CardSeries.Sword))).ToArray();
+                view.RenderDungeonVisit("店",options.Select(o=>o.Label).ToArray(),Enumerable.Repeat(true,5).ToArray(),0,false,true,_=>{},()=>{},()=>{},()=>{},()=>{},true,options,new bool[5],10,shop:true);Canvas.ForceUpdateCanvases();
+                var area=root.GetComponentsInChildren<ScrollRect>().Single(s=>s.name=="VisitOptionsScroll");Assert.Greater(area.content.rect.height,area.viewport.rect.height);Assert.IsTrue(root.GetComponentsInChildren<Button>().Single(b=>b.name=="VisitOption_4").transform.IsChildOf(area.content));
+                var guide=root.GetComponentsInChildren<Text>().Single(t=>t.name=="VisitOperationGuide").rectTransform;var confirm=(RectTransform)root.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmVisit").transform;Assert.Greater(guide.anchoredPosition.y-guide.rect.height/2,confirm.anchoredPosition.y+confirm.rect.height/2);
+            }finally{Object.DestroyImmediate(root);}
         }
 
         [Test]

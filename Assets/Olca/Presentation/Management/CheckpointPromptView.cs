@@ -34,7 +34,7 @@ namespace Olca.Presentation.Exploration
         private Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease presentation;
         private Olca.Unity.MenuPadScope menu;
         private Button back,pause;private bool covered;private int uncoveredFrame=-1;
-        private Action returned,entered;private Func<bool> canEnter;private Func<string> interactionHint;private Func<bool> trialRoute,transientInputBlocked;private Button entrance;private Text trialRouteHint;private Image trialDoor;private RectTransform reloadPoint;private Text reloadPointLabel;
+        private Action returned,entered;private Func<bool> canEnter;private Func<string> interactionHint;private Func<bool> trialRoute,transientInputBlocked;private Button entrance;private Text entranceTitle,entranceActionHint;private Text trialRouteHint;private Image trialDoor;private RectTransform reloadPoint;private Text reloadPointLabel;
         private Func<Olca.Core.Domain.Card,Sprite> cardIcon;
         private Olca.Core.Logic.Integration.OutsideExplorationCards renderedCards;
         private bool renderedDeckLocation;
@@ -90,7 +90,7 @@ namespace Olca.Presentation.Exploration
                 handCosts[slot]=factory.Label("OutsideHandCost"+slot,transform,Vector2.one,new Vector2(x+20,-209),new Vector2(138,24));handCosts[slot].fontSize=18;handCosts[slot].alignment=TextAnchor.MiddleLeft;handCosts[slot].color=new Color(.7f,.89f,1);handCosts[slot].raycastTarget=false;
             }
             selectionGuideText=factory.Label("OutsideSelectionGuide",transform,Vector2.one,new Vector2(-370,-246),new Vector2(650,26));selectionGuideText.fontSize=18;selectionGuideText.color=Color.white;selectionGuideText.raycastTarget=false;selectionGuideText.resizeTextForBestFit=true;selectionGuideText.resizeTextMinSize=16;selectionGuideText.resizeTextMaxSize=18;
-            for(int i=0;i<4;i++){var button=factory.Button(i==0?"OutsideSupplyChest":i==1?"OutsidePoisonSupplyChest":i==2?"OutsideTrialPoisonPoint":"OutsideCardSupplyChest","ホキュウバコ（カリ）",transform,new Vector2(0,.21f),Vector2.zero);button.GetComponent<RectTransform>().sizeDelta=new Vector2(420,140);Olca.Presentation.Dungeon.UiLook.Button(button);button.gameObject.SetActive(false);var label=button.GetComponentInChildren<Text>();label.rectTransform.offsetMin=new Vector2(18,8);label.rectTransform.offsetMax=new Vector2(-18,-8);label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;supplySlots[i]=new SupplySlot{Button=button,Index=i,X=i==0?Olca.Core.Logic.Integration.OutsideTrialRoute.SupplyX:i==1?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonSupplyX:i==2?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonTrialX:Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyX};}
+            for(int i=0;i<5;i++){var button=factory.Button(i==0?"OutsideSupplyChest":i==1?"OutsidePoisonSupplyChest":i==2?"OutsideTrialPoisonPoint":i==3?"OutsideCardSupplyChest":"OutsideShopPoint","ホキュウバコ（カリ）",transform,new Vector2(0,.21f),Vector2.zero);button.GetComponent<RectTransform>().sizeDelta=new Vector2(420,140);Olca.Presentation.Dungeon.UiLook.Button(button);button.gameObject.SetActive(false);var label=button.GetComponentInChildren<Text>();label.rectTransform.offsetMin=new Vector2(18,8);label.rectTransform.offsetMax=new Vector2(-18,-8);label.horizontalOverflow=HorizontalWrapMode.Wrap;label.verticalOverflow=VerticalWrapMode.Truncate;supplySlots[i]=new SupplySlot{Button=button,Index=i,X=i==0?Olca.Core.Logic.Integration.OutsideTrialRoute.SupplyX:i==1?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonSupplyX:i==2?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonTrialX:i==3?Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyX:Olca.Core.Logic.Integration.OutsideTrialRoute.ShopX};}
 
             cardUseText=factory.Label("OutsideCardUseGuide",transform,new Vector2(1,0),new Vector2(-450,180),new Vector2(700,96));cardUseText.fontSize=20;cardUseText.alignment=TextAnchor.MiddleLeft;cardUseText.color=Color.white;cardUseText.raycastTarget=false;
             leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
@@ -100,7 +100,41 @@ namespace Olca.Presentation.Exploration
             var doorObject=new GameObject("OutsideTrialDungeonMarker",typeof(RectTransform),typeof(Image));doorObject.transform.SetParent(transform,false);trialDoor=doorObject.GetComponent<Image>();trialDoor.sprite=resources.GetShared<Sprite>("OlcaUI/window");trialDoor.type=Image.Type.Sliced;trialDoor.color=new Color(.15f,.45f,.55f,.92f);trialDoor.raycastTarget=false;var doorRect=trialDoor.rectTransform;doorRect.anchorMin=doorRect.anchorMax=new Vector2(0,.21f);doorRect.pivot=new Vector2(.5f,0);doorRect.sizeDelta=new Vector2(140,200);doorObject.transform.SetSiblingIndex(player.transform.GetSiblingIndex());
             var reloadObject=new GameObject("OutsideReloadPoint",typeof(RectTransform),typeof(Image));reloadObject.transform.SetParent(transform,false);reloadPoint=reloadObject.GetComponent<RectTransform>();reloadPoint.anchorMin=reloadPoint.anchorMax=new Vector2(0,.21f);reloadObject.GetComponent<Image>().color=new Color(.025f,.07f,.1f,.9f);reloadObject.GetComponent<Image>().raycastTarget=false;
             reloadPointLabel=factory.Label("OutsideReloadPointLabel",reloadPoint,new Vector2(.5f,.5f),Vector2.zero,new Vector2(210,48));reloadPointLabel.fontSize=24;reloadPointLabel.alignment=TextAnchor.MiddleCenter;reloadPointLabel.color=Color.white;reloadPointLabel.raycastTarget=false;reloadPointLabel.resizeTextForBestFit=true;reloadPointLabel.resizeTextMinSize=18;reloadPointLabel.resizeTextMaxSize=24;
-            entrance=factory.Button("OutsideDungeonEntrance","ダンジョン イリグチ",transform,new Vector2(0,.21f),new Vector2(0,340));entrance.GetComponent<RectTransform>().sizeDelta=new Vector2(340,100);entrance.navigation=new Navigation{mode=Navigation.Mode.None};trialRouteHint=factory.Label("OutsideTrialRouteHint",transform,new Vector2(.5f,0),new Vector2(0,75),new Vector2(1100,60));trialRouteHint.fontSize=22;trialRouteHint.color=Color.white;trialRouteHint.resizeTextForBestFit=true;trialRouteHint.resizeTextMinSize=18;trialRouteHint.resizeTextMaxSize=22;
+            entrance=factory.Button("OutsideDungeonEntrance","ダンジョン イリグチ",transform,new Vector2(0,.21f),new Vector2(0,340));entrance.GetComponent<RectTransform>().sizeDelta=new Vector2(340,100);entrance.navigation=new Navigation{mode=Navigation.Mode.None};entranceTitle=entrance.GetComponentInChildren<Text>();entranceTitle.rectTransform.anchorMin=entranceTitle.rectTransform.anchorMax=new Vector2(.5f,.5f);entranceTitle.rectTransform.sizeDelta=new Vector2(320,42);entranceTitle.rectTransform.anchoredPosition=new Vector2(0,22);entranceTitle.fontSize=24;entranceTitle.color=new Color(.6f,.94f,1f);entranceTitle.raycastTarget=false;
+            entranceActionHint=factory.Label("OutsideEntranceActionHint",entrance.transform,new Vector2(.5f,.5f),new Vector2(0,-23),new Vector2(320,40));entranceActionHint.fontSize=22;entranceActionHint.color=Color.white;entranceActionHint.raycastTarget=false;entranceActionHint.gameObject.SetActive(false);trialRouteHint=factory.Label("OutsideTrialRouteHint",transform,new Vector2(.5f,0),new Vector2(0,75),new Vector2(1100,60));trialRouteHint.fontSize=22;trialRouteHint.color=Color.white;trialRouteHint.resizeTextForBestFit=true;trialRouteHint.resizeTextMinSize=18;trialRouteHint.resizeTextMaxSize=22;
+        }
+        // 利用判定は呼出側の既存条件を使い、目印と操作案内だけを分離する。
+        private void RenderEntranceHint(bool visible,bool available,bool grounded,string key)
+        {
+            entrance.gameObject.SetActive(visible);entrance.interactable=available;
+            // 空中では以前の非表示時と同様に、背面の入力を遮らない。
+            entrance.image.raycastTarget=grounded;entrance.image.enabled=grounded;
+            bool show=visible&&available&&!string.IsNullOrWhiteSpace(key)&&key!="ミワリアテ"&&key!="未割当";
+            entranceActionHint.gameObject.SetActive(show);entranceActionHint.text=show?Olca.Presentation.CustomScreen.CustomDisplay.Katakana("["+key+"] シラベル"):"";
+        }
+        private static float EntranceTitleOffset(Rect label,Rect actor,Rect viewport)
+        {
+            if(!label.Overlaps(actor))return 0;
+            const float gap=16;float half=label.width*.5f;float left=actor.xMin-gap-half,right=actor.xMax+gap+half;
+            bool Fits(float center)=>center-half>=viewport.xMin+gap&&center+half<=viewport.xMax-gap;
+            float target=Fits(right)?right:left;
+            if(!Fits(target))target=Fits(left)?left:right;
+            return target-label.center.x;
+        }
+        private Rect BoundsInView(RectTransform value)
+        {
+            var corners=new Vector3[4];value.GetWorldCorners(corners);var min=(Vector2)transform.InverseTransformPoint(corners[0]);var max=min;
+            foreach(var point in corners){var local=(Vector2)transform.InverseTransformPoint(point);min=Vector2.Min(min,local);max=Vector2.Max(max,local);}
+            return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
+        }
+        // 操作領域は固定したまま、空中で重なる入口名だけをキャラの横へ避ける。
+        private void PlaceEntranceTitle(bool grounded)
+        {
+            entranceTitle.rectTransform.anchoredPosition=new Vector2(0,22);entranceTitle.text="ダンジョン イリグチ";
+            if(grounded||!entrance.gameObject.activeInHierarchy)return;
+            float shift=EntranceTitleOffset(BoundsInView(entranceTitle.rectTransform),BoundsInView(player.rectTransform),((RectTransform)transform).rect);
+            entranceTitle.rectTransform.anchoredPosition+=new Vector2(shift,0);
+            if(shift!=0)entranceTitle.text=shift>0?"< ダンジョン イリグチ":"ダンジョン イリグチ >";
         }
         // ワールド追従の案内だけを避け、固定HUDやゲーム座標は動かさない。
         private void PlaceReloadBelowVitals()
@@ -122,7 +156,7 @@ namespace Olca.Presentation.Exploration
             if(landingViews.Count==0){var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,back.GetComponentInChildren<Text>().font,null);
                 foreach(var surface in lease.Core.Definition.LandingSurfaces){var go=new GameObject("OutsideLandingSurface-"+surface.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=terrain.sprite;image.type=Image.Type.Tiled;image.color=new Color(.8f,.95f,1,.9f);image.raycastTarget=false;var rect=image.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.21f);rect.pivot=new Vector2(0,1);
                     var label=factory.Label("OutsideLandingLabel-"+surface.Id,transform,new Vector2(0,.21f),Vector2.zero,new Vector2(300,32));label.text="ケンショウ アシバ";label.fontSize=20;label.color=Color.white;label.raycastTarget=false;image.transform.SetSiblingIndex(player.transform.GetSiblingIndex());label.transform.SetSiblingIndex(player.transform.GetSiblingIndex());landingViews.Add((image,label));}}
-            menu=new Olca.Unity.MenuPadScope(()=>CanPlay){CancelOnly=true};menu.Bind(transform,back.name,()=>back.onClick.Invoke());UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(back.gameObject);Render();
+            menu=new Olca.Unity.MenuPadScope(()=>CanPlay){CancelOnly=true,SuppressPadCancel=true};menu.Bind(transform,back.name,()=>back.onClick.Invoke());UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(back.gameObject);Render();
         }
         public void SetCovered(bool value)
         {
@@ -145,7 +179,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearRecovery(){recover=null;canRecover=null;recoveryMessage=null;if(recoveryPoint!=null)recoveryPoint.gameObject.SetActive(false);}
         private sealed class SupplySlot{public Button Button;public int Index;public long X;public bool? Expanded;public string RenderedMessage;public Action Claim;public Func<bool> CanUse;public Func<string> Message;}
-        private readonly SupplySlot[] supplySlots=new SupplySlot[4];
+        private readonly SupplySlot[] supplySlots=new SupplySlot[5];
         // 遠方は名称/概要の2行だけ。操作範囲や入力可否は既存Core/呼出側に従う。
         private static string CompactSupplyMessage(string value,Text label)
         {
@@ -156,6 +190,7 @@ namespace Olca.Presentation.Exploration
             int first=value.IndexOf('\n');if(first<0)return Fit(value);int second=value.IndexOf('\n',first+1);return Fit(value.Substring(0,first))+"\n"+Fit(second<0?value.Substring(first+1):value.Substring(first+1,second-first-1));
         }
 
+        public void ConfigureShop(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(4,action,canUse,message);
         public void ConfigureSupply(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(0,action,canUse,message);
         public void ConfigurePoisonSupply(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(1,action,canUse,message);
         public void ConfigureCardSupply(Action action,Func<bool> canUse,Func<string> message)=>ConfigureSupplySlot(3,action,canUse,message);
@@ -206,7 +241,7 @@ namespace Olca.Presentation.Exploration
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;
             float camera=presentation.Camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
             float verticalOffset=ResolveVerticalViewOffset(core);
-            var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;cardUseText.gameObject.SetActive(!editingLocation);string feedback=presentation.CardUseMessageFrame>=0&&core.Frame>=presentation.CardUseMessageFrame&&core.Frame-presentation.CardUseMessageFrame<90?presentation.CardUseMessage:null;cardUseText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((cardUseGuide?.Invoke()??"")+(feedback==null?"":"\n"+feedback));movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
+            var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;cardUseText.gameObject.SetActive(!editingLocation);string feedback=presentation.CardUseMessageFrame>=0&&core.Frame>=presentation.CardUseMessageFrame&&core.Frame-presentation.CardUseMessageFrame<90?presentation.CardUseMessage:null;cardUseText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((cardUseGuide?.Invoke()??"")+(presentation.TrialBarrierHp>0?" / バリア "+presentation.TrialBarrierHp+"（カリ）":"")+(feedback==null?"":"\n"+feedback));movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
             if(!ReferenceEquals(renderedCards,cards)||renderedDeckLocation!=editingLocation||shownHandRevision!=(cards?.HandRevision??-1)||handHeading.text==""){
                 if(!ReferenceEquals(renderedCards,cards))BindHandSelection(context,presentation,cards);renderedDeckLocation=editingLocation;renderedCards=cards;shownHandRevision=cards?.HandRevision??-1;handHeading.text=editingLocation?"ヘンセイチテン（カリ）":cards==null?"テフダ  /  デッキ ミトウロク":"テフダ "+cards.Hand.Count+"  /  ヤマフダ "+cards.RemainingCount;
                 for(int slot=0;slot<3;slot++){
@@ -223,15 +258,15 @@ namespace Olca.Presentation.Exploration
             float Origin(float x)=>(x-camera+viewport*.5f)*pixelsPerWorldUnit;
             bool reloadNearby=Olca.Core.Logic.Integration.OutsideTrialRoute.IsReloadZone(core);reloadPoint.gameObject.SetActive(trialRoute?.Invoke()==true);reloadPoint.anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.ReloadX/unit)),520-verticalOffset*pixelsPerWorldUnit);reloadPoint.sizeDelta=reloadPointLabel.rectTransform.sizeDelta=reloadNearby?new Vector2(350,100):new Vector2(210,48);reloadPointLabel.text=reloadNearby?"リロード（カリ）\nトオるとデッキ・ゲージカイフク\nモドる→デッキ":"リロード（カリ）";PlaceReloadBelowVitals();
             trialDoor.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true);trialDoor.rectTransform.anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),-verticalOffset*pixelsPerWorldUnit);trialRouteHint.gameObject.SetActive(trialRoute?.Invoke()==true);trialRouteHint.text=core.TraversalProfile?.WallActionsUnlocked==true?"シヨウチケイ / ミギ18: ソード ヒョウテキ（カリ） / イリグチ・カベ":"シヨウチケイ / ミギ: ダンジョン イリグチ / カベハ ミカイホウ";
-            if(entrance!=null){entrance.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true&&core.IsGrounded);entrance.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),340-verticalOffset*pixelsPerWorldUnit);entrance.interactable=CanPlay&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core)&&(canEnter?.Invoke()??false);var label=entrance.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("ダンジョン イリグチ"+(entrance.interactable?"\n"+(interactionHint?.Invoke()??"")+" デ シラベル":"\nチカヅイテ シラベル"));label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
+            if(entrance!=null){entrance.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),340-verticalOffset*pixelsPerWorldUnit);RenderEntranceHint(entered!=null&&trialRoute?.Invoke()==true,CanPlay&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core)&&(canEnter?.Invoke()??false),core.IsGrounded,interactionHint?.Invoke());}
 
             foreach(var slot in supplySlots)if(slot?.Button!=null){
-                slot.Button.gameObject.SetActive(slot.Claim!=null&&trialRoute?.Invoke()==true);var rect=slot.Button.GetComponent<RectTransform>();rect.anchoredPosition=new Vector2(Origin((float)(slot.X/unit)),(slot.Index==3?510:340)-verticalOffset*pixelsPerWorldUnit);slot.Button.interactable=slot.CanUse?.Invoke()==true;
+                bool shop=slot.Index==4;bool nearShop=shop&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanVisitShop(core);bool naming=presentation.MapNameOpacity>0;slot.Button.gameObject.SetActive(slot.Claim!=null&&trialRoute?.Invoke()==true&&(!shop||!naming||nearShop));var rect=slot.Button.GetComponent<RectTransform>();rect.anchoredPosition=new Vector2(Origin((float)(slot.X/unit)),(shop?(naming?625:430):slot.Index==3?510:340)-verticalOffset*pixelsPerWorldUnit);slot.Button.interactable=slot.CanUse?.Invoke()==true;
                 // 遠方・使用済みでも案内を読めるようにする。操作可能時の既存配色は維持する。
                 slot.Button.GetComponentInChildren<Text>().color=slot.Button.interactable?Olca.Presentation.Dungeon.UiLook.Ink:Color.white;
-                bool expanded=slot.Index==0?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(core):slot.Index==1?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(core):slot.Index==2?Olca.Core.Logic.Integration.OutsideTrialRoute.CanTryPoison(core):Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(core);
+                bool expanded=slot.Index==0?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimSupply(core):slot.Index==1?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimPoisonSupply(core):slot.Index==2?Olca.Core.Logic.Integration.OutsideTrialRoute.CanTryPoison(core):slot.Index==3?Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(core):Olca.Core.Logic.Integration.OutsideTrialRoute.CanVisitShop(core);
                 var message=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(slot.Message?.Invoke()??"ホキュウバコ（カリ）");
-                if(slot.Expanded!=expanded||slot.RenderedMessage!=message){var label=slot.Button.GetComponentInChildren<Text>();rect.sizeDelta=expanded?new Vector2(420,140):new Vector2(320,82);label.resizeTextForBestFit=true;label.resizeTextMinSize=expanded?18:16;label.resizeTextMaxSize=expanded?24:18;label.text=expanded?message:CompactSupplyMessage(message,label);slot.Expanded=expanded;slot.RenderedMessage=message;}
+                if(slot.Expanded!=expanded||slot.RenderedMessage!=message){var label=slot.Button.GetComponentInChildren<Text>();rect.sizeDelta=shop?(expanded?new Vector2(420,72):new Vector2(300,60)):(expanded?new Vector2(420,140):new Vector2(320,82));label.resizeTextForBestFit=true;label.resizeTextMinSize=expanded?18:16;label.resizeTextMaxSize=expanded?24:18;label.text=expanded?message:CompactSupplyMessage(message,label);slot.Expanded=expanded;slot.RenderedMessage=message;}
             }
 
             if(recoveryPoint!=null){recoveryPoint.gameObject.SetActive(recover!=null&&trialRoute?.Invoke()==true);recoveryPoint.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryX/unit)),340-verticalOffset*pixelsPerWorldUnit);recoveryPoint.interactable=canRecover?.Invoke()==true;var label=recoveryPoint.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(recoveryMessage?.Invoke()??"ケンショウ カイフク（カリ）");label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
@@ -242,8 +277,8 @@ namespace Olca.Presentation.Exploration
             }
             if(sprite==null)sprite=idleSprite;
             player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);
-            RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);
+            RenderOutsideDefensiveField(presentation.Player?.HasBarrier==true,presentation.Player?.HasAura==true);RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)
             {
@@ -263,9 +298,9 @@ namespace Olca.Presentation.Exploration
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
         private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearCombatFeedback();ClearTrialSword();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearCombatFeedback();ClearTrialSword();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){if(player!=null)player.color=Color.white;ClearCombatFeedback();ClearTrialSword();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
+        private void OnDisable(){if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearCombatFeedback();ClearTrialSword();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;}
     }
 }
@@ -275,18 +310,61 @@ namespace Olca.Presentation.Management
     /// <summary>起動の表示だけ。保存判断やhost生成は注入された開始要求へ委譲する。</summary>
     public sealed class BootstrapTitleView:MonoBehaviour
     {
-        private ManagedScreenContext context;private Action hidden;private Button start;private Text status;private Olca.Unity.MenuPadScope menu;
+        private ManagedScreenContext context;private Action hidden;private Button start,newGame;private Text status;private Olca.Unity.MenuPadScope menu;
+        private GameplayPanelFactory factory;private ProgressActionDialog newGameDialog;private bool busy,canContinue,canCreate;private string hint,statusError;private Text inputGuide;private GameObject newGameFocus,startFocus;
         public static GameObject Create(Transform parent,Olca.Unity.ResourceManager resources){
             var root=new GameObject("BootstrapTitle",typeof(RectTransform),typeof(Image));root.SetActive(false);root.transform.SetParent(parent,false);var rect=(RectTransform)root.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;root.GetComponent<Image>().color=new Color(.015f,.04f,.06f,1);
             try{var view=root.AddComponent<BootstrapTitleView>();var source=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation");Sprite background=null;foreach(var sr in source.GetComponentsInChildren<SpriteRenderer>(true))if(sr.name=="DungeonBackground")background=sr.sprite;if(background==null)throw new InvalidOperationException("タイトルの共有背景がありません");
                 var bg=new GameObject("TitleOriginalBackground",typeof(RectTransform),typeof(Image),typeof(AspectRatioFitter));bg.transform.SetParent(root.transform,false);var image=bg.GetComponent<Image>();image.sprite=background;image.raycastTarget=false;var br=image.rectTransform;br.anchorMin=Vector2.zero;br.anchorMax=Vector2.one;br.offsetMin=br.offsetMax=Vector2.zero;var fit=bg.GetComponent<AspectRatioFitter>();fit.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;fit.aspectRatio=background.rect.width/background.rect.height;
-                var factory=new GameplayPanelFactory(root.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null);var title=factory.Label("TitleHeading",root.transform,new Vector2(.5f,.5f),new Vector2(0,160),new Vector2(1000,130));title.text="OLCA";title.fontSize=80;title.color=Color.white;
-                view.start=factory.Button("TitleStart","ハジメル",root.transform,new Vector2(.5f,.5f),new Vector2(0,-20));view.start.GetComponent<RectTransform>().sizeDelta=new Vector2(460,90);view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-150),new Vector2(1050,120));view.status.color=Color.white;view.status.fontSize=24;return root;
+                var factory=view.factory=new GameplayPanelFactory(root.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null);var title=factory.Label("TitleHeading",root.transform,new Vector2(.5f,.5f),new Vector2(0,200),new Vector2(1000,130));title.text="OLCA";title.fontSize=80;title.color=Color.white;
+                view.newGame=factory.Button("TitleNewGame","はじめから",root.transform,new Vector2(.5f,.5f),new Vector2(0,30));view.start=factory.Button("TitleStart","つづきから",root.transform,new Vector2(.5f,.5f),new Vector2(0,-90));
+                foreach(var button in new[]{view.newGame,view.start})button.GetComponent<RectTransform>().sizeDelta=new Vector2(460,90);
+                view.status=factory.Label("TitleStatus",root.transform,new Vector2(.5f,.5f),new Vector2(0,-240),new Vector2(1100,150));view.status.color=Color.white;view.status.fontSize=24;view.newGameFocus=AddFocusFrame(view.newGame);view.startFocus=AddFocusFrame(view.start);
+                view.inputGuide=factory.Label("TitleInputGuide",root.transform,new Vector2(.5f,.5f),new Vector2(0,-365),new Vector2(1400,100));view.inputGuide.color=Color.white;view.inputGuide.fontSize=24;return root;
             }catch{if(Application.isPlaying)Destroy(root);else DestroyImmediate(root);throw;}
         }
-        public void Show(ManagedScreenContext value,Action begin,Action hidden=null){Hide();context=value;this.hidden=hidden;start.onClick=new Button.ButtonClickedEvent();start.onClick.AddListener(()=>{if(this!=null&&context==value&&value.IsCurrent&&!value.DialogBlocksInput&&start.IsInteractable())begin?.Invoke();});SetBusy(false,null);gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>context?.IsCurrent==true&&start.IsInteractable());menu.Bind(transform,start.name,null);UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(start.gameObject);}
-        public void SetBusy(bool busy,string error){start.interactable=!busy;status.text=busy?"ヨミコミチュウ":error==null?"ツヅキノ セーブガ アル バアイハ ソノ シンコウカラ サイカイ":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error);}
-        public void Hide(){var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context=null;if(start!=null)start.onClick=new Button.ButtonClickedEvent();if(this!=null)gameObject.SetActive(false);}
-        private void LateUpdate(){menu?.Tick();}private void OnDisable(){var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();}
+        // 既存のView寿命検証向け互換入口。通常起動は保存判定を渡す。
+        public void Show(ManagedScreenContext value,Action begin,Action hidden=null)=>Show(value,begin,null,true,false,null,hidden);
+        public void Show(ManagedScreenContext value,Action resume,Action create,bool continueAvailable,bool createAvailable,string message,Action hidden=null)
+        {
+            Hide();context=value;this.hidden=hidden;canContinue=continueAvailable;canCreate=createAvailable;hint=message??(continueAvailable?"ホゾンした シンコウから サイカイします":"ツヅキの セーブが ありません");
+            void Bind(Button button,Action action){button.onClick=new Button.ButtonClickedEvent();button.onClick.AddListener(()=>{if(this!=null&&context==value&&value.IsCurrent&&!value.DialogBlocksInput&&button.IsInteractable())action?.Invoke();});}
+            Bind(start,resume);Bind(newGame,create);SetBusy(false,null);gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy);var focus=canContinue?start:newGame;menu.Bind(transform,focus.name,null);UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(focus.IsInteractable()?focus.gameObject:null);
+        }
+        public void SetContinueAvailable(){canContinue=true;hint="ホゾンした シンコウから サイカイします";SetBusy(busy,null);}
+        public void OpenNewGame(IProgressActionOperations operations,DialogManager manager,Action saved)
+        {
+            if(context?.IsCurrent!=true||busy||context.DialogBlocksInput||!canCreate)return;var owner=context;
+            if(newGameDialog==null){var panel=factory.Panel("TitleNewGameConfirmation",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,1f);newGameDialog=panel.AddComponent<ProgressActionDialog>();newGameDialog.Initialize(factory);newGameDialog.ConfigureTitlePresentation(factory);}
+            // 再表示時にも同じserviceの未保存計画を使う。保存/初期化そのものはDialogへ複製しない。
+            newGameDialog.Completed-=completed;completed=result=>{if(this==null||context!=owner||!owner.IsCurrent)return;if(result.Outcome==ProgressActionOutcome.NewGameStarted){SetContinueAvailable();saved?.Invoke();}};newGameDialog.Completed+=completed;
+            newGameDialog.OpenNewGame(operations,manager,owner,()=>this!=null&&context==owner&&owner.IsCurrent);
+        }
+        private Action<ProgressActionResult> completed;
+        // タイトルだけの表示。開始/保存の判断や入力処理は既存の経路を使う。
+        internal static GameObject AddFocusFrame(Button button)
+        {
+            var frame=new GameObject("TitleSelectionFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-5,-5);rect.offsetMax=new Vector2(5,5);
+            void Edge(string name,Vector2 min,Vector2 max,Vector2 size){var edge=new GameObject(name,typeof(RectTransform),typeof(Image));edge.transform.SetParent(frame.transform,false);var image=edge.GetComponent<Image>();image.color=new Color(.3f,.95f,1f);image.raycastTarget=false;var area=(RectTransform)edge.transform;area.anchorMin=min;area.anchorMax=max;area.anchoredPosition=Vector2.zero;area.sizeDelta=size;}
+            Edge("Top",new Vector2(0,1),Vector2.one,new Vector2(0,4));Edge("Bottom",Vector2.zero,new Vector2(1,0),new Vector2(0,4));Edge("Left",Vector2.zero,new Vector2(0,1),new Vector2(4,0));Edge("Right",new Vector2(1,0),Vector2.one,new Vector2(4,0));frame.SetActive(false);return frame;
+        }
+        public static string InputGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad,bool confirmation=false,bool canCancel=true)
+        {
+            string Label(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(profile!=null&&profile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null);
+            string direction=gamepad?"ホウコウ":confirmation?"← / →":"↑ / ↓";
+            string decide=gamepad?Label("Decide"):"Enter",cancel=gamepad?Label("Cancel"):"Esc";
+            return direction+" : センタク    "+decide+" : ケッテイ"+(canCancel?"\n"+cancel+(confirmation?" : トリケシ":" : カクニンガメンで モドる"):"\nホゾンの サイシコウが ヒツヨウです");
+        }
+        public void RefreshPresentation()
+        {
+            if(status==null)return;var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;string focus=selected!=null?selected.name:menu?.FocusName;
+            bool visible=context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy;
+            newGameFocus.SetActive(visible&&focus==newGame.name&&newGame.IsInteractable());startFocus.SetActive(visible&&focus==start.name&&start.IsInteractable());
+            status.text=busy?"ヨミコミチュウ":statusError!=null?Olca.Presentation.CustomScreen.CustomDisplay.Katakana(statusError):!canCreate?hint:focus==newGame.name?"アタラしい シンコウを カイシします。\nカクニンガメンで トリケシできます。"+(!canContinue?"\nツヅキの セーブが ありません":""):hint;
+            inputGuide.gameObject.SetActive(visible);if(visible)inputGuide.text=InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);
+        }
+        public void SetBusy(bool value,string error){busy=value;statusError=error;start.interactable=!busy&&canContinue;newGame.interactable=!busy&&canCreate;RefreshPresentation();}
+        public void Hide(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context=null;if(start!=null)start.onClick=new Button.ButtonClickedEvent();if(newGame!=null)newGame.onClick=new Button.ButtonClickedEvent();if(this!=null)gameObject.SetActive(false);}
+        private void LateUpdate(){newGameDialog?.RefreshLifetime();menu?.Tick();RefreshPresentation();}private void OnDisable(){newGameDialog?.Abort();var ended=hidden;hidden=null;ended?.Invoke();menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}private void OnDestroy(){OnDisable();completed=null;}
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -22,11 +23,75 @@ namespace Olca.Presentation.Management
         public string TakeRestoredFocus(){var value=restoredFocus;restoredFocus=null;return value;}
         public ManagedScreenContext Context=>context;
         public bool Covered=>covered;
+        // 外界Pauseの行・列。ゲーム操作を左、設定を右2列へ配置する。
+        private static readonly (string Name,int Row,int First,int Last)[] navigationCells={
+            ("ResumeButton",0,0,0),("OutsideItemsButton",1,0,0),("OutsideEquipmentButton",2,0,0),("OutsideKamuiButton",3,0,0),
+            ("KeyboardSettingsButton",0,1,1),("GamepadSettingsButton",0,2,2),("AudioSettingsButton",1,1,1),("VibrationSetting",1,2,2),
+            ("TransformationAnimationSetting",2,1,1),("DialogueTextSpeedButton",2,2,2)};
+        public Selectable FindNavigation(Selectable from,Vector2 direction)
+        {
+            if(!(from is Button current)||!actions.ContainsKey(current)||direction==Vector2.zero)return null;
+            var origin=navigationCells.FirstOrDefault(c=>c.Name==current.name);if(origin.Name==null)return null;
+            var cells=navigationCells.Where(c=>actions.Keys.Any(b=>b!=null&&b.name==c.Name&&b.gameObject.activeInHierarchy&&b.IsInteractable()));
+            var target=direction.x!=0?
+                cells.Where(c=>c.Row==origin.Row&&(direction.x>0?c.First>origin.Last:c.Last<origin.First)).OrderBy(c=>direction.x>0?c.First-origin.Last:origin.First-c.Last).FirstOrDefault():
+                cells.Where(c=>c.First<=origin.Last&&c.Last>=origin.First&&(direction.y>0?c.Row<origin.Row:c.Row>origin.Row)).OrderBy(c=>Math.Abs(c.Row-origin.Row)).ThenBy(c=>Math.Abs(c.First+c.Last-origin.First-origin.Last)).ThenBy(c=>c.First).FirstOrDefault();
+            return target.Name==null?null:actions.Keys.First(b=>b!=null&&b.name==target.Name);
+        }
+
+        private bool outsidePresentation;
+        private RectTransform itemRect;private Vector2 itemPosition,itemSize;private Text playHeading;private string playHeadingText;
+        private readonly Dictionary<Button,bool> outsideHidden=new Dictionary<Button,bool>();
+        private void SetOutsideLayout(bool value)
+        {
+            if(value){foreach(var button in actions.Keys.Where(b=>b!=null&&(b.name=="LoadCheckpointButton"||b.name=="OwnedCardsButton"||b.name=="RetreatButton"))){if(!outsideHidden.ContainsKey(button))outsideHidden.Add(button,button.gameObject.activeSelf);button.gameObject.SetActive(false);}}
+            else{foreach(var pair in outsideHidden)if(pair.Key!=null)pair.Key.gameObject.SetActive(pair.Value);outsideHidden.Clear();}
+            if(itemRect!=null){itemRect.anchoredPosition=value?new Vector2(-480,0):itemPosition;itemRect.sizeDelta=value?new Vector2(360,88):itemSize;}
+            var equipment=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideEquipmentButton");
+            if(equipment!=null){equipment.gameObject.SetActive(value);var rect=(RectTransform)equipment.transform;rect.anchoredPosition=new Vector2(-480,-108);rect.sizeDelta=new Vector2(360,88);}
+            var kamui=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideKamuiButton");if(kamui!=null){kamui.gameObject.SetActive(value);((RectTransform)kamui.transform).anchoredPosition=new Vector2(-480,-216);((RectTransform)kamui.transform).sizeDelta=new Vector2(360,88);}
+            if(playHeading!=null)playHeading.text=value?"タンサク":playHeadingText;
+        }
+        private Text inputGuide;
+        private readonly Dictionary<Button,GameObject> focusFrames=new Dictionary<Button,GameObject>();
+        // 操作は変更せず、メニューが実際に読む割当だけを案内する。
+        public static string InputGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad)
+        {
+            if(!gamepad)return "Enter : ケッテイ    Esc : モドる";
+            string Label(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(profile!=null&&profile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null);
+            return Label("Decide")+" : ケッテイ    "+Label("Cancel")+" : モドる";
+        }
+        public void SetOutsidePresentation(bool value)
+        {
+            outsidePresentation=value;SetOutsideLayout(value);
+            if(value&&inputGuide==null){
+                var obj=new GameObject("OutsidePauseInputGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);inputGuide=obj.GetComponent<Text>();
+                inputGuide.font=actions.Keys.First().GetComponentInChildren<Text>().font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
+                inputGuide.rectTransform.sizeDelta=new Vector2(1300,48);inputGuide.rectTransform.anchoredPosition=new Vector2(0,-350);
+                foreach(var button in actions.Keys){
+                    var frame=new GameObject("OutsidePauseFocusFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-4,-4);rect.offsetMax=new Vector2(4,4);
+                    void Edge(string name,Vector2 min,Vector2 max,Vector2 size){var edge=new GameObject(name,typeof(RectTransform),typeof(Image));edge.transform.SetParent(frame.transform,false);var image=edge.GetComponent<Image>();image.color=new Color(.3f,.95f,1f,1f);image.raycastTarget=false;var area=(RectTransform)edge.transform;area.anchorMin=min;area.anchorMax=max;area.anchoredPosition=Vector2.zero;area.sizeDelta=size;}
+                    Edge("Top",new Vector2(0,1),Vector2.one,new Vector2(0,4));Edge("Bottom",Vector2.zero,new Vector2(1,0),new Vector2(0,4));Edge("Left",Vector2.zero,new Vector2(0,1),new Vector2(4,0));Edge("Right",new Vector2(1,0),Vector2.one,new Vector2(4,0));frame.SetActive(false);focusFrames.Add(button,frame);
+                }
+            }
+            RefreshOutsidePresentation();
+        }
+        public void RefreshOutsidePresentation()
+        {
+            bool visible=outsidePresentation&&gameObject.activeInHierarchy&&!covered&&(inputAllowed?.Invoke()??false);
+            if(inputGuide!=null){inputGuide.gameObject.SetActive(visible);if(visible)inputGuide.text=InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);}
+            var selected=EventSystem.current?.currentSelectedGameObject;
+            foreach(var pair in focusFrames)if(pair.Key!=null&&pair.Value!=null)pair.Value.SetActive(visible&&pair.Key.gameObject==selected&&pair.Key.gameObject.activeInHierarchy&&pair.Key.IsInteractable());
+        }
+        private void LateUpdate()=>RefreshOutsidePresentation();
+
         public bool BlocksInput=>context?.DialogBlocksInput==true;
         public void Initialize(Func<bool> allowed)
         {
             inputAllowed=allowed;presentation=gameObject.AddComponent<CanvasGroup>();
             foreach(var button in GetComponentsInChildren<Button>(true))actions.Add(button,button.onClick);
+            itemRect=transform.Find("OutsideItemsButton") as RectTransform;if(itemRect!=null){itemPosition=itemRect.anchoredPosition;itemSize=itemRect.sizeDelta;}
+            playHeading=GetComponentsInChildren<Text>(true).FirstOrDefault(x=>x.name=="PausePlayHeading");if(playHeading!=null)playHeadingText=playHeading.text;
         }
         public void Show(ManagedScreenContext owner)
         {
@@ -44,7 +109,7 @@ namespace Olca.Presentation.Management
             foreach(var button in actions.Keys)if(button!=null&&unavailable.Contains(button.name)){restricted.Add(button,button.interactable);button.interactable=false;}
         }
         private void RestoreRestrictedControls(){foreach(var pair in restricted)if(pair.Key!=null)pair.Key.interactable=pair.Value;restricted.Clear();}
-        public void Hide(){RestoreRestrictedControls();context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
+        public void Hide(){SetOutsidePresentation(false);RestoreRestrictedControls();context=null;covered=false;previousFocus=null;restoredFocus=null;presentation.alpha=1;presentation.blocksRaycasts=true;gameObject.SetActive(false);}
         public void CoverForDialog()
         {
             previousFocus=EventSystem.current?.currentSelectedGameObject;covered=true;presentation.alpha=0;presentation.blocksRaycasts=false;
@@ -56,7 +121,7 @@ namespace Olca.Presentation.Management
             var focus=previousFocus;previousFocus=null;
             if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){EventSystem.current?.SetSelectedGameObject(focus);restoredFocus=focus.name;}
         }
-        private void OnDisable(){RestoreRestrictedControls();context?.NotifyHidden();context=null;}
+        private void OnDisable(){outsidePresentation=false;RefreshOutsidePresentation();RestoreRestrictedControls();context?.NotifyHidden();context=null;}
         private void OnDestroy(){RestoreRestrictedControls();context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
     }
 }
@@ -111,9 +176,9 @@ namespace Olca.Presentation.Management
             chrome.Collection=Button("CardCollectionButton","カード図鑑",parent,Vector2.one,new Vector2(-402,-64));
             ((RectTransform)chrome.Collection.transform).sizeDelta=new Vector2(300,60);
             var label=chrome.Collection.GetComponentInChildren<Text>();label.fontSize=label.resizeTextMaxSize=26;label.rectTransform.offsetMin=new Vector2(16,4);label.rectTransform.offsetMax=new Vector2(-16,-4);
-            chrome.Loadout=Button("OpenCustomizationEditor","ソウビ・パーツ",parent,Vector2.one,new Vector2(-310,-160));
-            chrome.Unlock=Button("OpenCustomizationUnlocks","マスカイホウ",parent,Vector2.one,new Vector2(-310,-235));
-            chrome.Acquisition=Button("OpenCustomizationAcquisitions","ソウビのウケトリ",parent,Vector2.one,new Vector2(-310,-310));
+            chrome.Loadout=Button("OpenCustomizationEditor","ソウビ・パーツ",parent,Vector2.one,new Vector2(-310,-140));
+            chrome.Unlock=Button("OpenCustomizationUnlocks","マスカイホウ",parent,Vector2.one,new Vector2(-310,-200));
+            chrome.Acquisition=Button("OpenCustomizationAcquisitions","ソウビのウケトリ",parent,Vector2.one,new Vector2(-310,-260));
             foreach(var button in new[]{chrome.Collection,chrome.Loadout,chrome.Unlock,chrome.Acquisition}){((RectTransform)button.transform).sizeDelta=new Vector2(300,60);button.gameObject.SetActive(false);}return chrome;
         }
         public GameObject Panel(string name,bool surface=false)
@@ -204,6 +269,7 @@ namespace Olca.Presentation.Management
             Place("OwnedCardsButton", -480, -96, 360); Place("RetreatButton", -480, -244, 360);
             Place("KeyboardSettingsButton", 20, 120, 340); Place("GamepadSettingsButton", 400, 120, 340);
             Place("OutsideItemsButton", 210, -244, 720);
+            if(pauseOverlay.transform.Find("OutsideEquipmentButton")!=null)Place("OutsideEquipmentButton", -480, -108, 360);
             Place("AudioSettingsButton", 20, 0, 340); Place("VibrationSetting", 400, 0, 340);
             Place("TransformationAnimationSetting", 20, -120, 340); Place("DialogueTextSpeedButton", 400, -120, 340);
         }
@@ -211,9 +277,9 @@ namespace Olca.Presentation.Management
         public GameObject Pause()
         {
             var panel=Panel("PauseOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
-            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
+            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("OutsideEquipmentButton","ソウビ・パーツ"),("OutsideKamuiButton","カムイ キリカエ"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
                 Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero);
-            LayoutPauseMenu(panel);return panel;
+            LayoutPauseMenu(panel);panel.transform.Find("OutsideEquipmentButton").gameObject.SetActive(false);panel.transform.Find("OutsideKamuiButton").gameObject.SetActive(false);return panel;
         }
         public Text Label(string name,Transform target,Vector2 anchor,Vector2 position,Vector2 size)
         {
@@ -374,7 +440,7 @@ namespace Olca.Presentation.Management
         private IProgressActionOperations operations;
         private long revision;
         private bool pending,newGameSucceeded,showConfirm,canClose;
-        private string body,confirmText;
+        private string body,confirmText;private bool titlePresentation;private Text titleGuide;private GameObject titleConfirmFocus,titleCancelFocus;
         public Text Message {get;private set;}
         public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
         public event Action<ProgressActionResult> Completed;
@@ -386,6 +452,21 @@ namespace Olca.Presentation.Management
             confirm=factory.Button("ConfirmNewGame","進行を初期化して開始",transform,new Vector2(.5f,.5f),new Vector2(-300,-180));
             cancel=factory.Button("CancelProgressAction","取消して戻る",transform,new Vector2(.5f,.5f),new Vector2(300,-180));
             foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(500,80);CaptureFeedback();
+        }
+        // タイトルから開く新規開始確認だけに適用。他の進行/保存Dialogは従来表示を保つ。
+        public void ConfigureTitlePresentation(GameplayPanelFactory factory)
+        {
+            if(titlePresentation)return;titlePresentation=true;
+            var heading=factory.Label("TitleNewGameHeading",transform,new Vector2(.5f,.5f),new Vector2(0,350),new Vector2(1300,80));heading.text="はじめから カイシしますか？";heading.fontSize=44;heading.color=Color.white;
+            Message.color=Color.white;Message.fontSize=32;Message.alignment=TextAnchor.MiddleLeft;Message.rectTransform.sizeDelta=new Vector2(1300,430);Message.rectTransform.anchoredPosition=new Vector2(0,100);
+            titleGuide=factory.Label("TitleConfirmationInputGuide",transform,new Vector2(.5f,.5f),new Vector2(0,-335),new Vector2(1300,100));titleGuide.fontSize=24;titleGuide.color=Color.white;
+            titleConfirmFocus=BootstrapTitleView.AddFocusFrame(confirm);titleCancelFocus=BootstrapTitleView.AddFocusFrame(cancel);
+        }
+        private void LateUpdate()
+        {
+            if(!titlePresentation)return;bool live=CanOperatePopup;var selected=EventSystem.current?.currentSelectedGameObject;
+            titleConfirmFocus.SetActive(live&&selected==confirm.gameObject&&confirm.IsInteractable());titleCancelFocus.SetActive(live&&selected==cancel.gameObject&&cancel.IsInteractable());
+            titleGuide.text=BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true,canClose);
         }
         public void OpenManualSave(IProgressActionOperations service,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {
@@ -402,7 +483,7 @@ namespace Olca.Presentation.Management
             purpose=Purpose.NewGame;operations=service;revision=service.Revision;pending=service.Pending;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
             if(!Begin(manager,parent,live)){operations=null;return;}
             if(pending){ShowPending();return;}
-            Set("スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で拠点から開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
+            Set(titlePresentation?"スロット1の シンコウを ショキカします。\n\nショジカード・ホゾンデッキ・セイチョウ・ツウカ・ズカン、\nカイホウリレキ・コウリャクシンコウが タイショウです。\nスターター20マイで アタラしい シンコウを カイシします。\n\nソウサ・エンシュツ・オンリョウの セッテイは ホジします。\nジッコウマエの シンコウブンショ・キュウコウリャクデータは\nフッキュウヨウに ホゼンします。":"スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で新しい進行を開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
         }
         public void OpenNotice(string message,bool accept,bool close,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {

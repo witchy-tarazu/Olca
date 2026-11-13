@@ -130,6 +130,8 @@ namespace Olca.Core.Logic.Integration
         public const string CardSupplyId="validation-exploration-card-chest-v1";
         public const long CardSupplyX=10*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanClaimCardSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-CardSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
+        public const long ShopX=8*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool CanVisitShop(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-ShopX)<=OutsideMovementDefinition.UnitsPerWorldUnit/2;
         public const long SupplyX=12*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long PoisonSupplyX=16*OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanClaimPoisonSupply(OutsideExplorationCore core)=>core!=null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-PoisonSupplyX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
@@ -294,4 +296,161 @@ namespace Olca.Core.Logic.Integration
         }
         private void RestoreWater(OutsideWaterStateData value){if(value==null){ResetWater();return;}waterRemaining=value.RemainingFrames;waterUnlimited=value.Unlimited;waterLastFrame=value.Frame;}
     }
+    /// <summary>通常導線の試用蹴り専用。正式な威力/範囲/敵配置や成長表ではない。</summary>
+    public static class OutsideKickTrialDefinition
+    {
+        public const string MapId="validation-landing-32";
+        public static OutsideKickTiming[] Timings()=>Enumerable.Repeat(new OutsideKickTiming(6,3,12,6),6).ToArray();
+        public static string SaveDefinitionKey=>Key(Timings(),18);
+        internal static string Key(OutsideKickTiming[] timings,int continuation)=>Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{
+            w.Write("trial-kick-state-v1");w.Write(MapId);w.Write(OutsideExplorationSession.TrialTargetX);w.Write(OutsideExplorationSession.TrialTargetMaximum);w.Write(Damage);w.Write(Range);w.Write(TargetHeight);w.Write(SecondTargetX);w.Write(continuation);
+            foreach(var v in timings){w.Write(v.StartupFrames);w.Write(v.ActiveFrames);w.Write(v.RecoveryFrames);w.Write(v.RecoveryCancelAfterFrames??-1);}
+            for(int n=0;n<6;n++){Bounds((OutsideKickKind)n,out var low,out var high);w.Write(low);w.Write(high);}
+        });
+        public const int Damage=10;
+        public const long Range=180000,TargetHeight=54000,SecondTargetX=1170000;
+        // 標的の水平中心点と縦区間を使う明示試用範囲。地形遮蔽/身体幅は製品衝突として確定しない。
+        public static bool Contains(OutsideKickKind kind,long x,long y,int facing,long targetX)
+        {
+            if(facing!=-1&&facing!=1)throw new ArgumentOutOfRangeException(nameof(facing));
+            long dx=checked((targetX-x)*facing);if(dx<0||dx>Range)return false;
+            Bounds(kind,out var bottom,out var top);return checked(y+bottom)<=TargetHeight&&checked(y+top)>=0;
+        }
+        private static void Bounds(OutsideKickKind kind,out long bottom,out long top)
+        {
+            switch(kind){
+                case OutsideKickKind.GroundFirst:case OutsideKickKind.GroundSecond:case OutsideKickKind.GroundThird:bottom=-12000;top=90000;break;
+                case OutsideKickKind.AirForward:bottom=-45000;top=45000;break;
+                case OutsideKickKind.AirUp:bottom=0;top=120000;break;
+                case OutsideKickKind.AirDown:bottom=-120000;top=0;break;
+                default:throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+    }
+    /// <summary>開始済みの試用蹴りだけ。入力/予約/物理保持は含めない。</summary>
+    public sealed class OutsideKickStateData
+    {
+        public string DefinitionKey;public bool Active;public OutsideKickKind Kind;
+        public long StartedAt,EndsAt,ComboUntil;public int AttackFacing,NextGroundStage;public int[] HitTargets;
+        public OutsideKickStateData Copy()=>new OutsideKickStateData{DefinitionKey=DefinitionKey,Active=Active,Kind=Kind,StartedAt=StartedAt,EndsAt=EndsAt,ComboUntil=ComboUntil,AttackFacing=AttackFacing,NextGroundStage=NextGroundStage,HitTargets=HitTargets?.ToArray()};
+        public void Validate(long frame,bool grounded,int facing)
+        {
+            if(DefinitionKey!=OutsideKickTrialDefinition.SaveDefinitionKey||(int)Kind<0||(int)Kind>5||StartedAt<0||StartedAt>frame||AttackFacing!=1&&AttackFacing!=-1||HitTargets==null||HitTargets.Any(v=>v<0||v>1)||HitTargets.Distinct().Count()!=HitTargets.Length)throw new ArgumentException("蹴り保存の定義/識別が不正です");
+            var timing=OutsideKickTrialDefinition.Timings()[(int)Kind];if(EndsAt!=checked(StartedAt+timing.Duration))throw new ArgumentException("蹴り保存の時間が不正です");
+            if(Active){if(frame>=EndsAt||NextGroundStage!=1||ComboUntil!=-1||grounded!=(Kind<=OutsideKickKind.GroundThird)||grounded&&facing!=AttackFacing||HitTargets.Length>0&&frame-StartedAt<timing.StartupFrames)throw new ArgumentException("蹴り保存の発動/接地境界が不正です");}
+            else if(Kind>=OutsideKickKind.GroundThird||!grounded||frame<EndsAt||ComboUntil!=checked(EndsAt+18)||frame>=ComboUntil||NextGroundStage!=(int)Kind+2||HitTargets.Length!=0)throw new ArgumentException("蹴り保存の継続猶予が不正です");
+        }
+    }
+    public enum OutsideKickKind { GroundFirst, GroundSecond, GroundThird, AirForward, AirUp, AirDown }
+
+    /// <summary>性能値や素材を含まない必須時間定義。未登録の有効期間を暗黙の既定値で補わない。</summary>
+    public sealed class OutsideKickTiming
+    {
+        public int StartupFrames {get;} public int ActiveFrames {get;} public int RecoveryFrames {get;}
+        public int? RecoveryCancelAfterFrames {get;} public int Duration {get;}
+        public OutsideKickTiming(int startupFrames,int activeFrames,int recoveryFrames,int? recoveryCancelAfterFrames=null)
+        {
+            if(startupFrames<0||activeFrames<=0||recoveryFrames<0||recoveryCancelAfterFrames<0||recoveryCancelAfterFrames>recoveryFrames)throw new ArgumentOutOfRangeException(nameof(activeFrames));
+            Duration=checked(startupFrames+activeFrames+recoveryFrames);StartupFrames=startupFrames;ActiveFrames=activeFrames;RecoveryFrames=recoveryFrames;RecoveryCancelAfterFrames=recoveryCancelAfterFrames;
+        }
+    }
+    /// <summary>外界通常蹴りのSession所有状態。登録データ/空間判定/HP反映/本体描画は別責務。</summary>
+    public sealed class OutsideNormalKickSequence
+    {
+        private readonly Olca.Core.Logic.Battle.AttackInputReservation reservation;
+        private readonly HashSet<int> hitTargets=new HashSet<int>();
+        private OutsideKickTiming[] timings;
+        private long frame=-1,lastRequestFrame=-1,comboUntil=-1;
+        private int observedFacing,nextGroundStage=1,pendingVertical;
+        private bool observed,observedGrounded,active;
+        public OutsideKickKind Kind {get;private set;}
+        public long StartedAt {get;private set;} public long EndsAt {get;private set;}
+        public int AttackFacing {get;private set;}
+        public bool IsConfigured=>timings!=null;
+        public bool IsActive=>active;
+        public bool LocksGroundMotion=>active&&Kind<=OutsideKickKind.GroundThird;
+        public int NextGroundStage=>nextGroundStage;
+        public long ComboExpiresAt=>comboUntil;
+        public bool HasProgress=>active||nextGroundStage!=1||reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic;
+        public bool IsHitWindow=>active&&frame-StartedAt>=timings[(int)Kind].StartupFrames&&frame-StartedAt<timings[(int)Kind].StartupFrames+(long)timings[(int)Kind].ActiveFrames;
+        public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation)
+        {this.reservation=reservation??throw new ArgumentNullException(nameof(reservation));}
+        // 順序は地上1/2/3・空中横/上/下。全6定義が必要。検証値を製品既定として登録しない。
+        public void Configure(params OutsideKickTiming[] definitions)
+        {
+            if(definitions==null||definitions.Length!=6||definitions.Any(v=>v==null))throw new ArgumentException("蹴り6種の時間定義が必要です");
+            if(HasProgress)throw new InvalidOperationException("進行中の蹴り定義は変更できません");timings=definitions.ToArray();
+        }
+        public OutsideKickStateData CaptureState(long logicalFrame,bool grounded,int facing)
+        {
+            if(!active&&nextGroundStage==1)return null;
+            if(!IsConfigured||frame!=logicalFrame||OutsideKickTrialDefinition.Key(timings,ContinuationFrames)!=OutsideKickTrialDefinition.SaveDefinitionKey)throw new ArgumentException("未登録の蹴り時間/性能は保存できません");
+            var v=new OutsideKickStateData{DefinitionKey=OutsideKickTrialDefinition.SaveDefinitionKey,Active=active,Kind=Kind,StartedAt=StartedAt,EndsAt=EndsAt,ComboUntil=comboUntil,AttackFacing=AttackFacing,NextGroundStage=nextGroundStage,HitTargets=hitTargets.OrderBy(x=>x).ToArray()};v.Validate(logicalFrame,grounded,facing);return v;
+        }
+        public void RestoreState(OutsideKickStateData value,long logicalFrame,bool grounded,int facing)
+        {
+            if(value==null)throw new ArgumentNullException(nameof(value));value.Validate(logicalFrame,grounded,facing);
+            if(!IsConfigured||OutsideKickTrialDefinition.Key(timings,ContinuationFrames)!=value.DefinitionKey)throw new ArgumentException("復元する蹴り定義が一致しません");
+            Reset();frame=lastRequestFrame=logicalFrame;observed=true;observedFacing=facing;observedGrounded=grounded;active=value.Active;Kind=value.Kind;StartedAt=value.StartedAt;EndsAt=value.EndsAt;AttackFacing=value.AttackFacing;nextGroundStage=value.NextGroundStage;comboUntil=value.ComboUntil;foreach(int id in value.HitTargets)hitTargets.Add(id);
+        }
+        private void CancelOwnReservation(){if(reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic)reservation.Cancel();}
+        public void Interrupt(){active=false;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();CancelOwnReservation();}
+        public void Reset(){Interrupt();frame=lastRequestFrame=-1;observed=false;}
+        public void CardStarted()=>Interrupt();
+        public float ResolveHorizontal(float horizontal)
+        {if(float.IsNaN(horizontal)||float.IsInfinity(horizontal))throw new ArgumentOutOfRangeException(nameof(horizontal));return LocksGroundMotion?0:horizontal;}
+        public int ResolveFacing(int facing)
+        {if(facing!=-1&&facing!=1)throw new ArgumentOutOfRangeException(nameof(facing));return LocksGroundMotion?AttackFacing:facing;}
+        public void Observe(long logicalFrame,bool grounded,int facing,bool bodyAllowed=true)
+        {
+            if(logicalFrame<0||logicalFrame<frame||(facing!=-1&&facing!=1))throw new ArgumentOutOfRangeException(nameof(logicalFrame));
+            frame=logicalFrame;reservation.Observe(frame);
+            if(observed&&(observedFacing!=facing||observedGrounded!=grounded))CancelOwnReservation();
+            observed=true;observedFacing=facing;observedGrounded=grounded;
+            if(!bodyAllowed){Interrupt();return;}
+            if(active&&(LocksGroundMotion&&!grounded||!LocksGroundMotion&&grounded)){Interrupt();return;}
+            if(!grounded){nextGroundStage=1;comboUntil=-1;}
+            if(active&&frame>=EndsAt){
+                bool continueGround=Kind<OutsideKickKind.GroundThird;active=false;hitTargets.Clear();
+                nextGroundStage=continueGround?(int)Kind+2:1;comboUntil=continueGround?checked(EndsAt+ContinuationFrames):-1;
+            }
+            if(nextGroundStage!=1&&frame>=comboUntil){nextGroundStage=1;comboUntil=-1;}
+        }
+        /// <summary>18frameは承認済みの調整可能な仮猶予。6frame予約の寿命を延長しない。</summary>
+        public int ContinuationFrames {get;}=18;
+        public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation,int continuationFrames):this(reservation)
+        {if(continuationFrames<0)throw new ArgumentOutOfRangeException(nameof(continuationFrames));ContinuationFrames=continuationFrames;}
+        public bool CanCancelNormal {
+            get{
+                if(!active)return true;if(Kind==OutsideKickKind.GroundThird)return false;
+                var timing=timings[(int)Kind];return timing.RecoveryCancelAfterFrames.HasValue&&frame-StartedAt>=timing.StartupFrames+(long)timing.ActiveFrames+timing.RecoveryCancelAfterFrames.Value;
+            }
+        }
+        private bool Begin(bool grounded,int facing,int vertical)
+        {
+            int stage=grounded?(active?(int)Kind+2:nextGroundStage):0;
+            var kind=grounded?(OutsideKickKind)(stage-1):vertical>0?OutsideKickKind.AirUp:vertical<0?OutsideKickKind.AirDown:OutsideKickKind.AirForward;
+            long end=checked(frame+timings[(int)kind].Duration);if(grounded&&stage<3)checked{_ = end+ContinuationFrames;}
+            active=true;Kind=kind;AttackFacing=facing;StartedAt=frame;EndsAt=end;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();reservation.Cancel();return true;
+        }
+        public bool TryRequest(long logicalFrame,bool grounded,int facing,int vertical=0,bool bodyAllowed=true,bool dashing=false,bool otherAttack=false,bool knownLaterThanCard=false)
+        {
+            if(vertical<-1||vertical>1)throw new ArgumentOutOfRangeException(nameof(vertical));Observe(logicalFrame,grounded,facing,bodyAllowed);
+            if(!IsConfigured||!bodyAllowed||dashing||lastRequestFrame==frame)return false;lastRequestFrame=frame;
+            // 同frameで前後不明ならカード優先。既存入力coordinatorが時刻順を確定できた場合だけ上書きする。
+            if(reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Card&&reservation.RequestedFrame==frame&&!knownLaterThanCard)return false;
+            if(otherAttack||active&&!CanCancelNormal){pendingVertical=vertical;reservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Basic,frame);return false;}
+            return Begin(grounded,facing,vertical);
+        }
+        public bool TryExecuteReserved(long logicalFrame,bool grounded,int facing,bool bodyAllowed=true,bool dashing=false,bool otherAttack=false)
+        {
+            Observe(logicalFrame,grounded,facing,bodyAllowed);
+            if(!IsConfigured||!bodyAllowed||dashing||otherAttack||reservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Basic||active&&!CanCancelNormal)return false;
+            return Begin(grounded,facing,pendingVertical);
+        }
+        /// <summary>空間サービスが範囲内と判定した各敵のSession内ID。威力/範囲はここで作らない。</summary>
+        public bool TryMarkHit(int targetId)
+        {if(targetId<0)throw new ArgumentOutOfRangeException(nameof(targetId));return IsHitWindow&&hitTargets.Add(targetId);}
+    }
+
 }

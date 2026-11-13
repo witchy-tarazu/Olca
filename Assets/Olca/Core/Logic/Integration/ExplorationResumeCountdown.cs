@@ -121,10 +121,10 @@ namespace Olca.Core.Logic.Integration
         public string CardId {get;}public ExceedLevel Level {get;}public bool CanUseInAir {get;}
         public OutsideCardUseDefinition(string cardId,ExceedLevel level,bool canUseInAir)
         {if(string.IsNullOrWhiteSpace(cardId)||!Enum.IsDefined(typeof(ExceedLevel),level))throw new ArgumentException("外界使用定義が不正です");CardId=cardId;Level=level;CanUseInAir=canUseInAir;}
-        // 通常ヒールと通常ソードだけの暫定指定。未登録カードや上位を自動的に許可しない。
+        // 登録した6種だけの暫定指定。未知ID/未登録レベルへ空中許可を自動付与しない。
         public static IReadOnlyList<OutsideCardUseDefinition> TrialDefinitions {get;}=Array.AsReadOnly(new[]{
-            new OutsideCardUseDefinition("heal",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Normal,true),
-            new OutsideCardUseDefinition("fire_sword",ExceedLevel.Normal,false),new OutsideCardUseDefinition("sword",ExceedLevel.Lv1,false),new OutsideCardUseDefinition("sword",ExceedLevel.Lv2,false)});
+            new OutsideCardUseDefinition("shield",ExceedLevel.Normal,true),new OutsideCardUseDefinition("heal",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Normal,true),
+            new OutsideCardUseDefinition("fire_sword",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Lv1,true),new OutsideCardUseDefinition("sword",ExceedLevel.Lv2,true)});
         public static bool AllowsAir(Card card)=>card!=null&&TrialDefinitions.Any(d=>d.CardId==card.Id&&d.Level==card.ExceedLevel&&d.CanUseInAir);
     }
 
@@ -144,8 +144,12 @@ namespace Olca.Core.Logic.Integration
             public bool ShouldShowBreath=>IsCurrent&&owner.ShouldShowBreath;
             public int BreathFramesRemaining=>owner?.BreathFramesRemaining??0;public int BreathMaximumFrames=>owner?.BreathMaximumFrames??0;
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
-            public Enemy TrialTarget=>owner?.TrialTarget;public OutsideTrialStrike TrialStrike=>owner?.TrialStrike;
+            public Enemy TrialTarget=>owner?.TrialTarget;public Enemy SecondTrialTarget=>owner?.SecondTrialTarget;public OutsideTrialStrike TrialStrike=>owner?.TrialStrike;
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
+            public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;
+            public bool TrialEnemyAttackEnabled=>IsCurrent&&owner.trialEnemyAttack!=null;
+            public int TrialEnemyWindupFrames=>IsCurrent&&owner.trialEnemyAttack!=null?(int)Math.Max(0,owner.trialEnemyAttack.NextFrame-owner.Core.Frame):0;
+            public bool ToggleTrialEnemyAttack()=>IsCurrent&&owner.SetTrialEnemyAttack(owner.trialEnemyAttack==null,true);
             public bool IsCurrent=>owner!=null&&!owner.IsEnded&&ReferenceEquals(owner.current,this);
             public void Dispose(){var prior=owner;owner=null;if(prior!=null&&ReferenceEquals(prior.current,this)){prior.current=null;prior.CancelAttackReservation();}}
         }
@@ -156,90 +160,180 @@ namespace Olca.Core.Logic.Integration
         public string CardUseMessage {get;private set;}
         public long CardUseMessageFrame {get;private set;}=-1;
         private long lastCardUseAttempt=-1;
+        // 終盤にタイマーが0になっても、そのframe序盤の行動禁止を入力段階まで維持する。
+        private long bodyPreventedFrame=-1;
         private OutsideAttackStateData attackState;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
         private Enemy trialTarget;private bool trialTargetChanged;private int trialTargetHits;private OutsideTrialStrike trialStrike;
         public Enemy TrialTarget=>trialTarget??(trialTarget=CreateTrialTarget(null));
         public OutsideTrialStrike TrialStrike=>trialStrike?.Copy();
+        private Enemy secondTrialTarget;private int secondTrialHits;
+        public Enemy SecondTrialTarget=>secondTrialTarget??(secondTrialTarget=CreateSecondTrialTarget(null));
+        private static Enemy CreateSecondTrialTarget(OutsideTrialTargetData data){var e=CreateTrialTarget(data);return e;}
+        private OutsideTrialTargetData CaptureSecondTrialTarget()=>secondTrialTarget!=null&&(secondTrialTarget.CurrentHp!=TrialTargetMaximum||secondTrialHits!=0)?new OutsideTrialTargetData{Id="trial-kick-target-v1",Hp=secondTrialTarget.CurrentHp,Hits=secondTrialHits}:null;
+        private void AdvanceTrialKickHits()
+        {
+            if(normalKick?.IsHitWindow!=true||Core.Definition.Id!="validation-landing-32")return;
+            void Hit(int id,long x,Enemy enemy){
+                if(enemy.IsDead||!OutsideKickTrialDefinition.Contains(normalKick.Kind,Core.Position,Core.Height,normalKick.AttackFacing,x)||!normalKick.TryMarkHit(id))return;
+                enemy.TakeDamage(OutsideKickTrialDefinition.Damage,Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id?ElementType.Fire:ElementType.None); // カエンの外界キックも明示試用。
+                if(id==0){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}else secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
+            }
+            Hit(0,TrialTargetX,TrialTarget);Hit(1,OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget);
+        }
         private static Enemy CreateTrialTarget(OutsideTrialTargetData data){var e=new Enemy("grunt","シヨウ ヒョウテキ（カリ）",TrialTargetMaximum,ElementType.None,new Olca.Core.Domain.Vector2Int(0,0));if(data!=null)e.RestoreCheckpointHp(data.Hp);return e;}
+        // 試用標的1だけの任意AI。正式な敵性能・索敵・地形配置ではない。
+        private OutsideTrialEnemyAttackData trialEnemyAttack;
+        public const int TrialEnemyDamage=10,TrialEnemyPoiseDamage=10,TrialEnemyInterval=90,TrialEnemyInitialDelay=60;
+        public bool SetTrialEnemyAttack(bool enabled,bool affectsPoise=false)
+        {
+            if(IsEnded||!IsPresented||Player==null||Player.IsDead||Core.Definition.Id!="validation-landing-32"||enabled&&TrialTarget.IsDead)return false;
+            if(enabled==(trialEnemyAttack!=null))return false;
+            trialEnemyAttack=enabled?new OutsideTrialEnemyAttackData{DefinitionId=affectsPoise?"trial-shield-enemy-v2":"trial-shield-enemy-v1",NextFrame=checked(Core.Frame+TrialEnemyInitialDelay)}:null;return true;
+        }
+        private void AdvanceTrialEnemyAttack()
+        {
+            if(trialEnemyAttack==null)return;
+            if(TrialTarget.IsDead||Player.IsDead||Core.HasFallenOut){trialEnemyAttack=null;return;}
+            if(Core.Frame<trialEnemyAttack.NextFrame)return;
+            trialEnemyAttack.NextFrame=checked(Core.Frame+TrialEnemyInterval);
+            if(Math.Abs(Core.Position-TrialTargetX)<=90000&&Core.Height>=0&&Core.Height<=90000)Player.TakeDamage(TrialEnemyDamage,attackElement:ElementType.None,affectsPoise:trialEnemyAttack.DefinitionId=="trial-shield-enemy-v2",poiseDamage:TrialEnemyPoiseDamage); // v1保存は従来のHP/バリア専用を維持。
+        }
+        private static bool ShieldDefinition(Card c)=>c!=null&&c.Id=="shield"&&c.Category==CardCategory.Defense&&c.ExceedLevel==ExceedLevel.Normal&&c.Power==15&&c.GetFinalPower()==15&&c.SubCategory==CardSubCategory.Barrier&&c.Modifier.AdditionalEffects.Count==0;
         private static bool HealDefinition(Card c)=>c!=null&&c.Id=="heal"&&c.Category==CardCategory.Defense&&c.SubCategory==CardSubCategory.Heal&&c.ExceedLevel==ExceedLevel.Normal&&c.Power>=0;
         private static bool SwordDefinition(Card c)=>c!=null&&c.Category==CardCategory.Attack&&c.Series==CardSeries.Sword&&((c.Id=="sword"&&(c.ExceedLevel==ExceedLevel.Normal||c.ExceedLevel==ExceedLevel.Lv1||c.ExceedLevel==ExceedLevel.Lv2))||(c.Id=="fire_sword"&&c.Element==ElementType.Fire&&c.ExceedLevel==ExceedLevel.Normal))&&c.Power>=0&&c.Modifier.AdditionalEffects.Count==0&&c.MoveMotionTime==0&&c.AttackMotionTime==0&&c.HitInvincibilityMs==0;
         private OutsideTrialTargetData CaptureTrialTarget()=>trialTargetChanged||trialTarget!=null&&trialTarget.CurrentHp!=TrialTargetMaximum?new OutsideTrialTargetData{Hp=TrialTarget.CurrentHp,Hits=trialTargetHits}:null;
         // 静止標的に対する試用の縦範囲。正式な敵の当たり形状ではない。
         public const long TrialSwordVerticalRange=90000;
         private void ApplyTrialSword(Card card){
-            long dx=(TrialTargetX-Core.Position)*Core.Facing;bool vertical=Core.IsGrounded||(card.Id=="sword"&&card.ExceedLevel==ExceedLevel.Normal&&Core.Height>=0&&Core.Height<=TrialSwordVerticalRange);bool hit=vertical&&dx>=0&&dx<=TrialSwordRange&&!TrialTarget.IsDead;
+            long dx=(TrialTargetX-Core.Position)*Core.Facing;bool vertical=Core.IsGrounded||(OutsideCardUseDefinition.AllowsAir(card)&&Core.Height>=0&&Core.Height<=TrialSwordVerticalRange);bool hit=vertical&&dx>=0&&dx<=TrialSwordRange&&!TrialTarget.IsDead;
             trialStrike=new OutsideTrialStrike{Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=hit};
             if(hit){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);TrialTarget.TakeDamage(card.GetFinalPower(),card.GetFinalElement(),card.Properties,card.PoiseDamage,card.HitInvincibilityMs);}
         }
         private readonly Olca.Core.Logic.Battle.AttackInputReservation attackReservation=new Olca.Core.Logic.Battle.AttackInputReservation();
+        private OutsideNormalKickSequence normalKick;
+        public OutsideNormalKickSequence NormalKick {get{if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));return normalKick??(normalKick=new OutsideNormalKickSequence(attackReservation));}}
+        /// <summary>試用時間だけを登録。威力/空間範囲/本体素材は未接続で、正式定義ではない。</summary>
+        public void EnableTrialNormalKick()
+        {
+            if(Core.Definition.Id!=OutsideKickTrialDefinition.MapId||NormalKick.IsConfigured)return;
+            NormalKick.Configure(OutsideKickTrialDefinition.Timings());
+        }
+        // カードは従来どおり移動不可。空中蹴りは移動/落下を保ち、地上蹴りでもジャンプ中断は受け付ける。
+        public bool AllowsTraversalInput=>attackState==null;
+        public void TickTraversal(float horizontal,bool jumpDown=false,bool jumpHeld=false,bool dashDown=false,bool dashHeld=false)
+        {
+            if(IsEnded||!IsPresented)throw new InvalidOperationException("表示中のSessionが必要です");
+            normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,BodyCanAttack);
+            int facing=Core.Facing;bool grounded=Core.IsGrounded;
+            bool kick=normalKick?.IsActive==true;
+            Core.TickFrame(normalKick?.ResolveHorizontal(horizontal)??horizontal,jumpDown,jumpHeld,!kick&&dashDown,!kick&&dashHeld,IsMovementLockedForNextFrame);
+            ObserveAttackBoundary(facing,grounded);AdvanceDeckLocation();AdvancePlayerFrame();
+        }
         private Card reservedCard;private OutsideExplorationCards reservedOwner;private long reservedRevision,reservedActionFrame,lastAttackInputFrame=-1;
         public Olca.Core.Logic.Battle.AttackReservationKind PendingAttack=>attackReservation.Kind;
         public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
         public void ObserveAttackBoundary(int facing,bool grounded){if(Core.Facing!=facing||Core.IsGrounded!=grounded)CancelAttackReservation();}
-        private bool SupportedCard(Card card)=>Core.Definition.Id=="validation-landing-32"&&(HealDefinition(card)||SwordDefinition(card))&&(Core.IsGrounded||OutsideCardUseDefinition.AllowsAir(card));
+        private bool SupportedCard(Card card)=>Core.Definition.Id=="validation-landing-32"&&(HealDefinition(card)||SwordDefinition(card)||ShieldDefinition(card))&&(Core.IsGrounded||OutsideCardUseDefinition.AllowsAir(card));
         private bool CanCancelAttack()=>attackState!=null&&attackState.EffectApplied&&Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.HasValue&&Core.Frame-attackState.StartedAt>=attackState.StartupFrames+(long)Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.Value;
         // 予約入力は保存しない。Sessionの行動開始と同じ境界で最後に再検証する。
-        public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error)
+        public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error,int vertical=0)
         {
             error=null;if(lastAttackInputFrame==Core.Frame)return false;lastAttackInputFrame=Core.Frame;
             attackReservation.Observe(Core.Frame);if(attackReservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.None&&reservedCard!=null)CancelAttackReservation();
             if(selectionChanged||!IsPresented||IsDeckEditingLocation||!BodyCanAttack){CancelAttackReservation();return false;}
             if(reservedCard!=null&&(!ReferenceEquals(reservedOwner,Cards)||!ReferenceEquals(reservedCard,Cards?.SelectedCard)||reservedRevision!=Cards.HandRevision||attackState!=null&&reservedActionFrame!=attackState.StartedAt))CancelAttackReservation();
-            // 未登録の通常キックを実行/予約しないが、後からの固有攻撃入力で旧予約を復活させない。
-            if(basicRequested&&(!requested||cardAt!=0&&basicAt!=0&&basicAt>cardAt)){CancelAttackReservation();error="固有攻撃は未接続です";return false;}
+            // 同frameで時刻順不明はカード優先。後入力が確定した蹴りは共有一枠を上書きする。
+            if(basicRequested&&(!requested||cardAt!=0&&basicAt!=0&&basicAt>cardAt)){
+                if(normalKick?.IsConfigured!=true){CancelAttackReservation();error="固有攻撃は未接続です";return false;}
+                CancelAttackReservation();
+                bool started=normalKick.TryRequest(Core.Frame,Core.IsGrounded,Core.Facing,vertical,BodyCanAttack,Core.IsDashing,attackState!=null&&!CanCancelAttack(),true);
+                if(started){attackState=null;reservedCard=null;reservedOwner=null;KickFeedback();}return started;
+            }
             if(requested){
                 CancelAttackReservation();var card=Cards?.SelectedCard;
                 if(!SupportedCard(card)){return TryUseSelectedCard(card,Cards?.HandRevision??0,out error);}
                 if(Core.CardGauge.CurrentUnits<(long)card.GetFinalCost()*OutsideCardGauge.UnitsPerPoint){error="カードゲージが不足しています";return false;}
-                if(IsAttacking&&!CanCancelAttack()){attackReservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,Core.Frame);reservedCard=card;reservedOwner=Cards;reservedRevision=Cards.HandRevision;reservedActionFrame=attackState.StartedAt;return false;}
+                if(IsAttacking&&!CanCancelAnyAttack()){attackReservation.Request(Olca.Core.Logic.Battle.AttackReservationKind.Card,Core.Frame);reservedCard=card;reservedOwner=Cards;reservedRevision=Cards.HandRevision;reservedActionFrame=attackState?.StartedAt??-1;return false;}
                 return StartCardAfterRecovery(card,Cards.HandRevision,out error);
             }
-            if(attackReservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Card||IsAttacking&&!CanCancelAttack())return false;
+            if(attackReservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic){
+                bool started=normalKick?.TryExecuteReserved(Core.Frame,Core.IsGrounded,Core.Facing,BodyCanAttack,Core.IsDashing,attackState!=null&&!CanCancelAttack())==true;
+                if(started){attackState=null;reservedCard=null;reservedOwner=null;KickFeedback();}return started;
+            }
+            if(attackReservation.Kind!=Olca.Core.Logic.Battle.AttackReservationKind.Card||IsAttacking&&!CanCancelAnyAttack())return false;
             var expected=reservedCard;long revision=reservedRevision;CancelAttackReservation();
             if(!SupportedCard(expected)||Core.CardGauge.CurrentUnits<(long)expected.GetFinalCost()*OutsideCardGauge.UnitsPerPoint)return false;
             return StartCardAfterRecovery(expected,revision,out error);
         }
+        private void KickFeedback(){AdvanceTrialKickHits();CardUseMessage="シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ） / モーション ミセツゾク";CardUseMessageFrame=Core.Frame;}
+        private bool CanCancelAnyAttack()=>attackState!=null?CanCancelAttack():normalKick?.IsActive==true&&normalKick.CanCancelNormal;
         private bool StartCardAfterRecovery(Card card,long revision,out string error)
         {
-            var prior=attackState;attackState=null;bool started=TryUseSelectedCard(card,revision,out error);if(!started)attackState=prior;return started;
+            var prior=attackState;attackState=null;bool started=TryUseSelectedCard(card,revision,out error,true);if(!started)attackState=prior;return started;
         }
         public OutsideAttackStateData AttackState=>attackState?.Copy();
-        public bool IsAttacking=>attackState!=null;
+        public bool IsAttacking=>attackState!=null||normalKick?.IsActive==true;
         private static int Startup(Card card)=>card.StartupFrames??(int)Math.Ceiling(card.StartupTime*60d-0.00001d);
         private static int Recovery(Card card)=>card.RecoveryFrames??(int)Math.Ceiling(card.RecoveryTime*60d-0.00001d);
-        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;CancelAttackReservation();}
+        private void ResetCardUseFeedback(){CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=bodyPreventedFrame=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;normalKick?.Reset();CancelAttackReservation();}
         // Viewと独立した論理時計で一度だけ効果を確定する。停止/同frame再読込では進めない。
         private void AdvanceAttack(bool bodyAllowed)
         {
             var action=attackState;if(action==null)return;
             if(!bodyAllowed){attackState=null;CancelAttackReservation();return;}
-            if(!action.EffectApplied&&Core.Frame-action.StartedAt>=action.StartupFrames){action.EffectApplied=true;var card=Cards.ActionCard(action.CardIndex);if(HealDefinition(card))Player.Heal(card.Power);else ApplyTrialSword(card);}
+            if(!action.EffectApplied&&Core.Frame-action.StartedAt>=action.StartupFrames){action.EffectApplied=true;var card=Cards.ActionCard(action.CardIndex);if(HealDefinition(card))Player.Heal(card.Power);else if(ShieldDefinition(card))Player.SetBarrier(card.Power);else ApplyTrialSword(card);}
             if(Core.Frame-action.StartedAt>=action.StartupFrames+(long)action.RecoveryFrames)attackState=null;
         }
         private static void ValidateAttack(OutsideAttackStateData action,OutsideExplorationCards cards,long frame)
         {
             if(action==null)return;var card=cards.ActionCard(action.CardIndex);
-            if(!(HealDefinition(card)||SwordDefinition(card))||Startup(card)!=action.StartupFrames||Recovery(card)!=action.RecoveryFrames)throw new ArgumentException("探索行動の定義と時間が一致しません");
+            if(!(HealDefinition(card)||SwordDefinition(card)||ShieldDefinition(card))||Startup(card)!=action.StartupFrames||Recovery(card)!=action.RecoveryFrames)throw new ArgumentException("探索行動の定義と時間が一致しません");
         }
         /// <summary>試用ヒールの開始。地上/空中の登録判定と消費・前隙/発動済/後隙はSessionが所有する。</summary>
         public bool TryUseSelectedHealingCard(Card expected,long revision,out string error){if(!HealDefinition(expected)){error="ヒールではありません";return false;}return TryUseSelectedCard(expected,revision,out error);}
-        public bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error)
+        public bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error)=>TryUseSelectedCard(expected,revision,out error,false);
+        private bool TryUseSelectedCard(Olca.Core.Domain.Card expected,long revision,out string error,bool recoveryCancel)
         {
             error=null;if(lastCardUseAttempt==Core.Frame){error="このフレームでは受付済みです";return false;}lastCardUseAttempt=Core.Frame;
-            if(IsEnded||!IsPresented||IsDeckEditingLocation||!CanPerformAttack){error="今はカードを使用できません";return false;}
+            if(IsEnded||!IsPresented||IsDeckEditingLocation||!(CanPerformAttack||recoveryCancel&&BodyCanAttack)){error="今はカードを使用できません";return false;}
             if(expected==null||!ReferenceEquals(expected,Cards?.SelectedCard)||Cards.HandRevision!=revision){error="現在の手札を選択してください";return false;}
-            if(!(HealDefinition(expected)||SwordDefinition(expected))){error="このカードの外界発動は未対応です";}
+            if(!(HealDefinition(expected)||SwordDefinition(expected)||ShieldDefinition(expected))){error="このカードの外界発動は未対応です";}
             else if(!SupportedCard(expected)){error=Core.Definition.Id=="validation-landing-32"?"このカードはクウチュウでシヨウできません":"このバショではシヨウできません";}
             else if(!Cards.TryConsumeSelected(expected,revision,Core.CardGauge,out _)){error="カードゲージが不足しています";}
             if(error!=null){CardUseMessage=error;CardUseMessageFrame=Core.Frame;return false;}
             // HealEffectと同じ既存HP反映。満タンでもカード/ゲージの消費を戻さない。
             if(SwordDefinition(expected))Core.FaceAwayFromWallForAttack();
+            normalKick?.CardStarted();
             attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected)};AdvanceAttack(true);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
-        public bool CanPerformAttack=>BodyCanAttack&&attackState==null;
-        private bool BodyCanAttack=>!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
+        public bool CanPerformAttack=>BodyCanAttack&&!IsAttacking;
+        private bool BodyCanAttack=>Core.Frame!=bodyPreventedFrame&&!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
+        private bool KnownOutsideStyle=>Player!=null&&(Player.DepartureStyle.Id==DepartureStyleDefinition.BasicId&&Player.BaseElementResistances.IsNeutral||Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id&&Player.BaseElementResistances.HasSameValues(ElementAffinity.CreatePlayerBase(ElementType.Fire)));
+        public bool CanSwitchOutsideStyle=>CanPerformAttack&&Player.CanReplaceOutsideEquipment&&KnownOutsideStyle&&Core.Definition.Id=="validation-landing-32";
+        public bool TrySwitchOutsideStyle(ClearReturnSession save,DepartureStyleDefinition style,CheckpointDefinitions definitions,out string error)
+        {
+            error=null;if(IsEnded||Player==null||style==null||save==null||!IsPresented||usingItem){error="外界の神依を確認できません";return false;}
+            if(!ReferenceEquals(style,DepartureStyleDefinition.Basic)&&!ReferenceEquals(style,DepartureStyleDefinition.TrialFire)){error="未登録の試用神依です";return false;}
+            if(style.Id==Player.DepartureStyle.Id)return true; // 同じ神依では保存/効果を発生させない。
+            if(!CanSwitchOutsideStyle||style.Id!=DepartureStyleDefinition.BasicId&&style.Id!=DepartureStyleDefinition.TrialFire.Id){error="今は神依を切り替えできません";return false;}
+            usingItem=true;
+            try{
+                var candidate=OutsidePlayerSaveData.Capture(Player).Restore();var basic=style.Id==DepartureStyleDefinition.BasicId?ElementResistances.Neutral:ElementAffinity.CreatePlayerBase(ElementType.Fire);candidate.ReplaceOutsideStyle(style,basic);var actor=OutsidePlayerSaveData.Capture(candidate);
+                var runtime=CaptureItemRuntime(definitions);runtime.Id=actor.Id;var items=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=itemCooldowns.Where(v=>v.Value>Core.Frame).Select(v=>new OutsideItemCooldownData{Id=v.Key,RemainingFrames=checked((int)(v.Value-Core.Frame))}).ToArray()};items.Validate(actor,runtime);
+                if(!save.TryCommitOutsideStyle(style,actor,runtime,items,out error))return false;
+                Player.ReplaceOutsideStyle(style,basic);CancelAttackReservation();appliedItemStateId=actor.Id;savedPlayerId=actor.Id;savedPlayerKey=actor.Key();savedRuntimeId=runtime.Id;savedRuntimeKey=runtime.Key();return true;
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException||e is InvalidOperationException){error=e.Message;return false;}
+            finally{usingItem=false;}
+        }
+        public bool CanReplaceEquipment=>!IsEnded&&Player!=null&&Player.CanReplaceOutsideEquipment;
+        /// <summary>保存成功後の装備補正だけを置換。個体・HP・状態・論理時間は変更しない。</summary>
+        public bool TryApplyEquipment(Olca.Core.Logic.Customization.ResolvedCustomizationAbilities abilities)
+        {
+            if(!CanReplaceEquipment||abilities==null)return false;
+            Player.ReplaceOutsideEquipment(abilities);return true;
+        }
         public bool TryInitializePlayer(System.Func<Olca.Core.Domain.PlayerCharacter> factory)
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
@@ -247,7 +341,7 @@ namespace Olca.Core.Logic.Integration
             if(Player!=null)return false;
             if(IsPresented)throw new System.InvalidOperationException("表示前に外界個体を初期化してください");
             var value=factory();if(value==null||value.IsDead)throw new System.ArgumentException("生存する外界個体が必要です");
-            ResetCardUseFeedback();Player=value;playerFrame=Core.Frame;ResetFall();return true;
+            ResetCardUseFeedback();trialEnemyAttack=null;Player=value;playerFrame=Core.Frame;ResetFall();return true;
         }
         public void RecoverOutside(string pointId,bool relocate=true)
         {
@@ -255,7 +349,7 @@ namespace Olca.Core.Logic.Integration
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
             long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);itemCooldowns.Clear();
             if(relocate){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}Cards?.Reload();Core.CardGauge.RestoreFull();
-            attackState=null;CancelAttackReservation();trialTarget=null;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
+            attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialEnemyAttack=null;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.ClearInvincibility();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
         }
         private string savedPlayerId,savedPlayerKey;
         /// <summary>同じRoot/Actorの再表示では適用し直さない。coldは従来の復帰位置へ個体だけ復元する。</summary>
@@ -265,7 +359,7 @@ namespace Olca.Core.Logic.Integration
             string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
             if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
             var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
-            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}ResetCardUseFeedback();trialTarget=null;trialTargetChanged=false;trialTargetHits=0;Player=candidate;itemCooldowns.Clear();playerFrame=Core.Frame;ResetFall();savedPlayerId=data.Id;savedPlayerKey=key;PrepareMapEntry();return true;
+            if(Player==null){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}ResetCardUseFeedback();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=candidate;trialEnemyAttack=null;itemCooldowns.Clear();playerFrame=Core.Frame;ResetFall();savedPlayerId=data.Id;savedPlayerKey=key;PrepareMapEntry();return true;
         }
         /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
         public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
@@ -280,7 +374,7 @@ namespace Olca.Core.Logic.Integration
             if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;
             playerFrame=Core.Frame;var value=Player;
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
-            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;AdvanceAttack(bodyAllowed);attackAllowed=bodyAllowed&&attackState==null;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed)bodyPreventedFrame=Core.Frame;normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceTrialKickHits();AdvanceTrialEnemyAttack();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
             attackAllowed&=!value.IsDead;return true;
         }
@@ -306,7 +400,7 @@ namespace Olca.Core.Logic.Integration
         public bool AdvanceDeckLocation()
         {
             if(!managedDeckLocations||IsEnded)return false;
-            if(IsDeckEditingLocation){attackState=null;CancelAttackReservation();deckLocationArmed=true;reloadGaugeOnExit|=OutsideTrialRoute.IsReloadZone(Core);return false;}
+            if(IsDeckEditingLocation){attackState=null;normalKick?.Reset();CancelAttackReservation();deckLocationArmed=true;reloadGaugeOnExit|=OutsideTrialRoute.IsReloadZone(Core);return false;}
             if(!deckLocationArmed)return false;deckLocationArmed=false;bool refillGauge=reloadGaugeOnExit;reloadGaugeOnExit=false;
             if(pendingLocationDeck!=null){var random=Cards?.RandomProvider??pendingLocationRandom;pendingLocationDeck.Shuffle(random);Cards=new OutsideExplorationCards(pendingLocationDeck,random,queuedDeckKey);pendingLocationDeck=null;pendingLocationRandom=null;if(refillGauge)Core.CardGauge.RestoreFull();return true;}
             if(Cards?.TotalCount!=ExplorationDeckRules.RequiredCards){if(refillGauge)Core.CardGauge.RestoreFull();return refillGauge;}
@@ -353,7 +447,7 @@ namespace Olca.Core.Logic.Integration
             if(mapEntryPending){mapNameStartedAt=Core.Frame;mapEntryPending=false;}
             CancelAttackReservation();return current=new PresentationLease(this);
         }
-        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();trialTarget=null;trialTargetChanged=false;trialTargetHits=0;Player=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
+        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=null;trialEnemyAttack=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
     }
 }
 
@@ -604,12 +698,17 @@ namespace Olca.Core.Logic.Integration
         [System.Runtime.Serialization.DataMember] public OutsideCardsStateData Cards;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideAttackStateData Attack;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideTrialTargetData TrialTarget;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideTrialTargetData SecondTrialTarget;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideKickStateData NormalKick;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideFallStateData Fall;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideWaterStateData Water;
-        public OutsideRuntimeSaveData Copy()=>new OutsideRuntimeSaveData{Version=Version,Id=Id,Core=Core?.Copy(),FixedCameraCenter=FixedCameraCenter,Cards=Cards?.Copy(),Attack=Attack?.Copy(),TrialTarget=TrialTarget?.Copy(),Fall=Fall?.Copy(),Water=Water?.Copy()};
-        public void Validate(){if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||Core==null||FixedCameraCenter<0)throw new ArgumentException("外界Runtime保存の版/識別が不正です");Core.Validate();Cards?.Validate();Attack?.Validate(Core.Frame,Cards);TrialTarget?.Validate();Fall?.Validate(Core);Water?.Validate(Core);}
+        // 試用外界シールドだけ。旧0欄を出力せず旧Runtime keyを維持する。
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public int TrialBarrierHp;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideTrialEnemyAttackData TrialEnemyAttack;
+        public OutsideRuntimeSaveData Copy()=>new OutsideRuntimeSaveData{Version=Version,Id=Id,Core=Core?.Copy(),FixedCameraCenter=FixedCameraCenter,Cards=Cards?.Copy(),Attack=Attack?.Copy(),TrialTarget=TrialTarget?.Copy(),SecondTrialTarget=SecondTrialTarget?.Copy(),NormalKick=NormalKick?.Copy(),Fall=Fall?.Copy(),Water=Water?.Copy(),TrialBarrierHp=TrialBarrierHp,TrialEnemyAttack=TrialEnemyAttack?.Copy()};
+        public void Validate(){if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||Core==null||FixedCameraCenter<0||TrialBarrierHp<0||TrialBarrierHp>15)throw new ArgumentException("外界Runtime保存の版/識別が不正です");Core.Validate();TrialEnemyAttack?.Validate(Core.Frame);Cards?.Validate();Attack?.Validate(Core.Frame,Cards);TrialTarget?.Validate();SecondTrialTarget?.Validate("trial-kick-target-v1");NormalKick?.Validate(Core.Frame,Core.SupportId!=null,Core.Facing);if(NormalKick!=null){if(Attack!=null||Core.DashEndsAt>Core.Frame)throw new ArgumentException("蹴りと他行動を同時に復元できません");foreach(int id in NormalKick.HitTargets){var target=id==0?TrialTarget:SecondTrialTarget;if(target==null||target.Hits==0||target.Hp>OutsideExplorationSession.TrialTargetMaximum-OutsideKickTrialDefinition.Damage)throw new ArgumentException("蹴り命中済み状態と標的が不一致です");}}Fall?.Validate(Core);Water?.Validate(Core);}
         public string Key(){Validate();return PortableCheckpointJson.Hash(PortableCheckpointJson.Serialize(this));}
-        public OutsideRuntimeSaveData ForRun(string run){var v=Copy();v.Id=run;v.Validate();return v;}
+        public OutsideRuntimeSaveData ForRun(string run){Validate();var v=Copy();v.Id=run;v.TrialBarrierHp=0;v.TrialEnemyAttack=null;v.Validate();return v;}
     }
     /// <summary>物理入力や予約は保存せず、開始済みの一個体と効果確定境界だけを保持する。</summary>
     public sealed class OutsideAttackStateData
@@ -620,7 +719,13 @@ namespace Olca.Core.Logic.Integration
             if(cards==null||CardIndex<0||CardIndex>=cards.Cards.Length||!cards.Drawn.Contains(CardIndex)||cards.Hand.Contains(CardIndex)||StartedAt<0||StartedAt>frame||StartupFrames<0||RecoveryFrames<0||frame-StartedAt>=StartupFrames+(long)RecoveryFrames||EffectApplied!=(frame-StartedAt>=StartupFrames))throw new ArgumentException("探索攻撃状態と手札/時計が不正です");
         }
     }
-    public sealed class OutsideTrialTargetData{public string Id="trial-sword-target-v1";public int Hp,Hits;public OutsideTrialTargetData Copy()=>(OutsideTrialTargetData)MemberwiseClone();public void Validate(){if(Id!="trial-sword-target-v1"||Hp<0||Hp>OutsideExplorationSession.TrialTargetMaximum||Hits<0)throw new ArgumentException("試用標的の保存が不正です");}}
+    public sealed class OutsideTrialEnemyAttackData
+    {
+        public string DefinitionId="trial-shield-enemy-v1";public long NextFrame;
+        public OutsideTrialEnemyAttackData Copy()=>(OutsideTrialEnemyAttackData)MemberwiseClone();
+        public void Validate(long frame){if((DefinitionId!="trial-shield-enemy-v1"&&DefinitionId!="trial-shield-enemy-v2")||frame<0||NextFrame<=frame||NextFrame-frame>OutsideExplorationSession.TrialEnemyInterval)throw new ArgumentException("試用敵攻撃の定義/時計が不正です");}
+    }
+    public sealed class OutsideTrialTargetData{public string Id="trial-sword-target-v1";public int Hp,Hits;public OutsideTrialTargetData Copy()=>(OutsideTrialTargetData)MemberwiseClone();public void Validate(string expectedId="trial-sword-target-v1"){if(Id!=expectedId||Hp<0||Hp>OutsideExplorationSession.TrialTargetMaximum||Hits<0)throw new ArgumentException("試用標的の保存が不正です");}}
     public sealed class OutsideTrialStrike{public long Frame,X,Y;public int Facing;public bool Hit;public OutsideTrialStrike Copy()=>(OutsideTrialStrike)MemberwiseClone();}
     public sealed class OutsideAfterimageStateData
     {public long X,Y,Frame;public int Facing;public OutsideAfterimagePose Pose;public OutsideAfterimageStateData Copy()=>(OutsideAfterimageStateData)MemberwiseClone();}
@@ -783,7 +888,8 @@ namespace Olca.Core.Logic.Integration
         }
         private OutsideRuntimeSaveData CaptureItemRuntime(CheckpointDefinitions definitions)
         {
-            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),Fall=CaptureFall(),Water=CaptureWater()};value.Validate();return value;
+            var kick=CaptureKickState();
+            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy()};value.Validate();return value;
         }
         private bool startupClassified,startupRecoveryPending;
         // 起動時の行き先を一度だけ記録する。host再生成や帰還後の再表示で分類し直さない。
@@ -809,10 +915,13 @@ namespace Olca.Core.Logic.Integration
             RestoreItemCooldowns(itemState,player,runtime);startupRecoveryPending=false;return true;
         }
         private string savedRuntimeId,savedRuntimeKey;
+        private int CaptureTrialBarrier(){if(Player==null)return 0;if(Player.HasPendingHpFrame||Player.HasAura||Player.ProtectionRemainingFrames.HasValue||Player.BarrierHp>15||Player.BarrierHp>0&&Core.Definition.Id!="validation-landing-32")throw new ArgumentException("未登録の外界防御は保存できません");return Player.BarrierHp;}
+        private OutsideKickStateData CaptureKickState(){var value=normalKick?.CaptureState(Core.Frame,Core.IsGrounded,Core.Facing);if(value!=null&&Core.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの蹴り保存は未登録です");if(value!=null&&!BodyCanAttack)throw new ArgumentException("行動不能中の蹴り保存は行いません");return value;}
         public OutsideRuntimeSaveData CaptureRuntime(CheckpointDefinitions definitions=null)
         {
+            var kick=CaptureKickState();
             if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));if(IsPresented)throw new InvalidOperationException("外界表示を閉じて退避してください");if(Core.HasFallenOut)throw new ArgumentException("死亡済み落下を生存状態として保存できません");
-            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),Fall=CaptureFall(),Water=CaptureWater()};value.Validate();return value;
+            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy()};value.Validate();return value;
         }
         public bool RestoreSavedState(OutsidePlayerSaveData player,OutsideRuntimeSaveData runtime,string recoveryPoint,CheckpointDefinitions definitions=null,OutsideTraversalProfile initializationProfile=null)
         {
@@ -821,14 +930,16 @@ namespace Olca.Core.Logic.Integration
             if(IsPresented)throw new InvalidOperationException("表示中の外界状態を置換できません");if(savedPlayerId==player.Id&&savedPlayerKey!=playerKey)throw new ArgumentException("同じ外界個体IDの内容が変わりました");
             // 全候補を先に検証し、途中失敗で旧Sessionの一部だけを書き換えない。
             if(initializationProfile!=null&&Core.Frame!=0)throw new ArgumentException("進行済みの外界地形設定を置換できません");
-            var actor=player.Restore();var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);if(candidateCore.HasFallenOut)throw new ArgumentException("死亡済み落下を生存個体として復元できません");var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
-            var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);var target=CreateTrialTarget(runtime.TrialTarget);
+            var actor=player.Restore();actor.SetBarrier(runtime.TrialBarrierHp);var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);if(candidateCore.HasFallenOut)throw new ArgumentException("死亡済み落下を生存個体として復元できません");var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
+            var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);var target=CreateTrialTarget(runtime.TrialTarget);var secondTarget=CreateSecondTrialTarget(runtime.SecondTrialTarget);
             ValidateAttack(runtime.Attack,cards,runtime.Core.Frame);
+            if((runtime.TrialBarrierHp>0||runtime.TrialEnemyAttack!=null)&&Core.Definition.Id!="validation-landing-32")throw new ArgumentException("このマップの試用バリアは未登録です");
+            if(runtime.NormalKick!=null){if(Core.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの蹴り復元は未登録です");var candidateKick=new OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());candidateKick.Configure(OutsideKickTrialDefinition.Timings());candidateKick.RestoreState(runtime.NormalKick,candidateCore.Frame,candidateCore.IsGrounded,candidateCore.Facing);if(actor.IsDead||actor.IsParalyzed||actor.IsStaggered||runtime.Fall?.LockedUntil>candidateCore.Frame)throw new ArgumentException("行動不能中の蹴り保存は復元できません");}
             ValidateWater(runtime.Water,candidateCore);
             if(runtime.Fall!=null&&runtime.Fall.Peak>candidateCore.MaximumReachableHeight())throw new ArgumentException("落下頂点が外界地形の上限を超えています");
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
             // Runtimeに地点利用履歴はないため、復元時の旧横範囲推定は管理開始前も保持する。
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();attackState=runtime.Attack?.Copy();trialTarget=target;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;Cards=cards;Camera=camera;playerFrame=Core.Frame;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();attackState=runtime.Attack?.Copy();if(runtime.NormalKick!=null){NormalKick.Reset();NormalKick.Configure(OutsideKickTrialDefinition.Timings());NormalKick.RestoreState(runtime.NormalKick,Core.Frame,Core.IsGrounded,Core.Facing);}trialTarget=target;secondTrialTarget=secondTarget;secondTrialHits=runtime.SecondTrialTarget?.Hits??0;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;trialEnemyAttack=runtime.TrialEnemyAttack?.Copy();Cards=cards;Camera=camera;playerFrame=Core.Frame;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
         }
     }
 }
@@ -838,7 +949,7 @@ namespace Olca.Core.Logic.Integration
     /// <summary>仕様で調整を許された試用値。移動定義・旧Core hashとは独立。</summary>
     public static class OutsideFallRules
     {
-        public const long SafeHeight=210000; // 3.5 world。平地の通常ジャンプ頂点3.1を上回る。
+        public const long SafeHeight=390000; // 調整用6.5 world。平地の通常二段ジャンプ最大6.2を上回る。
         public const int PercentPerWorld=10, LandingFrames=12;
         public static int Damage(long distance,int maximumHp)
         {

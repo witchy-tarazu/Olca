@@ -263,7 +263,7 @@ namespace Olca.Presentation.Dungeon
     // 通常クリアの選択・経験値反映・帰還確認。保存判断はController/Coreへ委譲する。
     public sealed class ClearReturnView : MonoBehaviour
     {
-        private bool explorationDeckLibrary;
+        private bool explorationDeckLibrary;private UnityEngine.UI.Text explorationEditingState,explorationOperationGuide;private bool explorationGuidePending;private Text outsideDepartureGuide,outsideCostGuide;private Olca.Presentation.Management.ConfirmationDialog outsideCostDialog;
         public void ConfigureExplorationDeckLibrary(){explorationDeckLibrary=true;}
         private Action ensureManagedVisible,hideManaged;
         private Olca.Presentation.Management.ReturnDialog activeDialog;
@@ -274,7 +274,7 @@ namespace Olca.Presentation.Dungeon
         public void ShowManaged(Olca.Presentation.Management.ManagedScreenContext context){ManagementContext=context;gameObject.SetActive(true);}
         public void HideManaged(){StopMenu();ManagementContext=null;gameObject.SetActive(false);}
         public void Hide(){if(hideManaged!=null)hideManaged();else gameObject.SetActive(false);}
-        private void BeginRender(){if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
+        private void BeginRender(){outsideDepartureGuide=null;explorationOperationGuide=null;explorationGuidePending=false;explorationEditingState=null;shopGuide=null;if(ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true){ensureManagedVisible();if(ManagementContext?.IsCurrent!=true)throw new InvalidOperationException("帰還画面の管理contextがありません");}StopMenu();}
         private bool CanOperateView=>this!=null&&gameObject.activeInHierarchy&&(ensureManagedVisible==null||ManagementContext?.IsCurrent==true&&!ManagementContext.DialogBlocksInput);
         private Font font;
         private Action<int> toggle;
@@ -316,6 +316,14 @@ namespace Olca.Presentation.Dungeon
 
         // 現在の画面か、その画面を覆う読取専用モーダルだけが入力を所有する。
         private bool OwnsContent(GameObject owner)=>CanOperateView&&owner!=null&&owner.activeInHierarchy&&(readonlyDetails!=null?readonlyDetails==owner:content==owner);
+        private UnityEngine.UI.Text shopGuide;private bool shopGuideSelected,shopGuideBlocked;
+        private void RefreshShopGuide()
+        {
+            if(shopGuide==null||!shopGuide.gameObject.activeInHierarchy)return;
+            bool pad=Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad;
+            string Key(string action,string keyboard)=>pad?Olca.Unity.UnityInputProvider.GamepadBindingLabel(Olca.Unity.UnityInputProvider.ActiveGamepadProfile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null):keyboard;
+            shopGuide.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(shopGuideBlocked?"保存待ち: 操作を停止しています":Key("Decide","Enter")+": 商品選択 / 購入する    "+Key("Cancel","Esc")+": "+(shopGuideSelected?"選択取消":"退出して保存"));
+        }
         private void SetMenu(Transform root,Action back,string preferred,bool force=false,ScrollRect scroll=null,bool directionScroll=true,bool resetMissing=false)
         {
             var owner=root.gameObject;Action guardedBack=back==null?null:(Action)(()=>{if(OwnsContent(owner))back();});
@@ -408,7 +416,7 @@ namespace Olca.Presentation.Dungeon
             stats.rectTransform.anchoredPosition=new Vector2(stats.rectTransform.anchoredPosition.x,summaryY);
             Fit("ReturnSummary",summaryY,summaryHeight,stats,140);
         }
-        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();}
+        private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();RefreshShopGuide();RefreshExplorationDeckGuide();RefreshOutsideDepartureGuide();}
         private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
         public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
@@ -426,12 +434,25 @@ namespace Olca.Presentation.Dungeon
             if(dialog.Open(parent,dialogs,captured,()=>SameDialogParent(parent,captured),cover)){Canvas.ForceUpdateCanvases();if(dialog is Olca.Presentation.Management.ReadOnlyDetailsDialog reading)reading.RefreshLayout();return true;}
             activeDialog=null;return false;
         }
+        public static string FormatDepartureDeckDisplay(string name,int count,string error=null)
+        {return "コウリャクヨウ デッキ（タンサクヨウ30マイとはベツ）\n"+name+" / "+count+"マイ"+(error==null?"":" / シヨウフカ: "+error);}
+        private void RefreshOutsideDepartureGuide()
+        {
+            if(outsideDepartureGuide==null&&outsideCostGuide==null)return;
+            string guide=Olca.Presentation.Management.GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);
+            if(outsideDepartureGuide!=null){outsideDepartureGuide.gameObject.SetActive(CanOperateView&&!HasMenuModal);outsideDepartureGuide.text=guide;}
+            if(outsideCostGuide!=null&&outsideCostDialog!=null)outsideCostGuide.text=guide;
+        }
         public static string FormatDepartureCost(DepartureCostData cost)
         {cost.Validate();return "クリア時の費用: 通貨 "+cost.Currency+(cost.Items.Length==0?" / アイテムなし":" / "+string.Join(" / ",cost.Items.Select(v=>v.Name+" × "+v.Count)));}
-        public bool ConfirmDepartureCost(DepartureTermsData terms,string dungeonName,Func<OutsideInventoryData> inventory,Action<DepartureTermsData> accept,Action cancel,Action ended)
+        public bool ConfirmDepartureCost(DepartureTermsData terms,string dungeonName,Func<OutsideInventoryData> inventory,Action<DepartureTermsData> accept,Action cancel,Action ended,string departureDeck=null)
         {
             if(HasMenuModal||!CanOperateView)return false;var frozen=terms.Copy();frozen.Validate();var parent=content;var captured=ManagementContext;bool enough=frozen.Cost.CanAfford(inventory(),out var shortage);
-            var dialog=Olca.Presentation.Management.ConfirmationDialog.Create(transform,font,new Olca.Presentation.Management.ConfirmationContent{RootName="DepartureCostDialog",Title="出撃費用の確認",Subject=dungeonName,StatusName="DepartureCostStatus",Status=shortage??"出撃時には消費しません",Message=FormatDepartureCost(frozen.Cost)+"\n\nクリア時に報酬とまとめて保存します。\n敗北・撤退では消費しません。",ConfirmName="ConfirmDepartureCost",ConfirmLabel="この費用で出撃",CancelName="CancelDepartureCost",CancelLabel="戻る",ConfirmEnabled=enough});
+            var dialog=Olca.Presentation.Management.ConfirmationDialog.Create(transform,font,new Olca.Presentation.Management.ConfirmationContent{RootName="DepartureCostDialog",Title="出撃費用の確認",Subject=dungeonName+(departureDeck==null?"":"\n"+departureDeck),StatusName="DepartureCostStatus",Status=shortage??"出撃時には消費しません",Message=FormatDepartureCost(frozen.Cost)+"\n\nクリア時に報酬とまとめて保存します。\n敗北・撤退では消費しません。",ConfirmName="ConfirmDepartureCost",ConfirmLabel="この費用で出撃",CancelName="CancelDepartureCost",CancelLabel="戻る",ConfirmEnabled=enough});
+            if(departureDeck!=null){
+                var body=dialog.transform.Find("ConfirmationContents");var message=body.Find("ConfirmationMessage").GetComponent<Text>();message.fontSize=24;message.rectTransform.sizeDelta=new Vector2(1700,120);
+                outsideCostDialog=dialog;outsideCostGuide=new Olca.Presentation.Management.ReturnDialogWidgets(body,font).Text("OutsideDepartureCostGuide","",0,-210,1700,40,20);outsideCostGuide.color=new Color(.88f,.97f,1f);RefreshOutsideDepartureGuide();
+            }
             dialog.CanConfirm=()=>{if(!SameDialogParent(parent,captured))return false;bool ok=frozen.Cost.CanAfford(inventory(),out var error);var label=dialog.GetComponentsInChildren<Text>(true).FirstOrDefault(v=>v.name=="DepartureCostStatus");if(label!=null)label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error??"出撃時には消費しません");return ok;};
             dialog.Terminated+=()=>ended?.Invoke();dialog.Completed+=accepted=>{if(!SameDialogParent(parent,captured))return;if(accepted)accept?.Invoke(frozen.Copy());else{cancel?.Invoke();FocusCurrentContent("ConfirmDungeonSelection");}};
             return StartDialog(dialog,parent,true);
@@ -685,7 +706,7 @@ namespace Olca.Presentation.Dungeon
 
         public void RenderDungeonSelection(string[] names, bool[] unlocked, int selected, Action<int> choose,
             Action confirmDeparture, Action cancelSelection, bool blocked, string error, Action retrySave, Action chooseStyle = null, string styleName = null, Action openTokenExchange = null,
-            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null, Action explorationDecks = null)
+            bool[] cleared = null, string[] unlockConditions = null, string[] descriptions = null, bool startImmediately = true, Action outsideExploration = null, Action explorationDecks = null, string departureDeck = null, Action prepareDepartureDeck = null, bool departureDeckEditable = true,bool retrySaveAvailable = true)
         {
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
@@ -697,13 +718,16 @@ namespace Olca.Presentation.Dungeon
             gameObject.SetActive(true);CommerceSurface();
             var heading=Text("DungeonSelectionTitle","シュツゲキサキをエラぶ",-245,390,1250,60,36);heading.color=Color.white;heading.alignment=TextAnchor.MiddleLeft;
             if(outsideExploration!=null&&!blocked&&error==null)QuietDepartureAction(Button("OutsideExplorationEntry","ガイカイ タンサク",150,390,340,60,outsideExploration));
-            if(explorationDecks!=null&&!blocked)QuietDepartureAction(Button("ExplorationDeckEntry","タンサク デッキ",150,305,340,60,explorationDecks));
+            if(prepareDepartureDeck!=null){var owner=content;var prepare=QuietPreparationButton(prepareDepartureDeck,owner,departureDeckEditable);prepare.interactable=!blocked&&departureDeckEditable;}
+            else if(explorationDecks!=null&&!blocked)QuietDepartureAction(Button("ExplorationDeckEntry","タンサク デッキ",150,305,340,60,explorationDecks));
             const int rows = 5; int pages = Math.Max(1, (names.Length + rows - 1) / rows); dungeonPage = Math.Min(dungeonPage, pages - 1);
             int shown=Math.Min(rows,Math.Max(0,names.Length-dungeonPage*rows));float bottom=shown>0?208-(shown-1)*95-69:120;bool preview=shown<=3;
             float actionY=Mathf.Max(-400,bottom-(preview?(pages>1?285:245):150)),auxiliaryY=actionY-93,pageY=actionY+115;
+            float deckY=0,guideY=0;
+            if(departureDeck!=null){float summaryTop=bottom-(preview?135:18);deckY=summaryTop-35;guideY=summaryTop-95;actionY=Mathf.Min(actionY,summaryTop-155);auxiliaryY=actionY-93;pageY=deckY;}
             bool valid=selected>=0&&selected<names.Length&&unlocked[selected];
             string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
-            var help=Text("DungeonSelectionHelp",error??("スタイル: "+styleName+(!preview&&!string.IsNullOrEmpty(info)?"\n"+info:"")),-245,305,1250,80,25);help.color=Color.white;help.alignment=TextAnchor.MiddleLeft;AddOverflowTextDetails(help,error==null?"シュツゲキのセツメイ":"ホゾンエラー",explorationDecks!=null);
+            var help=Text("DungeonSelectionHelp",error??("スタイル: "+styleName+(!preview&&!string.IsNullOrEmpty(info)?"\n"+info:"")),-245,305,1250,80,25);help.color=Color.white;help.alignment=TextAnchor.MiddleLeft;AddOverflowTextDetails(help,error==null?"シュツゲキのセツメイ":"ホゾンエラー",explorationDecks!=null||prepareDepartureDeck!=null);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {
                 int index = dungeonPage * rows + row;
                 string label = unlocked[index]
@@ -719,16 +743,21 @@ namespace Olca.Presentation.Dungeon
             // 行き先名は選択行だけに置き、必要な地形/敵情報を静かな説明へまとめる。
             if(preview){var detail=Text("DungeonPreviewInformation",valid?(info??"トウロクされたツイカジョウホウはありません。"):"ミカイホウのイきサキはジョウケンをカクニンしてください。",0,bottom-72,1450,100,24);detail.color=new Color(.78f,.9f,.95f,1);detail.alignment=TextAnchor.MiddleLeft;detail.supportRichText=false;AddOverflowTextDetails(detail,"イキサキのジョウホウ");}
             if(pages>1){
-            Button("PreviousDungeonPage", "前へ", -380, pageY, 260, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration); }).interactable = !blocked && dungeonPage > 0;
-            Button("NextDungeonPage", "次へ", 380, pageY, 260, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration); }).interactable = !blocked && dungeonPage + 1 < pages;
-            Text("DungeonPage", $"{dungeonPage+1}/{pages}", 0, pageY, 250, 60, 24).color=Color.white;
+            Button("PreviousDungeonPage", "前へ", departureDeck==null?-380:-780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage--; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable,retrySaveAvailable); }).interactable = !blocked && dungeonPage > 0;
+            Button("NextDungeonPage", "次へ", departureDeck==null?380:780, pageY, departureDeck==null?260:240, 60, () => { dungeonPage++; RenderDungeonSelection(names, unlocked, selected, choose, confirmDeparture, cancelSelection, blocked, error, retrySave, chooseStyle, styleName, openTokenExchange, cleared, unlockConditions, descriptions, startImmediately, outsideExploration, explorationDecks, departureDeck, prepareDepartureDeck, departureDeckEditable,retrySaveAvailable); }).interactable = !blocked && dungeonPage + 1 < pages;
+            Text("DungeonPage", $"{dungeonPage+1}/{pages}", departureDeck==null?0:780, departureDeck==null?pageY:guideY, 250, 40, 24).color=Color.white;
             }
-            Button("ConfirmDungeonSelection", startImmediately?"このイきサキで出撃":"イきサキを確定", -430, actionY, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
+            if(departureDeck!=null){var deckLabel=Text("OutsideDepartureDeck",departureDeck,0,deckY,pages>1?1200:1700,70,24);deckLabel.color=new Color(.88f,.97f,1f);deckLabel.supportRichText=false;AddTrailingTextDetails(deckLabel,"OutsideDepartureDeckDetails","攻略用デッキ");outsideDepartureGuide=Text("OutsideDepartureGuide","",0,guideY,pages>1?1250:1700,40,20);outsideDepartureGuide.color=new Color(.88f,.97f,1f);}
+            Button("ConfirmDungeonSelection", departureDeck!=null?"費用を確認":startImmediately?"このイきサキで出撃":"イきサキを確定", -430, actionY, 800, 75, confirmDeparture).interactable = !blocked && selected >= 0 && selected < unlocked.Length && unlocked[selected];
             var cancel=Button("CancelDungeonSelection", "変更せず戻る", 430, actionY, 800, 75, cancelSelection);cancel.interactable=!blocked;QuietDepartureAction(cancel);
             if (chooseStyle != null && !blocked && error == null) QuietDepartureAction(Button("SelectDepartureStyle", "スタイルを変更", -430, auxiliaryY, 480, 58, chooseStyle));
             if (openTokenExchange != null && !blocked && error == null) QuietDepartureAction(Button("OpenTokenExchange", "トークン交換所", 430, auxiliaryY, 480, 58, openTokenExchange));
-            if (error != null || blocked) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, auxiliaryY, 850, 58, retrySave);
-                    SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryDungeonDeparture":"DungeonChoice_"+selected,blocked);
+            if (retrySaveAvailable && (error != null || blocked)) Button("RetryDungeonDeparture", "保存・出撃を再試行", 0, auxiliaryY, 850, 58, retrySave);
+                    SetMenu(content.transform,blocked?null:cancelSelection,blocked?"RetryDungeonDeparture":"DungeonChoice_"+selected,blocked);RefreshOutsideDepartureGuide();
+        }
+        private Button QuietPreparationButton(Action open,GameObject owner,bool editable)
+        {
+            var button=Button("PrepareDungeonDeck",editable?"コウリャク デッキ20マイ":"コウリャクデッキ（キカンゴ）",150,305,340,60,()=>{if(editable&&CanOperateView&&content==owner&&owner!=null&&owner.activeInHierarchy)open();});QuietDepartureAction(button);return button;
         }
         private static void QuietDepartureAction(Button button)
         {
@@ -737,7 +766,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void RenderDungeonVisit(string title,string[] names,bool[] enabled,int selected,bool blocked,bool canConfirm,
             Action<int> choose,Action confirmVisit,Action cancelVisit,Action exitVisit,Action pauseVisit,bool canExit=true,
-            IReadOnlyList<DungeonVisitOption> details=null,IReadOnlyList<bool> purchased=null,long? balance=null,Func<Card,Sprite> icon=null)
+            IReadOnlyList<DungeonVisitOption> details=null,IReadOnlyList<bool> purchased=null,long? balance=null,Func<Card,Sprite> icon=null,bool shop=false)
         {
             BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
@@ -746,9 +775,9 @@ namespace Olca.Presentation.Dungeon
             var titleLabel=Text("VisitTitle",title,-140,balance.HasValue?455:430,1400,66,36);titleLabel.color=Color.white;
             if(balance.HasValue){var value=Text("VisitBalance",$"所持 {balance.Value} 通貨",-140,397,1360,44,26);value.color=Color.white;}
             Button("PauseVisit","ポーズ",780,480,260,60,pauseVisit);
-            float rowHeight=Mathf.Min(176,580f/Mathf.Max(1,Mathf.Min(5,names.Length)));float bodyHeight=Mathf.Min(5,names.Length)*rowHeight+48,bodyBottom=310-bodyHeight;
+            int visibleRows=Math.Min(shop?3:5,names.Length);float rowHeight=Mathf.Min(176,580f/Mathf.Max(1,visibleRows));float bodyHeight=visibleRows*rowHeight+48,bodyBottom=310-bodyHeight;
             CommerceFace("VisitBody",0,310-bodyHeight/2,1760,bodyHeight);
-            var listScroll=names.Length>5?CreateRowScroll("VisitOptionsScroll",1700,580,names.Length*rowHeight,-4):null;
+            float listHeight=shop?visibleRows*rowHeight:580;var listScroll=names.Length>(shop?3:5)?CreateRowScroll("VisitOptionsScroll",1700,listHeight,names.Length*rowHeight,shop?286-listHeight/2:-4):null;
             for(int i=0;i<names.Length;i++){
                 int firstChild=content.transform.childCount;int slot=i;float y=286-rowHeight/2-i*rowHeight;var option=details!=null&&i<details.Count?details[i]:null;
                 var button=Button("VisitOption_"+i,option==null?(selected==i?"［選択中］ ":"")+names[i]:"",0,y,1660,rowHeight-16,()=>choose(slot));button.interactable=!blocked&&enabled[i];
@@ -762,8 +791,17 @@ namespace Olca.Presentation.Dungeon
                 if(listScroll!=null)foreach(var child in content.transform.Cast<Transform>().Skip(firstChild).ToArray()){var rect=(RectTransform)child;var position=rect.anchoredPosition;child.SetParent(listScroll.content,false);rect.anchorMin=rect.anchorMax=new Vector2(.5f,1);rect.anchoredPosition=position-new Vector2(0,286);}
             }
             float footer=Mathf.Max(-440,bodyBottom-210);
-            var help=Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,bodyBottom-50,1700,60,24);help.color=Color.white;
-            Button("ConfirmVisit","選択を確定",-560,footer,520,72,confirmVisit).interactable=!blocked&&canConfirm;
+            if(shop){
+                var option=details!=null&&selected>=0&&selected<details.Count?details[selected]:null;
+                string selection=option==null?"商品を選択してください":"選択: "+option.Label;
+                var summary=Text("VisitPurchaseSummary",selection,-340,bodyBottom-30,1000,50,24);summary.color=Color.white;summary.resizeTextForBestFit=true;summary.resizeTextMinSize=20;summary.resizeTextMaxSize=24;
+                string money=option==null?"":!balance.HasValue?$"価格 {option.Price} 通貨":balance.Value<option.Price?$"通貨が {option.Price-balance.Value} 不足（価格 {option.Price}）":$"価格 {option.Price} / 購入後 {balance.Value-option.Price} 通貨";
+                if(option!=null&&balance.HasValue&&balance.Value>=option.Price&&!canConfirm)money+=" / 今は購入不可";
+                var purchaseBalance=Text("VisitPurchaseBalance",money,515,bodyBottom-30,630,50,24);purchaseBalance.color=Color.white;purchaseBalance.resizeTextForBestFit=true;purchaseBalance.resizeTextMinSize=20;purchaseBalance.resizeTextMaxSize=24;
+                var help=Text("VisitHelp",blocked?"退出保存が未完了です。同じ内容の保存を再試行してください。":"購入確定で支払い・効果を反映。選択取消は購入前のみ。退出時に保存します。",0,bodyBottom-79,1700,34,22);help.color=Color.white;
+                shopGuide=Text("VisitOperationGuide","",0,bodyBottom-117,1700,40,20);shopGuide.color=Color.white;shopGuideSelected=selected>=0;shopGuideBlocked=blocked;RefreshShopGuide();
+            }else{var help=Text("VisitHelp",blocked?"退出保存を完了するまで操作できません。保存状態の再試行を使ってください。":"選択/取消では効果なし。確定した取引と結果は退出時に保存します。",0,bodyBottom-50,1700,60,24);help.color=Color.white;}
+            Button("ConfirmVisit",shop?"購入する":"選択を確定",-560,footer,520,72,confirmVisit).interactable=!blocked&&canConfirm;
             Button("CancelVisit","選択取消",0,footer,520,72,cancelVisit).interactable=!blocked&&selected>=0;
             Button("ExitVisit","退出して保存",560,footer,520,72,exitVisit).interactable=!blocked&&canExit;
             SetMenu(content.transform,blocked?null:selected>=0?cancelVisit:canExit?exitVisit:null,selected>=0?"VisitOption_"+selected:"VisitOption_0",scroll:listScroll,directionScroll:false);
@@ -955,6 +993,38 @@ namespace Olca.Presentation.Dungeon
             if(input!=null){input.customCaretColor=true;input.caretColor=primary;input.selectionColor=new Color(.18f,.60f,.74f,.65f);}
         }
 
+        public static string ExplorationDeckGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad,bool typing=false,bool pending=false)
+        {
+            if(pending)return "ホゾンのサイシコウまち\n「ホゾンをサイシコウ」でつづけます";
+            if(typing)return "ナマエをヘンシュウチュウ\nデッキのホゾンはホゾンボタン";
+            return Olca.Presentation.Management.GameplayPauseView.InputGuideText(profile,gamepad)+"\n＋／−をエラんでケッテイ：1マイずつ";
+        }
+        private void RefreshExplorationDeckGuide()
+        {
+            if(explorationOperationGuide==null)return;
+            bool visible=explorationDeckLibrary&&CanOperateView&&!HasMenuModal&&content!=null&&content.name=="DepartureContents";explorationOperationGuide.gameObject.SetActive(visible);if(!visible)return;
+            bool typing=content.GetComponentsInChildren<InputField>().Any(input=>input.isFocused);
+            explorationOperationGuide.text=ExplorationDeckGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,typing,explorationGuidePending);
+        }
+        // 表示する理由だけを既存のButton判定から求める。追加/削除の可否や制約は変更しない。
+        private static string ExplorationChangeReason(bool pending,bool defined,int count,int owned,int total,bool adding)
+        {
+            if(pending)return "ホゾンのサイシコウまち";
+            if(!adding)return count<=0?"ヘンセイ0マイ":null;
+            if(!defined)return "テイギミカイケツ";
+            if(count>=owned)return "ショジ"+owned+"マイまで";
+            return total>=ExplorationDeckRules.RequiredCards?"デッキ30マイまで":null;
+        }
+
+        // 編集状態の案内だけ。dirty/使用中の判断と保存は呼出側Sessionに残す。
+        public void SetExplorationDeckEditingState(bool isNew,bool isSelected,bool dirty,bool pending)
+        {
+            if(!explorationDeckLibrary||explorationEditingState==null)return;
+            string kind=isNew?"新規編成":isSelected?"使用中を編集":"保存デッキを編集";
+            explorationEditingState.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(kind+" / "+(pending?"保存の再試行":dirty||isNew?"ミホゾン":"保存済み"));
+            explorationEditingState.color=dirty||isNew||pending?new Color(1f,.79f,.40f):new Color(.7f,.95f,.96f);
+        }
+
         public void RenderOwnedDeparture(ClearReturnProfile profile, Card[] options, IReadOnlyList<Card> draft,
             string error, bool valid, Action<int, int> change, Action confirm, Action<bool> close, Action resume, bool confirmDiscard, Action save = null, string deckName = null, Action<string> rename = null, bool pending = false, Action retrySave = null, IReadOnlyList<string> draftKeys=null, string persistedDeckName=null)
         {
@@ -970,6 +1040,7 @@ namespace Olca.Presentation.Dungeon
             var owner=content;
             Action Live(Action action,bool allowPending=false)=>()=>{if(CanOperateView&&owner!=null&&content==owner&&owner.activeInHierarchy&&(allowPending||!pending)&&readonlyDetails==null)action?.Invoke();};
             Text("DepartureTitle", explorationDeckLibrary?"探索デッキを編成":"所持から出撃デッキを編成", 0, 455, 1750, 60, 36);
+            if(explorationDeckLibrary){explorationEditingState=Text("ExplorationDeckEditingState","編集中",610,455,480,60,23);explorationOperationGuide=Text("ExplorationDeckOperationGuide","",-610,455,600,60,20);explorationGuidePending=pending;}
             Button nameSaveButton=null;Func<bool> nameCanSave=()=>true;Action refreshNameState=null;
             if(save!=null){var inputObj=new GameObject("SavedDeckName",typeof(RectTransform),typeof(Image),typeof(RectMask2D),typeof(SavedDeckNameInputField));inputObj.transform.SetParent(content.transform,false);
                 var ir=(RectTransform)inputObj.transform;ir.anchorMin=ir.anchorMax=new Vector2(.5f,.5f);ir.anchoredPosition=new Vector2(-150,400);ir.sizeDelta=new Vector2(1000,48);inputObj.GetComponent<Image>().color=UiLook.ButtonFace;
@@ -995,14 +1066,14 @@ namespace Olca.Presentation.Dungeon
             // 編集中の枚数と候補一覧を分け、数量は操作の隣で読めるようにする。
             CommerceFace("DepartureSummary",0,325,1760,96);
             Text("DepartureDraftCount",$"編成 {draft.Count} / {(explorationDeckLibrary?ExplorationDeckRules.RequiredCards:20)}枚",-650,325,410,74,34);
-            Text("DepartureRules", "所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1", 220, 325, 1270, 84, 23);
+            Text("DepartureRules", "所持枚数は消費しません。\nスタンダード同名4・リミテッド同名1/計5・アルティメット同名1/計1"+(explorationDeckLibrary?"\n保存は編成の確定。使うデッキは一覧の「使用」で選びます。":""), 220, 325, 1270, explorationDeckLibrary?96:84, explorationDeckLibrary?21:23);
             CommerceFace("DepartureCandidates",0,-35,1760,500);
             Text("DepartureCandidateHeading","所持カード",-650,190,410,36,22);
             Text("DepartureCountHeading","編成",515,190,140,36,22);
             Text("DepartureOwnedHeading","所持",775,190,140,36,22);
             // 共通の構築判定は保ち、探索画面の案内だけ用途へ揃える。
             string conditionText=explorationDeckLibrary?error?.Replace("出撃デッキ","探索デッキ"):error;
-            AddOverflowTextDetails(Text("DepartureValidation", conditionText ?? (explorationDeckLibrary?"この30枚を探索用に保存できます。":"この20枚で出撃できます。"), 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
+            AddOverflowTextDetails(Text("DepartureValidation", conditionText ?? (explorationDeckLibrary?"この30枚を保存できます。使用中の編集はヘンセイチテンからデるとハンエイします。":"この20枚で出撃できます。"), 0, 235, 1750, 60, 25),"ヘンセイのカクニン");
             const int rows = 6; int pages = Math.Max(1, (profile.Owned.Length + rows - 1) / rows); departurePage = Math.Min(departurePage, pages - 1);
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
@@ -1020,8 +1091,13 @@ namespace Olca.Presentation.Dungeon
                 var quantity=Text("DepartureDraftQuantity_"+index,count.ToString(),515,y,64,50,28);quantity.resizeTextForBestFit=true;quantity.resizeTextMinSize=18;quantity.resizeTextMaxSize=28;
                 Text("DepartureOwnedQuantity_"+index,owned.Count.ToString(),775,y,140,50,27);
                 Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;
-                Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1))).interactable = !pending && count > 0;
-                Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1))).interactable = !pending && option != null && (save!=null&&!explorationDeckLibrary||(count < owned.Count && draft.Count < (explorationDeckLibrary?ExplorationDeckRules.RequiredCards:20)));
+                var remove=Button("RemoveDepartureCard_" + index, "−", 420, y, 120, 60, Live(() => change(index, -1)));remove.interactable = !pending && count > 0;
+                var add=Button("AddDepartureCard_" + index, "＋", 610, y, 120, 60, Live(() => change(index, 1)));add.interactable = !pending && option != null && (save!=null&&!explorationDeckLibrary||(count < owned.Count && draft.Count < (explorationDeckLibrary?ExplorationDeckRules.RequiredCards:20)));
+                if(explorationDeckLibrary){
+                    string plus=add.IsInteractable()?null:ExplorationChangeReason(pending,option!=null,count,owned.Count,draft.Count,true),minus=remove.IsInteractable()?null:ExplorationChangeReason(pending,option!=null,count,owned.Count,draft.Count,false);
+                    string reason=plus!=null&&plus==minus?"＋／−: "+plus:string.Join(" / ",new[]{plus==null?null:"＋: "+plus,minus==null?null:"−: "+minus}.Where(value=>value!=null));
+                    if(reason.Length>0){metrics.text=(option==null?"テイギミカイケツ":metrics.text)+"  /  "+reason;metrics.fontSize=20;metrics.resizeTextForBestFit=true;metrics.resizeTextMinSize=17;metrics.resizeTextMaxSize=20;metrics.rectTransform.sizeDelta=new Vector2(850,36);metrics.rectTransform.anchoredPosition=new Vector2(-335,y-22);}
+                }
             }
             if (profile.Owned.Length == 0) Text("NoDepartureOwned", "所持カードがありません。スターターは自動付与しません。", 0, 80, 1750, 100, 28);
             Text("DeparturePage", $"{departurePage+1}/{pages}", 0, -340, 250, 50, 24);
@@ -1045,7 +1121,7 @@ namespace Olca.Presentation.Dungeon
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureDetails_",StringComparison.Ordinal)&&b.IsInteractable())?.name??
                 content.GetComponentsInChildren<Button>().FirstOrDefault(b=>b.name.StartsWith("DepartureRow_",StringComparison.Ordinal)&&b.name.EndsWith("Details",StringComparison.Ordinal)&&b.IsInteractable())?.name??"CloseOwnedDeparture";
             ApplyDeckReadingLook(valid&&error==null);
-            SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();
+            SetMenu(content.transform,pending?null:Live(()=>close(false)),preferred,force:pending,resetMissing:true);FitToolbarTitle();RefreshExplorationDeckGuide();
         }
 
         // 一覧の最も狭い700幅へ、装備注記と枚数を含めて収める。raw入力は書き換えない。
@@ -1086,16 +1162,17 @@ namespace Olca.Presentation.Dungeon
             reading.sizeDelta=new Vector2(reading.sizeDelta.x,top-bottom);
         }
 
-        public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null)
+        public void RenderSavedDeckMenu(ClearReturnProfile profile,string error,bool pending,Action create,Action<string> edit,Action<string> clone,Action<string> equip,Action<string> delete,Action close,Action retry,string deleting=null,Action confirmDelete=null,Action reload=null,string closeLabel=null)
         {
             if(deleting!=null){
-                if(content==null||content.name!="SavedDeckContents"||ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true)RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);
-                OpenDelete(profile,error,pending,deleting,confirmDelete,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload));return;
+                if(content==null||content.name!="SavedDeckContents"||ensureManagedVisible!=null&&ManagementContext?.IsCurrent!=true)RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload,closeLabel:closeLabel);
+                OpenDelete(profile,error,pending,deleting,confirmDelete,()=>RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload,closeLabel:closeLabel));return;
             }
             BeginRender();
             if(content!=null){content.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content);else DestroyImmediate(content);}
             content=new GameObject("SavedDeckContents",typeof(RectTransform));content.transform.SetParent(transform,false);
             var rect=(RectTransform)content.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;gameObject.SetActive(true);
+            var closeOwner=content;Action closeCurrent=closeLabel==null?close:(Action)(()=>{if(CanOperateView&&!pending&&!HasMenuModal&&content==closeOwner&&closeOwner!=null&&closeOwner.activeInHierarchy)close();});
             var title=Text("SavedDeckTitle",explorationDeckLibrary?"探索用の保存デッキ":"保存デッキ・装備",0,455,1700,70,36);
             title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.sizeDelta=new Vector2(-220,70);title.rectTransform.anchoredPosition=new Vector2(0,-85);
             var errorLabel=Text("SavedDeckError",error??"",0,365,1750,100,25);
@@ -1103,16 +1180,18 @@ namespace Olca.Presentation.Dungeon
             var decks=profile.SavedDecks??new SavedDepartureDeck[0];
             AddOverflowTextDetails(errorLabel,"ホゾンエラー");
             if(decks.Length==0)Text("SavedDeckEmpty",pending?"保存デッキはまだありません。\n保存を再試行してください。":"保存デッキはまだありません。\n新しいデッキからつくれます。",0,80,1450,150,30);
-            var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?explorationDeckLibrary?"永続所持カードから30枚を編成。所持枚数は減りません。\n旧デッキは自動変更せず、ダンジョン用とは別に保存します。":"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
+            var help=Text("SavedDeckHelp",string.IsNullOrEmpty(error)?explorationDeckLibrary?"30マイをヘンセイ。ショジスウはヘらず、ダンジョンヨウとはベツにホゾンします。\n「ホゾン」はヘンセイのカクテイ。「シヨウ」でツカうデッキをキリカエます。\nハンエイはヘンセイチテンをデたとき。キュウデッキはジドウヘンコウしません。":"非装備は不完全でも保存可。装備・出撃は20枚/所持/共通制限を確認。\n装備中の削除は未対応です。先に別のデッキを装備してください。":"",0,365,1750,100,25);
             help.rectTransform.anchorMin=new Vector2(0,1);help.rectTransform.anchorMax=Vector2.one;help.rectTransform.sizeDelta=new Vector2(-170,100);help.rectTransform.anchoredPosition=new Vector2(0,-175);
-            AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
+            // 探索一覧には上端の補助操作がない。短い固定案内に不要な右上予備幅を取らない。
+            if(!explorationDeckLibrary)AddOverflowTextDetails(help,"ホゾンデッキのセツメイ",true);
+            else if(NeedsTextDetails(help))AddOverflowTextDetails(help,"ホゾンデッキのセツメイ");
             const int rows=5;int pages=Math.Max(1,(decks.Length+rows-1)/rows);savedDeckPage=Math.Min(savedDeckPage,pages-1);
             if(explorationDeckLibrary&&decks.Length>0){
                 Text("SavedDeckNameHeading","デッキのナマエ",-470,235,700,36,22).alignment=TextAnchor.MiddleLeft;
                 Text("SavedDeckCountHeading","マイスウ",-20,235,140,36,22);
             }
             for(int n=0;n<rows&&savedDeckPage*rows+n<decks.Length;n++){var d=decks[savedDeckPage*rows+n];float y=190-n*85;bool active=d.Id==profile.EquippedDeckId;
-                var row=Text("SavedDeckRow_"+d.Id,explorationDeckLibrary?d.Name:(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
+                var row=Text("SavedDeckRow_"+d.Id,explorationDeckLibrary?(active?"［使用中］ ":"")+d.Name:(active?"［装備中］ ":"")+d.Name+"　"+d.Cards.Length+"枚",-470,y,700,70,25);row.supportRichText=false;
                 if(explorationDeckLibrary){
                     row.alignment=TextAnchor.MiddleLeft;
                     Text("SavedDeckQuantity_"+d.Id,d.Cards.Length+"枚",-20,y,140,70,25);
@@ -1135,7 +1214,7 @@ namespace Olca.Presentation.Dungeon
             void ChangeSavedDeckPage(int direction){
                 if(this==null||pageOwner==null||content!=pageOwner||!pageOwner.activeInHierarchy||pending||HasMenuModal)return;
                 int next=Math.Max(0,Math.Min(pages-1,savedDeckPage+direction));if(next==savedDeckPage)return;
-                savedDeckPage=next;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload);
+                savedDeckPage=next;RenderSavedDeckMenu(profile,error,pending,create,edit,clone,equip,delete,close,retry,reload:reload,closeLabel:closeLabel);
                 // 端で無効になったページ操作からは反対側へ戻し、別の業務操作へ飛ばさない。
                 string focus=direction>0&&next+1<pages||direction<0&&next==0?"NextSavedDeckPage":"PreviousSavedDeckPage";
                 SetMenu(content.transform,close,focus,true);
@@ -1143,7 +1222,7 @@ namespace Olca.Presentation.Dungeon
             Button("PreviousSavedDeckPage","前へ",-380,-300,240,55,()=>ChangeSavedDeckPage(-1)).interactable=!pending&&savedDeckPage>0;
             Button("NextSavedDeckPage","次へ",380,-300,240,55,()=>ChangeSavedDeckPage(1)).interactable=!pending&&savedDeckPage+1<pages;
             Button("NewSavedDeck","新しいデッキ",-450,-420,750,75,create).interactable=!pending;
-            Button("CloseSavedDeckMenu",explorationDeckLibrary?"拠点へ戻る":"帰還画面へ戻る",450,-420,750,75,close).interactable=!pending;
+            Button("CloseSavedDeckMenu",closeLabel??(explorationDeckLibrary?"拠点へ戻る":"帰還画面へ戻る"),450,-420,750,75,closeCurrent).interactable=!pending;
             if(pending)Button("RetrySavedDeckSave","保存を再試行",0,-493,800,58,retry);
             else if(reload!=null)Button("ReloadSavedDecks","保存から再読込",0,-493,800,58,reload);
             // 基準画面の配置を保ち、横長でも下部のページ/保存操作を欠けさせない。
@@ -1152,7 +1231,7 @@ namespace Olca.Presentation.Dungeon
                 control.anchorMin=control.anchorMax=new Vector2(.5f,0);control.anchoredPosition+=new Vector2(0,540);
             }
             ApplyDeckReadingLook(error==null);FitExplorationSavedRows();FitSavedDeckReadingSurface();
-            SetMenu(content.transform,pending?null:close,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+(explorationDeckLibrary?decks[0].Id:profile.EquippedDeckId),force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
+            SetMenu(content.transform,pending?null:closeCurrent,pending?"RetrySavedDeckSave":decks.Length==0?"NewSavedDeck":"EditDeck_"+(explorationDeckLibrary?decks[0].Id:profile.EquippedDeckId),force:pending,resetMissing:decks.Length==0);FitToolbarTitle();
         }
 
         private void Pages(ClearReturnProfile p, ClearReturnData f, bool blocked, string error, int pages, bool collectionOnly = false,string dungeonName=null,float y=-340,bool darkBackdrop=false)
@@ -1253,6 +1332,7 @@ namespace Olca.Presentation.Dungeon
         }
         public void RenderExploration(bool available,InputBindingProfile keyboardProfile=null)
         {
+            var visibility=GetComponent<UnityEngine.CanvasGroup>();if(visibility!=null)visibility.alpha=1;
             // 操作ボタンの位置と当たり領域を維持し、探索では使わない説明領域だけを縮める。
             SetSurfaceSize(460, 132);if(surface!=null){surface.enabled=true;surface.color=surfaceColor;}if(battleSurface!=null)battleSurface.gameObject.SetActive(false);
             title.gameObject.SetActive(false);state.gameObject.SetActive(false);button.gameObject.SetActive(false);
@@ -1263,8 +1343,9 @@ namespace Olca.Presentation.Dungeon
             jumpButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ジャンプ"+Hint("JumpPrimary");dashButton.GetComponentInChildren<UnityEngine.UI.Text>().text="ダッシュ"+Hint("DashPrimary");
             jumpButton.interactable=dashButton.interactable=available;
         }
-        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null,bool chargeReady=false)
+        public void Render(string key, string value, bool available, bool canUseCard=false,InputBindingProfile keyboardProfile=null,bool chargeReady=false,bool selectingCards=false)
         {
+            var visibility=GetComponent<UnityEngine.CanvasGroup>();if(visibility==null)visibility=gameObject.AddComponent<UnityEngine.CanvasGroup>();visibility.alpha=selectingCards?0:1;
             // 戦闘の操作領域は固定したまま、背後の敵や床が読める薄い水鏡にする。
             SetSurfaceSize(500, 210);if(surface!=null)surface.enabled=false;if(battleSurface!=null){var color=surfaceColor;color.a*=.68f;battleSurface.color=color;battleSurface.gameObject.SetActive(true);}
             title.gameObject.SetActive(true);state.gameObject.SetActive(true);button.gameObject.SetActive(true);

@@ -11,13 +11,14 @@ namespace Olca.Core.Logic.Dungeon
     public sealed class BattleRewardContext
     {
         public string DungeonId { get; }
+        public int QualityBonus { get; }
         public int ContactCell { get; }
         public bool HasNextFloor { get; }
         public IReadOnlyList<int> ParticipantCells { get; }
         public IReadOnlyList<int> BaseCurrencyAmounts { get; }
-        public BattleRewardContext(string dungeonId, CheckpointBattleDto encounter, bool nextFloor)
+        public BattleRewardContext(string dungeonId, CheckpointBattleDto encounter, bool nextFloor,int qualityBonus=0)
         {
-            DungeonId=dungeonId;ContactCell=encounter.ContactCell;HasNextFloor=nextFloor;
+            if(qualityBonus<0||qualityBonus>4)throw new ArgumentOutOfRangeException(nameof(qualityBonus));QualityBonus=qualityBonus;DungeonId=dungeonId;ContactCell=encounter.ContactCell;HasNextFloor=nextFloor;
             ParticipantCells=Array.AsReadOnly((int[])encounter.ParticipantCells.Clone());
             BaseCurrencyAmounts=Array.AsReadOnly((int[])encounter.CurrencyAmounts.Clone());
         }
@@ -50,10 +51,16 @@ namespace Olca.Core.Logic.Dungeon
         public string Id { get; }
         public IReadOnlyList<EvaluationRewardBand> Bands { get; }
         // Fair, Good, Great, Excellent の順。未登録帯を推測しない。
+        // 討伐評価そのものは4帯のまま。旧4帯に秀＋を推測で足さない。
+        public static int ResolveBandIndex(BattleEvaluationGrade grade,int qualityBonus,int bandCount)
+        {
+            if(!Enum.IsDefined(typeof(BattleEvaluationGrade),grade)||qualityBonus<0||qualityBonus>4||bandCount!=4&&bandCount!=5||qualityBonus>0&&bandCount!=5)throw new ArgumentException("質補正には明示5評価帯が必要です");
+            return (int)Math.Min(4L,(long)(int)grade+qualityBonus);
+        }
         public EvaluationRewardDefinition(string id, IEnumerable<EvaluationRewardBand> bands)
         {
             var values=bands?.ToArray();
-            if(string.IsNullOrWhiteSpace(id)||values==null||values.Length!=4||values.Any(v=>v==null))throw new ArgumentException("4評価帯の定義が必要です");
+            if(string.IsNullOrWhiteSpace(id)||values==null||(values.Length!=4&&values.Length!=5)||values.Any(v=>v==null))throw new ArgumentException("4評価帯または明示5評価帯の定義が必要です");
             Id=id;Bands=Array.AsReadOnly(values);
         }
     }

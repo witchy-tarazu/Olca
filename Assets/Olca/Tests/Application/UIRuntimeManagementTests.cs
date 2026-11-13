@@ -72,6 +72,42 @@ namespace Olca.Tests.Application
         private static Olca.Unity.UnityInputProvider.OutsidePcWheelInput Pc(Vector2 direction=default,bool keyChanged=false,bool pointerChanged=false,long keyOrder=0,long pointerOrder=0,bool enter=false,bool click=false,bool toggle=false,bool available=true,Vector2 pointer=default)
             =>new Olca.Unity.UnityInputProvider.OutsidePcWheelInput(available,toggle,enter,click,direction,pointer,true,keyChanged,pointerChanged,keyOrder,pointerOrder);
         private static bool OpenPc(Fixture f,Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)=>f.View.OpenPc(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,value=>{f.Paused=value;f.PauseTransitions++;},input);
+        [Test] public void ポーズ経由ホイールは保存失敗後も停止し同じ選択を再確定して旧callbackを拒否する()
+        {
+            using(var f=new Fixture()){
+                int calls=0;bool success=false;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{Assert.AreEqual(1,i);calls++;return success;});
+                Assert.IsTrue(f.View.OpenMenu(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>f.Allowed,v=>{f.Paused=v;f.PauseTransitions++;},"Enter / Esc"));
+                var back=f.View.transform.Find("KamuiWheelRelease").GetComponent<Button>();Assert.AreSame(back.GetComponent<Image>(),back.targetGraphic,"後付け画像も色変更先へ接続する");var alternate=f.View.transform.Find("KamuiWheelAlternate").GetComponent<Button>();var old=alternate.onClick;alternate.onClick.Invoke();Assert.AreEqual(1,calls);Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);f.View.RefreshMenu();Assert.IsTrue(f.View.transform.Find("KamuiWheelSelection").GetComponent<Text>().text.Contains("デキマセン"));
+                // DialogManagerの同frame再試行保護を次frameへ進める代わりに次のticketで成功経路を検証する。
+                f.View.transform.Find("KamuiWheelRelease").GetComponent<Button>().onClick.Invoke();Assert.IsFalse(f.Paused);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Cancelled,f.View.LastResult);old.Invoke();Assert.AreEqual(1,calls);
+                success=true;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{calls++;return true;});Assert.IsTrue(f.View.OpenMenu(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>true,v=>f.Paused=v,"Guide"));alternate.onClick.Invoke();Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(2,calls);Assert.AreEqual(Olca.Presentation.Management.DialogResult.Confirmed,f.View.LastResult);Assert.IsTrue(f.Dialogs.Blocks(f.Parent));
+            }
+        }
+        [Test] public void ポーズ経由ホイールは親失効で解放し通常PC再表示へ戻るボタンを漏らさない()
+        {
+            using(var f=new Fixture()){
+                f.View.ConfigureChoices(new[]{"Normal","Trial"},0,_=>true);Assert.IsTrue(f.View.OpenMenu(f.Dialogs,f.Parent,()=>f.Parent.Alive,()=>true,v=>f.Paused=v,"Guide"));f.Parent.Alive=false;f.View.RefreshMenu();Assert.IsFalse(f.Paused);Assert.AreEqual(0,f.Dialogs.ActiveCount);
+                f.Parent.Alive=true;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,_=>true);Assert.IsTrue(OpenPc(f,Pc()));Assert.IsFalse(f.View.transform.Find("KamuiWheelRelease/KamuiMenuBack").gameObject.activeSelf);Assert.IsFalse(f.View.transform.Find("KamuiWheelNormal").GetComponent<Image>().raycastTarget);f.View.TickPc(Pc(toggle:true));Assert.IsFalse(f.View.IsOpen);
+            }
+        }
+        [Test] public void 複数神依の保存失敗は停止と表示を保ち再確定成功後だけ閉じる()
+        {
+            using(var f=new Fixture()){
+                int calls=0;bool success=false;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{Assert.AreEqual(1,i);calls++;return success;});Assert.IsTrue(f.Open(direction:Vector2.down));Assert.AreEqual(1,f.View.SelectedChoice);f.View.Tick(true,true,Vector2.down);Assert.AreEqual(1,calls);Assert.IsTrue(f.View.IsOpen);Assert.IsTrue(f.Paused);f.View.Tick(true,false,Vector2.down);success=true;f.View.Tick(true,true,Vector2.down);Assert.AreEqual(2,calls);Assert.IsFalse(f.View.IsOpen);Assert.IsFalse(f.Paused);Assert.AreEqual(0,f.Dialogs.ActiveCount);
+            }
+        }
+        [Test] public void 複数神依の中央と解放取消は保存せず親終了後も古い入力は使えない()
+        {
+            using(var f=new Fixture()){
+                int calls=0;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{calls++;return true;});Assert.IsTrue(f.Open(direction:Vector2.down));f.View.Tick(true,true,Vector2.zero);Assert.IsTrue(f.View.IsOpen);Assert.AreEqual(0,calls);f.View.Tick(false,false,Vector2.down);Assert.IsFalse(f.View.IsOpen);f.View.Tick(true,true,Vector2.down);Assert.AreEqual(0,calls);Assert.IsFalse(f.Paused);
+            }
+        }
+        [Test] public void 複数神依のPC方向は上下別項目でEnterだけ一度確定する()
+        {
+            using(var f=new Fixture()){
+                int chosen=-1;f.View.ConfigureChoices(new[]{"Normal","Trial"},0,i=>{chosen=i;return true;});Assert.IsTrue(OpenPc(f,Pc(direction:Vector2.down)));Assert.AreEqual(1,f.View.SelectedChoice);f.View.TickPc(Pc(direction:Vector2.up,keyChanged:true,keyOrder:1));Assert.AreEqual(0,f.View.SelectedChoice);f.View.TickPc(Pc(enter:true));Assert.AreEqual(0,chosen);Assert.IsFalse(f.View.IsOpen);
+            }
+        }
         [Test] public void PCホイールは初期hoverと既保持方向を表示しTab解放では閉じず二度目だけ取消す()
         {
             using(var f=new Fixture()){
@@ -170,6 +206,51 @@ namespace Olca.Tests.Application
                 title.SetBusy(false,"再試行");button.onClick.Invoke();Assert.AreEqual(2,starts);views.CloseCurrent();Assert.AreEqual(1,cancelled,"未完了loadを閉鎖で取消へ渡す");old.Invoke();Assert.AreEqual(2,starts);Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);old.Invoke();Assert.AreEqual(2,starts,"再表示でも旧callbackは開始しない");title.transform.Find("TitleStart").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(3,starts);views.CloseCurrent();Assert.AreEqual(2,cancelled);views.UnregisterOwner(owner);Assert.IsTrue(title==null);Assert.AreEqual(0,resources.OwnedInstanceCount);
             }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
         }
+        [Test] public void タイトルは新規と継続を分け保存なし継続と読込中と旧callbackを拒否する()
+        {
+            var root=new GameObject("TitleChoices",typeof(RectTransform));var resources=new ResourceManager();int frame=1;var dialogs=new Olca.Presentation.Management.DialogManager(()=>frame);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);Olca.Presentation.Management.BootstrapTitleView title=null;int creates=0,resumes=0;
+            try{
+                views.Register(this,"title",ct=>System.Threading.Tasks.Task.FromResult(Olca.Presentation.Management.BootstrapTitleView.Create(root.transform,resources)),(p,c)=>{title=p.GetComponent<Olca.Presentation.Management.BootstrapTitleView>();title.Show(c,()=>resumes++,()=>creates++,false,true,null);},p=>p.GetComponent<Olca.Presentation.Management.BootstrapTitleView>().Hide());
+                Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);var resume=title.transform.Find("TitleStart").GetComponent<Button>();var create=title.transform.Find("TitleNewGame").GetComponent<Button>();Assert.AreEqual("つづきから",resume.GetComponentInChildren<Text>().text);Assert.AreEqual("はじめから",create.GetComponentInChildren<Text>().text);Assert.IsFalse(resume.interactable);resume.onClick.Invoke();Assert.AreEqual(0,resumes);create.onClick.Invoke();Assert.AreEqual(1,creates);
+                var old=create.onClick;title.SetBusy(true,null);old.Invoke();Assert.AreEqual(1,creates);title.SetContinueAvailable();Assert.IsFalse(resume.interactable);title.SetBusy(false,"起動失敗");resume.onClick.Invoke();Assert.AreEqual(1,resumes,"新規保存成功後の起動失敗は確定済み保存を継続できる");views.CloseCurrent();old.Invoke();Assert.AreEqual(1,creates);Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);old.Invoke();Assert.AreEqual(1,creates);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public void タイトルの説明と選択枠は保存有無と選択に追従し入力や進行を変えない()
+        {
+            var root=new GameObject("TitlePresentation",typeof(RectTransform));var eventObject=UnityEngine.EventSystems.EventSystem.current==null?new GameObject("TitlePresentationEvents",typeof(UnityEngine.EventSystems.EventSystem)):null;var events=eventObject!=null?eventObject.GetComponent<UnityEngine.EventSystems.EventSystem>():UnityEngine.EventSystems.EventSystem.current;if(eventObject!=null)typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnEnable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(events,null);UnityEngine.EventSystems.EventSystem.current=events;var previous=events.currentSelectedGameObject;
+            var resources=new ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>1);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);int started=0;
+            try{
+                bool saved=true;Olca.Presentation.Management.BootstrapTitleView title=null;
+                views.Register(this,"title",ct=>System.Threading.Tasks.Task.FromResult(Olca.Presentation.Management.BootstrapTitleView.Create(root.transform,resources)),(panel,context)=>{title=panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>();title.Show(context,()=>started++,()=>started++,saved,true,null);},panel=>panel.GetComponent<Olca.Presentation.Management.BootstrapTitleView>().Hide());
+                Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);var start=title.transform.Find("TitleStart");var create=title.transform.Find("TitleNewGame");var text=title.transform.Find("TitleStatus").GetComponent<Text>();
+                events.SetSelectedGameObject(start.gameObject);title.RefreshPresentation();StringAssert.Contains("サイカイ",text.text);Assert.IsTrue(start.Find("TitleSelectionFrame").gameObject.activeSelf);Assert.IsFalse(create.Find("TitleSelectionFrame").gameObject.activeSelf);
+                events.SetSelectedGameObject(create.gameObject);title.RefreshPresentation();StringAssert.Contains("アタラしい",text.text);StringAssert.DoesNotContain("サイカイ",text.text);Assert.IsTrue(create.Find("TitleSelectionFrame").gameObject.activeSelf);Assert.IsFalse(start.Find("TitleSelectionFrame").gameObject.activeSelf);
+                title.SetBusy(true,null);Assert.IsFalse(create.Find("TitleSelectionFrame").gameObject.activeSelf);Assert.AreEqual("ヨミコミチュウ",text.text);title.SetBusy(false,"読み込み失敗");StringAssert.DoesNotContain("アタラしい",text.text);
+                views.CloseCurrent();saved=false;Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);title.RefreshPresentation();StringAssert.Contains("セーブが ありません",text.text);Assert.IsFalse(start.GetComponent<Button>().IsInteractable());Assert.AreEqual(0,started);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();events.SetSelectedGameObject(previous);if(eventObject!=null){typeof(UnityEngine.EventSystems.EventSystem).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(events,null);UnityEngine.Object.DestroyImmediate(eventObject);}UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public void タイトル案内はmenu割当に追従し取消不能時やタイトル直下の戻るを誤案内しない()
+        {
+            var bindings=new System.Collections.Generic.Dictionary<(string,string,string),string>{{("gamepad","menu","Decide"),"North"},{("gamepad","menu","Cancel"),"West"}};var profile=new Olca.Core.Domain.InputBindingProfile(bindings,bindings.Keys);
+            string guide=Olca.Presentation.Management.BootstrapTitleView.InputGuideText(profile,true);StringAssert.Contains(Olca.Unity.UnityInputProvider.GamepadBindingLabel("North"),guide);StringAssert.Contains(Olca.Unity.UnityInputProvider.GamepadBindingLabel("West"),guide);StringAssert.Contains("カクニンガメンで",guide);
+            StringAssert.Contains("Enter",Olca.Presentation.Management.BootstrapTitleView.InputGuideText(profile,false));StringAssert.Contains("Esc : トリケシ",Olca.Presentation.Management.BootstrapTitleView.InputGuideText(profile,false,true));StringAssert.DoesNotContain("トリケシ",Olca.Presentation.Management.BootstrapTitleView.InputGuideText(profile,true,true,false));
+        }
+        private sealed class TitleFailIo:CheckpointFileIo
+        {
+            public bool Fail;
+            public override void WriteAndFlush(string path,byte[] bytes){if(Fail)throw new System.IO.IOException("title save fixture");base.WriteAndFlush(path,bytes);}
+        }
+        [Test] public void タイトル新規確認は取消で保存不変かつ失敗後同一計画を再試行し旧進行を保全する()
+        {
+            string directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"OlcaTitle194-"+Guid.NewGuid().ToString("N"));var io=new TitleFailIo();var store=new ClearReturnFileStore(directory,io);var session=new Olca.Core.Domain.ClearReturnSession(store);Assert.IsTrue(store.IsNewProfile);Assert.IsTrue(session.Ready);Assert.IsFalse(System.IO.Directory.Exists(directory),"タイトルの読取は未作成保存を書かない");
+            var prefab=Resources.Load<GameObject>(Olca.Application.Management.BootstrapEntry.GameplayHostPrefabPath);var controller=prefab.GetComponentInChildren<Olca.Application.Dungeon.DungeonBattleController>(true);var starter=controller.CreateNewGameStarterCards();Assert.IsTrue(session.InitializeStarter(starter));byte[] before=System.IO.File.ReadAllBytes(store.ActivePath);string generation=session.Snapshot.CheckpointGeneration;int made=0,saved=0,frame=1;
+            var root=new GameObject("TitleSaveChoices",typeof(RectTransform));var resources=new ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>frame);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);Olca.Presentation.Management.BootstrapTitleView title=null;Olca.Application.Management.ProgressActionOperations operations=null;
+            try{
+                views.Register(this,"title",ct=>System.Threading.Tasks.Task.FromResult(Olca.Presentation.Management.BootstrapTitleView.Create(root.transform,resources)),(p,c)=>{title=p.GetComponent<Olca.Presentation.Management.BootstrapTitleView>();operations=new Olca.Application.Management.ProgressActionOperations(session,()=>c.IsCurrent,()=>{made++;return starter;},()=>c.IsCurrent);title.Show(c,()=>{},()=>title.OpenNewGame(operations,dialogs,()=>saved++),true,true,null);},p=>p.GetComponent<Olca.Presentation.Management.BootstrapTitleView>().Hide());
+                Assert.IsTrue(views.ShowAsync("title").GetAwaiter().GetResult().Succeeded);var create=title.transform.Find("TitleNewGame").GetComponent<Button>();create.onClick.Invoke();var popup=title.GetComponentInChildren<Olca.Presentation.Management.ProgressActionDialog>(true);Assert.Less(popup.GetComponent<Image>().color.r,.1f);Assert.AreEqual(1f,popup.GetComponent<Image>().color.a,"背面のタイトル文字を透かさない");Assert.AreEqual(Color.white,popup.Message.color);Assert.AreEqual(32,popup.Message.fontSize);var stale=popup.ConfirmButton.onClick;popup.CancelButton.onClick.Invoke();CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(0,made);Assert.AreEqual(0,saved);stale.Invoke();Assert.AreEqual(0,made);
+                frame++;create.onClick.Invoke();io.Fail=true;popup.ConfirmButton.onClick.Invoke();Assert.IsTrue(session.HasPendingSave);Assert.AreEqual(1,made);Assert.IsFalse(popup.CancelButton.interactable);CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));popup.ConfirmButton.onClick.Invoke();Assert.AreEqual(1,made,"同frame二重決定で新計画を作らない");frame++;io.Fail=false;popup.ConfirmButton.onClick.Invoke();Assert.AreEqual(1,made,"再試行もスターターを再生成しない");Assert.AreEqual(1,saved);Assert.IsFalse(session.HasPendingSave);Assert.AreNotEqual(generation,session.Snapshot.CheckpointGeneration);Assert.AreEqual(20,session.Snapshot.Owned.Sum(c=>c.Count));Assert.IsTrue(System.IO.Directory.GetFiles(directory,"*",System.IO.SearchOption.AllDirectories).Any(f=>System.IO.File.ReadAllBytes(f).SequenceEqual(before)),"旧進行文書の復旧用bytesが残る");var fresh=new Olca.Core.Domain.ClearReturnSession(new ClearReturnFileStore(directory));Assert.IsTrue(fresh.Ready);Assert.AreEqual(session.Snapshot.CheckpointGeneration,fresh.Snapshot.CheckpointGeneration);views.CloseCurrent();stale.Invoke();Assert.AreEqual(1,saved);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
         [Test] public void 外界決定は初回中立sample後の最初の新押下を採用し文脈再入の既保持を捨てる()
         {
             var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();
@@ -177,11 +258,37 @@ namespace Olca.Tests.Application
                 input.GamepadContext=()=>"outside";input.GamepadGameplayActive=()=>true;input.StartEventCapture();
                 void State(UnityEngine.InputSystem.LowLevel.GamepadState value){UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,value);UnityEngine.InputSystem.InputSystem.Update();}
                 State(new UnityEngine.InputSystem.LowLevel.GamepadState());var a=new object();Assert.IsFalse(input.OutsideInteractionPressed(a));
-                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.OutsideInteractionPressed(a),"近接前にsample済みなら最初の決定を捨てない");Assert.IsFalse(input.OutsideInteractionPressed(a),"同edgeは一回だけ消費");
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));Assert.IsTrue(input.OutsideInteractionPressed(a),"近接前にsample済みなら最初の決定を捨てない");Assert.IsFalse(input.OutsideInteractionPressed(a),"同edgeは一回だけ消費");
                 var b=new object();Assert.IsFalse(input.OutsideInteractionPressed(b),"再入時の既保持は新決定にしない");State(new UnityEngine.InputSystem.LowLevel.GamepadState());Assert.IsFalse(input.OutsideInteractionPressed(b));
-                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.South));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
+                State(new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));Assert.IsTrue(input.OutsideInteractionPressed(b));Assert.IsFalse(input.OutsideInteractionPressed(b));input.QueueSnapshot();Assert.IsFalse(input.OutsideInteractionPressed(b),"snapshotの保持状態は新決定にしない");
             }}finally{UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.Update();UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);}
         }
+        [Test] public void 空中入口名の退避はキャラ全体を避け画面内と入口方向を保つ()
+        {
+            var method=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("EntranceTitleOffset",BindingFlags.Static|BindingFlags.NonPublic);
+            foreach(float width in new[]{1440f,1920f,3840f})foreach(float actorX in new[]{-width*.5f+150,0,width*.5f-150})foreach(float offset in new[]{-60f,60f}){
+                var viewport=new Rect(-width*.5f,-540,width,1080);var actor=new Rect(actorX-128,250,256,256);var center=Mathf.Clamp(actorX+offset,viewport.xMin+176,viewport.xMax-176);var label=new Rect(center-160,340,320,42);
+                float shift=(float)method.Invoke(null,new object[]{label,actor,viewport});label.position+=new Vector2(shift,0);Assert.IsFalse(label.Overlaps(actor));Assert.GreaterOrEqual(label.xMin,viewport.xMin);Assert.LessOrEqual(label.xMax,viewport.xMax);
+            }
+            Assert.Greater((float)method.Invoke(null,new object[]{new Rect(-220,340,320,42),new Rect(-128,250,256,256),new Rect(-960,-540,1920,1080)}),0f,"右側に空きがあれば接近方向によらず同じ側へ退避する");
+            var unchanged=new Rect(-160,600,320,42);Assert.AreEqual(0f,(float)method.Invoke(null,new object[]{unchanged,new Rect(-128,0,256,256),new Rect(-960,-540,1920,1080)}),"重ならなければ移動しない");
+        }
+
+        [Test] public void 入口の目印は空中も残し実行可能時だけ現在キーを案内する()
+        {
+            var root=new GameObject("EntranceHintTest",typeof(RectTransform));try{
+                var view=root.AddComponent<Olca.Presentation.Exploration.OutsideExplorationView>();var buttonObject=new GameObject("OutsideDungeonEntrance",typeof(RectTransform),typeof(Image),typeof(Button));buttonObject.transform.SetParent(root.transform,false);var button=buttonObject.GetComponent<Button>();button.targetGraphic=buttonObject.GetComponent<Image>();
+                var hintObject=new GameObject("OutsideEntranceActionHint",typeof(RectTransform),typeof(Text));hintObject.transform.SetParent(buttonObject.transform,false);var hint=hintObject.GetComponent<Text>();
+                var type=view.GetType();type.GetField("entrance",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,button);type.GetField("entranceActionHint",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,hint);var render=type.GetMethod("RenderEntranceHint",BindingFlags.Instance|BindingFlags.NonPublic);
+                void Draw(bool visible,bool available,bool ground,string key)=>render.Invoke(view,new object[]{visible,available,ground,key});
+                Draw(true,true,true,"Enter");Assert.IsTrue(buttonObject.activeSelf);Assert.IsTrue(button.interactable);Assert.IsTrue(hintObject.activeSelf);Assert.AreEqual("[Enter] シラベル",hint.text);
+                Draw(true,false,false,"Enter");Assert.IsTrue(buttonObject.activeSelf);Assert.IsFalse(button.interactable);Assert.IsFalse(button.image.raycastTarget);Assert.IsFalse(button.image.enabled);Assert.IsFalse(hintObject.activeSelf);Assert.IsEmpty(hint.text);
+                Draw(true,false,true,"Enter");Assert.IsTrue(buttonObject.activeSelf);Assert.IsTrue(button.image.raycastTarget);Assert.IsTrue(button.image.enabled);Assert.IsFalse(hintObject.activeSelf);
+                Draw(true,true,true,"B / ○");Assert.AreEqual("[B / ○] シラベル",hint.text);Draw(true,true,true,"X / □");Assert.AreEqual("[X / □] シラベル",hint.text);
+                Draw(true,true,true,"ミワリアテ");Assert.IsFalse(hintObject.activeSelf);Draw(false,false,true,"Enter");Assert.IsFalse(buttonObject.activeSelf);Draw(true,true,true,"Enter");Assert.IsTrue(hintObject.activeSelf);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+
         [Test] public void 近接入口は通常移動の範囲だけで接地を要求し空中ではJump入力を奪わない()
         {
             var core=new Olca.Core.Logic.Integration.OutsideExplorationCore(Olca.Core.Logic.Integration.OutsideMovementDefinition.ValidationTerrain,Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationDash);
@@ -202,6 +309,20 @@ namespace Olca.Tests.Application
             public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
             public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){error=Fail?"fixture save failure":null;if(Fail)return false;if(Value.Revision!=expected)return false;Value=value.Copy();return true;}
         }
+        [Test] public async System.Threading.Tasks.Task 外界店の三列パーツ販売は失敗と売切れを守り既存一式取得を失わせない()
+        {
+            var root=new GameObject("Shop236",typeof(RectTransform));var resources=new Olca.Unity.ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>0);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);var store=new Store();store.Value.OutsideInventory.Currency=10;var session=new Olca.Core.Domain.ClearReturnSession(store);var catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();var abilities=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();var shop=Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(catalog,abilities);Olca.Presentation.Management.OutsideShopView view=null;int frame=0;
+            try{Assert.AreEqual(3,shop.Offers.Count);Assert.AreEqual(2,Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(catalog,null).Offers.Count);Assert.AreEqual(2,Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(null,abilities).Offers.Count);views.Register(this,"shop",ct=>{var panel=new GameObject("Shop",typeof(RectTransform));panel.transform.SetParent(root.transform,false);view=panel.AddComponent<Olca.Presentation.Management.OutsideShopView>();view.Initialize(Olca.Presentation.Dungeon.UiLook.MenuFont(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")),session,shop,()=>{},()=>frame);return System.Threading.Tasks.Task.FromResult(panel);},(panel,context)=>view.Open(context),panel=>view.Hide());Assert.IsTrue((await views.ShowAsync("shop")).Succeeded);Button B(string name)=>view.GetComponentsInChildren<Button>(true).Single(b=>b.name==name);foreach(var label in view.GetComponentsInChildren<Text>(true).Where(v=>v.name.StartsWith("OutsideShopOffer_")&&v.name.EndsWith("Label"))){Assert.AreSame(Resources.Load<Font>("OlcaUI/MenuText"),label.font,"実製品メニュー書体で測る");Assert.GreaterOrEqual(label.rectTransform.rect.height,label.preferredHeight,"在庫まで4行が収まる: "+label.name);Assert.GreaterOrEqual(label.rectTransform.rect.width,label.preferredWidth,"商品名と在庫が意図せず折返さない: "+label.name);}Assert.AreSame(B("OutsideShopOffer_fire-part-v1"),B("OutsideShopOffer_poison-limited-v1").navigation.selectOnRight);B("OutsideShopOffer_fire-part-v1").onClick.Invoke();Assert.AreSame(B("OutsideShopBuy"),B("OutsideShopOffer_fire-part-v1").navigation.selectOnDown);StringAssert.Contains("パーツ",view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideShopOffer_fire-part-v1Label").text);store.Fail=true;frame++;B("OutsideShopBuy").onClick.Invoke();Assert.AreEqual(10,session.OutsideInventorySnapshot.Currency);Assert.IsNull(session.Snapshot.Customization);store.Fail=false;frame++;B("OutsideShopBuy").onClick.Invoke();Assert.AreEqual(6,session.OutsideInventorySnapshot.Currency);Assert.AreEqual(1,session.CustomizationSnapshot.OwnedParts.Single().Count);var status=view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideShopStatus");StringAssert.Contains("ソウビ・パーツ",status.text);Assert.GreaterOrEqual(status.rectTransform.rect.height,status.preferredHeight,"購入後の配置案内が収まる");Assert.IsFalse(B("OutsideShopBuy").interactable);Assert.AreEqual(0,session.CustomizationSnapshot.Placements.Length);views.CloseCurrent();
+                var definition=Olca.Application.Management.TrialCustomizationDefinitions.Provider().Resolve(new Olca.Core.Logic.Customization.CustomizationAcquisitionContext(null));Assert.IsTrue(session.TryPrepareCustomizationAcquisition(catalog,definition),session.Error);var plan=session.FindCustomizationAcquisition(definition.Snapshot.ContextId);Assert.AreEqual(1,plan.Candidates.Length,"パーツ購入で既存一式候補を失わない");Assert.IsTrue(session.TryClaimCustomizationAcquisition(catalog,plan.ContextId,plan.Candidates[0].RequestId),session.Error);Assert.AreEqual(3,session.CustomizationSnapshot.OwnedParts.Single().Count);Assert.AreEqual(1,session.CustomizationSnapshot.OwnedAccessoryIds.Length);Assert.AreEqual(1,session.CustomizationSnapshot.OwnedUnlockItems.Single().Count);long revision=session.Snapshot.Revision;Assert.IsTrue(session.TryClaimCustomizationAcquisition(catalog,plan.ContextId,plan.Candidates[0].RequestId));Assert.AreEqual(revision,session.Snapshot.Revision);Assert.AreEqual(3,new Olca.Core.Domain.ClearReturnSession(store).CustomizationSnapshot.OwnedParts.Single().Count);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public async System.Threading.Tasks.Task 外界店Viewは旧クリックと同frame二重購入を拒否して保存失敗後に再確定できる()
+        {
+            var root=new GameObject("Shop233",typeof(RectTransform));var resources=new Olca.Unity.ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>0);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);var owner=new object();var store=new Store();var session=new Olca.Core.Domain.ClearReturnSession(store);Olca.Presentation.Management.OutsideShopView view=null;int frame=0,closed=0;bool alive=true;
+            try{views.Register(owner,"shop",ct=>{var panel=new GameObject("Shop",typeof(RectTransform));panel.transform.SetParent(root.transform,false);view=panel.AddComponent<Olca.Presentation.Management.OutsideShopView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),session,Olca.Core.Domain.OutsideShopDefinition.TrialLimited,()=>closed++,()=>frame,()=>alive);return System.Threading.Tasks.Task.FromResult(panel);},(panel,context)=>view.Open(context),panel=>view.Hide());Assert.IsTrue((await views.ShowAsync("shop")).Succeeded);StringAssert.Contains("ザイコ 2 / 2",view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideShopOffer_poison-limited-v1Label").text);
+                Button B(string name)=>view.GetComponentsInChildren<Button>(true).Single(b=>b.name==name);var old=B("OutsideShopFunds").onClick;old.Invoke();Assert.AreEqual(10,session.OutsideInventorySnapshot.Currency);old.Invoke();Assert.AreEqual(10,session.OutsideInventorySnapshot.Currency);B("OutsideShopOffer_heal").onClick.Invoke();Assert.AreSame(B("OutsideShopOffer_poison-limited-v1"),B("OutsideShopOffer_heal").navigation.selectOnRight);Assert.AreSame(B("OutsideShopBuy"),B("OutsideShopOffer_heal").navigation.selectOnDown);frame++;store.Fail=true;B("OutsideShopBuy").onClick.Invoke();Assert.AreEqual(10,session.OutsideInventorySnapshot.Currency);Assert.IsFalse(session.HasPendingSave);var previous=B("OutsideShopBuy").onClick;frame++;store.Fail=false;previous.Invoke();Assert.AreEqual(8,session.OutsideInventorySnapshot.Currency);B("OutsideShopBuy").onClick.Invoke();Assert.AreEqual(8,session.OutsideInventorySnapshot.Currency);Assert.AreEqual(1,session.OutsideInventorySnapshot.Items.Single(v=>v.Id==Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.Id).Count);alive=false;frame++;B("OutsideShopBuy").onClick.Invoke();Assert.AreEqual(8,session.OutsideInventorySnapshot.Currency);alive=true;var back=B("OutsideShopBack").onClick;views.CloseCurrent();back.Invoke();previous.Invoke();Assert.AreEqual(0,closed);Assert.AreEqual(8,new Olca.Core.Domain.ClearReturnSession(store).OutsideInventorySnapshot.Currency);
+            }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
+        }
         [Test] public async System.Threading.Tasks.Task 登録Viewは旧描画と旧世代callbackを無効化し0個の登録と失敗再試行を守る()
         {
             var root=new GameObject("InventoryViewFixture",typeof(RectTransform));var resources=new ResourceManager();var dialogs=new Olca.Presentation.Management.DialogManager(()=>17);var views=new Olca.Presentation.Management.ViewManager(resources,dialogs);var store=new Store();var session=new Olca.Core.Domain.ClearReturnSession(store);Olca.Presentation.Management.OutsideItemRegistrationView view=null;
@@ -211,4 +332,25 @@ namespace Olca.Tests.Application
             }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
         }
     }
+    public sealed class OutsideDefensiveField238Tests
+    {
+        [TestCase(-1f)][TestCase(1f)]
+        public void SharedFieldFollowsBodyAndClearsWithoutChangingActor(float facing)
+        {
+            var root=new GameObject("Barrier238",typeof(RectTransform));var body=new GameObject("Body",typeof(RectTransform),typeof(Image));body.transform.SetParent(root.transform,false);var image=body.GetComponent<Image>();var resources=new ResourceManager();
+            var view=root.AddComponent<Olca.Presentation.Exploration.OutsideExplorationView>();var type=view.GetType();const BindingFlags flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Field(string name,object value)=>type.GetField(name,flags).SetValue(view,value);
+            void Render(bool barrier,bool aura)=>type.GetMethod("RenderOutsideDefensiveField",flags).Invoke(view,new object[]{barrier,aura});
+            try{
+                image.sprite=resources.GetShared<Sprite>("OlcaTraversal/WallSlide_01");Assert.NotNull(image.sprite);image.rectTransform.anchoredPosition=new Vector2(300,100);image.rectTransform.localScale=new Vector3(facing,1,1);Field("player",image);Field("pixelsPerWorldUnit",100f);
+                Render(true,false);var layer=(Image)type.GetField("outsideDefensiveField",flags).GetValue(view);Assert.IsTrue(layer.enabled);Assert.IsFalse(layer.raycastTarget);Assert.AreEqual("defensive-field/Barrier",layer.sprite.name);Assert.Less(layer.transform.GetSiblingIndex(),image.transform.GetSiblingIndex());Assert.AreEqual(.55f,layer.color.a);
+                var bounds=Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(image.sprite);Assert.AreEqual(image.rectTransform.anchoredPosition+new Vector2(bounds.center.x*facing,bounds.center.y+bounds.size.y*.1f)*100,layer.rectTransform.anchoredPosition);Assert.AreEqual(bounds.size.y*115,layer.rectTransform.sizeDelta.y,.001f);
+                image.rectTransform.anchoredPosition+=new Vector2(50,90);Render(true,false);Assert.AreEqual(image.rectTransform.anchoredPosition.y+(bounds.center.y+bounds.size.y*.1f)*100,layer.rectTransform.anchoredPosition.y,.001f);
+                Render(false,false);Assert.IsFalse(layer.enabled);Assert.IsNull(layer.sprite);Assert.IsNull(type.GetField("outsideDefensiveAssets",flags).GetValue(view));
+                Render(false,true);Assert.AreEqual("defensive-field/Aura",layer.sprite.name);Render(true,true);Assert.IsFalse(layer.enabled);
+                Render(true,false);view.Hide();Assert.IsFalse(layer.enabled);Assert.IsNull(layer.sprite);Assert.IsNull(type.GetField("outsideDefensiveAssets",flags).GetValue(view));root.SetActive(true);Render(true,false);
+            }finally{UnityEngine.Object.DestroyImmediate(root);resources.Dispose();}
+        }
+    }
+
 }
