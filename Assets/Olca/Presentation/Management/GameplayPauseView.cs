@@ -39,7 +39,6 @@ namespace Olca.Presentation.Management
             return target.Name==null?null:actions.Keys.First(b=>b!=null&&b.name==target.Name);
         }
 
-        private bool outsidePresentation;
         private RectTransform itemRect;private Vector2 itemPosition,itemSize;private Text playHeading;private string playHeadingText;
         private readonly Dictionary<Button,bool> outsideHidden=new Dictionary<Button,bool>();
         private void SetOutsideLayout(bool value)
@@ -63,10 +62,10 @@ namespace Olca.Presentation.Management
         }
         public void SetOutsidePresentation(bool value)
         {
-            outsidePresentation=value;SetOutsideLayout(value);
-            if(value&&inputGuide==null){
+            SetOutsideLayout(value);
+            if(inputGuide==null&&actions.Count>0){
                 var obj=new GameObject("OutsidePauseInputGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);inputGuide=obj.GetComponent<Text>();
-                inputGuide.font=actions.Keys.First().GetComponentInChildren<Text>().font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
+                inputGuide.font=actions.Keys.Select(b=>b.GetComponentInChildren<Text>()).FirstOrDefault(t=>t!=null)?.font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
                 inputGuide.rectTransform.sizeDelta=new Vector2(1300,48);inputGuide.rectTransform.anchoredPosition=new Vector2(0,-350);
                 foreach(var button in actions.Keys){
                     var frame=new GameObject("OutsidePauseFocusFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-4,-4);rect.offsetMax=new Vector2(4,4);
@@ -78,7 +77,7 @@ namespace Olca.Presentation.Management
         }
         public void RefreshOutsidePresentation()
         {
-            bool visible=outsidePresentation&&gameObject.activeInHierarchy&&!covered&&(inputAllowed?.Invoke()??false);
+            bool visible=gameObject.activeInHierarchy&&!covered&&(inputAllowed?.Invoke()??false);
             if(inputGuide!=null){inputGuide.gameObject.SetActive(visible);if(visible)inputGuide.text=InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);}
             var selected=EventSystem.current?.currentSelectedGameObject;
             foreach(var pair in focusFrames)if(pair.Key!=null&&pair.Value!=null)pair.Value.SetActive(visible&&pair.Key.gameObject==selected&&pair.Key.gameObject.activeInHierarchy&&pair.Key.IsInteractable());
@@ -121,7 +120,7 @@ namespace Olca.Presentation.Management
             var focus=previousFocus;previousFocus=null;
             if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){EventSystem.current?.SetSelectedGameObject(focus);restoredFocus=focus.name;}
         }
-        private void OnDisable(){outsidePresentation=false;RefreshOutsidePresentation();RestoreRestrictedControls();context?.NotifyHidden();context=null;}
+        private void OnDisable(){RefreshOutsidePresentation();RestoreRestrictedControls();context?.NotifyHidden();context=null;}
         private void OnDestroy(){RestoreRestrictedControls();context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
     }
 }

@@ -192,15 +192,16 @@ namespace Olca.Tests.Application
             foreach(var name in new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"})Assert.IsTrue(panel.transform.Find(name).gameObject.activeSelf);
         }
 
-        [Test] public void 外界Pauseの選択枠は有効な現在項目だけで表示し他場面では消える()
+        [TestCase(false)] [TestCase(true)] public void Pauseの選択枠は場面によらず有効項目に表示し操作停止中は消える(bool outside)
         {
             var panel=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Pause();panel.SetActive(true);
-            var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);var buttons=panel.GetComponentsInChildren<Button>(true).ToDictionary(b=>b.name);
-            Assert.IsNull(panel.transform.Find("OutsidePauseInputGuide"),"外界で表示するまでは作らない");view.SetOutsidePresentation(true);buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();
+            var view=panel.AddComponent<GameplayPauseView>();bool allowed=true;view.Initialize(()=>allowed);var buttons=panel.GetComponentsInChildren<Button>(true).ToDictionary(b=>b.name);
+            Assert.IsNull(panel.transform.Find("OutsidePauseInputGuide"),"表示するまでは作らない");view.SetOutsidePresentation(outside);buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();
             Assert.IsTrue(buttons["ResumeButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);Assert.IsFalse(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
             buttons["KeyboardSettingsButton"].Select();view.RefreshOutsidePresentation();Assert.IsFalse(buttons["ResumeButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);Assert.IsTrue(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
             buttons["KeyboardSettingsButton"].interactable=false;view.RefreshOutsidePresentation();Assert.IsFalse(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
-            view.SetOutsidePresentation(false);Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
+            allowed=false;view.RefreshOutsidePresentation();Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
+            allowed=true;buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();Assert.IsTrue(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);view.CoverForDialog();view.RefreshOutsidePresentation();Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
             view.SetOutsidePresentation(true);Assert.AreEqual(1,buttons["ResumeButton"].transform.Cast<Transform>().Count(x=>x.name=="OutsidePauseFocusFrame"),"再表示でも生成を重ねない");panel.SetActive(false);typeof(GameplayPauseView).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);
         }
         [Test] public void 外界Pause案内はメニュー割当を表示しゲーム割当と混同しない()
