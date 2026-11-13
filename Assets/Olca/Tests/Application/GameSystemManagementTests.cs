@@ -837,6 +837,16 @@ namespace Olca.Tests.Application
         {
             var panel=Panel("other");using(var scope=dialogs.CreateOwner(()=>true)){dialogs.ShowPersistent(scope,panel,Button(panel,"confirm"),Button(panel,"cancel"),()=>true,_=>{});var service=new ProgressOperationsProbe();var popup=ProgressPopup();popup.OpenManualSave(service,dialogs,null,()=>true);Assert.AreEqual(0,service.Saves);Assert.IsFalse(popup.IsOpen);Assert.AreEqual(1,dialogs.ActiveCount);}
         }
+        [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)]
+        public void 撤退確認は背面を遮り警告と決定取消が画面内で重ならない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var root=factory.Panel("RetreatVisual",true);var view=root.AddComponent<RetreatConfirmationDialog>();view.Initialize(factory);view.Open(()=>new RetreatDialogState(true,false,false,false,false,false),null,null,null,()=>true);Canvas.ForceUpdateCanvases();
+            var dialog=root.GetComponentInChildren<ConfirmationDialog>(true);Assert.IsTrue(view.IsOpen);Assert.AreEqual(1,dialog.GetComponent<Image>().color.a);var reading=dialog.GetComponentsInChildren<Image>(true).Single(v=>v.name=="RetreatReadingFace");Assert.IsNotNull(reading.sprite,"既存の水鏡素材を維持する");Assert.Less(reading.color.b,.5f);
+            var warning=dialog.GetComponentsInChildren<Text>(true).Single(v=>v.name=="RetreatWarning");Assert.Less(reading.transform.GetSiblingIndex(),warning.transform.GetSiblingIndex(),"読取面を文字より手前に描かない");Assert.Less(reading.transform.GetSiblingIndex(),dialog.GetComponentsInChildren<Text>(true).Single(v=>v.name=="RetreatTitle").transform.GetSiblingIndex());Assert.Greater(warning.color.r,.8f);Assert.AreEqual(Olca.Presentation.CustomScreen.CustomDisplay.Katakana("撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。"),warning.text);Assert.AreEqual("テッタイのカクニン",dialog.GetComponentsInChildren<Text>(true).Single(v=>v.name=="RetreatTitle").text);
+            Rect Area(RectTransform t){var c=new Vector3[4];t.GetWorldCorners(c);return Rect.MinMaxRect(c[0].x,c[0].y,c[2].x,c[2].y);}var bounds=Area((RectTransform)root.transform);var message=Area(warning.rectTransform);var confirm=Area((RectTransform)view.ConfirmButton.transform);var cancel=Area((RectTransform)view.CancelButton.transform);foreach(var area in new[]{message,confirm,cancel}){Assert.GreaterOrEqual(area.xMin,bounds.xMin);Assert.LessOrEqual(area.xMax,bounds.xMax);Assert.GreaterOrEqual(area.yMin,bounds.yMin);Assert.LessOrEqual(area.yMax,bounds.yMax);}Assert.IsFalse(message.Overlaps(confirm));Assert.IsFalse(message.Overlaps(cancel));Assert.IsFalse(confirm.Overlaps(cancel));
+            view.CancelButton.onClick.Invoke();Assert.IsFalse(view.IsOpen);
+        }
         [Test] public void 撤退Dialogは最新可否で判断し取消後の旧確定は次世代へ作用しない()
         {
             var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var pause=Panel("legacy-pause");pause.SetActive(true);var origin=Button(pause,"RetreatButton");EventSystem.current.SetSelectedGameObject(origin.gameObject);
