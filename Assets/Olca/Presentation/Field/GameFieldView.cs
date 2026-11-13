@@ -1,3 +1,5 @@
+using PolledInput = Olca.Unity.PolledInput;
+using Key = UnityEngine.InputSystem.Key;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
@@ -1423,7 +1425,7 @@ namespace Olca.Presentation.Field
             Refresh(confirmed?"初期配置を表示しました。保存・適用で確定します。":"初期化を取り消しました。");
         }
         private void CancelListening(){listening=null;Refresh("キー入力を取り消しました。");}
-        private void LateUpdate(){FitSettingsLayout();if(resetDialog!=null&&resetDialog.IsOpen||managedContext?.DialogBlocksInput==true){menu?.Suspend();navigationDirty=true;return;}if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;menu.Bind(listening.HasValue?transform.Find("CancelCapture"):transform,listening.HasValue?"CancelCapture":normalFocus,()=>{if(listening.HasValue)CancelListening();else DiscardAndClose();},listening.HasValue?null:bindingScroll,restorePosition:true,directionScroll:false);}if(gamepad&&listening.HasValue){if(Input.GetKeyDown(KeyCode.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
+        private void LateUpdate(){FitSettingsLayout();if(resetDialog!=null&&resetDialog.IsOpen||managedContext?.DialogBlocksInput==true){menu?.Suspend();navigationDirty=true;return;}if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>Olca.Unity.MenuPadScope.IsTopmost(transform),keyboardOwned:()=>listening.HasValue);if(navigationDirty){navigationDirty=false;menu.Bind(listening.HasValue?transform.Find("CancelCapture"):transform,listening.HasValue?"CancelCapture":normalFocus,()=>{if(listening.HasValue)CancelListening();else DiscardAndClose();},listening.HasValue?null:bindingScroll,restorePosition:true,directionScroll:false);}if(gamepad&&listening.HasValue){if(PolledInput.Down(Key.Escape))CancelListening();}else if(assignedFrame!=Time.frameCount)menu.Tick();}
         private void OnDisable(){if(resetDialog!=null)resetDialog.Abort();resetDialog=null;menu?.Suspend();managedContext?.NotifyHidden();}
         private void OnDestroy(){if(resetDialog!=null)resetDialog.Abort();resetDialog=null;menu?.Dispose();save=null;managedContext=null;}
 

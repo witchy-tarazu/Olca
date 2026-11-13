@@ -1,3 +1,5 @@
+using PolledInput = Olca.Unity.PolledInput;
+using Key = UnityEngine.InputSystem.Key;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -869,29 +871,29 @@ namespace Olca.Presentation.CustomScreen
         private void HandleInput()
         {
             if (Olca.Unity.GameplayPause.InputBlocked||(detailsDialogs!=null&&(detailsPanel==null||!detailsPanel.activeSelf)&&DetailsInputBlocked)) return;
-            if(Input.GetKeyDown(KeyCode.Tab)){ToggleCustomPresentation();return;}
+            if(PolledInput.Down(Key.Tab)){ToggleCustomPresentation();return;}
             if(!isScreenVisible&&(detailsPanel==null||!detailsPanel.activeSelf)){
-                if(Input.GetKeyDown(KeyCode.Escape)){ToggleCustomPresentation();return;}
-                if(Input.GetKeyDown(KeyCode.LeftArrow)||Input.GetKeyDown(KeyCode.RightArrow)||Input.GetKeyDown(KeyCode.Space))OpenCombatantDetails(1);
+                if(PolledInput.Down(Key.Escape)){ToggleCustomPresentation();return;}
+                if(PolledInput.Down(Key.LeftArrow)||PolledInput.Down(Key.RightArrow)||PolledInput.Down(Key.Space))OpenCombatantDetails(1);
                 return;
             }
             if(DetailsOpen){detailsDialog.HandleKeyboard();return;}
-            if(Input.GetKeyDown(KeyCode.LeftArrow)||Input.GetKeyDown(KeyCode.RightArrow)||Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.A)||Input.GetKeyDown(KeyCode.D)||Input.GetKeyDown(KeyCode.W)||Input.GetKeyDown(KeyCode.S))padTransformationIndex=-1;
+            if(PolledInput.Down(Key.LeftArrow)||PolledInput.Down(Key.RightArrow)||PolledInput.Down(Key.UpArrow)||PolledInput.Down(Key.DownArrow)||PolledInput.Down(Key.A)||PolledInput.Down(Key.D)||PolledInput.Down(Key.W)||PolledInput.Down(Key.S))padTransformationIndex=-1;
             // カスタマイズモード中
             if (customizeModeView != null && customizeModeView.IsActive)
             {
                 // カーソル移動（方向キー/WASD）
-                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+                if (PolledInput.Down(Key.LeftArrow) || PolledInput.Down(Key.A))
                     cursor.MoveLeft();
-                else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+                else if (PolledInput.Down(Key.RightArrow) || PolledInput.Down(Key.D))
                     cursor.MoveRight();
-                else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+                else if (PolledInput.Down(Key.UpArrow) || PolledInput.Down(Key.W))
                     cursor.MoveUp();
-                else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+                else if (PolledInput.Down(Key.DownArrow) || PolledInput.Down(Key.S))
                     cursor.MoveDown();
 
                 // Space でカーソル位置のカードを選択/解除
-                if (Input.GetKeyDown(KeyCode.Space))
+                if (PolledInput.Down(Key.Space))
                 {
                     int cardIndex = cursor.CurrentIndex;
                     if (!cursor.IsOnConfirmButton && cardIndex >= 0 && cardIndex < handCardViews.Count)
@@ -905,33 +907,33 @@ namespace Olca.Presentation.CustomScreen
 
             // カーソル移動（方向キー/WASD）
             // パッドはHandleCustomGamepadから同じカーソルへ接続する。
-            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+            if (PolledInput.Down(Key.LeftArrow) || PolledInput.Down(Key.A))
             {
                 cursor.MoveLeft();
             }
-            else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+            else if (PolledInput.Down(Key.RightArrow) || PolledInput.Down(Key.D))
             {
                 cursor.MoveRight();
             }
-            else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+            else if (PolledInput.Down(Key.UpArrow) || PolledInput.Down(Key.W))
             {
                 cursor.MoveUp();
             }
-            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+            else if (PolledInput.Down(Key.DownArrow) || PolledInput.Down(Key.S))
             {
                 cursor.MoveDown();
             }
 
             // 決定（Space）
             // パッドSouthは標準Submitと分離して処理する。
-            if (queueConfirmation == null && Input.GetKeyDown(KeyCode.Space))
+            if (queueConfirmation == null && PolledInput.Down(Key.Space))
             {
                 OnDecidePressed();
             }
 
             // ショートカット確定（Enter）
             // パッドStartも同じ確定処理へ渡す。
-            if (queueConfirmation == null && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
+            if (queueConfirmation == null && (PolledInput.Down(Key.Enter) || PolledInput.Down(Key.NumpadEnter)))
             {
                 if (customScreen.CanConfirm())
                 {
@@ -941,7 +943,7 @@ namespace Olca.Presentation.CustomScreen
 
             // カスタマイズモード開始（Cキー）
             // パッドNorthも同じ加工入口へ渡す。
-            if (Input.GetKeyDown(KeyCode.C))
+            if (PolledInput.Down(Key.C))
             {
                 EnterCustomizeMode();
                 return;
@@ -949,7 +951,7 @@ namespace Olca.Presentation.CustomScreen
 
             // キャンセル（ESC）
             // パッドEastも同じ取消入口へ渡す。
-            if (queueConfirmation == null && Input.GetKeyDown(KeyCode.Escape))
+            if (queueConfirmation == null && PolledInput.Down(Key.Escape))
             {
                 CancelSelection();
             }
@@ -2204,7 +2206,7 @@ namespace Olca.Presentation.CustomScreen
         public void Dismiss(){if(CanOperatePopup&&cancel!=null)cancel.onClick.Invoke();}
         public void HandlePad(Olca.Unity.CustomPadCommand command)
         {if(!CanOperatePopup)return;if(command==Olca.Unity.CustomPadCommand.Cancel||command==Olca.Unity.CustomPadCommand.Details)Dismiss();else if(command==Olca.Unity.CustomPadCommand.Left)Cycle(-1);else if(command==Olca.Unity.CustomPadCommand.Right)Cycle(1);else if(command==Olca.Unity.CustomPadCommand.Up)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition+.2f);else if(command==Olca.Unity.CustomPadCommand.Down)padDetailsScroll.verticalNormalizedPosition=Mathf.Clamp01(padDetailsScroll.verticalNormalizedPosition-.2f);}
-        public void HandleKeyboard(){if(!CanOperatePopup)return;if(Input.GetKeyDown(KeyCode.Escape))Dismiss();else if(Input.GetKeyDown(KeyCode.LeftArrow))Cycle(-1);else if(Input.GetKeyDown(KeyCode.RightArrow))Cycle(1);}
+        public void HandleKeyboard(){if(!CanOperatePopup)return;if(PolledInput.Down(Key.Escape))Dismiss();else if(PolledInput.Down(Key.LeftArrow))Cycle(-1);else if(PolledInput.Down(Key.RightArrow))Cycle(1);}
         private void LateUpdate()
         {RefreshLifetime();if(!IsOpen)return;if(kind==DetailKind.Combatant){if(battle==null||battle.IsGameOver||inspectionIndex>0&&Enemies().Length==0){Abort();return;}string value=CombatantText();if(value!=authored){authored=value;DrawContent(false);}}RefreshPresentation();}
         private void RefreshPresentation()

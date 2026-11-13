@@ -618,13 +618,13 @@ namespace Olca.Unity
         private bool wasBasicAttackButtonPressed;
         private float lastHorizontal;
 
-        public float Horizontal => Input.GetAxisRaw("Horizontal");
+        public float Horizontal => PolledInput.Axis(false);
 
         public float HorizontalDown
         {
             get
             {
-                float current = Input.GetAxisRaw("Horizontal");
+                float current = PolledInput.Axis(false);
                 // 前フレームが0で、今フレームが0でない場合に立ち上がり
                 if (lastHorizontal == 0f && current != 0f)
                 {
@@ -634,30 +634,30 @@ namespace Olca.Unity
             }
         }
 
-        public float Vertical => Input.GetAxisRaw("Vertical");
+        public float Vertical => PolledInput.Axis(true);
 
-        public bool JumpButtonDown => Input.GetKeyDown(KeyCode.Space);
+        public bool JumpButtonDown => PolledInput.Down(Key.Space);
 
-        public bool DashButton => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        public bool DashButton => PolledInput.Held(Key.LeftShift) || PolledInput.Held(Key.RightShift);
 
-        public bool CardUseButtonDown => Input.GetKeyDown(KeyCode.X);
+        public bool CardUseButtonDown => PolledInput.Down(Key.X);
 
-        public bool BasicAttackButton => Input.GetKey(KeyCode.Z);
+        public bool BasicAttackButton => PolledInput.Held(Key.Z);
 
         public float BasicAttackButtonHoldTime => basicAttackButtonPressTime;
 
-        public bool CustomScreenButtonDown => Input.GetKeyDown(KeyCode.C);
+        public bool CustomScreenButtonDown => PolledInput.Down(Key.C);
 
         public Olca.Core.Logic.Integration.LogicalInput CaptureLogical()
         {
-            float horizontal = Input.GetAxisRaw("Horizontal");
+            float horizontal = PolledInput.Axis(false);
             var value = new Olca.Core.Logic.Integration.LogicalInput {
                 Horizontal = horizontal, HorizontalDown = lastHorizontal == 0 ? horizontal : 0,
-                Vertical = Input.GetAxisRaw("Vertical"), JumpButton = Input.GetKey(KeyCode.Space), JumpButtonDown = Input.GetKeyDown(KeyCode.Space),
-                CardUseButtonDown = Input.GetKeyDown(KeyCode.Space), BasicAttackButton = Input.GetKey(KeyCode.Z),
+                Vertical = PolledInput.Axis(true), JumpButton = PolledInput.Held(Key.Space), JumpButtonDown = PolledInput.Down(Key.Space),
+                CardUseButtonDown = PolledInput.Down(Key.Space), BasicAttackButton = PolledInput.Held(Key.Z),
                 DashButton = DashButton,
-                DashButtonDown = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift),
-                CustomScreenButtonDown = Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt)
+                DashButtonDown = PolledInput.Down(Key.LeftShift) || PolledInput.Down(Key.RightShift),
+                CustomScreenButtonDown = PolledInput.Down(Key.LeftAlt) || PolledInput.Down(Key.RightAlt)
             };
             lastHorizontal = horizontal;
             return value;
@@ -691,7 +691,7 @@ namespace Olca.Unity
             }
 
             // 前フレームの横方向入力を記録（HorizontalDownの立ち上がり検出用）
-            lastHorizontal = Input.GetAxisRaw("Horizontal");
+            lastHorizontal = PolledInput.Axis(false);
         }
     }
     /// <summary>表示・非同期演出と入力のポーズ境界。Coreの停止理由とは独立して扱う。</summary>
@@ -708,7 +708,7 @@ namespace Olca.Unity
             IsPaused = paused;
             if (!paused) { awaitRelease = true; resumeFrames = 2; }
         }
-        public static void UpdateInputBarrier() => UpdateInputBarrier(Input.anyKey);
+        public static void UpdateInputBarrier() => UpdateInputBarrier(PolledInput.AnyPhysicalButton);
         public static void UpdateInputBarrier(bool anyKey)
         {
             if (!IsPaused && awaitRelease && !anyKey)
@@ -1091,7 +1091,7 @@ namespace Olca.Unity
         {
             var commands=input.Read();if(!Usable())return;Refresh();
             var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
-            if(Input.GetKeyDown(KeyCode.Escape)&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
+            if(PolledInput.Down(Key.Escape)&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
             int current=version;
             foreach(var e in commands){if(current!=version||e.Epoch!=input.Epoch||!Usable())break;
                 if(e.Command==CustomPadCommand.Cancel){if(!SuppressPadCancel)cancel?.Invoke();continue;}
@@ -1102,7 +1102,7 @@ namespace Olca.Unity
                 Vector2 direction=e.Command==CustomPadCommand.Left?Vector2.left:e.Command==CustomPadCommand.Right?Vector2.right:e.Command==CustomPadCommand.Up?Vector2.up:e.Command==CustomPadCommand.Down?Vector2.down:Vector2.zero;
                 if(direction!=Vector2.zero&&focused!=null)Focus(Neighbor(focused,direction,Buttons())??focused);
             }
-            if(scroll!=null){if(directionScroll&&Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
+            if(scroll!=null){if(directionScroll&&PolledInput.Down(Key.UpArrow)||PolledInput.Down(Key.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&PolledInput.Down(Key.DownArrow)||PolledInput.Down(Key.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
         }
         public void Dispose(){input.Dispose();Suspend();}
     }
@@ -1186,3 +1186,56 @@ namespace Olca.Unity
         }
     }
 }
+
+namespace Olca.Unity
+{
+    /// <summary>メニューと旧IInputProvider互換APIのフレーム読取。ゲーム用60Hzイベント列は生成しない。</summary>
+    public static class PolledInput
+    {
+        public static bool Held(Key key)=>key!=Key.None&&InputSystem.devices.OfType<Keyboard>().Any(k=>k.enabled&&k[key].isPressed);
+        public static bool Down(Key key)=>key!=Key.None&&InputSystem.devices.OfType<Keyboard>().Any(k=>k.enabled&&k[key].wasPressedThisFrame);
+        // 旧anyKeyと同様にスティックの方向を物理ボタン扱いしない。
+        public static bool AnyPhysicalButton=>InputSystem.devices.Where(d=>d.enabled).SelectMany(d=>d.allControls).OfType<ButtonControl>().Any(b=>!(b.parent is StickControl)&&b.isPressed);
+        public static float Axis(bool vertical)
+        {
+            float value=(Held(vertical?Key.UpArrow:Key.RightArrow)||Held(vertical?Key.W:Key.D)?1:0)-(Held(vertical?Key.DownArrow:Key.LeftArrow)||Held(vertical?Key.S:Key.A)?1:0);
+            // 互換ポーリングだけの既存軸設定。製品の時刻付き入力と保存リバインドは既存処理を維持する。
+            foreach(var device in InputSystem.devices.Where(d=>d.enabled)){
+                var stick=device is Gamepad pad?pad.leftStick:(device as Joystick)?.stick;if(stick==null)continue;
+                var raw=stick.ReadUnprocessedValue();float candidate=vertical?raw.y:raw.x;if(Mathf.Abs(candidate)<.19f)candidate=0;
+                if(Mathf.Abs(candidate)>Mathf.Abs(value))value=candidate;
+            }
+            return value;
+        }
+    }
+}
+
+#if UNITY_EDITOR
+namespace Olca.Unity
+{
+    // ProjectSettingsは復元ZIP管理のため、既存コピーも明示依頼された新方式へ一度だけ更新する。
+    internal static class InputBackendMigration
+    {
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void Schedule()=>UnityEditor.EditorApplication.delayCall+=EnsureNewInputBackend;
+        [UnityEditor.MenuItem("Olca/設定/Input System のみを使用")]
+        private static void EnsureNewInputBackend()
+        {
+            if(UnityEditor.AssetDatabase.IsAssetImportWorkerProcess()||UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)return;
+            var assets=UnityEditor.AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+            if(assets.Length==0){UnityEngine.Debug.LogWarning("入力設定を読めません。Player SettingsでInput Systemのみを選択してください");return;}
+            var settings=new UnityEditor.SerializedObject(assets[0]);var handler=settings.FindProperty("activeInputHandler");
+            if(handler==null){UnityEngine.Debug.LogWarning("入力設定の項目を読めません。Player Settingsを確認してください");return;}
+            if(handler.intValue==1)return;
+            try{
+                var root=System.IO.Directory.GetParent(UnityEngine.Application.dataPath).FullName;
+                var backup=System.IO.Path.Combine(root,"Library","OlcaInputSystemMigration","ProjectSettings-before.asset");
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(backup));
+                if(!System.IO.File.Exists(backup))System.IO.File.Copy(System.IO.Path.Combine(root,"ProjectSettings","ProjectSettings.asset"),backup,false);
+                handler.intValue=1;settings.ApplyModifiedPropertiesWithoutUndo();
+                UnityEngine.Debug.Log("入力設定をInput Systemのみに更新しました。Editorを一度再起動すると旧Input Managerが無効になります。元設定はLibrary/OlcaInputSystemMigrationに保全しました");
+            }catch(System.Exception e)when(e is System.IO.IOException||e is System.UnauthorizedAccessException){UnityEngine.Debug.LogWarning("入力設定の保全に失敗したため自動更新しません: "+e.GetType().Name);}
+        }
+    }
+}
+#endif

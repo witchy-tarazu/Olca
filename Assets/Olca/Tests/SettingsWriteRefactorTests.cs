@@ -458,3 +458,40 @@ namespace Olca.Tests
 
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class NewInputBackendTests
+    {
+        [Test] public void 検証環境は新InputSystemだけを有効にする()
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
+            Assert.Fail("旧Input Managerが有効です");
+#endif
+#if !ENABLE_INPUT_SYSTEM
+            Assert.Fail("Input Systemが無効です");
+#endif
+            Assert.Pass();
+        }
+        [Test] public void 新方式のメニュー保持読取は複数キーボードとEnter別キーを区別する()
+        {
+            var first=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();var second=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            try{
+                // EditModeではEditor専用更新となるため、ゲームフレーム押下のDownはPlayerで別途検証する。
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(first,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.A,UnityEngine.InputSystem.Key.Enter));UnityEngine.InputSystem.InputSystem.Update();Assert.IsTrue(PolledInput.Held(UnityEngine.InputSystem.Key.Enter));Assert.IsTrue(PolledInput.Held(UnityEngine.InputSystem.Key.A));Assert.AreEqual(-1,PolledInput.Axis(false));Assert.IsFalse(PolledInput.Held(UnityEngine.InputSystem.Key.NumpadEnter));
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(first,new UnityEngine.InputSystem.LowLevel.KeyboardState());UnityEngine.InputSystem.InputSystem.QueueStateEvent(second,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.RightArrow,UnityEngine.InputSystem.Key.NumpadEnter));UnityEngine.InputSystem.InputSystem.Update();Assert.IsFalse(PolledInput.Held(UnityEngine.InputSystem.Key.Enter));Assert.IsFalse(PolledInput.Held(UnityEngine.InputSystem.Key.Enter));Assert.IsTrue(PolledInput.Held(UnityEngine.InputSystem.Key.NumpadEnter));Assert.AreEqual(1,PolledInput.Axis(false));Assert.IsTrue(PolledInput.AnyPhysicalButton);
+                UnityEngine.InputSystem.InputSystem.DisableDevice(second);Assert.IsFalse(PolledInput.Held(UnityEngine.InputSystem.Key.NumpadEnter));Assert.AreEqual(0,PolledInput.Axis(false));
+            }finally{UnityEngine.InputSystem.InputSystem.RemoveDevice(first);UnityEngine.InputSystem.InputSystem.RemoveDevice(second);}
+        }
+        [Test] public void 新方式の物理ボタン待ちはスティック方向を除外しPadとMouseを扱う()
+        {
+            var pad=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Gamepad>();var mouse=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();
+            try{
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=new UnityEngine.Vector2(.1f,0)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(0,PolledInput.Axis(false));Assert.IsFalse(PolledInput.AnyPhysicalButton);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState{leftStick=new UnityEngine.Vector2(.5f,0)});UnityEngine.InputSystem.InputSystem.Update();Assert.AreEqual(.5f,PolledInput.Axis(false),.001f);Assert.IsFalse(PolledInput.AnyPhysicalButton);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState().WithButton(UnityEngine.InputSystem.LowLevel.GamepadButton.East));UnityEngine.InputSystem.InputSystem.Update();Assert.IsTrue(PolledInput.AnyPhysicalButton);
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(pad,new UnityEngine.InputSystem.LowLevel.GamepadState());UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState().WithButton(UnityEngine.InputSystem.LowLevel.MouseButton.Left));UnityEngine.InputSystem.InputSystem.Update();Assert.IsTrue(PolledInput.AnyPhysicalButton);
+            }finally{UnityEngine.InputSystem.InputSystem.RemoveDevice(pad);UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);}
+        }
+    }
+}
