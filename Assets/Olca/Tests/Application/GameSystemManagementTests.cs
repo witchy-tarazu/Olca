@@ -61,6 +61,21 @@ namespace Olca.Tests.Application
             Register("screen",ct=>Task.FromResult(screen),(go,ctx)=>{context=ctx;go.SetActive(true);});
             Assert.IsTrue((await views.ShowAsync("screen")).Succeeded);return(context,popup,confirm,cancel);
         }
+        [Test] public async Task 試用扉は最新の可否と表示世代で操作し覆い旧callbackと非表示を拒否する()
+        {
+            var model=system.OutsideExploration;int calls=0;bool ready=true;var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.HomeDoorX});
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigureMapDoor(()=>calls++,()=>ready,()=>"シヨウ マップ イドウ（カリ）\nEnter デ シラベル");view.Render();
+                var button=view.transform.Find("OutsideMapDoor").GetComponent<Button>();Assert.IsTrue(button.gameObject.activeInHierarchy);Assert.AreEqual(Navigation.Mode.None,button.navigation.mode);Assert.AreEqual(Selectable.Transition.ColorTint,button.transition);Assert.Greater(button.GetComponentInChildren<Text>().color.r,.9f);Assert.Less(button.colors.normalColor.r,.1f);Assert.IsFalse(view.transform.Find("OutsideMapDoorMarker").GetComponent<Image>().raycastTarget);
+                var old=button.onClick;EventSystem.current.SetSelectedGameObject(button.gameObject);old.Invoke();Assert.AreEqual(1,calls);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
+                ready=false;old.Invoke();Assert.AreEqual(1,calls);ready=true;view.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);
+                Assert.IsTrue((await binding.ReopenAfterMapTravelAsync()).Succeeded);old.Invoke();Assert.AreEqual(1,calls);view=binding.View;view.ConfigureMapDoor(()=>calls++,()=>ready,()=>"イドウ");view.Render();view.transform.Find("OutsideMapDoor").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(2,calls);
+                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("SetRecoveryMap",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint});view.Render();Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").gameObject.activeSelf);Assert.IsFalse(view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().enabled);
+                Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(2,calls);
+            }
+        }
         [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
         {
             var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
