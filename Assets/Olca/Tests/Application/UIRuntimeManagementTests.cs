@@ -332,4 +332,25 @@ namespace Olca.Tests.Application
             }finally{views.Dispose();dialogs.Dispose();resources.Dispose();UnityEngine.Object.DestroyImmediate(root);}
         }
     }
+    public sealed class OutsideDefensiveField238Tests
+    {
+        [TestCase(-1f)][TestCase(1f)]
+        public void SharedFieldFollowsBodyAndClearsWithoutChangingActor(float facing)
+        {
+            var root=new GameObject("Barrier238",typeof(RectTransform));var body=new GameObject("Body",typeof(RectTransform),typeof(Image));body.transform.SetParent(root.transform,false);var image=body.GetComponent<Image>();var resources=new ResourceManager();
+            var view=root.AddComponent<Olca.Presentation.Exploration.OutsideExplorationView>();var type=view.GetType();const BindingFlags flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            void Field(string name,object value)=>type.GetField(name,flags).SetValue(view,value);
+            void Render(bool barrier,bool aura)=>type.GetMethod("RenderOutsideDefensiveField",flags).Invoke(view,new object[]{barrier,aura});
+            try{
+                image.sprite=resources.GetShared<Sprite>("OlcaTraversal/WallSlide_01");Assert.NotNull(image.sprite);image.rectTransform.anchoredPosition=new Vector2(300,100);image.rectTransform.localScale=new Vector3(facing,1,1);Field("player",image);Field("pixelsPerWorldUnit",100f);
+                Render(true,false);var layer=(Image)type.GetField("outsideDefensiveField",flags).GetValue(view);Assert.IsTrue(layer.enabled);Assert.IsFalse(layer.raycastTarget);Assert.AreEqual("defensive-field/Barrier",layer.sprite.name);Assert.Less(layer.transform.GetSiblingIndex(),image.transform.GetSiblingIndex());Assert.AreEqual(.55f,layer.color.a);
+                var bounds=Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(image.sprite);Assert.AreEqual(image.rectTransform.anchoredPosition+new Vector2(bounds.center.x*facing,bounds.center.y+bounds.size.y*.1f)*100,layer.rectTransform.anchoredPosition);Assert.AreEqual(bounds.size.y*115,layer.rectTransform.sizeDelta.y,.001f);
+                image.rectTransform.anchoredPosition+=new Vector2(50,90);Render(true,false);Assert.AreEqual(image.rectTransform.anchoredPosition.y+(bounds.center.y+bounds.size.y*.1f)*100,layer.rectTransform.anchoredPosition.y,.001f);
+                Render(false,false);Assert.IsFalse(layer.enabled);Assert.IsNull(layer.sprite);Assert.IsNull(type.GetField("outsideDefensiveAssets",flags).GetValue(view));
+                Render(false,true);Assert.AreEqual("defensive-field/Aura",layer.sprite.name);Render(true,true);Assert.IsFalse(layer.enabled);
+                Render(true,false);view.Hide();Assert.IsFalse(layer.enabled);Assert.IsNull(layer.sprite);Assert.IsNull(type.GetField("outsideDefensiveAssets",flags).GetValue(view));root.SetActive(true);Render(true,false);
+            }finally{UnityEngine.Object.DestroyImmediate(root);resources.Dispose();}
+        }
+    }
+
 }

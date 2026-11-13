@@ -19,6 +19,21 @@ namespace Olca.Presentation.Exploration
             }
             if(mapNameLabel==null)return;mapNameLabel.gameObject.SetActive(opacity>0);if(opacity<=0)return;mapNameLabel.text=presentation.MapName;mapNameLabel.color=new Color(.8f,.98f,1,(float)opacity);mapNameLabel.transform.SetAsLastSibling();
         }
+        private Image outsideDefensiveField;
+        private Olca.Unity.GeneratedSpriteAssets.Lease outsideDefensiveAssets;
+        // バトルと同じ外周素材/校正を使う。表示だけを所有し、防御状態や寿命は変更しない。
+        private void RenderOutsideDefensiveField(bool barrier,bool aura)
+        {
+            if(player==null||!player.isActiveAndEnabled||player.sprite==null||barrier==aura){ClearOutsideDefensiveField();return;}
+            if(outsideDefensiveField==null){var go=new GameObject("OutsideDefensiveField",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);outsideDefensiveField=go.GetComponent<Image>();outsideDefensiveField.raycastTarget=false;go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());}
+            var kind=barrier?Olca.Presentation.Effects.DefensiveFieldKind.Barrier:Olca.Presentation.Effects.DefensiveFieldKind.Aura;
+            var sprite=Olca.Presentation.Effects.DefensiveFieldVisual.GetSprite(kind,outsideDefensiveAssets??(outsideDefensiveAssets=Olca.Unity.GeneratedSpriteAssets.Acquire()));
+            if(sprite==null){ClearOutsideDefensiveField();return;}outsideDefensiveAssets.BindNativeOwner(outsideDefensiveField);
+            var bounds=Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(player.sprite);var rect=outsideDefensiveField.rectTransform;rect.anchorMin=player.rectTransform.anchorMin;rect.anchorMax=player.rectTransform.anchorMax;rect.pivot=new Vector2(.5f,.5f);
+            rect.anchoredPosition=player.rectTransform.anchoredPosition+new Vector2(bounds.center.x*player.rectTransform.localScale.x,bounds.center.y+bounds.size.y*.1f)*pixelsPerWorldUnit;
+            rect.sizeDelta=new Vector2(Mathf.Max(bounds.size.x*1.15f,bounds.size.y*.62f),bounds.size.y*1.15f)*pixelsPerWorldUnit;outsideDefensiveField.sprite=sprite;outsideDefensiveField.color=new Color(1,1,1,.55f);outsideDefensiveField.enabled=true;
+        }
+        private void ClearOutsideDefensiveField(){if(outsideDefensiveField!=null){outsideDefensiveField.enabled=false;outsideDefensiveField.sprite=null;}outsideDefensiveAssets?.Dispose();outsideDefensiveAssets=null;}
         private Sprite traversalDashSprite;
         private Sprite[] wallSlideFrames;
         private Olca.Unity.ResourceManager traversalResources;
