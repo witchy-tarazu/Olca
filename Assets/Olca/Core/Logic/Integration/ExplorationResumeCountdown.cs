@@ -115,6 +115,7 @@ namespace Olca.Core.Logic.Integration
             return width<=viewport?width*.5f:System.Math.Max(viewport*.5f-1,System.Math.Min(target,width-viewport*.5f+1));
         }
     }
+    public enum OutsideCardUseRestriction { None, EmptyHand, UnsupportedCard, UnsupportedLocation, InsufficientGauge }
     /// <summary>外界での開始可否だけを持つ試用登録。カード性能/hashやDungeonの設定は変更しない。</summary>
     public sealed class OutsideCardUseDefinition
     {
@@ -145,6 +146,7 @@ namespace Olca.Core.Logic.Integration
             public int BreathFramesRemaining=>owner?.BreathFramesRemaining??0;public int BreathMaximumFrames=>owner?.BreathMaximumFrames??0;
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
             public Enemy TrialTarget=>owner?.TrialTarget;public Enemy SecondTrialTarget=>owner?.SecondTrialTarget;public OutsideTrialStrike TrialStrike=>owner?.TrialStrike;
+            public OutsideCardUseRestriction SelectedCardRestriction=>IsCurrent?owner.SelectedCardRestriction:OutsideCardUseRestriction.None;
             public bool IsDashAttacking=>IsCurrent&&owner.normalKick?.IsDashAttack==true;
             public OutsideKickKind? NormalKickKind=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.Kind:(OutsideKickKind?)null;
             public bool IsKickHitWindow=>IsCurrent&&owner.normalKick?.IsHitWindow==true;
@@ -245,6 +247,16 @@ namespace Olca.Core.Logic.Integration
         public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
         public void ObserveAttackBoundary(int facing,bool grounded){if(Core.Facing!=facing||Core.IsGrounded!=grounded)CancelAttackReservation();}
         private bool SupportedCard(Card card)=>Core.TrialMapId==null&&Core.Definition.Id=="validation-landing-32"&&(HealDefinition(card)||SwordDefinition(card)||ShieldDefinition(card))&&(Core.IsGrounded||OutsideCardUseDefinition.AllowsAir(card));
+        // 使用受付ではない読取案内。予約/前後隙を無視して「使用可能」と断言しない。
+        public OutsideCardUseRestriction SelectedCardRestriction
+        {
+            get{
+                var card=Cards?.SelectedCard;if(card==null)return OutsideCardUseRestriction.EmptyHand;
+                if(!(HealDefinition(card)||SwordDefinition(card)||ShieldDefinition(card)))return OutsideCardUseRestriction.UnsupportedCard;
+                if(!SupportedCard(card))return OutsideCardUseRestriction.UnsupportedLocation;
+                return Core.CardGauge.CurrentUnits<(long)card.GetFinalCost()*OutsideCardGauge.UnitsPerPoint?OutsideCardUseRestriction.InsufficientGauge:OutsideCardUseRestriction.None;
+            }
+        }
         private bool CanCancelAttack()=>attackState!=null&&attackState.EffectApplied&&Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.HasValue&&Core.Frame-attackState.StartedAt>=attackState.StartupFrames+(long)Cards.ActionCard(attackState.CardIndex).RecoveryCancelAfterFrames.Value;
         // 予約入力は保存しない。Sessionの行動開始と同じ境界で最後に再検証する。
         public bool ProcessCardUseInput(bool requested,bool selectionChanged,bool basicRequested,long cardAt,long basicAt,out string error,int vertical=0)

@@ -246,6 +246,16 @@ namespace Olca.Presentation.Exploration
                 });
             }
         }
+        private static string CardRestrictionText(Olca.Core.Logic.Integration.OutsideCardUseRestriction value)
+        {
+            switch(value){
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.EmptyHand:return "カードが ありません";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedCard:return "センタクカード: タンサクは ミタイオウ";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedLocation:return "センタクカード: ココでは シヨウできません";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.InsufficientGauge:return "センタクカード: ゲージが フソクしています";
+                default:return null;
+            }
+        }
         public void Render()
         {
             if(!IsOpen||player==null)return;
@@ -260,7 +270,7 @@ namespace Olca.Presentation.Exploration
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;
             float camera=presentation.Camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
             float verticalOffset=ResolveVerticalViewOffset(core);
-            var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;cardUseText.gameObject.SetActive(!editingLocation);string feedback=presentation.CardUseMessageFrame>=0&&core.Frame>=presentation.CardUseMessageFrame&&core.Frame-presentation.CardUseMessageFrame<90?presentation.CardUseMessage:null;cardUseText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((cardUseGuide?.Invoke()??"")+(presentation.TrialBarrierHp>0?" / バリア "+presentation.TrialBarrierHp+"（カリ）":"")+(feedback==null?"":"\n"+feedback));movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
+            var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;cardUseText.gameObject.SetActive(!editingLocation);string restriction=CardRestrictionText(presentation.SelectedCardRestriction);string feedback=presentation.CardUseMessageFrame>=0&&core.Frame>=presentation.CardUseMessageFrame&&core.Frame-presentation.CardUseMessageFrame<90?presentation.CardUseMessage:null;cardUseText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((cardUseGuide?.Invoke()??"")+(presentation.TrialBarrierHp>0?" / バリア "+presentation.TrialBarrierHp+"（カリ）":"")+(restriction!=null?"\n"+restriction:feedback==null?"":"\n"+feedback));movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
             if(!ReferenceEquals(renderedCards,cards)||renderedDeckLocation!=editingLocation||shownHandRevision!=(cards?.HandRevision??-1)||handHeading.text==""){
                 if(!ReferenceEquals(renderedCards,cards))BindHandSelection(context,presentation,cards);renderedDeckLocation=editingLocation;renderedCards=cards;shownHandRevision=cards?.HandRevision??-1;handHeading.text=editingLocation?"ヘンセイチテン（カリ）":cards==null?"テフダ  /  デッキ ミトウロク":"テフダ "+cards.Hand.Count+"  /  ヤマフダ "+cards.RemainingCount;
                 for(int slot=0;slot<3;slot++){

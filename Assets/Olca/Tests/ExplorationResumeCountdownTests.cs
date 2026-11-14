@@ -597,6 +597,23 @@ namespace Olca.Tests
             using(var s=Sword161(level:ExceedLevel.Lv1)){Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(s.Cards.SelectedCard));}
             Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(6,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb")));
         }
+        [TestCase(0,OutsideCardUseRestriction.None)][TestCase(1,OutsideCardUseRestriction.InsufficientGauge)][TestCase(2,OutsideCardUseRestriction.UnsupportedCard)][TestCase(3,OutsideCardUseRestriction.UnsupportedLocation)]
+        public void 選択カードの制限案内は既存登録と場所とコストを読み消費や予約を作らない(int mode,OutsideCardUseRestriction expected)
+        {
+            using(var s=Heal158())using(var lease=s.AttachPresentation()){
+                if(mode==1)Assert.IsTrue(s.Core.CardGauge.TrySpend(100));
+                if(mode==2){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="bomb");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));}
+                if(mode==3)typeof(OutsideExplorationCore).GetMethod("SetRecoveryMap",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{OutsideTrialRoute.DoorAnnexPoint});
+                long frame=s.Core.Frame,gauge=s.Core.CardGauge.CurrentUnits,revision=s.Cards.HandRevision;int hp=s.Player.CurrentHp,selected=s.Cards.SelectedIndex,remaining=s.Cards.RemainingCount;var hand=s.Cards.Hand.ToArray();
+                for(int n=0;n<100;n++){Assert.AreEqual(expected,s.SelectedCardRestriction);Assert.AreEqual(expected,lease.SelectedCardRestriction);}
+                Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(revision,s.Cards.HandRevision);Assert.AreEqual(hp,s.Player.CurrentHp);Assert.AreEqual(selected,s.Cards.SelectedIndex);Assert.AreEqual(remaining,s.Cards.RemainingCount);CollectionAssert.AreEqual(hand,s.Cards.Hand);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,s.PendingAttack);
+                lease.Dispose();Assert.AreEqual(OutsideCardUseRestriction.None,lease.SelectedCardRestriction);
+            }
+        }
+        [Test] public void 未登録デッキの案内と古いleaseは手札やSessionを生成しない()
+        {
+            using(var s=new OutsideExplorationSession()){var lease=s.AttachPresentation();Assert.AreEqual(OutsideCardUseRestriction.EmptyHand,lease.SelectedCardRestriction);Assert.IsNull(s.Cards);Assert.IsNull(s.Player);lease.Dispose();Assert.AreEqual(OutsideCardUseRestriction.None,lease.SelectedCardRestriction);Assert.IsNull(s.Cards);Assert.AreEqual(0,s.Core.Frame);}
+        }
         [TestCase(50,70)] [TestCase(100,100)] public void 空中ヒールは一度だけ消費し未使用と同じ軌道と着地になる(int hp,int expected)
         {
             using(var s=Heal158())using(var control=Heal158())using(var view=s.AttachPresentation())using(var other=control.AttachPresentation()){
