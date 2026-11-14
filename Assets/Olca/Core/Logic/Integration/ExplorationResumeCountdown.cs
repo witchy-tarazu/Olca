@@ -148,6 +148,8 @@ namespace Olca.Core.Logic.Integration
             public bool IsDashAttacking=>IsCurrent&&owner.normalKick?.IsDashAttack==true;
             public OutsideKickKind? NormalKickKind=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.Kind:(OutsideKickKind?)null;
             public bool IsKickHitWindow=>IsCurrent&&owner.normalKick?.IsHitWindow==true;
+            public bool IsKickRecovery=>IsCurrent&&owner.normalKick?.IsRecovery==true;
+            public int? NormalKickFacing=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.AttackFacing:(int?)null;
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;
             public bool TrialEnemyAttackEnabled=>IsCurrent&&owner.trialEnemyAttack!=null;
@@ -276,7 +278,14 @@ namespace Olca.Core.Logic.Integration
             if(!SupportedCard(expected)||Core.CardGauge.CurrentUnits<(long)expected.GetFinalCost()*OutsideCardGauge.UnitsPerPoint)return false;
             return StartCardAfterRecovery(expected,revision,out error);
         }
-        private void KickFeedback(){AdvanceTrialKickHits();CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / ダッシュ シセイをリヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+(NormalKick.Kind<=OutsideKickKind.AirForward?"":" / モーション ミセツゾク");CardUseMessageFrame=Core.Frame;}
+        private void KickFeedback()
+        {
+            AdvanceTrialKickHits();
+            string motion=NormalKick.Kind==OutsideKickKind.AirDown?" / ジュンビのみキソン":NormalKick.Kind==OutsideKickKind.AirUp?" / モーション ミセツゾク":"";
+            CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / セッショクはシヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+motion;
+            CardUseMessageFrame=Core.Frame;
+        }
+
         private bool CanCancelAnyAttack()=>attackState!=null?CanCancelAttack():normalKick?.IsActive==true&&normalKick.CanCancelNormal;
         private bool StartCardAfterRecovery(Card card,long revision,out string error)
         {

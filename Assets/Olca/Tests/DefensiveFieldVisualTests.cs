@@ -33,14 +33,14 @@ namespace Olca.Tests
             using(var costume=new TrialFireBodyMotion(key=>{loads++;return Resources.Load<Sprite>(TrialFireBodyMotion.ResourceRoot+key);})){
                 sprite.name="move_01";Assert.AreSame(sprite,costume.Resolve(sprite,normal));Assert.AreEqual(0,loads);
                 sprite.name="future_attack";Assert.AreSame(sprite,costume.Resolve(sprite,fire));Assert.AreEqual(0,loads);
-                string[] originals={"heroine_idle_10_0","move_01","move_02","move_03","move_04","move_05","move_06","move_07","move_08","jump_rise","jump_apex","jump_fall","heroine_dash_low_v4_nn256","WallSlide_01","WallSlide_02","trial_ground_kick_prepare","trial_ground_kick_contact","trial_air_forward_kick_contact","trial_dash_kick_contact","trial_ground_second_prepare","trial_ground_second_contact","trial_ground_third_prepare","trial_ground_third_contact"};
-                string[] keys={"idle","run_01","run_02","run_03","run_04","run_05","run_06","run_07","run_08","jump_rise","jump_apex","jump_fall","dash","wall_slide_01","wall_slide_02","ground_kick_prepare","ground_kick_contact","air_forward_contact","dash_kick_contact","ground_second_prepare","ground_second_contact","ground_third_prepare","ground_third_contact"};
+                string[] originals={"heroine_idle_10_0","move_01","move_02","move_03","move_04","move_05","move_06","move_07","move_08","jump_rise","jump_apex","jump_fall","heroine_dash_low_v4_nn256","WallSlide_01","WallSlide_02","trial_ground_kick_prepare","trial_ground_kick_contact","trial_air_forward_kick_contact","trial_dash_kick_contact","trial_ground_second_prepare","trial_ground_second_contact","trial_ground_third_prepare","trial_ground_third_contact","trial_air_down_contact","trial_air_down_recovery"};
+                string[] keys={"idle","run_01","run_02","run_03","run_04","run_05","run_06","run_07","run_08","jump_rise","jump_apex","jump_fall","dash","wall_slide_01","wall_slide_02","ground_kick_prepare","ground_kick_contact","air_forward_contact","dash_kick_contact","ground_second_prepare","ground_second_contact","ground_third_prepare","ground_third_contact","air_down_contact","air_down_recovery"};
                 for(int n=0;n<keys.Length;n++){sprite.name=originals[n];var actual=costume.Resolve(sprite,fire);Assert.AreEqual("trial_fire_"+keys[n],actual.name);Assert.AreEqual(256,actual.texture.width);Assert.AreEqual(256,actual.texture.height);Assert.AreEqual(100,actual.pixelsPerUnit);}
-                Assert.AreEqual(28,loads);Assert.AreEqual(100,fire.CurrentHp);fire.SetHp(0);Assert.AreSame(sprite,costume.Resolve(sprite,fire));Assert.AreEqual(28,loads);
+                Assert.AreEqual(30,loads);Assert.AreEqual(100,fire.CurrentHp);fire.SetHp(0);Assert.AreSame(sprite,costume.Resolve(sprite,fire));Assert.AreEqual(30,loads);
                 fire.SetHp(100);costume.Dispose();Assert.AreSame(sprite,costume.Resolve(sprite,fire));Assert.IsNotNull(Resources.Load<Sprite>(TrialFireBodyMotion.ResourceRoot+"idle"));
             }
         }
-        [TestCase("run_06")][TestCase("air_forward_contact")][TestCase("idle_breathe_high")][TestCase("knockback_02")][TestCase("dash_kick_contact")][TestCase("ground_second_contact")][TestCase("ground_third_prepare")]
+        [TestCase("run_06")][TestCase("air_forward_contact")][TestCase("idle_breathe_high")][TestCase("knockback_02")][TestCase("dash_kick_contact")][TestCase("ground_second_contact")][TestCase("ground_third_prepare")][TestCase("air_down_contact")][TestCase("air_down_recovery")]
         public void カエン本体の素材欠損は全姿勢を通常へ戻し毎描画で再読込しない(string missing)
         {
             var fire=new PlayerCharacter(100);fire.SetDepartureStyle(DepartureStyleDefinition.TrialFire);int loads=0;

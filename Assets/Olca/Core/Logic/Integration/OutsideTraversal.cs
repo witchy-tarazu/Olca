@@ -392,6 +392,7 @@ namespace Olca.Core.Logic.Integration
         public long ComboExpiresAt=>comboUntil;
         public bool HasProgress=>active||nextGroundStage!=1||reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic;
         public bool IsHitWindow=>active&&frame-StartedAt>=CurrentTiming.StartupFrames&&frame-StartedAt<CurrentTiming.StartupFrames+(long)CurrentTiming.ActiveFrames;
+        public bool IsRecovery=>active&&frame-StartedAt>=CurrentTiming.StartupFrames+(long)CurrentTiming.ActiveFrames;
         public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation)
         {this.reservation=reservation??throw new ArgumentNullException(nameof(reservation));}
         // 順序は地上1/2/3・空中横/上/下。全6定義が必要。検証値を製品既定として登録しない。

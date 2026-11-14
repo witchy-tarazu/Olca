@@ -1053,12 +1053,55 @@ namespace Olca.Tests.Application
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var rise=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite;if(fire)rise=Resources.Load<Sprite>("OlcaCharacterMotion/TrialFire/jump_rise");
                 model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsFalse(model.Core.IsGrounded);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirForward,model.NormalKick.Kind);
                 for(int age=0;age<21;age++){
-                    if(age>0)model.TickTraversal(facing,false,true);long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();Assert.AreSame(age>=6&&age<9?contact:rise,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(age>0)model.TickTraversal(-facing,false,true);long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();Assert.AreSame(age>=6&&age<9?contact:rise,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
                     if(age==7){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);view.Render();Assert.AreSame(contact,body.sprite);}
                 }
                 model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);
                 while(!model.Core.IsGrounded)model.TickTraversal(0);model.TickTraversal(0,true,true);while(model.Core.VerticalVelocity>0||model.Core.Height>15000)model.TickTraversal(0);
                 Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out error),error);while(!model.Core.IsGrounded)model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [TestCase(-1,false)][TestCase(1,false)][TestCase(-1,true)][TestCase(1,true)] public async Task 外界空中下蹴りは既存前隙と専用接触復帰を描き落下や着地と時計を変えない(int facing,bool fire)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            var contact=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/air_down_contact":"OlcaCharacterMotion/trial_air_down_contact");Assert.IsNotNull(contact);Assert.AreEqual(256,contact.texture.width);Assert.AreEqual(256,contact.texture.height);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(127f,contact.pivot.x,.01f);Assert.AreEqual(14f,contact.pivot.y,.01f);
+            var recovery=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/air_down_recovery":"OlcaCharacterMotion/trial_air_down_recovery");Assert.IsNotNull(recovery);Assert.AreEqual(contact.pivot,recovery.pivot);Assert.AreEqual(contact.rect,recovery.rect);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var rise=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite;if(fire)rise=Resources.Load<Sprite>("OlcaCharacterMotion/TrialFire/jump_rise");
+                model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsFalse(model.Core.IsGrounded);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error,-1),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirDown,model.NormalKick.Kind);StringAssert.Contains("ジュンビのみキソン",model.CardUseMessage);StringAssert.DoesNotContain("ミセツゾク",model.CardUseMessage);
+                for(int age=0;age<21;age++){
+                    if(age>0)model.TickTraversal(-facing,false,true);long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();Assert.AreSame(age<6?rise:age<9?contact:recovery,body.sprite);Assert.AreEqual(age>=9,model.NormalKick.IsRecovery);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(age==11){views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);view.Render();Assert.AreSame(recovery,body.sprite);Assert.AreEqual(frame,model.Core.Frame);}
+                    if(age==7){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);view.Render();Assert.AreSame(contact,body.sprite);}
+                }
+                model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreNotSame(recovery,body.sprite);Assert.IsFalse(model.NormalKick.IsRecovery);Assert.AreEqual(-model.Core.Facing,body.rectTransform.localScale.x);
+                while(!model.Core.IsGrounded)model.TickTraversal(0);model.TickTraversal(0,true,true);while(model.Core.VerticalVelocity>0||model.Core.Height>15000)model.TickTraversal(0);
+                Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out error,-1),error);while(!model.Core.IsGrounded)model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreNotSame(recovery,body.sprite);Assert.IsFalse(model.NormalKick.IsRecovery);Assert.AreEqual(-model.Core.Facing,body.rectTransform.localScale.x);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [TestCase(-1)][TestCase(1)] public async Task 空中上蹴りの既存代替表示も逆移動と別の開始向きを保ち終了で通常方向へ戻る(int facing)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error,1),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirUp,model.NormalKick.Kind);long start=model.Core.Position;
+                for(int age=0;age<21;age++){if(age>0)model.TickTraversal(-facing,false,true);view.Render();Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(facing,model.NormalKick.AttackFacing);if(age>0){Assert.AreEqual(-facing,model.Core.Facing);Assert.Less((model.Core.Position-start)*facing,0);}}
+                model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreEqual(-model.Core.Facing,body.rectTransform.localScale.x);
+            }
+        }
+        [TestCase(-1)][TestCase(1)] public void 空中蹴り開始向きは逆移動中の保存再開と旧leaseを越えて保持し終了で解放する(int facing)
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideExplorationSession())using(var cold=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.EnableTrialNormalKick();var old=s.AttachPresentation();s.TickTraversal(facing);s.TickTraversal(0,true,true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out var error,-1),error);s.TickTraversal(-facing,false,true);Assert.AreEqual(-facing,s.Core.Facing);Assert.AreEqual(facing,old.NormalKickFacing);old.Dispose();Assert.IsNull(old.NormalKickFacing);
+                var data=s.CaptureRuntime();var actor=Olca.Core.Domain.OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;Assert.IsTrue(cold.RestoreSavedState(actor,data,null,null));var superseded=s.AttachPresentation();
+                using(var live=s.AttachPresentation())using(var resumed=cold.AttachPresentation()){
+                    Assert.IsNull(superseded.NormalKickFacing);superseded.Dispose();Assert.IsTrue(live.IsCurrent);Assert.AreEqual(facing,live.NormalKickFacing);Assert.AreEqual(facing,resumed.NormalKickFacing);
+                    while(s.IsAttacking){s.TickTraversal(-facing,false,true);cold.TickTraversal(-facing,false,true);Assert.AreEqual(s.Core.Frame,cold.Core.Frame);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.AreEqual(s.Core.VerticalVelocity,cold.Core.VerticalVelocity);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);if(s.IsAttacking){Assert.AreEqual(facing,live.NormalKickFacing);Assert.AreEqual(facing,resumed.NormalKickFacing);}}
+                    Assert.IsNull(live.NormalKickFacing);Assert.IsNull(resumed.NormalKickFacing);Assert.AreEqual(-facing,cold.Core.Facing);
+                }
             }
         }
 
