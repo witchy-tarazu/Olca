@@ -1,3 +1,5 @@
+using PolledInput = Olca.Unity.PolledInput;
+using Key = UnityEngine.InputSystem.Key;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -132,9 +134,9 @@ namespace Olca.Presentation.CustomScreen.CustomizeMode
         {
             if (!gameObject.activeInHierarchy) return;
 
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            if (PolledInput.Down(Key.Enter) || PolledInput.Down(Key.NumpadEnter))
                 OnExecuteRequested?.Invoke();
-            else if (Input.GetKeyDown(KeyCode.Escape))
+            else if (PolledInput.Down(Key.Escape))
                 OnCancelled?.Invoke();
         }
 

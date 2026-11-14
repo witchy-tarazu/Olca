@@ -408,7 +408,7 @@ namespace Olca.Unity
         }
         public void Dispose()
         {
-            outsideInteractionPending=false;outsideInteractionContext=null;pcWheelKeys.Clear();pcWheelMouse=null;pcWheelContext=null;pcWheelClick=false;OutsidePcWheelInputOwned=null;
+            outsideInteractionPending=false;outsideInteractionContext=null;pcWheelKeys.Clear();pcWheelEvents.Clear();pcWheelMouse=null;pcWheelContext=null;pcWheelClick=false;OutsidePcWheelInputOwned=null;
             if (!capturing) return;
             InputSystem.onAfterUpdate -= FinishFocusResnapshot; InputSystem.onEvent -= CaptureEvent; InputSystem.onDeviceChange -= DeviceChanged;
 #if UNITY_EDITOR
@@ -458,15 +458,24 @@ namespace Olca.Unity
             if (device is Gamepad && (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected))
                 OnGamepadDisconnected?.Invoke();
         }
+        public enum OutsidePcWheelEventKind {Direction,Pointer,Confirm,Click,Toggle}
+        public readonly struct OutsidePcWheelEvent
+        {
+            public readonly OutsidePcWheelEventKind Kind;public readonly Vector2 Value;public readonly int KeyboardId;
+            public OutsidePcWheelEvent(OutsidePcWheelEventKind kind,Vector2 value,int keyboardId=-1){Kind=kind;Value=value;KeyboardId=keyboardId;}
+        }
         public readonly struct OutsidePcWheelInput
         {
             public readonly bool KeyboardAvailable,ToggleDown,EnterDown,ClickDown,PointerAvailable,KeyboardChanged,PointerChanged;
             public readonly bool EnterHeld,ClickHeld;
+            public readonly System.Collections.Generic.IReadOnlyList<OutsidePcWheelEvent> Events;
             public readonly Vector2 Direction,Pointer;public readonly long KeyboardOrder,PointerOrder;
-            public OutsidePcWheelInput(bool available,bool toggle,bool enter,bool click,Vector2 direction,Vector2 pointer,bool pointerAvailable,bool keyboardChanged,bool pointerChanged,long keyboardOrder,long pointerOrder,bool enterHeld=false,bool clickHeld=false){KeyboardAvailable=available;ToggleDown=toggle;EnterDown=enter;ClickDown=click;Direction=direction;Pointer=pointer;PointerAvailable=pointerAvailable;KeyboardChanged=keyboardChanged;PointerChanged=pointerChanged;KeyboardOrder=keyboardOrder;PointerOrder=pointerOrder;EnterHeld=enterHeld;ClickHeld=clickHeld;}
+            public OutsidePcWheelInput(bool available,bool toggle,bool enter,bool click,Vector2 direction,Vector2 pointer,bool pointerAvailable,bool keyboardChanged,bool pointerChanged,long keyboardOrder,long pointerOrder,bool enterHeld=false,bool clickHeld=false,System.Collections.Generic.IReadOnlyList<OutsidePcWheelEvent> events=null){Events=events??System.Array.Empty<OutsidePcWheelEvent>();KeyboardAvailable=available;ToggleDown=toggle;EnterDown=enter;ClickDown=click;Direction=direction;Pointer=pointer;PointerAvailable=pointerAvailable;KeyboardChanged=keyboardChanged;PointerChanged=pointerChanged;KeyboardOrder=keyboardOrder;PointerOrder=pointerOrder;EnterHeld=enterHeld;ClickHeld=clickHeld;}
         }
         private sealed class PcWheelKeyboard {public int Mask;public bool Toggle,Enter;public long ToggleOrder,DirectionOrder,ReadOrder;}
         private readonly Dictionary<Keyboard,PcWheelKeyboard> pcWheelKeys=new Dictionary<Keyboard,PcWheelKeyboard>();
+        private readonly List<OutsidePcWheelEvent> pcWheelEvents=new List<OutsidePcWheelEvent>();
+        private void QueuePcWheelEvent(OutsidePcWheelEvent value){if(value.Kind==OutsidePcWheelEventKind.Pointer&&pcWheelEvents.Count>0&&pcWheelEvents[pcWheelEvents.Count-1].Kind==OutsidePcWheelEventKind.Pointer)pcWheelEvents[pcWheelEvents.Count-1]=value;else pcWheelEvents.Add(value);}
         private object pcWheelContext;private Mouse pcWheelMouse;private Vector2 pcWheelPointer;private long pcWheelOrder,pcWheelMouseOrder,pcWheelMouseReadOrder;private bool pcWheelClick;
         public System.Func<bool> OutsidePcWheelInputOwned {get;set;}
         public bool HasPendingOutsidePcOpen=>OutsideGamepad&&pcWheelKeys.Any(p=>p.Key.enabled&&p.Value.Toggle);
@@ -475,19 +484,22 @@ namespace Olca.Unity
         private static Vector2 PcDirection(int mask)=>new Vector2(((mask&8)!=0?1:0)-((mask&2)!=0?1:0),((mask&1)!=0?1:0)-((mask&4)!=0?1:0));
         private void SeedPcWheelInput()
         {
+            pcWheelEvents.Clear();
             foreach(var key in pcWheelKeys.Keys.Where(k=>!InputSystem.devices.Contains(k)).ToArray())pcWheelKeys.Remove(key);
             foreach(var keyboard in InputSystem.devices.OfType<Keyboard>().Where(k=>k.enabled)){if(!pcWheelKeys.TryGetValue(keyboard,out var state))pcWheelKeys.Add(keyboard,state=new PcWheelKeyboard());state.Mask=PcMask(keyboard);state.Toggle=state.Enter=false;state.ReadOrder=state.DirectionOrder;}
             pcWheelMouse=Mouse.current!=null&&Mouse.current.enabled?Mouse.current:null;if(pcWheelMouse!=null)pcWheelPointer=pcWheelMouse.position.ReadValue();pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;
         }
         private void CapturePcWheelInput(InputEventPtr evt,InputDevice device,List<ButtonControl> presses)
         {
-            if(!OutsideGamepad)return;
+            if(!OutsideGamepad){pcWheelEvents.Clear();return;}
+            bool ordered=OutsidePcWheelInputOwned?.Invoke()==true;if(!ordered)pcWheelEvents.Clear();
+            // 表示中だけ実イベント順を保存する。決定後の解放を、決定時の方向へ遡及しない。
             if(device is Keyboard keyboard&&keyboard.enabled){
-                if(!pcWheelKeys.TryGetValue(keyboard,out var state))pcWheelKeys.Add(keyboard,state=new PcWheelKeyboard());int mask=PcMask(keyboard);if(mask!=state.Mask){state.Mask=mask;state.DirectionOrder=++pcWheelOrder;}
-                if(KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null&&presses.Any(c=>ReferenceEquals(c,keyboard[System.Enum.Parse<Key>(key)]))){state.Toggle=true;state.ToggleOrder=++pcWheelOrder;}
-                if(presses.Any(c=>ReferenceEquals(c,keyboard.enterKey)||ReferenceEquals(c,keyboard.numpadEnterKey)))state.Enter=true;
+                if(!pcWheelKeys.TryGetValue(keyboard,out var state))pcWheelKeys.Add(keyboard,state=new PcWheelKeyboard());int mask=PcMask(keyboard);if(mask!=state.Mask){state.Mask=mask;state.DirectionOrder=++pcWheelOrder;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Direction,PcDirection(mask),keyboard.deviceId));}
+                if(KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null&&presses.Any(c=>ReferenceEquals(c,keyboard[System.Enum.Parse<Key>(key)]))){state.Toggle=true;state.ToggleOrder=++pcWheelOrder;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Toggle,Vector2.zero,keyboard.deviceId));}
+                if(presses.Any(c=>ReferenceEquals(c,keyboard.enterKey)||ReferenceEquals(c,keyboard.numpadEnterKey))){state.Enter=true;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Confirm,Vector2.zero,keyboard.deviceId));}
             }
-            if(device is Mouse mouse&&mouse.enabled){pcWheelMouse=mouse;if(mouse.position.ReadValueFromEvent(evt,out Vector2 point)&&point!=pcWheelPointer){pcWheelPointer=point;pcWheelMouseOrder=++pcWheelOrder;}if(presses.Any(c=>ReferenceEquals(c,mouse.leftButton)))pcWheelClick=true;}
+            if(device is Mouse mouse&&mouse.enabled){pcWheelMouse=mouse;if(mouse.position.ReadValueFromEvent(evt,out Vector2 point)&&point!=pcWheelPointer){pcWheelPointer=point;pcWheelMouseOrder=++pcWheelOrder;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Pointer,point));}if(presses.Any(c=>ReferenceEquals(c,mouse.leftButton))){pcWheelClick=true;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Click,pcWheelPointer));}}
         }
         public OutsidePcWheelInput ReadOutsidePcWheel(object context,int ownerKeyboard,out int actualKeyboard)
         {
@@ -495,8 +507,9 @@ namespace Olca.Unity
             var keyboard=ownerKeyboard>=0?InputSystem.GetDeviceById(ownerKeyboard) as Keyboard:pcWheelKeys.Where(p=>p.Key.enabled&&p.Value.Toggle).OrderByDescending(p=>p.Value.ToggleOrder).Select(p=>p.Key).FirstOrDefault()??Keyboard.current;
             actualKeyboard=keyboard!=null?keyboard.deviceId:-1;PcWheelKeyboard state=null;if(keyboard!=null)pcWheelKeys.TryGetValue(keyboard,out state);
             bool available=keyboard!=null&&keyboard.enabled&&state!=null;
-            var value=new OutsidePcWheelInput(available,!fresh&&context!=null&&available&&state.Toggle,!fresh&&available&&state.Enter,!fresh&&pcWheelClick,available?PcDirection(state.Mask):Vector2.zero,pcWheelPointer,pcWheelMouse!=null&&pcWheelMouse.enabled,!fresh&&available&&state.DirectionOrder>state.ReadOrder,!fresh&&pcWheelMouseOrder>pcWheelMouseReadOrder,available?state.DirectionOrder:0,pcWheelMouseOrder,available&&(PcKey(keyboard,Key.Enter)||PcKey(keyboard,Key.NumpadEnter)),pcWheelMouse!=null&&buttons.TryGetValue(pcWheelMouse.leftButton,out var clickHeld)&&clickHeld);
-            foreach(var item in pcWheelKeys.Values){item.Toggle=item.Enter=false;item.ReadOrder=item.DirectionOrder;}pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;return value;
+            var ordered=!fresh&&context!=null&&available&&pcWheelEvents.Count>0?System.Array.AsReadOnly(pcWheelEvents.Where(e=>e.KeyboardId<0||e.KeyboardId==keyboard.deviceId).ToArray()):(System.Collections.Generic.IReadOnlyList<OutsidePcWheelEvent>)System.Array.Empty<OutsidePcWheelEvent>();
+            var value=new OutsidePcWheelInput(available,!fresh&&context!=null&&available&&state.Toggle,!fresh&&available&&state.Enter,!fresh&&pcWheelClick,available?PcDirection(state.Mask):Vector2.zero,pcWheelPointer,pcWheelMouse!=null&&pcWheelMouse.enabled,!fresh&&available&&state.DirectionOrder>state.ReadOrder,!fresh&&pcWheelMouseOrder>pcWheelMouseReadOrder,available?state.DirectionOrder:0,pcWheelMouseOrder,available&&(PcKey(keyboard,Key.Enter)||PcKey(keyboard,Key.NumpadEnter)),pcWheelMouse!=null&&buttons.TryGetValue(pcWheelMouse.leftButton,out var clickHeld)&&clickHeld,ordered);
+            foreach(var item in pcWheelKeys.Values){item.Toggle=item.Enter=false;item.ReadOrder=item.DirectionOrder;}pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;pcWheelEvents.Clear();return value;
         }
         public string OutsideInteractionLabel {
             get{bool pad=InputGuideActivity.Current==InputGuideDevice.Gamepad;var profile=pad?GamepadProfile:KeyboardProfile;return profile.Bindings.TryGetValue((pad?"gamepad":"keyboard","outside","InteractionPrimary"),out var key)&&key!=null?(pad?GamepadBindingLabel(key):key):"ミワリアテ";}
@@ -618,13 +631,13 @@ namespace Olca.Unity
         private bool wasBasicAttackButtonPressed;
         private float lastHorizontal;
 
-        public float Horizontal => Input.GetAxisRaw("Horizontal");
+        public float Horizontal => PolledInput.Axis(false);
 
         public float HorizontalDown
         {
             get
             {
-                float current = Input.GetAxisRaw("Horizontal");
+                float current = PolledInput.Axis(false);
                 // 前フレームが0で、今フレームが0でない場合に立ち上がり
                 if (lastHorizontal == 0f && current != 0f)
                 {
@@ -634,30 +647,30 @@ namespace Olca.Unity
             }
         }
 
-        public float Vertical => Input.GetAxisRaw("Vertical");
+        public float Vertical => PolledInput.Axis(true);
 
-        public bool JumpButtonDown => Input.GetKeyDown(KeyCode.Space);
+        public bool JumpButtonDown => PolledInput.Down(Key.Space);
 
-        public bool DashButton => Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        public bool DashButton => PolledInput.Held(Key.LeftShift) || PolledInput.Held(Key.RightShift);
 
-        public bool CardUseButtonDown => Input.GetKeyDown(KeyCode.X);
+        public bool CardUseButtonDown => PolledInput.Down(Key.X);
 
-        public bool BasicAttackButton => Input.GetKey(KeyCode.Z);
+        public bool BasicAttackButton => PolledInput.Held(Key.Z);
 
         public float BasicAttackButtonHoldTime => basicAttackButtonPressTime;
 
-        public bool CustomScreenButtonDown => Input.GetKeyDown(KeyCode.C);
+        public bool CustomScreenButtonDown => PolledInput.Down(Key.C);
 
         public Olca.Core.Logic.Integration.LogicalInput CaptureLogical()
         {
-            float horizontal = Input.GetAxisRaw("Horizontal");
+            float horizontal = PolledInput.Axis(false);
             var value = new Olca.Core.Logic.Integration.LogicalInput {
                 Horizontal = horizontal, HorizontalDown = lastHorizontal == 0 ? horizontal : 0,
-                Vertical = Input.GetAxisRaw("Vertical"), JumpButton = Input.GetKey(KeyCode.Space), JumpButtonDown = Input.GetKeyDown(KeyCode.Space),
-                CardUseButtonDown = Input.GetKeyDown(KeyCode.Space), BasicAttackButton = Input.GetKey(KeyCode.Z),
+                Vertical = PolledInput.Axis(true), JumpButton = PolledInput.Held(Key.Space), JumpButtonDown = PolledInput.Down(Key.Space),
+                CardUseButtonDown = PolledInput.Down(Key.Space), BasicAttackButton = PolledInput.Held(Key.Z),
                 DashButton = DashButton,
-                DashButtonDown = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift),
-                CustomScreenButtonDown = Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt)
+                DashButtonDown = PolledInput.Down(Key.LeftShift) || PolledInput.Down(Key.RightShift),
+                CustomScreenButtonDown = PolledInput.Down(Key.LeftAlt) || PolledInput.Down(Key.RightAlt)
             };
             lastHorizontal = horizontal;
             return value;
@@ -691,7 +704,7 @@ namespace Olca.Unity
             }
 
             // 前フレームの横方向入力を記録（HorizontalDownの立ち上がり検出用）
-            lastHorizontal = Input.GetAxisRaw("Horizontal");
+            lastHorizontal = PolledInput.Axis(false);
         }
     }
     /// <summary>表示・非同期演出と入力のポーズ境界。Coreの停止理由とは独立して扱う。</summary>
@@ -708,7 +721,7 @@ namespace Olca.Unity
             IsPaused = paused;
             if (!paused) { awaitRelease = true; resumeFrames = 2; }
         }
-        public static void UpdateInputBarrier() => UpdateInputBarrier(Input.anyKey);
+        public static void UpdateInputBarrier() => UpdateInputBarrier(PolledInput.AnyPhysicalButton);
         public static void UpdateInputBarrier(bool anyKey)
         {
             if (!IsPaused && awaitRelease && !anyKey)
@@ -1091,7 +1104,7 @@ namespace Olca.Unity
         {
             var commands=input.Read();if(!Usable())return;Refresh();
             var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
-            if(Input.GetKeyDown(KeyCode.Escape)&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
+            if(PolledInput.Down(Key.Escape)&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
             int current=version;
             foreach(var e in commands){if(current!=version||e.Epoch!=input.Epoch||!Usable())break;
                 if(e.Command==CustomPadCommand.Cancel){if(!SuppressPadCancel)cancel?.Invoke();continue;}
@@ -1102,7 +1115,7 @@ namespace Olca.Unity
                 Vector2 direction=e.Command==CustomPadCommand.Left?Vector2.left:e.Command==CustomPadCommand.Right?Vector2.right:e.Command==CustomPadCommand.Up?Vector2.up:e.Command==CustomPadCommand.Down?Vector2.down:Vector2.zero;
                 if(direction!=Vector2.zero&&focused!=null)Focus(Neighbor(focused,direction,Buttons())??focused);
             }
-            if(scroll!=null){if(directionScroll&&Input.GetKeyDown(KeyCode.UpArrow)||Input.GetKeyDown(KeyCode.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&Input.GetKeyDown(KeyCode.DownArrow)||Input.GetKeyDown(KeyCode.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
+            if(scroll!=null){if(directionScroll&&PolledInput.Down(Key.UpArrow)||PolledInput.Down(Key.PageUp))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition+.2f);if(directionScroll&&PolledInput.Down(Key.DownArrow)||PolledInput.Down(Key.PageDown))scroll.verticalNormalizedPosition=Mathf.Clamp01(scroll.verticalNormalizedPosition-.2f);}
         }
         public void Dispose(){input.Dispose();Suspend();}
     }
@@ -1186,3 +1199,56 @@ namespace Olca.Unity
         }
     }
 }
+
+namespace Olca.Unity
+{
+    /// <summary>メニューと旧IInputProvider互換APIのフレーム読取。ゲーム用60Hzイベント列は生成しない。</summary>
+    public static class PolledInput
+    {
+        public static bool Held(Key key)=>key!=Key.None&&InputSystem.devices.OfType<Keyboard>().Any(k=>k.enabled&&k[key].isPressed);
+        public static bool Down(Key key)=>key!=Key.None&&InputSystem.devices.OfType<Keyboard>().Any(k=>k.enabled&&k[key].wasPressedThisFrame);
+        // 旧anyKeyと同様にスティックの方向を物理ボタン扱いしない。
+        public static bool AnyPhysicalButton=>InputSystem.devices.Where(d=>d.enabled).SelectMany(d=>d.allControls).OfType<ButtonControl>().Any(b=>!(b.parent is StickControl)&&b.isPressed);
+        public static float Axis(bool vertical)
+        {
+            float value=(Held(vertical?Key.UpArrow:Key.RightArrow)||Held(vertical?Key.W:Key.D)?1:0)-(Held(vertical?Key.DownArrow:Key.LeftArrow)||Held(vertical?Key.S:Key.A)?1:0);
+            // 互換ポーリングだけの既存軸設定。製品の時刻付き入力と保存リバインドは既存処理を維持する。
+            foreach(var device in InputSystem.devices.Where(d=>d.enabled)){
+                var stick=device is Gamepad pad?pad.leftStick:(device as Joystick)?.stick;if(stick==null)continue;
+                var raw=stick.ReadUnprocessedValue();float candidate=vertical?raw.y:raw.x;if(Mathf.Abs(candidate)<.19f)candidate=0;
+                if(Mathf.Abs(candidate)>Mathf.Abs(value))value=candidate;
+            }
+            return value;
+        }
+    }
+}
+
+#if UNITY_EDITOR
+namespace Olca.Unity
+{
+    // ProjectSettingsは復元ZIP管理のため、既存コピーも明示依頼された新方式へ一度だけ更新する。
+    internal static class InputBackendMigration
+    {
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void Schedule()=>UnityEditor.EditorApplication.delayCall+=EnsureNewInputBackend;
+        [UnityEditor.MenuItem("Olca/設定/Input System のみを使用")]
+        private static void EnsureNewInputBackend()
+        {
+            if(UnityEditor.AssetDatabase.IsAssetImportWorkerProcess()||UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)return;
+            var assets=UnityEditor.AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+            if(assets.Length==0){UnityEngine.Debug.LogWarning("入力設定を読めません。Player SettingsでInput Systemのみを選択してください");return;}
+            var settings=new UnityEditor.SerializedObject(assets[0]);var handler=settings.FindProperty("activeInputHandler");
+            if(handler==null){UnityEngine.Debug.LogWarning("入力設定の項目を読めません。Player Settingsを確認してください");return;}
+            if(handler.intValue==1)return;
+            try{
+                var root=System.IO.Directory.GetParent(UnityEngine.Application.dataPath).FullName;
+                var backup=System.IO.Path.Combine(root,"Library","OlcaInputSystemMigration","ProjectSettings-before.asset");
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(backup));
+                if(!System.IO.File.Exists(backup))System.IO.File.Copy(System.IO.Path.Combine(root,"ProjectSettings","ProjectSettings.asset"),backup,false);
+                handler.intValue=1;settings.ApplyModifiedPropertiesWithoutUndo();
+                UnityEngine.Debug.Log("入力設定をInput Systemのみに更新しました。Editorを一度再起動すると旧Input Managerが無効になります。元設定はLibrary/OlcaInputSystemMigrationに保全しました");
+            }catch(System.Exception e)when(e is System.IO.IOException||e is System.UnauthorizedAccessException){UnityEngine.Debug.LogWarning("入力設定の保全に失敗したため自動更新しません: "+e.GetType().Name);}
+        }
+    }
+}
+#endif

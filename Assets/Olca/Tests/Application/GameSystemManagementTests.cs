@@ -129,6 +129,46 @@ namespace Olca.Tests.Application
                 Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(2,calls);
             }
         }
+        [TestCase(1920f,1080f)][TestCase(3840f,2160f)][TestCase(1280f,960f)]
+        public async Task 外界回復地点は空中の重なる詳細だけ隠し目印と着地後の操作を保つ(float width,float height)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var state=model.Core.CaptureState();state.Position=6*60000;typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(model.Core,new object[]{state});int calls=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;void Configure(){view.ConfigureRecovery(()=>calls++,()=>model.Core.IsGrounded,()=>"ケンショウ カイフク（カリ）");view.Render();}Configure();var button=view.transform.Find("OutsideRecoveryPoint").GetComponent<Button>();var marker=view.transform.Find("OutsideRecoveryMarker").GetComponent<Image>();var actor=view.transform.Find("OutsideEntryPlayer").GetComponent<RectTransform>();Assert.IsFalse(marker.raycastTarget);Assert.IsTrue(marker.gameObject.activeSelf);Assert.IsTrue(button.gameObject.activeSelf);var old=button.onClick;old.Invoke();Assert.AreEqual(1,calls);
+                Rect Area(RectTransform r){var c=new Vector3[4];r.GetWorldCorners(c);return Rect.MinMaxRect(c.Min(x=>x.x),c.Min(x=>x.y),c.Max(x=>x.x),c.Max(x=>x.y));}
+                int hidden=0;model.Core.TickFrame(0,true,true);
+                for(int n=0;n<100&&!model.Core.IsGrounded;n++){
+                    long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();bool overlap=Area((RectTransform)button.transform).Overlaps(Area(actor));Assert.AreEqual(!overlap,button.gameObject.activeSelf);if(overlap)hidden++;Assert.IsTrue(marker.gameObject.activeSelf);Assert.IsFalse(button.interactable);old.Invoke();Assert.AreEqual(1,calls);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);model.Core.TickFrame(0,false,n<10);
+                }
+                Assert.Greater(hidden,0);Assert.IsTrue(model.Core.IsGrounded);view.Render();Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(button.interactable);button.onClick.Invoke();Assert.AreEqual(2,calls);Assert.AreEqual(100,model.Player.CurrentHp);
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsFalse(marker.gameObject.activeSelf);Assert.IsTrue((await binding.OpenAsync()).Succeeded);view=binding.View;Configure();old.Invoke();Assert.AreEqual(2,calls);view.transform.Find("OutsideRecoveryPoint").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(3,calls);
+            }
+        }
+
+        [TestCase(1920f,1080f,0)][TestCase(1920f,1080f,1)][TestCase(1920f,1080f,2)][TestCase(1920f,1080f,3)]
+        [TestCase(3840f,2160f,0)][TestCase(3840f,2160f,1)][TestCase(3840f,2160f,2)][TestCase(3840f,2160f,3)]
+        [TestCase(1280f,960f,0)][TestCase(1280f,960f,1)][TestCase(1280f,960f,2)][TestCase(1280f,960f,3)]
+        public async Task 外界補給詳細は空中で本体と交差する時だけ退避し着地後の操作と文言を保持する(float width,float height,int index)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var state=model.Core.CaptureState();state.Position=index==0?Olca.Core.Logic.Integration.OutsideTrialRoute.SupplyX:index==1?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonSupplyX:index==2?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonTrialX:Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyX;typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(model.Core,new object[]{state});int calls=0;string message="シヨウ ハコ\nミウケトリ";
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;Action claim=()=>calls++;Func<bool> ready=()=>model.Core.IsGrounded;
+                if(index==0)view.ConfigureSupply(claim,ready,()=>message);else if(index==1)view.ConfigurePoisonSupply(claim,ready,()=>message);else if(index==2)view.ConfigureTrialPoison(claim,ready,()=>message);else view.ConfigureCardSupply(claim,ready,()=>message);
+                var button=view.transform.Find(index==0?"OutsideSupplyChest":index==1?"OutsidePoisonSupplyChest":index==2?"OutsideTrialPoisonPoint":"OutsideCardSupplyChest").GetComponent<Button>();var actor=view.transform.Find("OutsideEntryPlayer").GetComponent<RectTransform>();
+                Rect Area(RectTransform q){var c=new Vector3[4];q.GetWorldCorners(c);return Rect.MinMaxRect(c.Min(x=>x.x),c.Min(x=>x.y),c.Max(x=>x.x),c.Max(x=>x.y));}
+                for(int cycle=0;cycle<2;cycle++){
+                    view.Render();Assert.IsTrue(button.gameObject.activeSelf);var old=button.onClick;var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.Render();CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));int hidden=0;
+                    model.Core.TickFrame(0,true,true);for(int n=0;n<100&&!model.Core.IsGrounded;n++){long frame=model.Core.Frame;view.Render();bool overlap=Area((RectTransform)button.transform).Overlaps(Area(actor));Assert.AreEqual(!overlap,button.gameObject.activeSelf);if(overlap)hidden++;Assert.IsFalse(button.interactable);old.Invoke();Assert.AreEqual(cycle,calls);view.Render();Assert.AreEqual(frame,model.Core.Frame);model.Core.TickFrame(0,false,n<10);}
+                    Assert.Greater(hidden,0);view.Render();Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(button.interactable);StringAssert.Contains(cycle==0?"ミウケトリ":"ウケトリズミ",button.GetComponentInChildren<Text>().text);button.onClick.Invoke();Assert.AreEqual(cycle+1,calls);message="シヨウ ハコ\nウケトリズミ";
+                }
+                Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
         [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
         {
             var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
@@ -192,15 +232,16 @@ namespace Olca.Tests.Application
             foreach(var name in new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"})Assert.IsTrue(panel.transform.Find(name).gameObject.activeSelf);
         }
 
-        [Test] public void 外界Pauseの選択枠は有効な現在項目だけで表示し他場面では消える()
+        [TestCase(false)] [TestCase(true)] public void Pauseの選択枠は場面によらず有効項目に表示し操作停止中は消える(bool outside)
         {
             var panel=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Pause();panel.SetActive(true);
-            var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);var buttons=panel.GetComponentsInChildren<Button>(true).ToDictionary(b=>b.name);
-            Assert.IsNull(panel.transform.Find("OutsidePauseInputGuide"),"外界で表示するまでは作らない");view.SetOutsidePresentation(true);buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();
+            var view=panel.AddComponent<GameplayPauseView>();bool allowed=true;view.Initialize(()=>allowed);var buttons=panel.GetComponentsInChildren<Button>(true).ToDictionary(b=>b.name);
+            Assert.IsNull(panel.transform.Find("OutsidePauseInputGuide"),"表示するまでは作らない");view.SetOutsidePresentation(outside);buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();
             Assert.IsTrue(buttons["ResumeButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);Assert.IsFalse(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
             buttons["KeyboardSettingsButton"].Select();view.RefreshOutsidePresentation();Assert.IsFalse(buttons["ResumeButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);Assert.IsTrue(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
             buttons["KeyboardSettingsButton"].interactable=false;view.RefreshOutsidePresentation();Assert.IsFalse(buttons["KeyboardSettingsButton"].transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf);
-            view.SetOutsidePresentation(false);Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
+            allowed=false;view.RefreshOutsidePresentation();Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
+            allowed=true;buttons["ResumeButton"].Select();view.RefreshOutsidePresentation();Assert.IsTrue(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);view.CoverForDialog();view.RefreshOutsidePresentation();Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);Assert.IsTrue(buttons.Values.All(b=>!b.transform.Find("OutsidePauseFocusFrame").gameObject.activeSelf));
             view.SetOutsidePresentation(true);Assert.AreEqual(1,buttons["ResumeButton"].transform.Cast<Transform>().Count(x=>x.name=="OutsidePauseFocusFrame"),"再表示でも生成を重ねない");panel.SetActive(false);typeof(GameplayPauseView).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.IsFalse(panel.transform.Find("OutsidePauseInputGuide").gameObject.activeSelf);
         }
         [Test] public void 外界Pause案内はメニュー割当を表示しゲーム割当と混同しない()
@@ -837,6 +878,29 @@ namespace Olca.Tests.Application
         {
             var panel=Panel("other");using(var scope=dialogs.CreateOwner(()=>true)){dialogs.ShowPersistent(scope,panel,Button(panel,"confirm"),Button(panel,"cancel"),()=>true,_=>{});var service=new ProgressOperationsProbe();var popup=ProgressPopup();popup.OpenManualSave(service,dialogs,null,()=>true);Assert.AreEqual(0,service.Saves);Assert.IsFalse(popup.IsOpen);Assert.AreEqual(1,dialogs.ActiveCount);}
         }
+        [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)]
+        public void 撤退確認は背面を遮り警告と決定取消が画面内で重ならない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var root=factory.Panel("RetreatVisual",true);var view=root.AddComponent<RetreatConfirmationDialog>();view.Initialize(factory);view.Open(()=>new RetreatDialogState(true,false,false,false,false,false),null,null,null,()=>true);Canvas.ForceUpdateCanvases();
+            var dialog=root.GetComponentInChildren<ConfirmationDialog>(true);Assert.IsTrue(view.IsOpen);Assert.AreEqual(1,dialog.GetComponent<Image>().color.a);var reading=dialog.GetComponentsInChildren<Image>(true).Single(v=>v.name=="RetreatReadingFace");Assert.IsNotNull(reading.sprite,"既存の水鏡素材を維持する");Assert.Less(reading.color.b,.5f);
+            var warning=dialog.GetComponentsInChildren<Text>(true).Single(v=>v.name=="RetreatWarning");Assert.Less(reading.transform.GetSiblingIndex(),warning.transform.GetSiblingIndex(),"読取面を文字より手前に描かない");Assert.Less(reading.transform.GetSiblingIndex(),dialog.GetComponentsInChildren<Text>(true).Single(v=>v.name=="RetreatTitle").transform.GetSiblingIndex());Assert.Greater(warning.color.r,.8f);Assert.AreEqual(Olca.Presentation.CustomScreen.CustomDisplay.Katakana("撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。"),warning.text);Assert.AreEqual("テッタイのカクニン",dialog.GetComponentsInChildren<Text>(true).Single(v=>v.name=="RetreatTitle").text);
+            Rect Area(RectTransform t){var c=new Vector3[4];t.GetWorldCorners(c);return Rect.MinMaxRect(c[0].x,c[0].y,c[2].x,c[2].y);}var bounds=Area((RectTransform)root.transform);var message=Area(warning.rectTransform);var confirm=Area((RectTransform)view.ConfirmButton.transform);var cancel=Area((RectTransform)view.CancelButton.transform);foreach(var area in new[]{message,confirm,cancel}){Assert.GreaterOrEqual(area.xMin,bounds.xMin);Assert.LessOrEqual(area.xMax,bounds.xMax);Assert.GreaterOrEqual(area.yMin,bounds.yMin);Assert.LessOrEqual(area.yMax,bounds.yMax);}Assert.IsFalse(message.Overlaps(confirm));Assert.IsFalse(message.Overlaps(cancel));Assert.IsFalse(confirm.Overlaps(cancel));
+            view.CancelButton.onClick.Invoke();Assert.IsFalse(view.IsOpen);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 撤退確認は選択後の比率変更でも同じ操作を保ち枠と実割当案内を表示する(bool accept)
+        {
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var root=factory.Panel("RetreatFocus",true);var view=root.AddComponent<RetreatConfirmationDialog>();view.Initialize(factory);int effects=0;view.Confirmed+=()=>effects++;
+            view.Open(()=>new RetreatDialogState(true,false,false,false,false,false),null,null,null,()=>true);var selected=accept?view.ConfirmButton:view.CancelButton;EventSystem.current.SetSelectedGameObject(selected.gameObject);
+            foreach(var size in new[]{new Vector2(1920,1080),new Vector2(3840,2160),new Vector2(1440,1080),new Vector2(1920,1080)}){
+                ((RectTransform)host.transform).sizeDelta=size;Canvas.ForceUpdateCanvases();var dialog=root.GetComponentInChildren<ConfirmationDialog>(true);typeof(ReturnDialog).GetMethod("LateUpdate",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(dialog,null);view.RefreshLifetime();typeof(RetreatConfirmationDialog).GetMethod("LateUpdate",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);
+                Assert.AreSame(selected.gameObject,EventSystem.current.currentSelectedGameObject);Assert.AreEqual(0,effects);
+                Assert.IsTrue(selected.transform.Find("RetreatSelectionFrame").gameObject.activeSelf);Assert.IsFalse((accept?view.CancelButton:view.ConfirmButton).transform.Find("RetreatSelectionFrame").gameObject.activeSelf);
+                var guide=root.GetComponentsInChildren<Text>(true).Single(t=>t.name=="RetreatInputGuide");Assert.AreEqual(BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true),guide.text);Assert.IsFalse(guide.raycastTarget);
+            }
+            selected.onClick.Invoke();Assert.IsFalse(view.IsOpen);Assert.AreEqual(accept?1:0,effects);
+        }
         [Test] public void 撤退Dialogは最新可否で判断し取消後の旧確定は次世代へ作用しない()
         {
             var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var pause=Panel("legacy-pause");pause.SetActive(true);var origin=Button(pause,"RetreatButton");EventSystem.current.SetSelectedGameObject(origin.gameObject);
@@ -963,6 +1027,146 @@ namespace Olca.Tests.Application
                 Walk(10*60000);Assert.AreNotSame(old,model.Cards);Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(view.transform.Find("OutsideHandName0").gameObject.activeSelf);oldClick.Invoke();Assert.AreEqual(0,model.Cards.SelectedIndex);Assert.AreEqual(1,old.SelectedIndex);button.onClick.Invoke();Assert.AreEqual(2,model.Cards.SelectedIndex);var currentClick=button.onClick;Walk(8*60000);currentClick.Invoke();Assert.AreEqual(2,model.Cards.SelectedIndex);var hand=model.Cards.Hand.ToArray();long frame=model.Core.Frame;binding.SetCovered(true);view.Render();views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(frame,model.Core.Frame);CollectionAssert.AreEqual(hand,model.Cards.Hand);Assert.IsFalse(button.gameObject.activeSelf);
             }
         }
+        [TestCase(1920,1080,false)][TestCase(1440,1080,false)][TestCase(3840,2160,false)][TestCase(1920,1080,true)][TestCase(1440,1080,true)][TestCase(3840,2160,true)] public async Task 探索カードの未対応とゲージ不足を入力前に表示し選択と消費を変えない(int width,int height,bool pad)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var source=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(model.TryInitializeCards(source,source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(262),out _));for(int n=0;n<100&&!(model.Cards.Hand.Any(c=>c.Id=="bomb")&&model.Cards.Hand.Any(c=>c.Id=="heal"));n++)model.Cards.Reload();Assert.IsTrue(model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("cardUseGuide",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,(Func<string>)(()=>"カード シヨウ: "+(pad?"Y / △":"F")+" / サイクリック"));model.EnableTrialNormalKick();model.Player.SetBarrier(15);model.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out _));var label=view.transform.Find("OutsideCardUseGuide").GetComponent<Text>();long frame=model.Core.Frame,revision=model.Cards.HandRevision,gauge=model.Core.CardGauge.CurrentUnits;var hand=model.Cards.Hand.ToArray();view.Render();StringAssert.Contains("ミタイオウ",label.text);StringAssert.DoesNotContain("シヨウ ダッシュコウゲキ",label.text);StringAssert.Contains("バリア",label.text);StringAssert.Contains(pad?"Y / △":"F",label.text);Canvas.ForceUpdateCanvases();label.cachedTextGenerator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.GreaterOrEqual(label.cachedTextGenerator.characterCountVisible,label.text.TrimEnd().Length);for(int i=0;i<4;i++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(revision,model.Cards.HandRevision);Assert.AreEqual(gauge,model.Core.CardGauge.CurrentUnits);CollectionAssert.AreEqual(hand,model.Cards.Hand);
+                Assert.IsTrue(model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id=="heal")));view.Render();StringAssert.DoesNotContain("ミタイオウ",label.text);StringAssert.Contains("シヨウ ダッシュコウゲキ",label.text);label.cachedTextGenerator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size));Assert.GreaterOrEqual(label.cachedTextGenerator.characterCountVisible,label.text.TrimEnd().Length);Assert.IsTrue(model.Core.CardGauge.TrySpend(100));view.Render();StringAssert.Contains("ゲージが",label.text);view.SetCovered(true);view.Render();view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);view.Render();StringAssert.Contains("ゲージが",label.text);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(0,model.Core.CardGauge.CurrentUnits);
+            }
+        }
+        [TestCase(-1,false)][TestCase(1,false)][TestCase(-1,true)][TestCase(1,true)] public async Task 外界地上三段は試用準備接触を論理命中窓から描き復帰Idleをゼロから始める(int facing,bool fire)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            var prepare=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/ground_kick_prepare":"OlcaCharacterMotion/trial_ground_kick_prepare");var contact=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/ground_kick_contact":"OlcaCharacterMotion/trial_ground_kick_contact");Assert.IsNotNull(prepare);Assert.IsNotNull(contact);Assert.AreEqual(prepare.rect,contact.rect);Assert.AreEqual(prepare.pivot,contact.pivot);Assert.AreEqual(100f,prepare.pixelsPerUnit,.001f);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(256,prepare.texture.width);Assert.AreEqual(256,contact.texture.width);
+            string root=fire?"OlcaCharacterMotion/TrialFire/":"OlcaCharacterMotion/trial_";
+            var prepares=new[]{prepare,Resources.Load<Sprite>(root+"ground_second_prepare"),Resources.Load<Sprite>(root+"ground_third_prepare")};var contacts=new[]{contact,Resources.Load<Sprite>(root+"ground_second_contact"),Resources.Load<Sprite>(root+"ground_third_contact")};Assert.AreEqual(3,prepares.Distinct().Count());Assert.AreEqual(3,contacts.Distinct().Count());for(int i=0;i<3;i++){Assert.IsNotNull(prepares[i]);Assert.IsNotNull(contacts[i]);Assert.AreEqual(prepares[i].pivot,contacts[i].pivot);Assert.AreEqual(100,contacts[i].pixelsPerUnit);Assert.AreEqual(256,contacts[i].texture.width);}
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;model.TickTraversal(facing);model.TickTraversal(0);for(int n=0;n<20;n++)model.TickTraversal(0);view.Render();var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var point=body.rectTransform.anchoredPosition;long start=model.Core.Frame;long position=model.Core.Position;
+                for(int stage=0;stage<3;stage++){
+                    Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,model.Core.Frame+1,out var error),error);view.Render();Assert.AreEqual(stage,(int)model.NormalKick.Kind);Assert.AreSame(prepares[stage],body.sprite);
+                    for(int age=1;age<=21;age++){model.TickTraversal(0);view.Render();if(age<21)Assert.AreSame(age>=6&&age<9?contacts[stage]:prepares[stage],body.sprite);else{Assert.IsFalse(model.NormalKick.IsActive);Assert.AreEqual(0,model.Core.IdleFrame);if(fire)Assert.AreEqual("trial_fire_idle",body.sprite.name);else StringAssert.EndsWith("/Idle/heroine_idle_01.png",UnityEditor.AssetDatabase.GetAssetPath(body.sprite));}Assert.AreEqual(point,body.rectTransform.anchoredPosition);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(position,model.Core.Position);}
+                }
+                Assert.AreEqual(start+63,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);model.TickTraversal(0);view.Render();Assert.AreEqual(1,model.Core.IdleFrame);
+            }
+        }
+
+        [TestCase(-1,false)][TestCase(1,false)][TestCase(-1,true)][TestCase(1,true)] public async Task 外界空中前蹴りは命中窓だけ補正済み試用本体を描き着地で解除する(int facing,bool fire)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            var contact=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/air_forward_contact":"OlcaCharacterMotion/trial_air_forward_kick_contact");Assert.IsNotNull(contact);Assert.AreEqual(256,contact.texture.width);Assert.AreEqual(256,contact.texture.height);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(156f,contact.pivot.x,.01f);Assert.AreEqual(14f,contact.pivot.y,.01f);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var rise=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite;if(fire)rise=Resources.Load<Sprite>("OlcaCharacterMotion/TrialFire/jump_rise");
+                model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsFalse(model.Core.IsGrounded);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirForward,model.NormalKick.Kind);
+                for(int age=0;age<21;age++){
+                    if(age>0)model.TickTraversal(-facing,false,true);long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();Assert.AreSame(age>=6&&age<9?contact:rise,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(age==7){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);view.Render();Assert.AreSame(contact,body.sprite);}
+                }
+                model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);
+                while(!model.Core.IsGrounded)model.TickTraversal(0);model.TickTraversal(0,true,true);while(model.Core.VerticalVelocity>0||model.Core.Height>15000)model.TickTraversal(0);
+                Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out error),error);while(!model.Core.IsGrounded)model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [TestCase(-1,false)][TestCase(1,false)][TestCase(-1,true)][TestCase(1,true)] public async Task 外界空中下蹴りは既存前隙と専用接触復帰を描き落下や着地と時計を変えない(int facing,bool fire)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            var contact=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/air_down_contact":"OlcaCharacterMotion/trial_air_down_contact");Assert.IsNotNull(contact);Assert.AreEqual(256,contact.texture.width);Assert.AreEqual(256,contact.texture.height);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(127f,contact.pivot.x,.01f);Assert.AreEqual(14f,contact.pivot.y,.01f);
+            var recovery=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/air_down_recovery":"OlcaCharacterMotion/trial_air_down_recovery");Assert.IsNotNull(recovery);Assert.AreEqual(contact.pivot,recovery.pivot);Assert.AreEqual(contact.rect,recovery.rect);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var rise=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite;if(fire)rise=Resources.Load<Sprite>("OlcaCharacterMotion/TrialFire/jump_rise");
+                model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsFalse(model.Core.IsGrounded);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error,-1),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirDown,model.NormalKick.Kind);StringAssert.Contains("ジュンビのみキソン",model.CardUseMessage);StringAssert.DoesNotContain("ミセツゾク",model.CardUseMessage);
+                for(int age=0;age<21;age++){
+                    if(age>0)model.TickTraversal(-facing,false,true);long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();Assert.AreSame(age<6?rise:age<9?contact:recovery,body.sprite);Assert.AreEqual(age>=9,model.NormalKick.IsRecovery);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(age==11){views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);view.Render();Assert.AreSame(recovery,body.sprite);Assert.AreEqual(frame,model.Core.Frame);}
+                    if(age==7){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);view.Render();Assert.AreSame(contact,body.sprite);}
+                }
+                model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreNotSame(recovery,body.sprite);Assert.IsFalse(model.NormalKick.IsRecovery);Assert.AreEqual(-model.Core.Facing,body.rectTransform.localScale.x);
+                while(!model.Core.IsGrounded)model.TickTraversal(0);model.TickTraversal(0,true,true);while(model.Core.VerticalVelocity>0||model.Core.Height>15000)model.TickTraversal(0);
+                Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out error,-1),error);while(!model.Core.IsGrounded)model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreNotSame(recovery,body.sprite);Assert.IsFalse(model.NormalKick.IsRecovery);Assert.AreEqual(-model.Core.Facing,body.rectTransform.localScale.x);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [TestCase(-1)][TestCase(1)] public async Task 空中上蹴りの既存代替表示も逆移動と別の開始向きを保ち終了で通常方向へ戻る(int facing)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error,1),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirUp,model.NormalKick.Kind);long start=model.Core.Position;
+                for(int age=0;age<21;age++){if(age>0)model.TickTraversal(-facing,false,true);view.Render();Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(facing,model.NormalKick.AttackFacing);if(age>0){Assert.AreEqual(-facing,model.Core.Facing);Assert.Less((model.Core.Position-start)*facing,0);}}
+                model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreEqual(-model.Core.Facing,body.rectTransform.localScale.x);
+            }
+        }
+        [TestCase(-1)][TestCase(1)] public void 空中蹴り開始向きは逆移動中の保存再開と旧leaseを越えて保持し終了で解放する(int facing)
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideExplorationSession())using(var cold=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.EnableTrialNormalKick();var old=s.AttachPresentation();s.TickTraversal(facing);s.TickTraversal(0,true,true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out var error,-1),error);s.TickTraversal(-facing,false,true);Assert.AreEqual(-facing,s.Core.Facing);Assert.AreEqual(facing,old.NormalKickFacing);old.Dispose();Assert.IsNull(old.NormalKickFacing);
+                var data=s.CaptureRuntime();var actor=Olca.Core.Domain.OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;Assert.IsTrue(cold.RestoreSavedState(actor,data,null,null));var superseded=s.AttachPresentation();
+                using(var live=s.AttachPresentation())using(var resumed=cold.AttachPresentation()){
+                    Assert.IsNull(superseded.NormalKickFacing);superseded.Dispose();Assert.IsTrue(live.IsCurrent);Assert.AreEqual(facing,live.NormalKickFacing);Assert.AreEqual(facing,resumed.NormalKickFacing);
+                    while(s.IsAttacking){s.TickTraversal(-facing,false,true);cold.TickTraversal(-facing,false,true);Assert.AreEqual(s.Core.Frame,cold.Core.Frame);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.AreEqual(s.Core.VerticalVelocity,cold.Core.VerticalVelocity);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);if(s.IsAttacking){Assert.AreEqual(facing,live.NormalKickFacing);Assert.AreEqual(facing,resumed.NormalKickFacing);}}
+                    Assert.IsNull(live.NormalKickFacing);Assert.IsNull(resumed.NormalKickFacing);Assert.AreEqual(-facing,cold.Core.Facing);
+                }
+            }
+        }
+
+        [TestCase(-1,false)][TestCase(1,false)][TestCase(-1,true)][TestCase(1,true)] public async Task 外界ダッシュ攻撃は命中窓だけ専用試用本体を描き方向と時計を変えず終了復帰する(int facing,bool fire)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();if(fire){model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);model.Player.SetElementResistances(Olca.Core.Domain.ElementAffinity.CreatePlayerBase(Olca.Core.Domain.ElementType.Fire));}
+            typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(model.Core,new object[]{14L*60000});
+            var contact=Resources.Load<Sprite>(fire?"OlcaCharacterMotion/TrialFire/dash_kick_contact":"OlcaCharacterMotion/trial_dash_kick_contact");Assert.IsNotNull(contact);Assert.AreEqual(256,contact.texture.width);Assert.AreEqual(256,contact.texture.height);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(new Vector2(127,14),contact.pivot+contact.rect.position);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var dash=fire?Resources.Load<Sprite>("OlcaCharacterMotion/TrialFire/dash"):resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredDashPlayerSprite;
+                model.TickTraversal(facing,dashDown:true,dashHeld:true);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.Dash,model.NormalKick.Kind);
+                long end=model.NormalKick.EndsAt;
+                while(model.Core.Frame<end){long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;bool hit=model.NormalKick.IsHitWindow;view.Render();Assert.AreSame(hit?contact:dash,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);for(int n=0;n<3;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(hit){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);view.Render();Assert.AreSame(contact,body.sprite);}
+                    model.TickTraversal(-facing);
+                }
+                view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.IsFalse(model.Core.IsDashing);model.TickTraversal(0);view.Render();if(fire)Assert.AreEqual("trial_fire_idle",body.sprite.name);else StringAssert.EndsWith("/Idle/heroine_idle_01.png",UnityEditor.AssetDatabase.GetAssetPath(body.sprite));
+            }
+        }
+
+        [Test] public async Task 外界カエンの走行八枚は既存時計を読み通常復帰とView再生成で参照を残さない()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var save=new Olca.Core.Domain.ClearReturnSession(new DoorBoundaryStore());
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.TrialFire,null,out var error),error);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var seen=new System.Collections.Generic.HashSet<string>();
+                for(int n=0;n<40;n++){model.TickTraversal(1);long frame=model.Core.Frame;view.Render();StringAssert.StartsWith("trial_fire_run_",body.sprite.name);seen.Add(body.sprite.name);Assert.AreEqual(new Vector2(128,17),body.sprite.pivot);Assert.AreEqual(-1,body.rectTransform.localScale.x);view.Render();Assert.AreEqual(frame,model.Core.Frame);}
+                Assert.AreEqual(8,seen.Count);model.TickTraversal(0);view.Render();Assert.AreEqual("trial_fire_idle",body.sprite.name);long stopped=model.Core.Frame;view.SetCovered(true);view.Render();Assert.AreEqual(stopped,model.Core.Frame);view.SetCovered(false);
+                Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.Basic,null,out error),error);view.Render();StringAssert.StartsWith("heroine_idle_",body.sprite.name);Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.TrialFire,null,out error),error);view.Render();Assert.AreEqual("trial_fire_idle",body.sprite.name);
+                UnityEngine.Object.DestroyImmediate(view.gameObject);Assert.IsTrue((await binding.OpenAsync()).Succeeded);body=binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>();Assert.AreEqual("trial_fire_idle",body.sprite.name);Assert.AreEqual(stopped,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [Test] public async Task 外界カエン呼吸は既存Idle時計から三姿勢を描き足の基準と停止再入を維持する()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var save=new Olca.Core.Domain.ClearReturnSession(new DoorBoundaryStore());
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.TrialFire,null,out var error),error);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var seen=new System.Collections.Generic.HashSet<string>();long position=model.Core.Position;
+                for(int n=0;n<240;n++){model.TickTraversal(0);long frame=model.Core.Frame;view.Render();seen.Add(body.sprite.name);Assert.AreEqual(new Vector2(127,14),body.sprite.rect.position+body.sprite.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(position,model.Core.Position);}Assert.AreEqual(3,seen.Count);CollectionAssert.AreEquivalent(new[]{"trial_fire_idle","trial_fire_idle_breathe_mid","trial_fire_idle_breathe_high"},seen);var stopped=body.sprite;long clock=model.Core.Frame;view.SetCovered(true);for(int n=0;n<5;n++)view.Render();Assert.AreSame(stopped,body.sprite);Assert.AreEqual(clock,model.Core.Frame);view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(stopped,body.sprite);Assert.AreEqual(clock,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [Test] public async Task 外界カエン識別は実切替保存の成功だけで衣装を替え被覆再入と解除で時計を変えない()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var store=new DoorBoundaryStore();var save=new Olca.Core.Domain.ClearReturnSession(store);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();Assert.IsNull(view.transform.Find("OutsideTrialFireKamui"));var sprite=body.sprite;var originalColor=body.color;var frame=model.Core.Frame;
+                Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.TrialFire,null,out var error),error);view.Render();var layer=view.transform.Find("OutsideTrialFireKamui").GetComponent<Image>();Assert.IsNull(view.transform.Find("OutsideDefensiveField"));for(int n=0;n<4;n++){view.Render();Assert.Less(layer.transform.GetSiblingIndex(),body.transform.GetSiblingIndex());}model.Player.SetBarrier(5);view.Render();var defense=view.transform.Find("OutsideDefensiveField");Assert.IsTrue(layer.enabled);Assert.IsFalse(layer.raycastTarget);Assert.Less(layer.transform.GetSiblingIndex(),defense.GetSiblingIndex());Assert.Less(defense.GetSiblingIndex(),body.transform.GetSiblingIndex());Assert.AreEqual(body.rectTransform.anchoredPosition,layer.rectTransform.anchoredPosition);Assert.AreEqual("trial_fire_idle",body.sprite.name);Assert.AreNotSame(sprite,body.sprite);Assert.AreEqual(originalColor,body.color);
+                model.Player.SetBarrier(0);for(int n=0;n<4;n++){view.Render();Assert.IsFalse(defense.GetComponent<Image>().enabled);Assert.Less(layer.transform.GetSiblingIndex(),body.transform.GetSiblingIndex());}model.Player.SetBarrier(5);view.Render();int writes=store.Writes;view.SetCovered(true);for(int n=0;n<4;n++){view.Render();Assert.Less(layer.transform.GetSiblingIndex(),defense.GetSiblingIndex());Assert.Less(defense.GetSiblingIndex(),body.transform.GetSiblingIndex());}Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);Assert.AreEqual(5,model.Player.BarrierHp);Assert.AreEqual(writes,store.Writes);views.GetLayer("return-hub").CloseCurrent();Assert.IsFalse(layer.enabled);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(layer.enabled);
+                store.Fail=true;Assert.IsFalse(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.Basic,null,out _));view.Render();Assert.IsTrue(layer.enabled);store.Fail=false;Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.Basic,null,out error),error);view.Render();Assert.IsFalse(layer.enabled);Assert.AreSame(sprite,body.sprite);Assert.AreEqual(frame,model.Core.Frame);
+            }
+        }
+
         [Test] public async Task 外界の毒本体色は確定状態だけを読み再表示と解除と別個体で残らない()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));

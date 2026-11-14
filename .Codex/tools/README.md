@@ -101,3 +101,11 @@ Unity APIのruntime型が汎用`AssetImporter`になる既知形式は、seriali
 ### 同梱OFL原文の固定バイト照合
 
 `Assets/StreamingAssets/ThirdPartyNotices/DotGothic16-OFL.txt`だけは、公式から取得した原文SHA256 `b6630c61ea078cacd7fabe37d14ffe557a0b45b06683374a9aa9e24262993e33`・承認manifest・全件tested hash・repo/workspaceの完全一致に限り、原本の93行CRLFと21行目末尾のASCII space1個を変更せず扱う。対象path/hashはCLIの固定表に置き、`git diff --check`の各診断を原文行番号/hash/source/理由付きでreceiptへ記録する。一般TXTや別hash、未知の末尾space/tab、改行変換を許す機能ではない。ライセンスや資産を正規化して検査を通さない。
+
+### 既存で未変更のmetadataを検証hashへ含める場合
+
+全件テストのhash一覧に既公開のmetadataが残っていても、今回の公開差分へ追加しない。検証記録だけの別集合`unchangedTestMetadata`に、基準HEAD・indexのblobとSHA256を記録し、modeの一致、およびrepo・検証workspaceの全byte・主張SHA256の一致を検証する。今回stagedのmeta、新規/追跡外、いずれかの変更、不正path、symlink（祖先も含む）はこの証明を使えない。
+
+この集合はstaged metadataの承認には使わない。新規/変更metadataの明示承認、承認範囲とstaged集合の一致、Editor証跡、GUID、空白規則は従来どおり維持する。検証hashを削って通す手順でもない。check・commit前・push前・再fetch後に、同じ基準HEADから同じ証明を再計算する。
+
+複数Spriteの実Editor原本については、承認済TextureImporter・`spriteMode: 2`・一意な`spriteSheet`節の直下にある厳密な4space `spriteID: ` の空scalarだけも記録付きで保持する。Single Sprite・別Importer/別節・子Sprite欄・非空値・tabには適用しない。metadataの全byte/SHA/Editor登録/明示承認の検証は維持する。

@@ -97,6 +97,39 @@ namespace Olca.Tests
             public bool TryWrite(long expected,ClearReturnProfile next,out string error){Writes++;if(Fail){error="style231 explicit failure";return false;}Assert.AreEqual(Value.Revision,expected);ClearReturnProfile.Validate(next);Value=next.Copy();error=null;return true;}
         }
         private static CustomizationCatalog Shop236Catalog()=>new CustomizationCatalog("shop236-board",new PartsBoardDefinition(1,1,new[]{new Vector2Int(0,0)}),Array.Empty<string>(),new System.Collections.Generic.Dictionary<string,PartShape>{{"part236",new PartShape(new[]{new Vector2Int(0,0)})}},null);
+        [TestCase(0)][TestCase(4)] public void 外界カード販売は定義別所持と超過通貨在庫を原子的に保存しcoldで重複しない(int count)
+        {
+            var card=new Card("shop245","試用カード",1,CardRarity.Normal,CardCategory.Attack,ElementType.Fire,CardSeries.Sword,30,"試用");string hash=CollectionDisplay.DefinitionHash(card);var offer=OutsideShopOffer.ForCard("card-offer",card,3,2,1);var shop=new OutsideShopDefinition("shop245",new[]{offer});
+            var store=new Style231Store{Value=new ClearReturnProfile{Tokens=9,OutsideInventory=new OutsideInventoryData{Currency=10},Owned=count==0?Array.Empty<OwnedCardCount>():new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,DefinitionHash=hash,Count=count}}}};var save=new ClearReturnSession(store,definitions:new[]{card});var before=PortableCheckpointJson.Serialize(store.Value);store.Fail=true;Assert.IsFalse(save.TryPurchaseOutsideShop(shop,offer.Id,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.AreEqual(10,save.OutsideInventorySnapshot.Currency);Assert.AreEqual(1,save.OutsideShopRemaining(shop,offer.Id));Assert.IsFalse(save.HasPendingSave);
+            store.Fail=false;Assert.IsTrue(save.TryPurchaseOutsideShop(shop,offer.Id,out var error),error);var cold=new ClearReturnSession(store,definitions:new[]{card});Assert.AreEqual(count==0?1:4,cold.Snapshot.Owned.Single().Count);Assert.AreEqual(hash,cold.Snapshot.Owned.Single().DefinitionHash);Assert.AreEqual(count==0?9:11,cold.Snapshot.Tokens);Assert.AreEqual(7,cold.OutsideInventorySnapshot.Currency);Assert.AreEqual(0,cold.OutsideShopRemaining(shop,offer.Id));Assert.IsEmpty(cold.Snapshot.SavedDecks);int writes=store.Writes;Assert.IsFalse(cold.TryPurchaseOutsideShop(shop,offer.Id,out _));Assert.AreEqual(writes,store.Writes);
+        }
+        [Test] public void 外界カード購入は旧hash省略所持を候補内だけ正規化して保存デッキ参照を保持する()
+        {
+            var card=new Card("shop245","試用カード",1,CardRarity.Normal,CardCategory.Attack,ElementType.Fire,CardSeries.Sword,30,"試用");var offer=OutsideShopOffer.ForCard("card-offer",card,3,2);var shop=new OutsideShopDefinition("shop245",new[]{offer});var deckId=Guid.NewGuid().ToString("N");var store=new Style231Store{Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=10},Owned=new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,Count=3}},SavedDecks=new[]{new SavedDepartureDeck{Id=deckId,Name="旧デッキ",Cards=new[]{new SavedDeckCard{Id=card.Id,Level=card.ExceedLevel}}}}}};var save=new ClearReturnSession(store,definitions:new[]{card});var before=PortableCheckpointJson.Serialize(store.Value);Assert.IsTrue(save.CanPurchaseOutsideShop(shop,offer.Id,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.IsNull(save.Snapshot.Owned.Single().DefinitionHash);store.Fail=true;Assert.IsFalse(save.TryPurchaseOutsideShop(shop,offer.Id,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.IsNull(save.Snapshot.SavedDecks.Single().Cards.Single().DefinitionKey);
+            store.Fail=false;Assert.IsTrue(save.TryPurchaseOutsideShop(shop,offer.Id,out var error),error);var cold=new ClearReturnSession(store,definitions:new[]{card});Assert.AreEqual(4,cold.Snapshot.Owned.Single().Count);Assert.AreEqual(CollectionDisplay.DefinitionHash(card),cold.Snapshot.Owned.Single().DefinitionHash);Assert.AreEqual(deckId,cold.Snapshot.SavedDecks.Single().Id);Assert.AreEqual(CollectionDisplay.DefinitionHash(card),cold.Snapshot.SavedDecks.Single().Cards.Single().DefinitionKey);
+        }
+        [Test] public void 外界販売カードは登録hashとコピーを守り未知定義と超過overflowを保存前に拒否する()
+        {
+            var card=new Card("shop245","試用カード",1,CardRarity.Normal,CardCategory.Attack,ElementType.Fire,CardSeries.Sword,30,"試用");var offer=OutsideShopOffer.ForCard("card-offer",card,3,2);string hash=offer.CardDefinitionHash;var altered=offer.CardDefinition;altered.Modifier.BonusDamage=1;Assert.AreEqual(hash,offer.CardDefinitionHash);Assert.AreNotEqual(hash,CollectionDisplay.DefinitionHash(altered));var shop=new OutsideShopDefinition("shop245",new[]{offer});
+            foreach(int mode in new[]{0,1,2}){var store=new Style231Store{Value=new ClearReturnProfile{Tokens=long.MaxValue,OutsideInventory=new OutsideInventoryData{Currency=10},Owned=new[]{new OwnedCardCount{Id=card.Id,Name=card.Name,Rarity=card.Rarity,Level=card.ExceedLevel,DefinitionHash=hash,Count=4}}}};var save=new ClearReturnSession(store,definitions:mode==0?null:mode==1?new[]{altered}:new[]{card});var before=PortableCheckpointJson.Serialize(store.Value);Assert.IsFalse(save.TryPurchaseOutsideShop(shop,offer.Id,out _));Assert.AreEqual(0,store.Writes);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));}
+        }
+        [Test] public void 外界装飾品購入は支払取得在庫の原子性と重複拒否を守りcold後に装備できる()
+        {
+            var catalog=new CustomizationCatalog("shop244-board",new PartsBoardDefinition(1,1,new[]{new Vector2Int(0,0)}),new[]{"accessory244"},null,null);
+            var shop=new OutsideShopDefinition("shop244",new[]{OutsideShopOffer.ForAccessory("accessory-offer","accessory244","仮装飾品",5)},catalog);
+            var store=new Style231Store{Value=new ClearReturnProfile{Tokens=9,OutsideInventory=new OutsideInventoryData{Currency=10,ClaimedSources=new[]{"unrelated244"}}}};var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(store.Value);
+            store.Fail=true;Assert.IsFalse(save.TryPurchaseOutsideShop(shop,"accessory-offer",out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.AreEqual(10,save.OutsideInventorySnapshot.Currency);Assert.IsEmpty(save.CustomizationSnapshot.OwnedAccessoryIds);Assert.AreEqual(1,save.OutsideShopRemaining(shop,"accessory-offer"));Assert.IsFalse(save.HasPendingSave);
+            store.Fail=false;Assert.IsTrue(save.TryPurchaseOutsideShop(shop,"accessory-offer",out var error),error);var cold=new ClearReturnSession(store);Assert.AreEqual(5,cold.OutsideInventorySnapshot.Currency);CollectionAssert.AreEqual(new[]{"accessory244"},cold.CustomizationSnapshot.OwnedAccessoryIds);Assert.IsEmpty(cold.CustomizationSnapshot.EquippedAccessoryIds);Assert.AreEqual(0,cold.OutsideShopRemaining(shop,"accessory-offer"));Assert.Contains("unrelated244",cold.OutsideInventorySnapshot.ClaimedSources);Assert.AreEqual(9,cold.Snapshot.Tokens);
+            int writes=store.Writes;Assert.IsFalse(cold.TryPurchaseOutsideShop(shop,"accessory-offer",out _));Assert.AreEqual(writes,store.Writes);
+            var secondShop=new OutsideShopDefinition("other244",new[]{OutsideShopOffer.ForAccessory("accessory-offer","accessory244","仮装飾品",1,0)},catalog);Assert.IsFalse(cold.TryPurchaseOutsideShop(secondShop,"accessory-offer",out error));StringAssert.Contains("ショジズミ",error);Assert.AreEqual(writes,store.Writes);
+            Assert.IsTrue(cold.TrySetCustomizationLoadout(catalog,new[]{"accessory244"},Array.Empty<PartPlacement>()),cold.Error);var restored=new ClearReturnSession(store);var abilities=new CustomizationAbilityCatalog("shop244-abilities",new System.Collections.Generic.Dictionary<string,CustomizationAbilityValue>{{"accessory244",new CustomizationAbilityValue(new ElementResistances(fire:10))}},null);Assert.AreEqual(10,abilities.Resolve(new CustomizationLoadoutSources(catalog,restored.CustomizationSnapshot)).CombineElements(new ElementResistances()).Fire);
+        }
+        [Test] public void 外界装飾品販売は未登録と盤面不一致と攻略中を保存前に拒否する()
+        {
+            var catalog=new CustomizationCatalog("shop244-board",new PartsBoardDefinition(1,1,new[]{new Vector2Int(0,0)}),new[]{"accessory244"},null,null);var offer=OutsideShopOffer.ForAccessory("a","accessory244","仮装飾品",5);
+            Assert.Throws<ArgumentException>(()=>new OutsideShopDefinition("shop244",new[]{offer}));Assert.Throws<ArgumentException>(()=>new OutsideShopDefinition("shop244",new[]{OutsideShopOffer.ForAccessory("u","unknown","不明",1)},catalog));var shop=new OutsideShopDefinition("shop244",new[]{offer},catalog);
+            foreach(int mode in new[]{0,1,2}){var store=new Style231Store{Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=mode==2?4:10},Customization=mode==0?new CustomizationProgress{BoardId="other244"}:null}};var save=new ClearReturnSession(store,isCustomizationRunActive:()=>mode==1);var before=PortableCheckpointJson.Serialize(store.Value);Assert.IsFalse(save.TryPurchaseOutsideShop(shop,"a",out _));Assert.AreEqual(0,store.Writes);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));}
+        }
         [Test] public void 外界パーツ購入は支払所持在庫を一括保存して自動配置せずcoldと追加所持を守る()
         {
             var catalog=Shop236Catalog();var shop=new OutsideShopDefinition("shop236",new[]{OutsideShopOffer.ForPart("part-offer","part236","仮パーツ",4)},catalog);var store=new Style231Store{Value=new ClearReturnProfile{Tokens=9,OutsideInventory=new OutsideInventoryData{Currency=10,ClaimedSources=new[]{"unknown236"}},Customization=new CustomizationProgress{OwnedParts=new[]{new CustomizationItemCount{Id="part236",Count=2}}}}};var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(store.Value);store.Fail=true;Assert.IsFalse(save.TryPurchaseOutsideShop(shop,"part-offer",out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.IsFalse(save.HasPendingSave);Assert.AreEqual(1,new ClearReturnSession(store).OutsideShopRemaining(shop,"part-offer"));store.Fail=false;Assert.IsTrue(save.TryPurchaseOutsideShop(shop,"part-offer",out var error),error);var cold=new ClearReturnSession(store);Assert.AreEqual(6,cold.OutsideInventorySnapshot.Currency);Assert.AreEqual(3,cold.CustomizationSnapshot.OwnedParts.Single().Count);Assert.AreEqual(catalog.BoardId,cold.CustomizationSnapshot.BoardId);Assert.AreEqual(0,cold.CustomizationSnapshot.Placements.Length);Assert.AreEqual(0,cold.CustomizationSnapshot.EquippedAccessoryIds.Length);Assert.AreEqual(9,cold.Snapshot.Tokens);Assert.Contains("unknown236",cold.OutsideInventorySnapshot.ClaimedSources);Assert.AreEqual(0,cold.OutsideShopRemaining(shop,"part-offer"));int writes=store.Writes;Assert.IsFalse(cold.TryPurchaseOutsideShop(shop,"part-offer",out _));Assert.AreEqual(writes,store.Writes);
@@ -289,6 +322,16 @@ namespace Olca.Tests
         private static CheckpointDefinitions Kick214Definitions(OutsideExplorationSession s)
         {var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);return DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;}
         private static void Kick214Tick(OutsideExplorationSession s,float horizontal=0){s.TickTraversal(horizontal);s.ProcessCardUseInput(false,false,false,0,0,out _);}
+        [TestCase(false)][TestCase(true)] public void 地上蹴り終了はIdleだけ再開始し冷起動後も位置時計と命中を再適用しない(bool cold)
+        {
+            using(var model=Sword161()){
+                model.EnableTrialNormalKick();var definitions=Kick214Definitions(model);long frame,position;OutsideRuntimeSaveData runtime;OutsidePlayerSaveData actor;
+                using(var lease=model.AttachPresentation()){for(int n=0;n<25;n++)Kick214Tick(model);Assert.Greater(model.Core.IdleFrame,0);model.TickTraversal(0);frame=model.Core.Frame;position=model.Core.Position;Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,frame+1,out _));for(int n=0;n<21;n++)Kick214Tick(model);Assert.AreEqual(frame+21,model.Core.Frame);Assert.AreEqual(position,model.Core.Position);Assert.AreEqual(0,model.Core.IdleFrame);}
+                runtime=model.CaptureRuntime(definitions);actor=OutsidePlayerSaveData.Capture(model.Player);actor.Id=runtime.Id;
+                if(cold){using(var restored=new OutsideExplorationSession()){restored.RestoreSavedState(actor,runtime,null,definitions);Assert.AreEqual(0,restored.Core.IdleFrame);using(var l=restored.AttachPresentation()){int hp=restored.TrialTarget.CurrentHp;Kick214Tick(restored);Assert.AreEqual(1,restored.Core.IdleFrame);Assert.AreEqual(hp,restored.TrialTarget.CurrentHp);Assert.AreEqual(frame+22,restored.Core.Frame);Assert.AreEqual(position,restored.Core.Position);}}}
+                else using(var l=model.AttachPresentation()){Kick214Tick(model);Assert.AreEqual(1,model.Core.IdleFrame);}
+            }
+        }
         [TestCase(0)] [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(9)] [TestCase(20)] [TestCase(21)] [TestCase(25)] [TestCase(38)]
         public void 試用蹴りは前隙と命中済みと後隙と継続猶予を同じ論理位置から復元する(int age)
         {
@@ -399,13 +442,13 @@ namespace Olca.Tests
                 round.SecondTrialTarget.Id="unknown";Assert.Throws<ArgumentException>(()=>round.Validate());round.SecondTrialTarget.Id="trial-kick-target-v1";round.SecondTrialTarget.Hp=121;Assert.Throws<ArgumentException>(()=>round.Validate());
             }
         }
-        [Test] public void ダッシュ中の後入力蹴りが拒否されても古いカード予約を復活させない()
+        [Test] public void ダッシュ中の後入力専用攻撃は古いカード予約を上書きし追加消費しない()
         {
-            using(var s=Sword161(startup:3,recovery:8))using(var l=s.AttachPresentation()){
+            using(var s=Sword161(startup:3,recovery:6))using(var l=s.AttachPresentation()){
                 s.EnableTrialNormalKick();s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsDashing);Assert.IsTrue(s.ProcessCardUseInput(true,false,false,1,0,out _));long rev=s.Cards.HandRevision;
                 for(int n=1;n<=9;n++){s.TickTraversal(0);s.ProcessCardUseInput(n==8,false,n==9,2,3,out _);if(n==8)Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);}
-                Assert.IsTrue(s.Core.IsDashing);Assert.IsFalse(s.NormalKick.IsActive);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);
-                for(int n=0;n<15;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(rev,s.Cards.HandRevision);Assert.IsFalse(s.NormalKick.IsActive);
+                Assert.IsTrue(s.Core.IsDashing);Assert.IsTrue(s.NormalKick.IsDashAttack);Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);
+                for(int n=0;n<25;n++){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(rev,s.Cards.HandRevision);Assert.IsFalse(s.NormalKick.IsActive);
             }
         }
         [TestCase(false)] [TestCase(true)] public void 蹴り中のカード予約は六frame境界と取消可能化で一枚だけ消費する(bool late)
@@ -553,6 +596,23 @@ namespace Olca.Tests
             Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().First(c=>c.Id=="heal")));
             using(var s=Sword161(level:ExceedLevel.Lv1)){Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(s.Cards.SelectedCard));}
             Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(6,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb")));
+        }
+        [TestCase(0,OutsideCardUseRestriction.None)][TestCase(1,OutsideCardUseRestriction.InsufficientGauge)][TestCase(2,OutsideCardUseRestriction.UnsupportedCard)][TestCase(3,OutsideCardUseRestriction.UnsupportedLocation)]
+        public void 選択カードの制限案内は既存登録と場所とコストを読み消費や予約を作らない(int mode,OutsideCardUseRestriction expected)
+        {
+            using(var s=Heal158())using(var lease=s.AttachPresentation()){
+                if(mode==1)Assert.IsTrue(s.Core.CardGauge.TrySpend(100));
+                if(mode==2){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="bomb");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));}
+                if(mode==3)typeof(OutsideExplorationCore).GetMethod("SetRecoveryMap",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{OutsideTrialRoute.DoorAnnexPoint});
+                long frame=s.Core.Frame,gauge=s.Core.CardGauge.CurrentUnits,revision=s.Cards.HandRevision;int hp=s.Player.CurrentHp,selected=s.Cards.SelectedIndex,remaining=s.Cards.RemainingCount;var hand=s.Cards.Hand.ToArray();
+                for(int n=0;n<100;n++){Assert.AreEqual(expected,s.SelectedCardRestriction);Assert.AreEqual(expected,lease.SelectedCardRestriction);}
+                Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(revision,s.Cards.HandRevision);Assert.AreEqual(hp,s.Player.CurrentHp);Assert.AreEqual(selected,s.Cards.SelectedIndex);Assert.AreEqual(remaining,s.Cards.RemainingCount);CollectionAssert.AreEqual(hand,s.Cards.Hand);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,s.PendingAttack);
+                lease.Dispose();Assert.AreEqual(OutsideCardUseRestriction.None,lease.SelectedCardRestriction);
+            }
+        }
+        [Test] public void 未登録デッキの案内と古いleaseは手札やSessionを生成しない()
+        {
+            using(var s=new OutsideExplorationSession()){var lease=s.AttachPresentation();Assert.AreEqual(OutsideCardUseRestriction.EmptyHand,lease.SelectedCardRestriction);Assert.IsNull(s.Cards);Assert.IsNull(s.Player);lease.Dispose();Assert.AreEqual(OutsideCardUseRestriction.None,lease.SelectedCardRestriction);Assert.IsNull(s.Cards);Assert.AreEqual(0,s.Core.Frame);}
         }
         [TestCase(50,70)] [TestCase(100,100)] public void 空中ヒールは一度だけ消費し未使用と同じ軌道と着地になる(int hp,int expected)
         {
@@ -704,8 +764,8 @@ namespace Olca.Tests
             using(var s=Fall164(420000,true))using(var view=s.AttachPresentation()){
                 typeof(OutsideExplorationSession).GetField("fallPeak",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(s,20L*60000);
                 if(kick){FallTick164(s,1,true);Assert.IsTrue(s.Core.IsWallKicking);}else{FallTick164(s,1);FallTick164(s,1);Assert.IsTrue(s.Core.IsWallSliding);for(int n=0;n<40;n++)FallTick164(s,1);}
-                // 蹴り後は次frameにボタンを離す。新頂点から7.56worldの落下は10ダメージ。旧20world分は加算しない。
-                Land164(s);Assert.AreEqual(kick?90:100,s.Player.CurrentHp);Assert.AreEqual(kick,s.IsLandingLocked);
+                // 蹴り後は次frameにボタンを離す。新頂点7.56worldは安全高度10world以下。旧20world分は加算しない。
+                Land164(s);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsFalse(s.IsLandingLocked);
             }
         }
         [Test] public void 外界硬直は表示閉鎖中に進まず回復地点でのみ初期化する()
@@ -724,8 +784,9 @@ namespace Olca.Tests
         {
             using(var s=Fall164()){var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;if(mode==0)data.Fall.Peak=long.MaxValue;else data.Fall.LockedUntil=100;var old=s.Player;Assert.Throws<ArgumentException>(()=>s.RestoreSavedState(actor,data,null,null,s.Core.TraversalProfile));Assert.AreSame(old,s.Player);}
         }
-        [TestCase(390000L,100,0)] [TestCase(395999L,100,0)] [TestCase(396000L,100,1)]
-        [TestCase(420000L,100,5)] [TestCase(450000L,101,10)] [TestCase(long.MaxValue,int.MaxValue,int.MaxValue)]
+        [TestCase(390000L,100,0)] [TestCase(450000L,100,0)] [TestCase(600000L,100,0)]
+        [TestCase(605999L,100,0)] [TestCase(606000L,100,1)]
+        [TestCase(630000L,100,5)] [TestCase(660000L,101,10)] [TestCase(long.MaxValue,int.MaxValue,int.MaxValue)]
         public void 外界落下は安全高度超過分を最大HP比で切り捨て最低一補正しない(long distance,int hp,int expected)
         {Assert.AreEqual(expected,OutsideFallRules.Damage(distance,hp));}
         [TestCase(1)] [TestCase(15)] [TestCase(29)] [TestCase(40)]
@@ -742,7 +803,7 @@ namespace Olca.Tests
                 }
             }
         }
-        private static OutsideExplorationSession Fall164(long height=420000,bool wall=false)
+        private static OutsideExplorationSession Fall164(long height=630000,bool wall=false)
         {
             var s=new OutsideExplorationSession();s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(wall));var state=s.Core.CaptureState();if(wall)state.Position=24*60000-31200;state.Height=height;state.SupportId=null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TryInitializePlayer(()=>new PlayerCharacter(100));return s;
         }
@@ -750,7 +811,7 @@ namespace Olca.Tests
         {s.Core.TickFrame(horizontal,jump,jump,dash,dash,s.IsLandingLockedForNextFrame);s.AdvancePlayerFrame();}
         private static void Land164(OutsideExplorationSession s)
         {for(int i=0;i<200&&!s.Core.IsGrounded;i++)FallTick164(s);Assert.IsTrue(s.Core.IsGrounded);}
-        [TestCase(390000L,100,0)] [TestCase(395999L,100,0)] [TestCase(420000L,95,12)]
+        [TestCase(420000L,100,0)] [TestCase(600000L,100,0)] [TestCase(605999L,100,0)] [TestCase(630000L,95,12)]
         public void 外界落下は接地で一度だけ集計し正ダメージだけ十二フレーム拘束する(long height,int hp,int locked)
         {
             using(var s=Fall164(height))using(var view=s.AttachPresentation()){

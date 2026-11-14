@@ -70,3 +70,16 @@ PY
 ## 検証
 
 ZIPのCRC・全27件のサイズ／SHA256・復元後のbytes一致、2画像の元ファイルとのbytes一致を検証。C#・Scene・Prefab・素材の変更はなく、全EditModeを再実行する区切りではない。直近ゲームコードのUnity MCP結果は2538/2538成功（フォント復元時）。新環境のEditor起動・import・Unity MCP検証は別途必要。
+
+## Input System 専用設定への更新
+
+入力方式移行では、両復元 ZIP 内の `ProjectSettings/ProjectSettings.asset` の
+`activeInputHandler` だけを `2`（Both）から `1`（Input System）へ変更しました。
+各 ZIP の他の26ファイルは変更していません。更新前の ZIP のハッシュと
+更新後のファイル別ハッシュは `manifest.json` に記録しています。
+上記の過去の検証記録は、その時点のハッシュとして扱ってください。
+
+既存コピーは Editor で Play していないときの初期化時に入力方式を更新します。
+更新前の設定を `Library/OlcaInputSystemMigration/ProjectSettings-before.asset` に
+保全できた場合だけ変更し、Editor の再起動を案内します。自動終了はしません。
+新方式が有効になるのは再起動後です。既存のキー割当・セーブ形式は変更しません。

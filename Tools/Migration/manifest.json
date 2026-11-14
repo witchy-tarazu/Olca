@@ -9,7 +9,7 @@
   ],
   "archives": {
     "ProjectSettings-baseline.zip": {
-      "sha256": "38fc49ce5acbe2ece0843e83b7ca24104714f9d808e228a60bf4ec7941ae5087",
+      "sha256": "e1301911e7484b2730d7807703f7457a71b4c5025dc2a95a0b137449896a34eb",
       "files": [
         {
           "path": "ProjectSettings/AudioManager.asset",
@@ -89,7 +89,7 @@
         {
           "path": "ProjectSettings/ProjectSettings.asset",
           "bytes": 22168,
-          "sha256": "347eed0afb4c2bed3fe816626b00690c60e48e10e02e9ca04a38d0bfdf0800d2"
+          "sha256": "d7c0cbdb68da8e0241dd3cca1d2d0fafc74c3b2b7e7118d7e915f33e4629093f"
         },
         {
           "path": "ProjectSettings/ProjectVersion.txt",
@@ -149,7 +149,7 @@
       ]
     },
     "ProjectSettings-validation.zip": {
-      "sha256": "9ae0d06a41d25c610c75dab21faab19adc80c03472906a8d3008df1af15cd410",
+      "sha256": "f4e20e98157a1e5fe2119f53e0675e8da95be7f94344e287a403215b69a610e2",
       "files": [
         {
           "path": "ProjectSettings/AudioManager.asset",
@@ -229,7 +229,7 @@
         {
           "path": "ProjectSettings/ProjectSettings.asset",
           "bytes": 22168,
-          "sha256": "347eed0afb4c2bed3fe816626b00690c60e48e10e02e9ca04a38d0bfdf0800d2"
+          "sha256": "d7c0cbdb68da8e0241dd3cca1d2d0fafc74c3b2b7e7118d7e915f33e4629093f"
         },
         {
           "path": "ProjectSettings/ProjectVersion.txt",
@@ -298,5 +298,23 @@
       "sha256": "cf12e63ea9ef27b712786564a5809094d06008136db43c3322ad3cfeda84acba",
       "bytes": 1307589
     }
+  },
+  "input_backend_update": {
+    "base_commit": "df220ff62e7991fd1d0a5576d22c029e514d6fa9",
+    "activeInputHandler": 1,
+    "changes": [
+      {
+        "archive": "ProjectSettings-baseline.zip",
+        "previous_sha256": "38fc49ce5acbe2ece0843e83b7ca24104714f9d808e228a60bf4ec7941ae5087",
+        "changed_file": "ProjectSettings/ProjectSettings.asset",
+        "unchanged_entries": 26
+      },
+      {
+        "archive": "ProjectSettings-validation.zip",
+        "previous_sha256": "9ae0d06a41d25c610c75dab21faab19adc80c03472906a8d3008df1af15cd410",
+        "changed_file": "ProjectSettings/ProjectSettings.asset",
+        "unchanged_entries": 26
+      }
+    ]
   }
 }

@@ -103,6 +103,102 @@ class PublishTests(unittest.TestCase):
         self.assertIsNone(vp.unchanged_unity_block('', before, 5))
         self.assertIsNone(vp.unchanged_unity_block(before, before, 1))
 
+    def existing_test_metadata(self):
+        path = 'Assets/old.asset.meta'
+        text = 'fileFormatVersion: 2\nguid: ' + 'a' * 32 + '\nDefaultImporter: {}\n'
+        self.run_git(self.repo, 'rm', '--cached', 'Assets/test.cs')
+        for root in (self.repo, self.workspace):
+            (root / path).write_text(text)
+        self.run_git(self.repo, 'add', path)
+        self.run_git(self.repo, 'commit', '-m', 'previously published metadata')
+        self.base = vp.value(self.repo, 'rev-parse', 'HEAD')
+        self.run_git(self.repo, 'push', 'origin', 'master')
+        self.run_git(self.repo, 'add', 'Assets/test.cs')
+        self.add_test_hash(path, vp.sha(text.encode()))
+        return path
+
+    def add_test_hash(self, path, digest):
+        for name in ('full-tests', 'related-tests', 'final-source-hashes'):
+            file = self.evidence / (name + '.json')
+            data = json.loads(file.read_text())
+            (data if name == 'final-source-hashes' else data['sourceHashes'])[path] = digest
+            file.write_text(json.dumps(data))
+
+    def test_preexisting_test_metadata_retained_with_proof_through_publish(self):
+        path = self.existing_test_metadata()
+        receipt = self.check()
+        self.assertNotIn(path, receipt['stagedHashes'])
+        self.assertEqual(receipt['unchangedTestMetadata'][path]['baseHead'], self.base)
+        self.assertEqual(receipt['unchangedTestMetadata'][path]['sha256'], vp.sha((self.repo / path).read_bytes()))
+        head = vp.commit(self.repo, self.receipt, self.message)
+        self.assertEqual(vp.push(self.repo, self.receipt), head)
+
+    def test_preexisting_test_metadata_workspace_change_stops_commit(self):
+        path = self.existing_test_metadata()
+        self.check()
+        (self.workspace / path).write_text('changed\n')
+        self.assert_stops(lambda: vp.commit(self.repo, self.receipt, self.message))
+
+    def test_staged_preexisting_metadata_still_needs_approval(self):
+        path = self.existing_test_metadata()
+        for root in (self.repo, self.workspace):
+            (root / path).write_text('changed\n')
+        self.run_git(self.repo, 'add', path)
+        self.add_test_hash(path, vp.sha(b'changed\n'))
+        self.assert_stops(self.check)
+
+    def test_new_unstaged_test_metadata_cannot_claim_preexisting_proof(self):
+        path = 'Assets/new.asset.meta'
+        for root in (self.repo, self.workspace):
+            (root / path).write_text('new\n')
+        self.add_test_hash(path, vp.sha(b'new\n'))
+        self.assert_stops(self.check)
+
+    def test_preexisting_metadata_claimed_hash_must_match_base(self):
+        path = self.existing_test_metadata()
+        self.add_test_hash(path, '0' * 64)
+        self.assert_stops(self.check)
+
+    def test_preexisting_metadata_index_change_cannot_be_hidden(self):
+        path = self.existing_test_metadata()
+        (self.repo / path).write_text('staged different\n')
+        self.run_git(self.repo, 'add', path)
+        (self.repo / path).write_bytes((self.workspace / path).read_bytes())
+        self.assert_stops(lambda: vp.unchanged_test_metadata(self.repo, self.workspace, self.evidence, self.base, [], {}))
+
+    def test_preexisting_metadata_repo_bytes_and_symlinks_rejected(self):
+        path = self.existing_test_metadata()
+        target = self.root / 'copy.meta'
+        target.write_bytes((self.repo / path).read_bytes())
+        for root in (self.repo, self.workspace):
+            with self.subTest(root=root):
+                original = (root / path).read_bytes()
+                (root / path).unlink()
+                (root / path).symlink_to(target)
+                self.assert_stops(lambda: vp.unchanged_test_metadata(self.repo, self.workspace, self.evidence, self.base, [], {}))
+                (root / path).unlink()
+                (root / path).write_bytes(original)
+        (self.repo / path).write_text('changed without staging\n')
+        self.assert_stops(lambda: vp.unchanged_test_metadata(self.repo, self.workspace, self.evidence, self.base, [], {}))
+
+    def test_preexisting_metadata_ancestor_symlink_rejected(self):
+        self.existing_test_metadata()
+        for root in (self.repo, self.workspace):
+            with self.subTest(root=root):
+                assets = root / 'Assets'
+                saved = root / 'actual-assets'
+                assets.rename(saved)
+                assets.symlink_to(saved, target_is_directory=True)
+                try:
+                    self.assert_stops(lambda: vp.unchanged_test_metadata(self.repo, self.workspace, self.evidence, self.base, [], {}))
+                finally:
+                    assets.unlink()
+                    saved.rename(assets)
+
+    def test_unsafe_test_metadata_path_stays_rejected(self):
+        self.add_test_hash('Assets/../.env.meta', '0' * 64)
+        self.assert_stops(self.check)
+
     def test_success_check_commit_push_refetch(self):
         self.check()
         head = vp.commit(self.repo, self.receipt, self.message)
@@ -236,14 +332,17 @@ class PublishTests(unittest.TestCase):
         self.assertFalse(any(c.args[1] == 'push' for c in observed.call_args_list))
 
 
-    def metadata_fixture(self, folder=False, text_asset=False):
-        asset = 'Assets/Folder' if folder else 'Assets/StreamingAssets/note.txt' if text_asset else 'Assets/test.cs'
+    def metadata_fixture(self, folder=False, text_asset=False, texture=False):
+        asset = 'Assets/sprite.png' if texture else 'Assets/Folder' if folder else 'Assets/StreamingAssets/note.txt' if text_asset else 'Assets/test.cs'
         name = asset + '.meta'
         text = 'fileFormatVersion: 2\nguid: ' + 'a' * 32 + '\n'
         if folder:
             text += 'folderAsset: yes\n'
-        text += ('DefaultImporter' if folder or text_asset else 'MonoImporter') + ':\n  userData: \n'
+        text += ('TextureImporter' if texture else 'DefaultImporter' if folder or text_asset else 'MonoImporter') + ':\n  userData: \n'
+        if texture:
+            text += '  spriteMode: 2\n  spriteSheet:\n    sprites: []\n    spriteID: \n'
         for root in (self.repo, self.workspace):
+            if texture:(root / asset).write_text('PNG fixture only\n')
             if folder:
                 (root / asset).mkdir()
             if text_asset:
@@ -251,17 +350,17 @@ class PublishTests(unittest.TestCase):
                 (root / asset).write_text('Text fixture\n')
             (root / name).write_text(text)
         self.run_git(self.repo, 'add', name)
-        if text_asset:self.run_git(self.repo, 'add', asset)
+        if text_asset or texture:self.run_git(self.repo, 'add', asset)
         for filename in ('full-tests', 'related-tests'):
             path = self.evidence / (filename + '.json')
             d = vp.document(path)
             d['sourceHashes'][name] = vp.sha(text.encode())
-            if text_asset:d['sourceHashes'][asset] = vp.sha((self.workspace / asset).read_bytes())
+            if text_asset or texture:d['sourceHashes'][asset] = vp.sha((self.workspace / asset).read_bytes())
             path.write_text(json.dumps(d))
         (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
         observed = {'assetPath': asset, 'guid': 'a' * 32, 'isFolder': folder,
-                    'metaSha256': vp.sha(text.encode()), 'importer': 'AssetImporter' if folder or text_asset else 'MonoImporter',
-                    'mainAssetType': 'DefaultAsset' if folder or text_asset else 'MonoScript'}
+                    'metaSha256': vp.sha(text.encode()), 'importer': 'TextureImporter' if texture else 'AssetImporter' if folder or text_asset else 'MonoImporter',
+                    'mainAssetType': 'Texture2D' if texture else 'DefaultAsset' if folder or text_asset else 'MonoScript'}
         witness = self.root / 'editor-witness.json'
         witness.write_text(json.dumps({'version': 1, 'provenance': 'UnityEditor.AssetDatabase',
                                       'editorVersion': 'test fixture only', 'projectPath': str(self.workspace), 'assets': {name: observed}}))
@@ -381,6 +480,43 @@ class PublishTests(unittest.TestCase):
             d = vp.document(path);d['sourceHashes'][name] = vp.sha(text.encode());path.write_text(json.dumps(d))
         (self.evidence / 'final-source-hashes.json').write_text(json.dumps(vp.document(self.evidence / 'full-tests.json')['sourceHashes']))
         self.metadata_check()
+
+    def test_editor_multiple_sprite_root_empty_id_preserved_and_published(self):
+        name, _ = self.metadata_fixture(texture=True)
+        result = self.metadata_check()
+        rows = [x for x in result['whitespaceExceptions'] if x['path'] == name and x['text'] == '    spriteID: ']
+        self.assertEqual(len(rows), 1)
+        self.assertIn('Multiple Sprite sheet root', rows[0]['reason'])
+        head = vp.commit(self.repo, self.receipt, self.message)
+        self.assertEqual(vp.push(self.repo, self.receipt), head)
+
+    def test_sheet_id_exception_rejects_wrong_context_or_nonempty_values(self):
+        name, witness = self.metadata_fixture(texture=True)
+        original = (self.repo / name).read_text()
+        cases = [original.replace('spriteMode: 2', 'spriteMode: 1'),
+                 original.replace('  spriteMode: 2', '  spriteMode: 2\n  spriteMode: 1'),
+                 original.replace('  spriteMode: 2', '  spriteMode: 2\n  spriteMode: 2'),
+                 original + '  spriteSheet: duplicate\n',
+                 original.replace('  spriteSheet:', '  otherSection:'),
+                 original.replace('    spriteID: ', 'OtherSection:\n    spriteID: '),
+                 original.replace('    spriteID: ', '  other_section:\n    spriteID: '),
+                 original.replace('    spriteID: ', '   unexpectedIndent:\n    spriteID: '),
+                 original.replace('    spriteID: ', '      spriteID: '),
+                 original.replace('    spriteID: ', '    spriteID: nonempty '),
+                 original.replace('    spriteID: ', '    spriteID: \t'),
+                 original.replace('TextureImporter:', 'MonoImporter:')]
+        for text in cases:
+            with self.subTest(text=text):
+                for root in (self.repo, self.workspace):(root / name).write_text(text)
+                self.run_git(self.repo, 'add', name)
+                a = vp.document(self.metadata_approval)
+                a['metadata'][name]['sha256'] = a['approvedFiles'][name] = vp.sha(text.encode())
+                w = vp.document(witness);w['assets'][name]['metaSha256'] = vp.sha(text.encode())
+                w['assets'][name]['importer'] = 'MonoImporter' if 'MonoImporter:' in text else 'TextureImporter'
+                witness.write_text(json.dumps(w));a['editorEvidence']['sha256'] = vp.sha(witness.read_bytes())
+                self.metadata_approval.write_text(json.dumps(a))
+                self.add_test_hash(name, vp.sha(text.encode()))
+                self.assert_stops(self.metadata_check)
 
     def test_metadata_nonempty_unknown_or_tab_whitespace_rejected(self):
         name, witness = self.metadata_fixture()

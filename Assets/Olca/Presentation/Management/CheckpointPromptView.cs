@@ -70,6 +70,7 @@ namespace Olca.Presentation.Exploration
             var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);var title=factory.Label("OutsideExplorationTitle",transform,new Vector2(0,1),new Vector2(630,-62),new Vector2(1180,70));title.text="ガイカイ タンサク  /  ケンショウ チケイ";title.alignment=TextAnchor.MiddleLeft;title.fontSize=28;title.color=Olca.Presentation.Dungeon.UiLook.Ink;title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.offsetMin=new Vector2(40,-97);title.rectTransform.offsetMax=new Vector2(-580,-27);
             InitializeItemHud(factory);
             recoveryPoint=factory.Button("OutsideRecoveryPoint","ケンショウ カイフク（カリ）",transform,new Vector2(0,.21f),Vector2.zero);recoveryPoint.GetComponent<RectTransform>().sizeDelta=new Vector2(350,104);Olca.Presentation.Dungeon.UiLook.Button(recoveryPoint);recoveryPoint.gameObject.SetActive(false);
+            recoveryMarker=Picture("OutsideRecoveryMarker",resources.GetShared<Sprite>("OlcaUI/window"),new Vector2(0,.21f),new Vector2(0,.21f));recoveryMarker.type=Image.Type.Sliced;recoveryMarker.color=new Color(.25f,.85f,.95f,.75f);recoveryMarker.rectTransform.pivot=new Vector2(.5f,0);recoveryMarker.rectTransform.sizeDelta=new Vector2(96,10);recoveryMarker.transform.SetSiblingIndex(player.transform.GetSiblingIndex());recoveryMarker.gameObject.SetActive(false);
             outsideHp=factory.Label("OutsidePlayerHp",transform,new Vector2(1,1),new Vector2(-255,-320),new Vector2(470,42));outsideHp.fontSize=24;outsideHp.color=Color.white;outsideHp.resizeTextForBestFit=true;outsideHp.resizeTextMinSize=18;outsideHp.resizeTextMaxSize=24;outsideHp.raycastTarget=false;
             outsidePoise=factory.Label("OutsidePlayerPoise",transform,Vector2.one,new Vector2(-255,-278),new Vector2(470,32));outsidePoise.fontSize=18;outsidePoise.color=Color.white;outsidePoise.raycastTarget=false;
             var poiseTrack=new GameObject("OutsidePlayerPoiseTrack",typeof(RectTransform),typeof(Image));poiseTrack.transform.SetParent(transform,false);var poiseRect=(RectTransform)poiseTrack.transform;poiseRect.anchorMin=poiseRect.anchorMax=Vector2.one;poiseRect.pivot=new Vector2(0,.5f);poiseRect.anchoredPosition=new Vector2(-470,-300);poiseRect.sizeDelta=new Vector2(430,6);var poiseBack=poiseTrack.GetComponent<Image>();poiseBack.color=new Color(.12f,.13f,.08f,1);poiseBack.raycastTarget=false;
@@ -136,6 +137,24 @@ namespace Olca.Presentation.Exploration
             entranceTitle.rectTransform.anchoredPosition+=new Vector2(shift,0);
             if(shift!=0)entranceTitle.text=shift>0?"< ダンジョン イリグチ":"ダンジョン イリグチ >";
         }
+        // 操作できない空中で本体と重なる詳細だけを隠す。地点の目印と操作判定は固定。
+        private void PlaceRecoveryPanel(bool grounded)
+        {
+            if(recoveryMarker==null||recoveryPoint==null)return;
+            bool visible=recoveryPoint.gameObject.activeSelf;
+            recoveryMarker.gameObject.SetActive(visible);
+            var p=recoveryPoint.GetComponent<RectTransform>().anchoredPosition;
+            recoveryMarker.rectTransform.anchoredPosition=new Vector2(p.x,p.y-340);
+            if(visible&&!grounded&&BoundsInView((RectTransform)recoveryPoint.transform).Overlaps(BoundsInView(player.rectTransform)))recoveryPoint.gameObject.SetActive(false);
+        }
+        // 操作不能な空中で本体を覆う補給詳細だけを退避する。Shopは独立した表示規則を保つ。
+        private void PlaceSupplyPanels(bool grounded)
+        {
+            if(grounded)return;
+            var actor=BoundsInView(player.rectTransform);
+            foreach(var slot in supplySlots)if(slot!=null&&slot.Index<4&&slot.Button.gameObject.activeSelf&&
+                BoundsInView((RectTransform)slot.Button.transform).Overlaps(actor))slot.Button.gameObject.SetActive(false);
+        }
         // ワールド追従の案内だけを避け、固定HUDやゲーム座標は動かさない。
         private void PlaceReloadBelowVitals()
         {
@@ -171,13 +190,13 @@ namespace Olca.Presentation.Exploration
             decimal shown=(gauge.CurrentUnits*10/Olca.Core.Logic.Integration.OutsideCardGauge.UnitsPerPoint)/10m;
             return "カードゲージ  "+shown.ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+" / "+gauge.Maximum.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
-        private Button recoveryPoint;private Action recover;private Func<bool> canRecover;private Func<string> recoveryMessage;private long shownHandRevision=-1;
+        private Button recoveryPoint;private Image recoveryMarker;private Action recover;private Func<bool> canRecover;private Func<string> recoveryMessage;private long shownHandRevision=-1;
         public void ConfigureRecovery(Action action,Func<bool> canUse,Func<string> message)
         {
             recover=action;canRecover=canUse;recoveryMessage=message;var captured=context;var lease=presentation;
             recoveryPoint.onClick=new Button.ButtonClickedEvent();recoveryPoint.onClick.AddListener(()=>{if(this!=null&&captured!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&lease!=null&&lease.IsCurrent&&!covered&&!captured.DialogBlocksInput&&canRecover?.Invoke()==true)recover?.Invoke();});
         }
-        private void ClearRecovery(){recover=null;canRecover=null;recoveryMessage=null;if(recoveryPoint!=null)recoveryPoint.gameObject.SetActive(false);}
+        private void ClearRecovery(){recover=null;canRecover=null;recoveryMessage=null;if(recoveryPoint!=null)recoveryPoint.gameObject.SetActive(false);if(recoveryMarker!=null)recoveryMarker.gameObject.SetActive(false);}
         private sealed class SupplySlot{public Button Button;public int Index;public long X;public bool? Expanded;public string RenderedMessage;public Action Claim;public Func<bool> CanUse;public Func<string> Message;}
         private readonly SupplySlot[] supplySlots=new SupplySlot[5];
         // 遠方は名称/概要の2行だけ。操作範囲や入力可否は既存Core/呼出側に従う。
@@ -227,6 +246,16 @@ namespace Olca.Presentation.Exploration
                 });
             }
         }
+        private static string CardRestrictionText(Olca.Core.Logic.Integration.OutsideCardUseRestriction value)
+        {
+            switch(value){
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.EmptyHand:return "カードが ありません";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedCard:return "センタクカード: タンサクは ミタイオウ";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedLocation:return "センタクカード: ココでは シヨウできません";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.InsufficientGauge:return "センタクカード: ゲージが フソクしています";
+                default:return null;
+            }
+        }
         public void Render()
         {
             if(!IsOpen||player==null)return;
@@ -241,7 +270,7 @@ namespace Olca.Presentation.Exploration
             float viewport=((RectTransform)transform).rect.width/pixelsPerWorldUnit;
             float camera=presentation.Camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
             float verticalOffset=ResolveVerticalViewOffset(core);
-            var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;cardUseText.gameObject.SetActive(!editingLocation);string feedback=presentation.CardUseMessageFrame>=0&&core.Frame>=presentation.CardUseMessageFrame&&core.Frame-presentation.CardUseMessageFrame<90?presentation.CardUseMessage:null;cardUseText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((cardUseGuide?.Invoke()??"")+(presentation.TrialBarrierHp>0?" / バリア "+presentation.TrialBarrierHp+"（カリ）":"")+(feedback==null?"":"\n"+feedback));movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
+            var cards=presentation.Cards;bool editingLocation=presentation.IsDeckEditingLocation;cardUseText.gameObject.SetActive(!editingLocation);string restriction=CardRestrictionText(presentation.SelectedCardRestriction);string feedback=presentation.CardUseMessageFrame>=0&&core.Frame>=presentation.CardUseMessageFrame&&core.Frame-presentation.CardUseMessageFrame<90?presentation.CardUseMessage:null;cardUseText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana((cardUseGuide?.Invoke()??"")+(presentation.TrialBarrierHp>0?" / バリア "+presentation.TrialBarrierHp+"（カリ）":"")+(restriction!=null?"\n"+restriction:feedback==null?"":"\n"+feedback));movementGuideText.text=movementGuide?.Invoke()??"";selectionGuideText.text=editingLocation?"モドる→タンサク デッキ":cards==null?"":selectionGuide?.Invoke()??"";
             if(!ReferenceEquals(renderedCards,cards)||renderedDeckLocation!=editingLocation||shownHandRevision!=(cards?.HandRevision??-1)||handHeading.text==""){
                 if(!ReferenceEquals(renderedCards,cards))BindHandSelection(context,presentation,cards);renderedDeckLocation=editingLocation;renderedCards=cards;shownHandRevision=cards?.HandRevision??-1;handHeading.text=editingLocation?"ヘンセイチテン（カリ）":cards==null?"テフダ  /  デッキ ミトウロク":"テフダ "+cards.Hand.Count+"  /  ヤマフダ "+cards.RemainingCount;
                 for(int slot=0;slot<3;slot++){
@@ -270,15 +299,16 @@ namespace Olca.Presentation.Exploration
             }
 
             if(recoveryPoint!=null){recoveryPoint.gameObject.SetActive(recover!=null&&trialRoute?.Invoke()==true);recoveryPoint.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryX/unit)),340-verticalOffset*pixelsPerWorldUnit);recoveryPoint.interactable=canRecover?.Invoke()==true;var label=recoveryPoint.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(recoveryMessage?.Invoke()??"ケンショウ カイフク（カリ）");label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
-            Sprite sprite=TraversalSprite(core);
+            Sprite sprite=TrialKickSprite()??TraversalSprite(core);
             if(sprite==null){sprite=idleSprite;
             if(!core.IsGrounded)sprite=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apexSprite:core.VerticalVelocity>0?riseSprite:fallSprite;
             else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null&&motionSample!=null){long frame=core.IsMoving?core.MovementFrame:core.IdleFrame;clip.SampleAnimation(motionSample.gameObject,(float)((frame/60d)%clip.length));sprite=motionSample.sprite;}}
             }
             if(sprite==null)sprite=idleSprite;
+            sprite=ResolveBodyCostume(sprite);
             player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);
-            RenderOutsideDefensiveField(presentation.Player?.HasBarrier==true,presentation.Player?.HasAura==true);RenderMapDoor(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorPosition(core)/unit)),verticalOffset);RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-(presentation.NormalKickFacing??core.Facing),1,1);PlaceEntranceTitle(core.IsGrounded);PlaceRecoveryPanel(core.IsGrounded);PlaceSupplyPanels(core.IsGrounded);
+            RenderOutsideDefensiveField(presentation.Player?.HasBarrier==true,presentation.Player?.HasAura==true);RenderOutsideKamui();RenderMapDoor(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorPosition(core)/unit)),verticalOffset);RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)
             {
@@ -298,9 +328,9 @@ namespace Olca.Presentation.Exploration
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
         private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearCombatFeedback();ClearTrialSword();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearCombatFeedback();ClearTrialSword();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
+        private void OnDisable(){if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;}
     }
 }

@@ -39,7 +39,6 @@ namespace Olca.Presentation.Management
             return target.Name==null?null:actions.Keys.First(b=>b!=null&&b.name==target.Name);
         }
 
-        private bool outsidePresentation;
         private RectTransform itemRect;private Vector2 itemPosition,itemSize;private Text playHeading;private string playHeadingText;
         private readonly Dictionary<Button,bool> outsideHidden=new Dictionary<Button,bool>();
         private void SetOutsideLayout(bool value)
@@ -63,10 +62,10 @@ namespace Olca.Presentation.Management
         }
         public void SetOutsidePresentation(bool value)
         {
-            outsidePresentation=value;SetOutsideLayout(value);
-            if(value&&inputGuide==null){
+            SetOutsideLayout(value);
+            if(inputGuide==null&&actions.Count>0){
                 var obj=new GameObject("OutsidePauseInputGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);inputGuide=obj.GetComponent<Text>();
-                inputGuide.font=actions.Keys.First().GetComponentInChildren<Text>().font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
+                inputGuide.font=actions.Keys.Select(b=>b.GetComponentInChildren<Text>()).FirstOrDefault(t=>t!=null)?.font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
                 inputGuide.rectTransform.sizeDelta=new Vector2(1300,48);inputGuide.rectTransform.anchoredPosition=new Vector2(0,-350);
                 foreach(var button in actions.Keys){
                     var frame=new GameObject("OutsidePauseFocusFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-4,-4);rect.offsetMax=new Vector2(4,4);
@@ -78,7 +77,7 @@ namespace Olca.Presentation.Management
         }
         public void RefreshOutsidePresentation()
         {
-            bool visible=outsidePresentation&&gameObject.activeInHierarchy&&!covered&&(inputAllowed?.Invoke()??false);
+            bool visible=gameObject.activeInHierarchy&&!covered&&(inputAllowed?.Invoke()??false);
             if(inputGuide!=null){inputGuide.gameObject.SetActive(visible);if(visible)inputGuide.text=InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad);}
             var selected=EventSystem.current?.currentSelectedGameObject;
             foreach(var pair in focusFrames)if(pair.Key!=null&&pair.Value!=null)pair.Value.SetActive(visible&&pair.Key.gameObject==selected&&pair.Key.gameObject.activeInHierarchy&&pair.Key.IsInteractable());
@@ -121,7 +120,7 @@ namespace Olca.Presentation.Management
             var focus=previousFocus;previousFocus=null;
             if(focus!=null&&focus.activeInHierarchy&&focus.GetComponent<Selectable>()?.IsInteractable()==true){EventSystem.current?.SetSelectedGameObject(focus);restoredFocus=focus.name;}
         }
-        private void OnDisable(){outsidePresentation=false;RefreshOutsidePresentation();RestoreRestrictedControls();context?.NotifyHidden();context=null;}
+        private void OnDisable(){RefreshOutsidePresentation();RestoreRestrictedControls();context?.NotifyHidden();context=null;}
         private void OnDestroy(){RestoreRestrictedControls();context?.NotifyHidden();context=null;inputAllowed=null;previousFocus=null;actions.Clear();}
     }
 }
@@ -536,6 +535,13 @@ namespace Olca.Presentation.Management
     {
         private Func<RetreatDialogState> state;private GameplayPauseView pause;private GameObject legacyPause,legacyOrigin;private Func<bool> hostLive;private Font font;private Action<string> feedback;
         private ConfirmationDialog dialog;
+        private GameObject confirmFocus,cancelFocus;private Text inputGuide;
+        private void LateUpdate()
+        {
+            if(dialog==null||!dialog.IsOpen)return;var selected=EventSystem.current?.currentSelectedGameObject;bool visible=dialog.gameObject.activeInHierarchy;
+            confirmFocus?.SetActive(visible&&selected==dialog.ConfirmButton.gameObject&&dialog.ConfirmButton.IsInteractable());cancelFocus?.SetActive(visible&&selected==dialog.CancelButton.gameObject&&dialog.CancelButton.IsInteractable());
+            if(inputGuide!=null)inputGuide.text=BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true);
+        }
         public bool IsOpen=>dialog!=null&&dialog.IsOpen;
         public Button ConfirmButton=>dialog!=null?dialog.ConfirmButton:null;public Button CancelButton=>dialog!=null?dialog.CancelButton:null;
         public event Action Confirmed;
@@ -547,7 +553,13 @@ namespace Olca.Presentation.Management
             state=source;pause=parent;legacyPause=legacy;hostLive=live;legacyOrigin=EventSystem.current?.currentSelectedGameObject;
             var owner=parent?.Context;if(manager!=null&&(owner?.IsCurrent!=true||owner.DialogBlocksInput||manager.ActiveCount!=0)){Clear();return;}
             if(parent!=null)parent.CoverForDialog();gameObject.SetActive(true);transform.SetAsLastSibling();
-            var popup=ConfirmationDialog.Create(transform,font,new ConfirmationContent{ButtonFeedback=feedback,RootName="RetreatConfirmationContents",MessageName="RetreatWarning",Message="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。",ConfirmName="ConfirmRetreat",ConfirmLabel="撤退して帰還",CancelName="CancelRetreat",CancelLabel="攻略へ戻る",Layout=new ConfirmationLayout{ButtonFontSize=30,MessagePosition=new Vector2(0,150),MessageSize=new Vector2(1600,200),ConfirmPosition=new Vector2(-280,-100),CancelPosition=new Vector2(280,-100),ButtonSize=new Vector2(420,70),Surface=Color.clear}});
+            var popup=ConfirmationDialog.Create(transform,font,new ConfirmationContent{ButtonFeedback=feedback,RootName="RetreatConfirmationContents",TitleName="RetreatTitle",Title="撤退の確認",MessageName="RetreatWarning",Message="撤退すると攻略中に獲得したカード・通貨をすべて失います。\n経験値は獲得しません。既存の所持・成長は保持します。",ConfirmName="ConfirmRetreat",ConfirmLabel="撤退して帰還",CancelName="CancelRetreat",CancelLabel="攻略へ戻る",Layout=new ConfirmationLayout{ReferenceLayout=true,TitlePosition=new Vector2(0,300),TitleSize=new Vector2(1600,70),ButtonFontSize=30,MessagePosition=new Vector2(0,150),MessageSize=new Vector2(1600,200),ConfirmPosition=new Vector2(-280,-100),CancelPosition=new Vector2(280,-100),ButtonSize=new Vector2(420,70),ReadingName="RetreatReadingFace",ReadingPosition=new Vector2(0,80),ReadingSize=new Vector2(1780,680),Surface=new Color(.025f,.075f,.105f,1)}});
+            // 撤退確認だけを既存の水鏡面へ載せる。背面の戦闘文字は透過させない。
+            var readingFace=popup.GetComponentsInChildren<Image>(true).Single(v=>v.name=="RetreatReadingFace");readingFace.color=new Color(.1f,.3f,.38f,1);readingFace.transform.SetAsFirstSibling();
+            foreach(var label in popup.GetComponentsInChildren<Text>(true))if(label.name=="RetreatWarning"||label.name=="RetreatTitle")label.color=label.name=="RetreatTitle"?new Color(.58f,.94f,1,1):new Color(.88f,.97f,1,1);
+            // 既存の確認画面と同じ選択枠を使い、入力・判定は従来のままにする。
+            confirmFocus=BootstrapTitleView.AddFocusFrame(popup.ConfirmButton);cancelFocus=BootstrapTitleView.AddFocusFrame(popup.CancelButton);confirmFocus.name=cancelFocus.name="RetreatSelectionFrame";
+            var guide=new GameObject("RetreatInputGuide",typeof(RectTransform),typeof(Text));guide.transform.SetParent(readingFace.transform.parent,false);inputGuide=guide.GetComponent<Text>();inputGuide.font=font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;inputGuide.rectTransform.anchoredPosition=new Vector2(0,-220);inputGuide.rectTransform.sizeDelta=new Vector2(1400,80);
             dialog=popup;popup.CanConfirm=()=>this!=null&&state?.Invoke().CanConfirm==true;
             popup.Finished+=result=>{if(this!=null&&ReferenceEquals(dialog,popup))Finish(result);};
             if(!popup.Open(gameObject,manager,owner,()=>this!=null&&(hostLive?.Invoke()??false),false)){if(parent!=null)parent.RestoreAfterDialog();dialog=null;Clear();gameObject.SetActive(false);return;}
@@ -562,7 +574,7 @@ namespace Olca.Presentation.Management
             if(result!=DialogResult.ParentClosed&&(hostLive?.Invoke()??false)){if(pause!=null)pause.RestoreAfterDialog();else if(legacyPause!=null){legacyPause.SetActive(true);if(legacyOrigin!=null&&legacyOrigin.activeInHierarchy&&legacyOrigin.GetComponent<Selectable>()?.IsInteractable()==true)EventSystem.current?.SetSelectedGameObject(legacyOrigin);}}
             bool accepted=result==DialogResult.Confirmed;Clear();gameObject.SetActive(false);if(accepted)Confirmed?.Invoke();
         }
-        private void Clear(){state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
+        private void Clear(){confirmFocus=cancelFocus=null;inputGuide=null;state=null;pause=null;legacyPause=null;hostLive=null;legacyOrigin=null;}
         private void OnDisable(){Abort();}
         private void OnDestroy(){Abort();Clear();dialog=null;font=null;feedback=null;Confirmed=null;}
     }

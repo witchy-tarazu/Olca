@@ -38,6 +38,20 @@ namespace Olca.Presentation.Exploration
             }
             if(mapNameLabel==null)return;mapNameLabel.gameObject.SetActive(opacity>0);if(opacity<=0)return;mapNameLabel.text=presentation.MapName;mapNameLabel.color=new Color(.8f,.98f,1,(float)opacity);mapNameLabel.transform.SetAsLastSibling();
         }
+        private Image outsideKamui;
+        private void RenderOutsideKamui()
+        {
+            if(!Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation?.Player)||player==null||!player.isActiveAndEnabled){ClearOutsideKamui();return;}
+            var sprite=outsideKamui!=null?outsideKamui.sprite:Olca.Presentation.Effects.TrialFireKamuiVisual.LoadSprite();if(sprite==null){ClearOutsideKamui();return;}
+            if(outsideKamui==null){var go=new GameObject("OutsideTrialFireKamui",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);outsideKamui=go.GetComponent<Image>();outsideKamui.raycastTarget=false;}
+            var r=outsideKamui.rectTransform;r.anchorMin=player.rectTransform.anchorMin;r.anchorMax=player.rectTransform.anchorMax;r.pivot=sprite.pivot/sprite.rect.size;
+            r.anchoredPosition=player.rectTransform.anchoredPosition;r.sizeDelta=Vector2.one*Olca.Presentation.Effects.TrialFireKamuiVisual.SizeWorld*pixelsPerWorldUnit;r.localScale=player.rectTransform.localScale;
+            outsideKamui.sprite=sprite;outsideKamui.color=new Color(1,1,1,Olca.Presentation.Effects.TrialFireKamuiVisual.Opacity);outsideKamui.enabled=true;
+            var target=outsideDefensiveField!=null?outsideDefensiveField.transform:player.transform;int before=target.GetSiblingIndex();
+            if(outsideKamui.transform.GetSiblingIndex()<before)before--; // 自身を除いた挿入先。連続Renderでも前後を往復させない。
+            outsideKamui.transform.SetSiblingIndex(before);
+        }
+        private void ClearOutsideKamui(){if(outsideKamui!=null)outsideKamui.enabled=false;}
         private Image outsideDefensiveField;
         private Olca.Unity.GeneratedSpriteAssets.Lease outsideDefensiveAssets;
         // バトルと同じ外周素材/校正を使う。表示だけを所有し、防御状態や寿命は変更しない。
@@ -53,6 +67,38 @@ namespace Olca.Presentation.Exploration
             rect.sizeDelta=new Vector2(Mathf.Max(bounds.size.x*1.15f,bounds.size.y*.62f),bounds.size.y*1.15f)*pixelsPerWorldUnit;outsideDefensiveField.sprite=sprite;outsideDefensiveField.color=new Color(1,1,1,.55f);outsideDefensiveField.enabled=true;
         }
         private void ClearOutsideDefensiveField(){if(outsideDefensiveField!=null){outsideDefensiveField.enabled=false;outsideDefensiveField.sprite=null;}outsideDefensiveAssets?.Dispose();outsideDefensiveAssets=null;}
+        private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
+        private Sprite ResolveBodyCostume(Sprite sprite)=>(trialFireBody??(trialFireBody=new Olca.Presentation.Effects.TrialFireBodyMotion())).Resolve(sprite,presentation?.Player);
+        private Sprite[] trialComboSprites,trialAirDownSprites;
+        private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
+        private Sprite TrialKickSprite()
+        {
+            var kind=presentation?.NormalKickKind;
+            if(!kind.HasValue||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
+            if(kind.Value==OutsideKickKind.Dash){
+                if(trialDashKickContact==null)trialDashKickContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_dash_kick_contact");
+                return presentation.IsKickHitWindow&&trialDashKickContact!=null?trialDashKickContact:null;
+            }
+            if(kind.Value==OutsideKickKind.AirForward){
+                if(trialAirForwardContact==null)trialAirForwardContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_air_forward_kick_contact");
+                // 前後隙は既存の上昇姿勢を暫定利用。時刻や物理位置は表示側で進めない。
+                return trialAirForwardContact!=null&&riseSprite!=null?(presentation.IsKickHitWindow?trialAirForwardContact:riseSprite):null;
+            }
+            if(kind.Value==OutsideKickKind.AirDown){
+                if(trialAirDownSprites==null)trialAirDownSprites=new[]{Resources.Load<Sprite>("OlcaCharacterMotion/trial_air_down_contact"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_air_down_recovery")};
+                return riseSprite!=null&&trialAirDownSprites[0]!=null&&trialAirDownSprites[1]!=null?(presentation.IsKickHitWindow?trialAirDownSprites[0]:presentation.IsKickRecovery?trialAirDownSprites[1]:riseSprite):null;
+            }
+            if(kind.Value==OutsideKickKind.GroundSecond||kind.Value==OutsideKickKind.GroundThird){
+                if(trialComboSprites==null)trialComboSprites=new[]{Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_second_prepare"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_second_contact"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_third_prepare"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_third_contact")};
+                int index=kind.Value==OutsideKickKind.GroundSecond?0:2;
+                return trialComboSprites[index]!=null&&trialComboSprites[index+1]!=null?trialComboSprites[index+(presentation.IsKickHitWindow?1:0)]:null;
+            }
+            if(kind.Value>OutsideKickKind.GroundThird)return null;
+            if(trialKickPrepare==null)trialKickPrepare=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_prepare");
+            if(trialKickContact==null)trialKickContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_contact");
+            if(trialKickPrepare==null||trialKickContact==null)return null;
+            return presentation.IsKickHitWindow?trialKickContact:trialKickPrepare;
+        }
         private Sprite traversalDashSprite;
         private Sprite[] wallSlideFrames;
         private Olca.Unity.ResourceManager traversalResources;
@@ -95,6 +141,7 @@ namespace Olca.Presentation.Exploration
         }
         private Sprite TraversalSprite(OutsideExplorationCore core)
         {
+            if(presentation?.IsDashAttacking==true&&core.IsMoving)return traversalDashSprite; // 接触素材欠損時も既存ダッシュ姿勢へ戻す
             if(core.IsWallSliding){
                 if(wallSlideFrames==null)wallSlideFrames=new[]{traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_01"),traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_02")};
                 return wallSlideFrames[(int)(core.WallSlideFrame/6%wallSlideFrames.Length)];
@@ -152,6 +199,7 @@ namespace Olca.Presentation.Exploration
             for(int i=0;i<afterimageImages.Length;i++){
                 var image=afterimageImages[i];if(i>=samples.Count){image.enabled=false;image.sprite=null;continue;}
                 var sample=samples[i];var sprite=sample.Pose==OutsideAfterimagePose.Dash?traversalDashSprite:sample.Pose==OutsideAfterimagePose.JumpRise?riseSprite:sample.Pose==OutsideAfterimagePose.JumpApex?apexSprite:fallSprite;
+                sprite=ResolveBodyCostume(sprite);
                 image.sprite=sprite;image.enabled=sprite!=null;if(sprite==null)continue;
                 image.color=new Color(.65f,.9f,1,.25f*(12-(core.Frame-sample.Frame))/12f);
                 var rect=image.rectTransform;rect.pivot=sprite.pivot/sprite.rect.size;rect.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
@@ -167,7 +215,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -295,6 +343,20 @@ namespace Olca.Presentation.Management
         public void TickPc(Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)
         {
             if(!open)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true||!input.KeyboardAvailable){Abort();return;}
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            if(input.Events!=null&&input.Events.Count>0){
+                foreach(var step in input.Events){
+                    if(!open)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true){Abort();return;}
+                    switch(step.Kind){
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Direction:Select(step.Value);break;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Pointer:SelectMouse(step.Value,true);break;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Toggle:cancel.onClick.Invoke();return;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Click:SelectMouse(step.Value,true);ConfirmPcChoice();break;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Confirm:ConfirmPcChoice();break;
+                    }
+                }
+                return;
+            }
             if(input.ToggleDown){cancel.onClick.Invoke();return;}
             if(input.KeyboardChanged&&(!input.PointerChanged||input.KeyboardOrder>=input.PointerOrder))Select(input.Direction);
             else if(input.PointerChanged)SelectMouse(input.Pointer,input.PointerAvailable);
@@ -302,9 +364,9 @@ namespace Olca.Presentation.Management
             // クリックは新しいマウス操作。静止hoverとは区別し、その位置の項目を選んで確定する。
             if(input.ClickDown)SelectMouse(input.Pointer,input.PointerAvailable);
             // 選択入力が静止していても、現在の切替可否を確定直前に読み直す。
-            confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);
-            if((input.EnterDown||input.ClickDown)&&confirm.interactable)TryConfirmChoice();
+            if(input.EnterDown||input.ClickDown)ConfirmPcChoice();else confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);
         }
+        private void ConfirmPcChoice(){confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);if(confirm.interactable)TryConfirmChoice();}
         private void Finish(long ticket,DialogResult result)
         {
             if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;if(menuMode){SetMenuSurface(false);menuMode=false;}HasSelection=false;selectedChoice=-1;tryChoice=null;choiceError=null;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);
@@ -611,7 +673,7 @@ namespace Olca.Presentation.Management
         private UnityEngine.Font font;private Olca.Core.Domain.ClearReturnSession session;private Olca.Core.Domain.OutsideShopDefinition shop;private System.Action closed;
         private ManagedScreenContext context;private UnityEngine.Transform content;private Olca.Unity.MenuPadScope menu;private string selected,message;private long renderEpoch;private int attemptFrame=-1;private System.Func<int> frame;private System.Func<bool> alive;private UnityEngine.UI.Text guide;
         private bool CanOperate=>this!=null&&isActiveAndEnabled&&context?.IsCurrent==true&&!context.DialogBlocksInput&&(alive?.Invoke()??true);
-        public void Initialize(UnityEngine.Font value,Olca.Core.Domain.ClearReturnSession source,Olca.Core.Domain.OutsideShopDefinition definition,System.Action close,System.Func<int> readFrame=null,System.Func<bool> isAlive=null){if(definition==null||definition.Offers.Count>3)throw new System.ArgumentException("試用店は3商品までです");alive=isAlive;font=value;session=source;shop=definition;closed=close;frame=readFrame??(()=>UnityEngine.Time.frameCount);gameObject.SetActive(false);}
+        public void Initialize(UnityEngine.Font value,Olca.Core.Domain.ClearReturnSession source,Olca.Core.Domain.OutsideShopDefinition definition,System.Action close,System.Func<int> readFrame=null,System.Func<bool> isAlive=null){if(definition==null||definition.Offers.Count>6)throw new System.ArgumentException("試用店は6商品までです");alive=isAlive;font=value;session=source;shop=definition;closed=close;frame=readFrame??(()=>UnityEngine.Time.frameCount);gameObject.SetActive(false);}
         public void Open(ManagedScreenContext owner){context=owner;selected=message=null;gameObject.SetActive(true);transform.SetAsLastSibling();Render();}
         private UnityEngine.UI.Text Text(string name,string value,float x,float y,float width,float height,int size)
         {
@@ -624,26 +686,27 @@ namespace Olca.Presentation.Management
         private void Attempt(bool funds)
         {
             if(attemptFrame==frame())return;attemptFrame=frame();
-            bool success=funds?session.TryClaimOutsideShopTrialFunds(out message):session.TryPurchaseOutsideShop(shop,selected,out message);if(success)message=funds?"シヨウ シキン"+Olca.Core.Domain.OutsideShopDefinition.TrialFunds+"を ウケトリ・ホゾンしました":(shop.Offers.Single(v=>v.Id==selected).PartId!=null?"パーツを コウニュウ・ホゾン / ポーズの ソウビ・パーツで ハイチ":"1コ コウニュウ・ホゾンしました");Render();
+            var chosen=shop.Offers.SingleOrDefault(v=>v.Id==selected);bool overflow=chosen?.CardDefinition!=null&&session.OutsideShopOwnedCount(chosen)>=4;
+            bool success=funds?session.TryClaimOutsideShopTrialFunds(out message):session.TryPurchaseOutsideShop(shop,selected,out message);if(success)message=funds?"シヨウ シキン"+Olca.Core.Domain.OutsideShopDefinition.TrialFunds+"を ウケトリ・ホゾンしました":(chosen.CardDefinition!=null?(overflow?"カード ジョウゲン / "+chosen.OverflowTokens+"トークンへ ヘンカン・ホゾン":"カード1マイ コウニュウ・ホゾン / ヘンセイチテンで ヘンセイ"):shop.Offers.Single(v=>v.Id==selected).AccessoryId!=null?"ソウショクヒンを コウニュウ・ホゾン / ソウビ・パーツで ソウビ":shop.Offers.Single(v=>v.Id==selected).PartId!=null?"パーツを コウニュウ・ホゾン / ポーズの ソウビ・パーツで ハイチ":"1コ コウニュウ・ホゾンしました");Render();
         }
         private void Render()
         {
             renderEpoch++;menu?.Dispose();menu=null;if(content!=null){content.gameObject.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(content.gameObject);else DestroyImmediate(content.gameObject);}
             var go=new UnityEngine.GameObject("OutsideShopContents",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));go.transform.SetParent(transform,false);content=go.transform;((UnityEngine.RectTransform)content).sizeDelta=new UnityEngine.Vector2(1480,850);go.GetComponent<UnityEngine.UI.Image>().color=new UnityEngine.Color(.025f,.075f,.105f,.98f);
             var inventory=session.OutsideInventorySnapshot;Text("OutsideShopTitle","シヨウ ショップ（カリ）",0,340,1400,65,38);Text("OutsideShopWallet","エイゾク ツウカ: "+inventory.Currency+" / カード チョウカ トークンとはベツ",0,270,1380,55,25);
-            bool three=shop.Offers.Count==3;float offerWidth=three?440:640;
-            for(int i=0;i<shop.Offers.Count;i++){var offer=shop.Offers[i];int count=offer.PartId==null?(inventory.Items.SingleOrDefault(v=>v.Id==offer.ItemId)?.Count??0):(session.CustomizationSnapshot.OwnedParts.SingleOrDefault(v=>v.Id==offer.PartId)?.Count??0);string price=(offer.PartId==null?"1コ ":"パーツ 1コ ")+offer.Price+"ツウカ";string owned="ショジ "+count+(offer.PartId==null?" / "+offer.Maximum:"");string stock=offer.PurchaseLimit==0?"ザイコ ムセイゲン":"ザイコ "+session.OutsideShopRemaining(shop,offer.Id)+" / "+offer.PurchaseLimit+"（ホジュウなし）";var button=Button("OutsideShopOffer_"+offer.Id,offer.Name+(three?"\n":" / ")+price+"\n"+owned+"\n"+stock,three?(i-1)*475:i==0?-350:350,155,offerWidth,()=>{selected=offer.Id;message=null;Render();});((UnityEngine.RectTransform)button.transform).sizeDelta=new UnityEngine.Vector2(offerWidth,three?136:118);var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.fontSize=three?20:23;label.rectTransform.sizeDelta=new UnityEngine.Vector2(offerWidth-30,three?130:112);if(selected==offer.Id)button.GetComponent<UnityEngine.UI.Image>().color=Olca.Presentation.Dungeon.UiLook.Chosen;}
-            bool canBuy=session.CanPurchaseOutsideShop(shop,selected,out var error);var chosen=shop.Offers.SingleOrDefault(v=>v.Id==selected);Text("OutsideShopSelection",chosen==null?"ショウヒンを エラんでください":chosen.Name+" / コウニュウゴ "+(canBuy?(inventory.Currency-chosen.Price).ToString():"—")+"ツウカ",0,45,1380,60,27);
-            Text("OutsideShopStatus",message??(chosen==null?"コウニュウで ツウカとショウヒンを イッカツ ホゾン":canBuy?"1カイのコウニュウで1コ。キンガク・シキン・ハイチはカリ。":error),0,-20,1380,65,24);
-            Button("OutsideShopBuy","コウニュウする",0,-105,520,()=>Attempt(false)).interactable=canBuy;
-            Button("OutsideShopFunds","シヨウ シキン"+Olca.Core.Domain.OutsideShopDefinition.TrialFunds+" / 1カイだけ",-350,-245,640,()=>Attempt(true)).interactable=!session.HasClaimedOutsideSupply(Olca.Core.Domain.OutsideShopDefinition.TrialFundsId)&&!session.HasPendingSave;
-            Button("OutsideShopBack","モドる（コウニュウずみは ホゾンずみ）",350,-245,640,()=>closed?.Invoke());
-            guide=Text("OutsideShopGuide","",0,-350,1380,55,23);RefreshGuide();menu=new Olca.Unity.MenuPadScope(()=>CanOperate&&Olca.Unity.MenuPadScope.IsTopmost(transform));menu.NavigationResolver=FindShopNavigation;menu.Bind(transform,selected==null?"OutsideShopBack":"OutsideShopOffer_"+selected,()=>closed?.Invoke());
+            bool three=shop.Offers.Count==3,four=shop.Offers.Count>=4;int offerColumns=shop.Offers.Count>=5?3:2;float offerWidth=three||shop.Offers.Count>=5?440:640;
+            for(int i=0;i<shop.Offers.Count;i++){var offer=shop.Offers[i];int count=session.OutsideShopOwnedCount(offer);string price=(offer.CardDefinition!=null?"カード1マイ ":offer.AccessoryId!=null?"ソウショクヒン ":offer.PartId!=null?"パーツ 1コ ":"1コ ")+offer.Price+"ツウカ";string owned="ショジ "+count+(!offer.IsEquipment?" / "+offer.Maximum:"");string stock=offer.PurchaseLimit==0?"ザイコ ムセイゲン":"ザイコ "+session.OutsideShopRemaining(shop,offer.Id)+" / "+offer.PurchaseLimit+"（ホジュウなし）";var button=Button("OutsideShopOffer_"+offer.Id,offer.Name+(three||four?"\n":" / ")+price+"\n"+owned+"\n"+stock,three?(i-1)*475:four?(i%offerColumns-(offerColumns-1)*.5f)*(offerColumns==3?475:700):i==0?-350:350,four?170-(i/offerColumns)*140:155,offerWidth,()=>{selected=offer.Id;message=null;Render();});((UnityEngine.RectTransform)button.transform).sizeDelta=new UnityEngine.Vector2(offerWidth,four?132:three?136:118);var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.fontSize=three||four?20:23;label.rectTransform.sizeDelta=new UnityEngine.Vector2(offerWidth-30,four?126:three?130:112);if(selected==offer.Id)button.GetComponent<UnityEngine.UI.Image>().color=Olca.Presentation.Dungeon.UiLook.Chosen;}
+            bool canBuy=session.CanPurchaseOutsideShop(shop,selected,out var error);var chosen=shop.Offers.SingleOrDefault(v=>v.Id==selected);Text("OutsideShopSelection",chosen==null?"ショウヒンを エラんでください":chosen.Name+" / コウニュウゴ "+(canBuy?(inventory.Currency-chosen.Price).ToString():"—")+"ツウカ",0,four?-78:45,1380,four?55:60,27);
+            Text("OutsideShopStatus",message??(chosen==null?"コウニュウで ツウカとショウヒンを イッカツ ホゾン":canBuy?(chosen.CardDefinition!=null?"カード ジョウゲン4マイ / チョウカは "+chosen.OverflowTokens+"トークンへ ヘンカン":"1カイのコウニュウで1コ。キンガク・シキン・ハイチはカリ。"):error),0,four?-137:-20,1380,four?55:65,four?22:24);
+            var buy=Button("OutsideShopBuy","コウニュウする",0,four?-210:-105,520,()=>Attempt(false));buy.interactable=canBuy;if(four)((UnityEngine.RectTransform)buy.transform).sizeDelta=new UnityEngine.Vector2(520,70);
+            Button("OutsideShopFunds","シヨウ シキン"+Olca.Core.Domain.OutsideShopDefinition.TrialFunds+" / 1カイだけ",-350,four?-305:-245,640,()=>Attempt(true)).interactable=!session.HasClaimedOutsideSupply(Olca.Core.Domain.OutsideShopDefinition.TrialFundsId)&&!session.HasPendingSave;
+            Button("OutsideShopBack","モドる（コウニュウずみは ホゾンずみ）",350,four?-305:-245,640,()=>closed?.Invoke());
+            guide=Text("OutsideShopGuide","",0,four?-390:-350,1380,four?40:55,23);RefreshGuide();menu=new Olca.Unity.MenuPadScope(()=>CanOperate&&Olca.Unity.MenuPadScope.IsTopmost(transform));menu.NavigationResolver=FindShopNavigation;menu.Bind(transform,selected==null?"OutsideShopBack":"OutsideShopOffer_"+selected,()=>closed?.Invoke());
         }
         // 商品の2/3列と下段の2列を明示し、斜めに近い購入ボタンへ横移動が吸われないようにする。
         private UnityEngine.UI.Selectable FindShopNavigation(UnityEngine.UI.Selectable from,UnityEngine.Vector2 direction)
         {
-            int columns=shop.Offers.Count;var cells=shop.Offers.Select((offer,i)=>(Name:"OutsideShopOffer_"+offer.Id,Row:0,First:i,Last:i)).ToList();cells.Add(("OutsideShopBuy",1,0,columns-1));cells.Add(("OutsideShopFunds",2,0,0));cells.Add(("OutsideShopBack",2,1,System.Math.Max(1,columns-1)));
+            int columns=shop.Offers.Count>=5?3:shop.Offers.Count==4?2:shop.Offers.Count;int rows=shop.Offers.Count>=4?2:1;var cells=shop.Offers.Select((offer,i)=>(Name:"OutsideShopOffer_"+offer.Id,Row:i/columns,First:i%columns,Last:i%columns)).ToList();cells.Add(("OutsideShopBuy",rows,0,columns-1));cells.Add(("OutsideShopFunds",rows+1,0,0));cells.Add(("OutsideShopBack",rows+1,1,System.Math.Max(1,columns-1)));
             var buttons=content.GetComponentsInChildren<UnityEngine.UI.Button>();var origin=cells.FirstOrDefault(v=>v.Name==from.name);if(origin.Name==null)return null;var enabled=cells.Where(v=>v.Name!=null&&buttons.Any(b=>b.name==v.Name&&b.IsInteractable()));
             var target=direction.x!=0?enabled.Where(v=>v.Row==origin.Row&&(direction.x>0?v.First>origin.Last:v.Last<origin.First)).OrderBy(v=>direction.x>0?v.First-origin.Last:origin.First-v.Last).FirstOrDefault():enabled.Where(v=>v.First<=origin.Last&&v.Last>=origin.First&&(direction.y>0?v.Row<origin.Row:v.Row>origin.Row)).OrderBy(v=>System.Math.Abs(v.Row-origin.Row)).ThenBy(v=>v.First).FirstOrDefault();return target.Name==null?null:buttons.First(v=>v.name==target.Name);
         }

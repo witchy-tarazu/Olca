@@ -1,0 +1,4615 @@
+fileFormatVersion: 2
+guid: 98b993b622ddabeb0ad416c826833262
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1865667966649201546
+    second: trial_fire_aura_0
+  - first:
+      213: 7785192058112134116
+    second: trial_fire_aura_1
+  - first:
+      213: -2223012951519275591
+    second: trial_fire_aura_2
+  - first:
+      213: -2742764480163624497
+    second: trial_fire_aura_3
+  - first:
+      213: -4108185410461558090
+    second: trial_fire_aura_4
+  - first:
+      213: -7699981061942037869
+    second: trial_fire_aura_5
+  - first:
+      213: 3716041560371223645
+    second: trial_fire_aura_6
+  - first:
+      213: -5920073196219615171
+    second: trial_fire_aura_7
+  - first:
+      213: 682154590248195747
+    second: trial_fire_aura_8
+  - first:
+      213: 8375572281416554158
+    second: trial_fire_aura_9
+  - first:
+      213: 8003466773008533549
+    second: trial_fire_aura_10
+  - first:
+      213: -8479031274973812711
+    second: trial_fire_aura_11
+  - first:
+      213: 8085756033747376846
+    second: trial_fire_aura_12
+  - first:
+      213: 8533979218447835977
+    second: trial_fire_aura_13
+  - first:
+      213: 3195071211919929252
+    second: trial_fire_aura_14
+  - first:
+      213: -7918010500090001897
+    second: trial_fire_aura_15
+  - first:
+      213: -2849565037991786112
+    second: trial_fire_aura_16
+  - first:
+      213: -5821885255427899257
+    second: trial_fire_aura_17
+  - first:
+      213: -7776874480405574698
+    second: trial_fire_aura_18
+  - first:
+      213: -3452204933940242111
+    second: trial_fire_aura_19
+  - first:
+      213: 5605338425127925342
+    second: trial_fire_aura_20
+  - first:
+      213: 7610309682377945898
+    second: trial_fire_aura_21
+  - first:
+      213: 4501020660602831425
+    second: trial_fire_aura_22
+  - first:
+      213: 3563507855970591731
+    second: trial_fire_aura_23
+  - first:
+      213: -2697775582305063915
+    second: trial_fire_aura_24
+  - first:
+      213: -9002981390375875694
+    second: trial_fire_aura_25
+  - first:
+      213: 6644701972915689740
+    second: trial_fire_aura_26
+  - first:
+      213: 5643413988989904409
+    second: trial_fire_aura_27
+  - first:
+      213: 890928074179667402
+    second: trial_fire_aura_28
+  - first:
+      213: 782338825833153404
+    second: trial_fire_aura_29
+  - first:
+      213: 7597484878773586274
+    second: trial_fire_aura_30
+  - first:
+      213: -1536965614327050559
+    second: trial_fire_aura_31
+  - first:
+      213: -4361131311441947889
+    second: trial_fire_aura_32
+  - first:
+      213: 6923412090834875302
+    second: trial_fire_aura_33
+  - first:
+      213: -3246805610228824730
+    second: trial_fire_aura_34
+  - first:
+      213: 7241487014902454128
+    second: trial_fire_aura_35
+  - first:
+      213: -5215247678859286022
+    second: trial_fire_aura_36
+  - first:
+      213: 1996049032631036364
+    second: trial_fire_aura_37
+  - first:
+      213: 2675295914305986496
+    second: trial_fire_aura_38
+  - first:
+      213: 3879221603306510614
+    second: trial_fire_aura_39
+  - first:
+      213: -2641002258879000991
+    second: trial_fire_aura_40
+  - first:
+      213: 405163766342950879
+    second: trial_fire_aura_41
+  - first:
+      213: 2546389950525458949
+    second: trial_fire_aura_42
+  - first:
+      213: 5520460413585569246
+    second: trial_fire_aura_43
+  - first:
+      213: -1361846317219847961
+    second: trial_fire_aura_44
+  - first:
+      213: 8335990624912801106
+    second: trial_fire_aura_45
+  - first:
+      213: -3122393213045387547
+    second: trial_fire_aura_46
+  - first:
+      213: 6451589021784089848
+    second: trial_fire_aura_47
+  - first:
+      213: -4819159472928455222
+    second: trial_fire_aura_48
+  - first:
+      213: -5359882873382456216
+    second: trial_fire_aura_49
+  - first:
+      213: 1156936088489342919
+    second: trial_fire_aura_50
+  - first:
+      213: 2405797207405346640
+    second: trial_fire_aura_51
+  - first:
+      213: -4289710830396191245
+    second: trial_fire_aura_52
+  - first:
+      213: -910111894081605342
+    second: trial_fire_aura_53
+  - first:
+      213: -6230895185875122138
+    second: trial_fire_aura_54
+  - first:
+      213: -5220262889396248875
+    second: trial_fire_aura_55
+  - first:
+      213: -6559991499005616295
+    second: trial_fire_aura_56
+  - first:
+      213: 3807421276540343247
+    second: trial_fire_aura_57
+  - first:
+      213: 2254373381270061117
+    second: trial_fire_aura_58
+  - first:
+      213: -2342170954345805428
+    second: trial_fire_aura_59
+  - first:
+      213: 1615903193940940718
+    second: trial_fire_aura_60
+  - first:
+      213: 931655052533994360
+    second: trial_fire_aura_61
+  - first:
+      213: -4336889053040870612
+    second: trial_fire_aura_62
+  - first:
+      213: 2031203606938129271
+    second: trial_fire_aura_63
+  - first:
+      213: -2146175762879575657
+    second: trial_fire_aura_64
+  - first:
+      213: 5561291307759030078
+    second: trial_fire_aura_65
+  - first:
+      213: -567204382041623267
+    second: trial_fire_aura_66
+  - first:
+      213: -7951107283559899869
+    second: trial_fire_aura_67
+  - first:
+      213: 1253661705601711222
+    second: trial_fire_aura_68
+  - first:
+      213: -4292316666507427655
+    second: trial_fire_aura_69
+  - first:
+      213: -3900975102231122243
+    second: trial_fire_aura_70
+  - first:
+      213: 6082904307562701260
+    second: trial_fire_aura_71
+  - first:
+      213: -449683263914781417
+    second: trial_fire_aura_72
+  - first:
+      213: -478188581999895117
+    second: trial_fire_aura_73
+  - first:
+      213: -8116112927105570359
+    second: trial_fire_aura_74
+  - first:
+      213: 6514344086520130580
+    second: trial_fire_aura_75
+  - first:
+      213: 6409675995753009200
+    second: trial_fire_aura_76
+  - first:
+      213: 655693565833897273
+    second: trial_fire_aura_77
+  - first:
+      213: 4273523986209031023
+    second: trial_fire_aura_78
+  - first:
+      213: -7173044764285267510
+    second: trial_fire_aura_79
+  - first:
+      213: 2123201290137746073
+    second: trial_fire_aura_80
+  - first:
+      213: -8501189225755781228
+    second: trial_fire_aura_81
+  - first:
+      213: -3556669798531158260
+    second: trial_fire_aura_82
+  - first:
+      213: 5353051889670273189
+    second: trial_fire_aura_83
+  - first:
+      213: -3313165644075011685
+    second: trial_fire_aura_84
+  - first:
+      213: 5141661625068909636
+    second: trial_fire_aura_85
+  - first:
+      213: 5093433730881159911
+    second: trial_fire_aura_86
+  - first:
+      213: 2585197532292601170
+    second: trial_fire_aura_87
+  - first:
+      213: -6633761771572098458
+    second: trial_fire_aura_88
+  - first:
+      213: -4825309454780421398
+    second: trial_fire_aura_89
+  - first:
+      213: 5896996750255626505
+    second: trial_fire_aura_90
+  - first:
+      213: 145166514938753842
+    second: trial_fire_aura_91
+  - first:
+      213: -88596609599964144
+    second: trial_fire_aura_92
+  - first:
+      213: 6233045404163627418
+    second: trial_fire_aura_93
+  - first:
+      213: -2338192586782672285
+    second: trial_fire_aura_94
+  - first:
+      213: -9083246416977545711
+    second: trial_fire_aura_95
+  - first:
+      213: 943559299786830049
+    second: trial_fire_aura_96
+  - first:
+      213: -8141475747949930302
+    second: trial_fire_aura_97
+  - first:
+      213: -598116931353936816
+    second: trial_fire_aura_98
+  - first:
+      213: -566064326692923154
+    second: trial_fire_aura_99
+  - first:
+      213: -1010348184244259345
+    second: trial_fire_aura_100
+  - first:
+      213: -2717027111701780103
+    second: trial_fire_aura_101
+  - first:
+      213: 7976862948699409829
+    second: trial_fire_aura_102
+  - first:
+      213: -6287791952477339415
+    second: trial_fire_aura_103
+  - first:
+      213: 4217233118834579349
+    second: trial_fire_aura_104
+  - first:
+      213: 8214352646006506115
+    second: trial_fire_aura_105
+  - first:
+      213: -3042888529887189366
+    second: trial_fire_aura_106
+  - first:
+      213: -5227460783110197331
+    second: trial_fire_aura_107
+  - first:
+      213: -5680199249224381964
+    second: trial_fire_aura_108
+  - first:
+      213: -3570488211263019836
+    second: trial_fire_aura_109
+  - first:
+      213: 6522545911449590256
+    second: trial_fire_aura_110
+  - first:
+      213: 8416780703312764726
+    second: trial_fire_aura_111
+  - first:
+      213: -2362670521819875170
+    second: trial_fire_aura_112
+  - first:
+      213: 8624254404142475074
+    second: trial_fire_aura_113
+  - first:
+      213: 647873028591875288
+    second: trial_fire_aura_114
+  - first:
+      213: 7129207123042879033
+    second: trial_fire_aura_115
+  - first:
+      213: -7540369874614757811
+    second: trial_fire_aura_116
+  - first:
+      213: 158113935752466770
+    second: trial_fire_aura_117
+  - first:
+      213: -6991251417806095977
+    second: trial_fire_aura_118
+  - first:
+      213: 5922387885801029981
+    second: trial_fire_aura_119
+  - first:
+      213: 2609857333675309506
+    second: trial_fire_aura_120
+  - first:
+      213: -2420176466962577119
+    second: trial_fire_aura_121
+  - first:
+      213: 5673092250513080883
+    second: trial_fire_aura_122
+  - first:
+      213: 4526981637041252740
+    second: trial_fire_aura_123
+  - first:
+      213: -1524574422285284321
+    second: trial_fire_aura_124
+  - first:
+      213: -1841954801288880262
+    second: trial_fire_aura_125
+  - first:
+      213: -164464208573970340
+    second: trial_fire_aura_126
+  - first:
+      213: -8295697657573237231
+    second: trial_fire_aura_127
+  - first:
+      213: 6904463666360075975
+    second: trial_fire_aura_128
+  - first:
+      213: -5243425366837519718
+    second: trial_fire_aura_129
+  - first:
+      213: 7218967170462265264
+    second: trial_fire_aura_130
+  - first:
+      213: 6406729496517970250
+    second: trial_fire_aura_131
+  - first:
+      213: -8110514161029986247
+    second: trial_fire_aura_132
+  - first:
+      213: 5743402873271556132
+    second: trial_fire_aura_133
+  - first:
+      213: -285484479489009800
+    second: trial_fire_aura_134
+  - first:
+      213: 8914157831134410401
+    second: trial_fire_aura_135
+  - first:
+      213: 4685794627175643643
+    second: trial_fire_aura_136
+  - first:
+      213: 917136324692610912
+    second: trial_fire_aura_137
+  - first:
+      213: -7442054989292209531
+    second: trial_fire_aura_138
+  - first:
+      213: 2715790659703353809
+    second: trial_fire_aura_139
+  - first:
+      213: -7328734368839446916
+    second: trial_fire_aura_140
+  - first:
+      213: -4830433262650750996
+    second: trial_fire_aura_141
+  - first:
+      213: -7016103631487275108
+    second: trial_fire_aura_142
+  - first:
+      213: -4677598996541340670
+    second: trial_fire_aura_143
+  - first:
+      213: 62145950886963160
+    second: trial_fire_aura_144
+  - first:
+      213: 6700235291168408728
+    second: trial_fire_aura_145
+  - first:
+      213: -8119587490483073727
+    second: trial_fire_aura_146
+  - first:
+      213: 5292963560210600338
+    second: trial_fire_aura_147
+  - first:
+      213: -4644056901839561398
+    second: trial_fire_aura_148
+  - first:
+      213: -2760245927624384344
+    second: trial_fire_aura_149
+  - first:
+      213: -2510295162894427984
+    second: trial_fire_aura_150
+  - first:
+      213: 6860403261386201198
+    second: trial_fire_aura_151
+  - first:
+      213: 2162798780546783775
+    second: trial_fire_aura_152
+  - first:
+      213: 5257658480943040929
+    second: trial_fire_aura_153
+  - first:
+      213: 3489082144711738677
+    second: trial_fire_aura_154
+  - first:
+      213: 7404641293359904803
+    second: trial_fire_aura_155
+  - first:
+      213: 7654023375171800577
+    second: trial_fire_aura_156
+  - first:
+      213: 5072142579864541883
+    second: trial_fire_aura_157
+  - first:
+      213: 2086030181073937788
+    second: trial_fire_aura_158
+  - first:
+      213: 3410016788858672628
+    second: trial_fire_aura_159
+  - first:
+      213: -5864249383516216123
+    second: trial_fire_aura_160
+  - first:
+      213: 6890098626693560710
+    second: trial_fire_aura_161
+  - first:
+      213: -5005687787136787631
+    second: trial_fire_aura_162
+  - first:
+      213: -2581782921625566745
+    second: trial_fire_aura_163
+  - first:
+      213: -3236641807254181763
+    second: trial_fire_aura_164
+  - first:
+      213: 4929170860674327608
+    second: trial_fire_aura_165
+  - first:
+      213: -1022868157611507038
+    second: trial_fire_aura_166
+  - first:
+      213: 1103089702462216104
+    second: trial_fire_aura_167
+  - first:
+      213: -6939884830188445356
+    second: trial_fire_aura_168
+  - first:
+      213: -8546727103549449907
+    second: trial_fire_aura_169
+  - first:
+      213: 129245102738465162
+    second: trial_fire_aura_170
+  - first:
+      213: 1527683625431480129
+    second: trial_fire_aura_171
+  - first:
+      213: -7340757808141646939
+    second: trial_fire_aura_172
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0.11}
+  spritePixelsToUnits: 489.84375
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 256
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_fire_aura_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 586
+        width: 297
+        height: 668
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a8373f4812f24e910800000000000000
+      internalID: 1865667966649201546
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_1
+      rect:
+        serializedVersion: 2
+        x: 520
+        y: 716
+        width: 225
+        height: 524
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4eb47fbddee8a0c60800000000000000
+      internalID: 7785192058112134116
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_2
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 1211
+        width: 36
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b5d995af754621e0800000000000000
+      internalID: -2223012951519275591
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_3
+      rect:
+        serializedVersion: 2
+        x: 952
+        y: 1237
+        width: 16
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc9c941bc3ebfe9d0800000000000000
+      internalID: -2742764480163624497
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_4
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 1084
+        width: 153
+        height: 152
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ba1ff1a22bccf6c0800000000000000
+      internalID: -4108185410461558090
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_5
+      rect:
+        serializedVersion: 2
+        x: 796
+        y: 1104
+        width: 95
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 392b5b9350c242590800000000000000
+      internalID: -7699981061942037869
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_6
+      rect:
+        serializedVersion: 2
+        x: 912
+        y: 1171
+        width: 52
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d5cd3885c18029330800000000000000
+      internalID: 3716041560371223645
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_7
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 1223
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d38b40f3bcca7dda0800000000000000
+      internalID: -5920073196219615171
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_8
+      rect:
+        serializedVersion: 2
+        x: 945
+        y: 714
+        width: 309
+        height: 520
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a655a15cff777900800000000000000
+      internalID: 682154590248195747
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_9
+      rect:
+        serializedVersion: 2
+        x: 971
+        y: 1219
+        width: 9
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea611704d920c3470800000000000000
+      internalID: 8375572281416554158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_10
+      rect:
+        serializedVersion: 2
+        x: 997
+        y: 1188
+        width: 45
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d28c0d830a6021f60800000000000000
+      internalID: 8003466773008533549
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_11
+      rect:
+        serializedVersion: 2
+        x: 233
+        y: 1207
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 91822cfaafd645a80800000000000000
+      internalID: -8479031274973812711
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_12
+      rect:
+        serializedVersion: 2
+        x: 263
+        y: 1199
+        width: 8
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ecadbf3c540663070800000000000000
+      internalID: 8085756033747376846
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_13
+      rect:
+        serializedVersion: 2
+        x: 287
+        y: 1199
+        width: 14
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 943262c52e8ce6670800000000000000
+      internalID: 8533979218447835977
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_14
+      rect:
+        serializedVersion: 2
+        x: 715
+        y: 1098
+        width: 90
+        height: 110
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4af609ac65c275c20800000000000000
+      internalID: 3195071211919929252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_15
+      rect:
+        serializedVersion: 2
+        x: 273
+        y: 1185
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 716825ec6639d1290800000000000000
+      internalID: -7918010500090001897
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_16
+      rect:
+        serializedVersion: 2
+        x: 275
+        y: 1193
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 089802212bf4478d0800000000000000
+      internalID: -2849565037991786112
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_17
+      rect:
+        serializedVersion: 2
+        x: 279
+        y: 1181
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 780c223b432843fa0800000000000000
+      internalID: -5821885255427899257
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_18
+      rect:
+        serializedVersion: 2
+        x: 291
+        y: 1127
+        width: 36
+        height: 73
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6db00ac1dddf21490800000000000000
+      internalID: -7776874480405574698
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_19
+      rect:
+        serializedVersion: 2
+        x: 440
+        y: 893
+        width: 146
+        height: 313
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14914a437ed4710d0800000000000000
+      internalID: -3452204933940242111
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_20
+      rect:
+        serializedVersion: 2
+        x: 882
+        y: 1187
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e56f89b69992acd40800000000000000
+      internalID: 5605338425127925342
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_21
+      rect:
+        serializedVersion: 2
+        x: 898
+        y: 1159
+        width: 17
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a237ad0c5504d9960800000000000000
+      internalID: 7610309682377945898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_22
+      rect:
+        serializedVersion: 2
+        x: 956
+        y: 1173
+        width: 26
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1420de18176d67e30800000000000000
+      internalID: 4501020660602831425
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_23
+      rect:
+        serializedVersion: 2
+        x: 1049
+        y: 1181
+        width: 11
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f3e075c38f147130800000000000000
+      internalID: 3563507855970591731
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_24
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 1133
+        width: 19
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 51cebfcb6639f8ad0800000000000000
+      internalID: -2697775582305063915
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_25
+      rect:
+        serializedVersion: 2
+        x: 321
+        y: 1158
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29b8133102cfe0380800000000000000
+      internalID: -9002981390375875694
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_26
+      rect:
+        serializedVersion: 2
+        x: 862
+        y: 1044
+        width: 83
+        height: 120
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c091afd3d39b63c50800000000000000
+      internalID: 6644701972915689740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_27
+      rect:
+        serializedVersion: 2
+        x: 866
+        y: 1153
+        width: 9
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 916a6367f1f615e40800000000000000
+      internalID: 5643413988989904409
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_28
+      rect:
+        serializedVersion: 2
+        x: 874
+        y: 1158
+        width: 9
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac5e6e5fc563d5c00800000000000000
+      internalID: 890928074179667402
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_29
+      rect:
+        serializedVersion: 2
+        x: 956
+        y: 1130
+        width: 28
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7308cf540d6bda00800000000000000
+      internalID: 782338825833153404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_30
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 1146
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26983b97e30bf6960800000000000000
+      internalID: 7597484878773586274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_31
+      rect:
+        serializedVersion: 2
+        x: 275
+        y: 1120
+        width: 17
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1cecb0ebae99baae0800000000000000
+      internalID: -1536965614327050559
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_32
+      rect:
+        serializedVersion: 2
+        x: 299
+        y: 1112
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f035ba2bd262a73c0800000000000000
+      internalID: -4361131311441947889
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_33
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 1112
+        width: 20
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6a37bd36d96e41060800000000000000
+      internalID: 6923412090834875302
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_34
+      rect:
+        serializedVersion: 2
+        x: 319
+        y: 958
+        width: 128
+        height: 185
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 665c093ff7701f2d0800000000000000
+      internalID: -3246805610228824730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_35
+      rect:
+        serializedVersion: 2
+        x: 948
+        y: 1124
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0775dd0b21eee7460800000000000000
+      internalID: 7241487014902454128
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_36
+      rect:
+        serializedVersion: 2
+        x: 295
+        y: 1091
+        width: 9
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af969ed1ed7bf97b0800000000000000
+      internalID: -5215247678859286022
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_37
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 1084
+        width: 14
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc92c38050463bb10800000000000000
+      internalID: 1996049032631036364
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_38
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 1078
+        width: 23
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0cf1341b57f802520800000000000000
+      internalID: 2675295914305986496
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_39
+      rect:
+        serializedVersion: 2
+        x: 569
+        y: 1097
+        width: 23
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6191b16ce73c5d530800000000000000
+      internalID: 3879221603306510614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_40
+      rect:
+        serializedVersion: 2
+        x: 699
+        y: 1083
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 16e438c2076495bd0800000000000000
+      internalID: -2641002258879000991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_41
+      rect:
+        serializedVersion: 2
+        x: 940
+        y: 1094
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fdf1bb08c4e6f9500800000000000000
+      internalID: 405163766342950879
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_42
+      rect:
+        serializedVersion: 2
+        x: 954
+        y: 1092
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 50ac1bc2b28965320800000000000000
+      internalID: 2546389950525458949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_43
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 1089
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed5bf5c5f7d9c9c40800000000000000
+      internalID: 5520460413585569246
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_44
+      rect:
+        serializedVersion: 2
+        x: 802
+        y: 1002
+        width: 69
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e0ef676dffb91de0800000000000000
+      internalID: -1361846317219847961
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_45
+      rect:
+        serializedVersion: 2
+        x: 954
+        y: 1073
+        width: 24
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 25df9e0be436fa370800000000000000
+      internalID: 8335990624912801106
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_46
+      rect:
+        serializedVersion: 2
+        x: 506
+        y: 1068
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5eec6577ae70ba4d0800000000000000
+      internalID: -3122393213045387547
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_47
+      rect:
+        serializedVersion: 2
+        x: 739
+        y: 1034
+        width: 30
+        height: 40
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f420488806a88950800000000000000
+      internalID: 6451589021784089848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_48
+      rect:
+        serializedVersion: 2
+        x: 792
+        y: 1062
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac5042c0ef7ee1db0800000000000000
+      internalID: -4819159472928455222
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_49
+      rect:
+        serializedVersion: 2
+        x: 286
+        y: 1028
+        width: 40
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 864b65eaceedd95b0800000000000000
+      internalID: -5359882873382456216
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_50
+      rect:
+        serializedVersion: 2
+        x: 440
+        y: 1028
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c7bc362e334e0010800000000000000
+      internalID: 1156936088489342919
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_51
+      rect:
+        serializedVersion: 2
+        x: 522
+        y: 1036
+        width: 20
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05fb50d40db136120800000000000000
+      internalID: 2405797207405346640
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_52
+      rect:
+        serializedVersion: 2
+        x: 796
+        y: 1044
+        width: 15
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3fdc6154ab2e774c0800000000000000
+      internalID: -4289710830396191245
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_53
+      rect:
+        serializedVersion: 2
+        x: 906
+        y: 1012
+        width: 52
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2217867ed02ae53f0800000000000000
+      internalID: -910111894081605342
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_54
+      rect:
+        serializedVersion: 2
+        x: 532
+        y: 1004
+        width: 18
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 628c83557d96789a0800000000000000
+      internalID: -6230895185875122138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_55
+      rect:
+        serializedVersion: 2
+        x: 545
+        y: 1008
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ded16b6f86ed87b0800000000000000
+      internalID: -5220262889396248875
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_56
+      rect:
+        serializedVersion: 2
+        x: 739
+        y: 994
+        width: 38
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95f103cec7a36f4a0800000000000000
+      internalID: -6559991499005616295
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_57
+      rect:
+        serializedVersion: 2
+        x: 848
+        y: 968
+        width: 65
+        height: 49
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc3937a7a7da6d430800000000000000
+      internalID: 3807421276540343247
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_58
+      rect:
+        serializedVersion: 2
+        x: 125
+        y: 658
+        width: 346
+        height: 323
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d30c2b565a4294f10800000000000000
+      internalID: 2254373381270061117
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_59
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 981
+        width: 16
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c890bf62defee7fd0800000000000000
+      internalID: -2342170954345805428
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_60
+      rect:
+        serializedVersion: 2
+        x: 709
+        y: 974
+        width: 10
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea7d44ab467dc6610800000000000000
+      internalID: 1615903193940940718
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_61
+      rect:
+        serializedVersion: 2
+        x: 741
+        y: 955
+        width: 46
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8739c7b8557edec00800000000000000
+      internalID: 931655052533994360
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_62
+      rect:
+        serializedVersion: 2
+        x: 828
+        y: 979
+        width: 21
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c2bf733526640d3c0800000000000000
+      internalID: -4336889053040870612
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_63
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 980
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7731a023be8403c10800000000000000
+      internalID: 2031203606938129271
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_64
+      rect:
+        serializedVersion: 2
+        x: 709
+        y: 962
+        width: 24
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 799820cb3804732e0800000000000000
+      internalID: -2146175762879575657
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_65
+      rect:
+        serializedVersion: 2
+        x: 737
+        y: 968
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e3fc17bbafcad2d40800000000000000
+      internalID: 5561291307759030078
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_66
+      rect:
+        serializedVersion: 2
+        x: 814
+        y: 899
+        width: 79
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d153d55ae92e028f0800000000000000
+      internalID: -567204382041623267
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_67
+      rect:
+        serializedVersion: 2
+        x: 468
+        y: 950
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32d14686d0ef7a190800000000000000
+      internalID: -7951107283559899869
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_68
+      rect:
+        serializedVersion: 2
+        x: 498
+        y: 956
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 67c76e6dda6e56110800000000000000
+      internalID: 1253661705601711222
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_69
+      rect:
+        serializedVersion: 2
+        x: 504
+        y: 953
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b00655cbb0ae64c0800000000000000
+      internalID: -4292316666507427655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_70
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 952
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dbeeed110d3fcd9c0800000000000000
+      internalID: -3900975102231122243
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_71
+      rect:
+        serializedVersion: 2
+        x: 723
+        y: 939
+        width: 12
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc1e7f63d31da6450800000000000000
+      internalID: 6082904307562701260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_72
+      rect:
+        serializedVersion: 2
+        x: 518
+        y: 923
+        width: 10
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 715dbe8347762c9f0800000000000000
+      internalID: -449683263914781417
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_73
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 931
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3bd9f3aa4022d59f0800000000000000
+      internalID: -478188581999895117
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_74
+      rect:
+        serializedVersion: 2
+        x: 533
+        y: 929
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c9aae63b46cd5f80800000000000000
+      internalID: -8116112927105570359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_75
+      rect:
+        serializedVersion: 2
+        x: 743
+        y: 937
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41ce2b5ae69976a50800000000000000
+      internalID: 6514344086520130580
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_76
+      rect:
+        serializedVersion: 2
+        x: 890
+        y: 907
+        width: 25
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 030d434bb5eb3f850800000000000000
+      internalID: 6409675995753009200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_77
+      rect:
+        serializedVersion: 2
+        x: 426
+        y: 917
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 935e909f2dd791900800000000000000
+      internalID: 655693565833897273
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_78
+      rect:
+        serializedVersion: 2
+        x: 514
+        y: 923
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f63c9116c6b9e4b30800000000000000
+      internalID: 4273523986209031023
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_79
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 923
+        width: 8
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac11dc29ac9347c90800000000000000
+      internalID: -7173044764285267510
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_80
+      rect:
+        serializedVersion: 2
+        x: 778
+        y: 915
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 99abf4df250277d10800000000000000
+      internalID: 2123201290137746073
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_81
+      rect:
+        serializedVersion: 2
+        x: 794
+        y: 915
+        width: 21
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 497d27eb075b50a80800000000000000
+      internalID: -8501189225755781228
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_82
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 923
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c0fa03b89ab24aec0800000000000000
+      internalID: -3556669798531158260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_83
+      rect:
+        serializedVersion: 2
+        x: 944
+        y: 929
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a8b70cf45cd94a40800000000000000
+      internalID: 5353051889670273189
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_84
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 853
+        width: 39
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9171ee86654502d0800000000000000
+      internalID: -3313165644075011685
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_85
+      rect:
+        serializedVersion: 2
+        x: 520
+        y: 875
+        width: 22
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4447d7d910ada5740800000000000000
+      internalID: 5141661625068909636
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_86
+      rect:
+        serializedVersion: 2
+        x: 727
+        y: 807
+        width: 76
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e20a28fdf28fa640800000000000000
+      internalID: 5093433730881159911
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_87
+      rect:
+        serializedVersion: 2
+        x: 814
+        y: 678
+        width: 216
+        height: 232
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 255548a657770e320800000000000000
+      internalID: 2585197532292601170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_88
+      rect:
+        serializedVersion: 2
+        x: 936
+        y: 887
+        width: 29
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66a01e0e0d420f3a0800000000000000
+      internalID: -6633761771572098458
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_89
+      rect:
+        serializedVersion: 2
+        x: 428
+        y: 871
+        width: 7
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aeaaa70dd9e090db0800000000000000
+      internalID: -4825309454780421398
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_90
+      rect:
+        serializedVersion: 2
+        x: 448
+        y: 851
+        width: 15
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9099e9cfc4756d150800000000000000
+      internalID: 5896996750255626505
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_91
+      rect:
+        serializedVersion: 2
+        x: 535
+        y: 871
+        width: 21
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 233b43c1d2cb30200800000000000000
+      internalID: 145166514938753842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_92
+      rect:
+        serializedVersion: 2
+        x: 713
+        y: 847
+        width: 28
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01c7d7c5add35cef0800000000000000
+      internalID: -88596609599964144
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_93
+      rect:
+        serializedVersion: 2
+        x: 729
+        y: 873
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a99dd0065c9308650800000000000000
+      internalID: 6233045404163627418
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_94
+      rect:
+        serializedVersion: 2
+        x: 818
+        y: 843
+        width: 27
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36afd580b321d8fd0800000000000000
+      internalID: -2338192586782672285
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_95
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 851
+        width: 12
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 116b6b44283d1f180800000000000000
+      internalID: -9083246416977545711
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_96
+      rect:
+        serializedVersion: 2
+        x: 518
+        y: 823
+        width: 22
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e07f481f22381d00800000000000000
+      internalID: 943559299786830049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_97
+      rect:
+        serializedVersion: 2
+        x: 736
+        y: 853
+        width: 11
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c89cff41faa30f80800000000000000
+      internalID: -8141475747949930302
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_98
+      rect:
+        serializedVersion: 2
+        x: 464
+        y: 819
+        width: 11
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05c7084e1df03b7f0800000000000000
+      internalID: -598116931353936816
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_99
+      rect:
+        serializedVersion: 2
+        x: 470
+        y: 775
+        width: 25
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee892777e7fe428f0800000000000000
+      internalID: -566064326692923154
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_100
+      rect:
+        serializedVersion: 2
+        x: 498
+        y: 819
+        width: 28
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe5f8a2fda58af1f0800000000000000
+      internalID: -1010348184244259345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_101
+      rect:
+        serializedVersion: 2
+        x: 745
+        y: 827
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 979e8e1cc3e2b4ad0800000000000000
+      internalID: -2717027111701780103
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_102
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 789
+        width: 7
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ad043fa69283be60800000000000000
+      internalID: 7976862948699409829
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_103
+      rect:
+        serializedVersion: 2
+        x: 424
+        y: 803
+        width: 9
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e0470b88864db8a0800000000000000
+      internalID: -6287791952477339415
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_104
+      rect:
+        serializedVersion: 2
+        x: 655
+        y: 787
+        width: 21
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 597d52f7d2f968a30800000000000000
+      internalID: 4217233118834579349
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_105
+      rect:
+        serializedVersion: 2
+        x: 776
+        y: 790
+        width: 15
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3820205c53e3ff170800000000000000
+      internalID: 8214352646006506115
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_106
+      rect:
+        serializedVersion: 2
+        x: 496
+        y: 779
+        width: 16
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a86a6f4010d75c5d0800000000000000
+      internalID: -3042888529887189366
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_107
+      rect:
+        serializedVersion: 2
+        x: 530
+        y: 771
+        width: 12
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: daf6e613d145477b0800000000000000
+      internalID: -5227460783110197331
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_108
+      rect:
+        serializedVersion: 2
+        x: 573
+        y: 783
+        width: 7
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f94a88b0e0eb21b0800000000000000
+      internalID: -5680199249224381964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_109
+      rect:
+        serializedVersion: 2
+        x: 802
+        y: 737
+        width: 17
+        height: 49
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c4a2fc93e3137ec0800000000000000
+      internalID: -3570488211263019836
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_110
+      rect:
+        serializedVersion: 2
+        x: 860
+        y: 779
+        width: 9
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f91123d2fcb48a50800000000000000
+      internalID: 6522545911449590256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_111
+      rect:
+        serializedVersion: 2
+        x: 1103
+        y: 620
+        width: 110
+        height: 182
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63fd155a4796ec470800000000000000
+      internalID: 8416780703312764726
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_112
+      rect:
+        serializedVersion: 2
+        x: 470
+        y: 728
+        width: 33
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e98b3a9adab163fd0800000000000000
+      internalID: -2362670521819875170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_113
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 746
+        width: 16
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 247a283ffa18fa770800000000000000
+      internalID: 8624254404142475074
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_114
+      rect:
+        serializedVersion: 2
+        x: 673
+        y: 738
+        width: 11
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d476c04615bdf800800000000000000
+      internalID: 647873028591875288
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_115
+      rect:
+        serializedVersion: 2
+        x: 713
+        y: 761
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 936c7233b1800f260800000000000000
+      internalID: 7129207123042879033
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_116
+      rect:
+        serializedVersion: 2
+        x: 424
+        y: 737
+        width: 13
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d46d784bc893b5790800000000000000
+      internalID: -7540369874614757811
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_117
+      rect:
+        serializedVersion: 2
+        x: 442
+        y: 741
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 251909e69cbb13200800000000000000
+      internalID: 158113935752466770
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_118
+      rect:
+        serializedVersion: 2
+        x: 655
+        y: 728
+        width: 19
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 799b83270e51afe90800000000000000
+      internalID: -6991251417806095977
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_119
+      rect:
+        serializedVersion: 2
+        x: 818
+        y: 719
+        width: 27
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d514f3b676c803250800000000000000
+      internalID: 5922387885801029981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_120
+      rect:
+        serializedVersion: 2
+        x: 1027
+        y: 733
+        width: 9
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c93a28da63183420800000000000000
+      internalID: 2609857333675309506
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_121
+      rect:
+        serializedVersion: 2
+        x: 1035
+        y: 727
+        width: 19
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1298fe0735ec96ed0800000000000000
+      internalID: -2420176466962577119
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_122
+      rect:
+        serializedVersion: 2
+        x: 1222
+        y: 738
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3328ad1385fdabe40800000000000000
+      internalID: 5673092250513080883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_123
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 1254
+        height: 729
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4896f8c50d113de30800000000000000
+      internalID: 4526981637041252740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_124
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 708
+        width: 9
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1c0a06f3af97dae0800000000000000
+      internalID: -1524574422285284321
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_125
+      rect:
+        serializedVersion: 2
+        x: 508
+        y: 718
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7fd9d80edf0076e0800000000000000
+      internalID: -1841954801288880262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_126
+      rect:
+        serializedVersion: 2
+        x: 723
+        y: 722
+        width: 14
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c58cea57ca4b7bdf0800000000000000
+      internalID: -164464208573970340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_127
+      rect:
+        serializedVersion: 2
+        x: 1019
+        y: 708
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11e9e44dee2cfdc80800000000000000
+      internalID: -8295697657573237231
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_128
+      rect:
+        serializedVersion: 2
+        x: 737
+        y: 714
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c6cbf58f1591df50800000000000000
+      internalID: 6904463666360075975
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_129
+      rect:
+        serializedVersion: 2
+        x: 1043
+        y: 699
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9a9063e86c9b37b0800000000000000
+      internalID: -5243425366837519718
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_130
+      rect:
+        serializedVersion: 2
+        x: 22
+        y: 620
+        width: 51
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0bf2c90d46cee2460800000000000000
+      internalID: 7218967170462265264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_131
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 413
+        width: 55
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4988f3688649e850800000000000000
+      internalID: 6406729496517970250
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_132
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 200
+        width: 136
+        height: 210
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9384806875aa17f80800000000000000
+      internalID: -8110514161029986247
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_133
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 79
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4281f4fbb7aa4bf40800000000000000
+      internalID: 5743402873271556132
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_134
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 77
+        width: 25
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8779b23e061c90cf0800000000000000
+      internalID: -285484479489009800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_135
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 76
+        width: 22
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a67884715375bb70800000000000000
+      internalID: 8914157831134410401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_136
+      rect:
+        serializedVersion: 2
+        x: 113
+        y: 79
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf9fc331369470140800000000000000
+      internalID: 4685794627175643643
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_137
+      rect:
+        serializedVersion: 2
+        x: 187
+        y: 43
+        width: 45
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 06f09ebc0a25abc00800000000000000
+      internalID: 917136324692610912
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_138
+      rect:
+        serializedVersion: 2
+        x: 223
+        y: 77
+        width: 19
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58a705cba6288b890800000000000000
+      internalID: -7442054989292209531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_139
+      rect:
+        serializedVersion: 2
+        x: 263
+        y: 77
+        width: 7
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d131f3573d60b520800000000000000
+      internalID: 2715790659703353809
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_140
+      rect:
+        serializedVersion: 2
+        x: 421
+        y: 0
+        width: 207
+        height: 101
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7ec02cbbea1b4a90800000000000000
+      internalID: -7328734368839446916
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_141
+      rect:
+        serializedVersion: 2
+        x: 424
+        y: 83
+        width: 13
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce788745a8ad6fcb0800000000000000
+      internalID: -4830433262650750996
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_142
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 67
+        width: 37
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c9f6fd98beac1ae90800000000000000
+      internalID: -7016103631487275108
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_143
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 67
+        width: 19
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2040e61ee74d51fb0800000000000000
+      internalID: -4677598996541340670
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_144
+      rect:
+        serializedVersion: 2
+        x: 633
+        y: 45
+        width: 25
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d7a8deb969ccd000800000000000000
+      internalID: 62145950886963160
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_145
+      rect:
+        serializedVersion: 2
+        x: 705
+        y: 23
+        width: 58
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 89401a97f740cfc50800000000000000
+      internalID: 6700235291168408728
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_146
+      rect:
+        serializedVersion: 2
+        x: 735
+        y: 76
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14d0d03623e615f80800000000000000
+      internalID: -8119587490483073727
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_147
+      rect:
+        serializedVersion: 2
+        x: 912
+        y: 23
+        width: 158
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 291907f8052647940800000000000000
+      internalID: 5292963560210600338
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_148
+      rect:
+        serializedVersion: 2
+        x: 1069
+        y: 65
+        width: 7
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4dd6216adefc8fb0800000000000000
+      internalID: -4644056901839561398
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_149
+      rect:
+        serializedVersion: 2
+        x: 1075
+        y: 65
+        width: 27
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a0ea3704f2a1b9d0800000000000000
+      internalID: -2760245927624384344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_150
+      rect:
+        serializedVersion: 2
+        x: 1138
+        y: 81
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b8db4679d3a92dd0800000000000000
+      internalID: -2510295162894427984
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_151
+      rect:
+        serializedVersion: 2
+        x: 1147
+        y: 79
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e681bd21b6c053f50800000000000000
+      internalID: 6860403261386201198
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_152
+      rect:
+        serializedVersion: 2
+        x: 108
+        y: 69
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1a932b280ec30e10800000000000000
+      internalID: 2162798780546783775
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_153
+      rect:
+        serializedVersion: 2
+        x: 263
+        y: 23
+        width: 49
+        height: 59
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a90eea3884f6f840800000000000000
+      internalID: 5257658480943040929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_154
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 43
+        width: 44
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53583b389b5bb6030800000000000000
+      internalID: 3489082144711738677
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_155
+      rect:
+        serializedVersion: 2
+        x: 848
+        y: 55
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 328f7eb560292c660800000000000000
+      internalID: 7404641293359904803
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_156
+      rect:
+        serializedVersion: 2
+        x: 854
+        y: 65
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 10ec6abf4bd883a60800000000000000
+      internalID: 7654023375171800577
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_157
+      rect:
+        serializedVersion: 2
+        x: 86
+        y: 47
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bba95f29dced36640800000000000000
+      internalID: 5072142579864541883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_158
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 31
+        width: 56
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c75e7adb56113fc10800000000000000
+      internalID: 2086030181073937788
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_159
+      rect:
+        serializedVersion: 2
+        x: 159
+        y: 46
+        width: 9
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f51a02d330d25f20800000000000000
+      internalID: 3410016788858672628
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_160
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 41
+        width: 15
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c4663d71400e9ea0800000000000000
+      internalID: -5864249383516216123
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_161
+      rect:
+        serializedVersion: 2
+        x: 183
+        y: 47
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 689f977123c8e9f50800000000000000
+      internalID: 6890098626693560710
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_162
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 17
+        width: 29
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15b53379a79388ab0800000000000000
+      internalID: -5005687787136787631
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_163
+      rect:
+        serializedVersion: 2
+        x: 667
+        y: 47
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e186559c1aab2cd0800000000000000
+      internalID: -2581782921625566745
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_164
+      rect:
+        serializedVersion: 2
+        x: 679
+        y: 51
+        width: 7
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d78af6dbc632513d0800000000000000
+      internalID: -3236641807254181763
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_165
+      rect:
+        serializedVersion: 2
+        x: 764
+        y: 43
+        width: 11
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83423bb28cee76440800000000000000
+      internalID: 4929170860674327608
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_166
+      rect:
+        serializedVersion: 2
+        x: 874
+        y: 33
+        width: 27
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a2028d74da0ec1f0800000000000000
+      internalID: -1022868157611507038
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_167
+      rect:
+        serializedVersion: 2
+        x: 1131
+        y: 45
+        width: 32
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a7d6ae6d36fe4f00800000000000000
+      internalID: 1103089702462216104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_168
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 30
+        width: 7
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 451ee7a148390bf90800000000000000
+      internalID: -6939884830188445356
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_169
+      rect:
+        serializedVersion: 2
+        x: 782
+        y: 33
+        width: 13
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d495bb85bfce36980800000000000000
+      internalID: -8546727103549449907
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_170
+      rect:
+        serializedVersion: 2
+        x: 826
+        y: 16
+        width: 9
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a816fa57cbb2bc100800000000000000
+      internalID: 129245102738465162
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_171
+      rect:
+        serializedVersion: 2
+        x: 820
+        y: 15
+        width: 7
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 147360fc92c633510800000000000000
+      internalID: 1527683625431480129
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_aura_172
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 13
+        width: 11
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a3ca8f9aa3602a90800000000000000
+      internalID: -7340757808141646939
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_fire_aura_0: 1865667966649201546
+      trial_fire_aura_1: 7785192058112134116
+      trial_fire_aura_10: 8003466773008533549
+      trial_fire_aura_100: -1010348184244259345
+      trial_fire_aura_101: -2717027111701780103
+      trial_fire_aura_102: 7976862948699409829
+      trial_fire_aura_103: -6287791952477339415
+      trial_fire_aura_104: 4217233118834579349
+      trial_fire_aura_105: 8214352646006506115
+      trial_fire_aura_106: -3042888529887189366
+      trial_fire_aura_107: -5227460783110197331
+      trial_fire_aura_108: -5680199249224381964
+      trial_fire_aura_109: -3570488211263019836
+      trial_fire_aura_11: -8479031274973812711
+      trial_fire_aura_110: 6522545911449590256
+      trial_fire_aura_111: 8416780703312764726
+      trial_fire_aura_112: -2362670521819875170
+      trial_fire_aura_113: 8624254404142475074
+      trial_fire_aura_114: 647873028591875288
+      trial_fire_aura_115: 7129207123042879033
+      trial_fire_aura_116: -7540369874614757811
+      trial_fire_aura_117: 158113935752466770
+      trial_fire_aura_118: -6991251417806095977
+      trial_fire_aura_119: 5922387885801029981
+      trial_fire_aura_12: 8085756033747376846
+      trial_fire_aura_120: 2609857333675309506
+      trial_fire_aura_121: -2420176466962577119
+      trial_fire_aura_122: 5673092250513080883
+      trial_fire_aura_123: 4526981637041252740
+      trial_fire_aura_124: -1524574422285284321
+      trial_fire_aura_125: -1841954801288880262
+      trial_fire_aura_126: -164464208573970340
+      trial_fire_aura_127: -8295697657573237231
+      trial_fire_aura_128: 6904463666360075975
+      trial_fire_aura_129: -5243425366837519718
+      trial_fire_aura_13: 8533979218447835977
+      trial_fire_aura_130: 7218967170462265264
+      trial_fire_aura_131: 6406729496517970250
+      trial_fire_aura_132: -8110514161029986247
+      trial_fire_aura_133: 5743402873271556132
+      trial_fire_aura_134: -285484479489009800
+      trial_fire_aura_135: 8914157831134410401
+      trial_fire_aura_136: 4685794627175643643
+      trial_fire_aura_137: 917136324692610912
+      trial_fire_aura_138: -7442054989292209531
+      trial_fire_aura_139: 2715790659703353809
+      trial_fire_aura_14: 3195071211919929252
+      trial_fire_aura_140: -7328734368839446916
+      trial_fire_aura_141: -4830433262650750996
+      trial_fire_aura_142: -7016103631487275108
+      trial_fire_aura_143: -4677598996541340670
+      trial_fire_aura_144: 62145950886963160
+      trial_fire_aura_145: 6700235291168408728
+      trial_fire_aura_146: -8119587490483073727
+      trial_fire_aura_147: 5292963560210600338
+      trial_fire_aura_148: -4644056901839561398
+      trial_fire_aura_149: -2760245927624384344
+      trial_fire_aura_15: -7918010500090001897
+      trial_fire_aura_150: -2510295162894427984
+      trial_fire_aura_151: 6860403261386201198
+      trial_fire_aura_152: 2162798780546783775
+      trial_fire_aura_153: 5257658480943040929
+      trial_fire_aura_154: 3489082144711738677
+      trial_fire_aura_155: 7404641293359904803
+      trial_fire_aura_156: 7654023375171800577
+      trial_fire_aura_157: 5072142579864541883
+      trial_fire_aura_158: 2086030181073937788
+      trial_fire_aura_159: 3410016788858672628
+      trial_fire_aura_16: -2849565037991786112
+      trial_fire_aura_160: -5864249383516216123
+      trial_fire_aura_161: 6890098626693560710
+      trial_fire_aura_162: -5005687787136787631
+      trial_fire_aura_163: -2581782921625566745
+      trial_fire_aura_164: -3236641807254181763
+      trial_fire_aura_165: 4929170860674327608
+      trial_fire_aura_166: -1022868157611507038
+      trial_fire_aura_167: 1103089702462216104
+      trial_fire_aura_168: -6939884830188445356
+      trial_fire_aura_169: -8546727103549449907
+      trial_fire_aura_17: -5821885255427899257
+      trial_fire_aura_170: 129245102738465162
+      trial_fire_aura_171: 1527683625431480129
+      trial_fire_aura_172: -7340757808141646939
+      trial_fire_aura_18: -7776874480405574698
+      trial_fire_aura_19: -3452204933940242111
+      trial_fire_aura_2: -2223012951519275591
+      trial_fire_aura_20: 5605338425127925342
+      trial_fire_aura_21: 7610309682377945898
+      trial_fire_aura_22: 4501020660602831425
+      trial_fire_aura_23: 3563507855970591731
+      trial_fire_aura_24: -2697775582305063915
+      trial_fire_aura_25: -9002981390375875694
+      trial_fire_aura_26: 6644701972915689740
+      trial_fire_aura_27: 5643413988989904409
+      trial_fire_aura_28: 890928074179667402
+      trial_fire_aura_29: 782338825833153404
+      trial_fire_aura_3: -2742764480163624497
+      trial_fire_aura_30: 7597484878773586274
+      trial_fire_aura_31: -1536965614327050559
+      trial_fire_aura_32: -4361131311441947889
+      trial_fire_aura_33: 6923412090834875302
+      trial_fire_aura_34: -3246805610228824730
+      trial_fire_aura_35: 7241487014902454128
+      trial_fire_aura_36: -5215247678859286022
+      trial_fire_aura_37: 1996049032631036364
+      trial_fire_aura_38: 2675295914305986496
+      trial_fire_aura_39: 3879221603306510614
+      trial_fire_aura_4: -4108185410461558090
+      trial_fire_aura_40: -2641002258879000991
+      trial_fire_aura_41: 405163766342950879
+      trial_fire_aura_42: 2546389950525458949
+      trial_fire_aura_43: 5520460413585569246
+      trial_fire_aura_44: -1361846317219847961
+      trial_fire_aura_45: 8335990624912801106
+      trial_fire_aura_46: -3122393213045387547
+      trial_fire_aura_47: 6451589021784089848
+      trial_fire_aura_48: -4819159472928455222
+      trial_fire_aura_49: -5359882873382456216
+      trial_fire_aura_5: -7699981061942037869
+      trial_fire_aura_50: 1156936088489342919
+      trial_fire_aura_51: 2405797207405346640
+      trial_fire_aura_52: -4289710830396191245
+      trial_fire_aura_53: -910111894081605342
+      trial_fire_aura_54: -6230895185875122138
+      trial_fire_aura_55: -5220262889396248875
+      trial_fire_aura_56: -6559991499005616295
+      trial_fire_aura_57: 3807421276540343247
+      trial_fire_aura_58: 2254373381270061117
+      trial_fire_aura_59: -2342170954345805428
+      trial_fire_aura_6: 3716041560371223645
+      trial_fire_aura_60: 1615903193940940718
+      trial_fire_aura_61: 931655052533994360
+      trial_fire_aura_62: -4336889053040870612
+      trial_fire_aura_63: 2031203606938129271
+      trial_fire_aura_64: -2146175762879575657
+      trial_fire_aura_65: 5561291307759030078
+      trial_fire_aura_66: -567204382041623267
+      trial_fire_aura_67: -7951107283559899869
+      trial_fire_aura_68: 1253661705601711222
+      trial_fire_aura_69: -4292316666507427655
+      trial_fire_aura_7: -5920073196219615171
+      trial_fire_aura_70: -3900975102231122243
+      trial_fire_aura_71: 6082904307562701260
+      trial_fire_aura_72: -449683263914781417
+      trial_fire_aura_73: -478188581999895117
+      trial_fire_aura_74: -8116112927105570359
+      trial_fire_aura_75: 6514344086520130580
+      trial_fire_aura_76: 6409675995753009200
+      trial_fire_aura_77: 655693565833897273
+      trial_fire_aura_78: 4273523986209031023
+      trial_fire_aura_79: -7173044764285267510
+      trial_fire_aura_8: 682154590248195747
+      trial_fire_aura_80: 2123201290137746073
+      trial_fire_aura_81: -8501189225755781228
+      trial_fire_aura_82: -3556669798531158260
+      trial_fire_aura_83: 5353051889670273189
+      trial_fire_aura_84: -3313165644075011685
+      trial_fire_aura_85: 5141661625068909636
+      trial_fire_aura_86: 5093433730881159911
+      trial_fire_aura_87: 2585197532292601170
+      trial_fire_aura_88: -6633761771572098458
+      trial_fire_aura_89: -4825309454780421398
+      trial_fire_aura_9: 8375572281416554158
+      trial_fire_aura_90: 5896996750255626505
+      trial_fire_aura_91: 145166514938753842
+      trial_fire_aura_92: -88596609599964144
+      trial_fire_aura_93: 6233045404163627418
+      trial_fire_aura_94: -2338192586782672285
+      trial_fire_aura_95: -9083246416977545711
+      trial_fire_aura_96: 943559299786830049
+      trial_fire_aura_97: -8141475747949930302
+      trial_fire_aura_98: -598116931353936816
+      trial_fire_aura_99: -566064326692923154
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

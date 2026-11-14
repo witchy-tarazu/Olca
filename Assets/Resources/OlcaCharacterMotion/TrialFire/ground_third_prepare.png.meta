@@ -1,0 +1,287 @@
+fileFormatVersion: 2
+guid: 59d603e927d1d4a198870b78f1e53067
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2733928368248489086
+    second: ground_third_prepare_0
+  - first:
+      213: 567981232075119158
+    second: ground_third_prepare_1
+  - first:
+      213: -2094937848285636873
+    second: ground_third_prepare_2
+  - first:
+      213: -5943631931786461683
+    second: ground_third_prepare_3
+  - first:
+      213: -1359414119575329289
+    second: ground_third_prepare_4
+  - first:
+      213: -5580633509394354226
+    second: ground_third_prepare_5
+  - first:
+      213: -3864079002068854054
+    second: ground_third_prepare_6
+  - first:
+      213: -4990020903235144458
+    second: ground_third_prepare_7
+  - first:
+      213: 5608852027999983683
+    second: ground_third_prepare_8
+  - first:
+      213: 8149174227260524121
+    second: ground_third_prepare_9
+  - first:
+      213: 7495517236582338045
+    second: ground_third_prepare_10
+  - first:
+      213: -1278471388853529840
+    second: ground_third_prepare_11
+  - first:
+      213: -4700064695363694272
+    second: ground_third_prepare_12
+  - first:
+      213: -4964650790022941838
+    second: ground_third_prepare_13
+  - first:
+      213: 5909512113154821134
+    second: ground_third_prepare_14
+  - first:
+      213: 7581479908354533241
+    second: ground_third_prepare_15
+  - first:
+      213: -6000927785333994119
+    second: ground_third_prepare_16
+  - first:
+      213: -4470816952086024980
+    second: ground_third_prepare_17
+  - first:
+      213: 5789585882376973433
+    second: ground_third_prepare_18
+  - first:
+      213: -9202773172641991787
+    second: ground_third_prepare_19
+  - first:
+      213: -8268721131523783602
+    second: ground_third_prepare_20
+  - first:
+      213: 6196396224546491295
+    second: ground_third_prepare_21
+  - first:
+      213: -2810556221926886901
+    second: ground_third_prepare_22
+  - first:
+      213: -3645691039056465085
+    second: ground_third_prepare_23
+  - first:
+      213: 5329492429316481211
+    second: ground_third_prepare_24
+  - first:
+      213: -1065117661854927782
+    second: ground_third_prepare_25
+  - first:
+      213: -7332212733017234276
+    second: ground_third_prepare_26
+  - first:
+      213: 7233030330746553820
+    second: ground_third_prepare_27
+  - first:
+      213: -4839973588456794868
+    second: ground_third_prepare_28
+  - first:
+      213: -7940666078192130145
+    second: ground_third_prepare_29
+  - first:
+      213: 1012543272458948713
+    second: ground_third_prepare_30
+  - first:
+      213: 7844322366483272391
+    second: ground_third_prepare_31
+  - first:
+      213: -420459456303681409
+    second: ground_third_prepare_32
+  - first:
+      213: 7410924675198329389
+    second: ground_third_prepare_33
+  - first:
+      213: -3313605949629787662
+    second: ground_third_prepare_34
+  - first:
+      213: -3240831893936447052
+    second: ground_third_prepare_35
+  - first:
+      213: -7774948735273132492
+    second: trial_fire_ground_third_prepare
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 489.84375
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 256
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_fire_ground_third_prepare
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 1254
+        height: 1254
+      alignment: 9
+      pivot: {x: 0.60625994, y: 0.12539873}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43e1c279155d91490800000000000000
+      internalID: -7774948735273132492
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      ground_third_prepare_0: 2733928368248489086
+      ground_third_prepare_1: 567981232075119158
+      ground_third_prepare_10: 7495517236582338045
+      ground_third_prepare_11: -1278471388853529840
+      ground_third_prepare_12: -4700064695363694272
+      ground_third_prepare_13: -4964650790022941838
+      ground_third_prepare_14: 5909512113154821134
+      ground_third_prepare_15: 7581479908354533241
+      ground_third_prepare_16: -6000927785333994119
+      ground_third_prepare_17: -4470816952086024980
+      ground_third_prepare_18: 5789585882376973433
+      ground_third_prepare_19: -9202773172641991787
+      ground_third_prepare_2: -2094937848285636873
+      ground_third_prepare_20: -8268721131523783602
+      ground_third_prepare_21: 6196396224546491295
+      ground_third_prepare_22: -2810556221926886901
+      ground_third_prepare_23: -3645691039056465085
+      ground_third_prepare_24: 5329492429316481211
+      ground_third_prepare_25: -1065117661854927782
+      ground_third_prepare_26: -7332212733017234276
+      ground_third_prepare_27: 7233030330746553820
+      ground_third_prepare_28: -4839973588456794868
+      ground_third_prepare_29: -7940666078192130145
+      ground_third_prepare_3: -5943631931786461683
+      ground_third_prepare_30: 1012543272458948713
+      ground_third_prepare_31: 7844322366483272391
+      ground_third_prepare_32: -420459456303681409
+      ground_third_prepare_33: 7410924675198329389
+      ground_third_prepare_34: -3313605949629787662
+      ground_third_prepare_35: -3240831893936447052
+      ground_third_prepare_4: -1359414119575329289
+      ground_third_prepare_5: -5580633509394354226
+      ground_third_prepare_6: -3864079002068854054
+      ground_third_prepare_7: -4990020903235144458
+      ground_third_prepare_8: 5608852027999983683
+      ground_third_prepare_9: 8149174227260524121
+      trial_fire_ground_third_prepare: -7774948735273132492
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

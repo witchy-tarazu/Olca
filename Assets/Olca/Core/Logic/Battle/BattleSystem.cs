@@ -172,6 +172,7 @@ namespace Olca.Core.Logic.Battle
         private int? recoveryCancelFrames;
         public PlayerAttackPhase PlayerActionPhase { get; private set; }
         public bool HasPlayerAction => playerActionOwner != null;
+        public bool IsPlayerBasicAction => basicAction && HasPlayerAction;
         public long AttackActionSerial { get; private set; }
         public long AttackInputEpoch { get; private set; }
         internal event Action<bool> AttackInputBoundary;
