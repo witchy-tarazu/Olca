@@ -10,6 +10,63 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [Test] public void 一体目撃破後の探索ソードは範囲内の二体目へ単体命中する()
+        {
+            using(var s=Sword161(180,1))using(var view=s.AttachPresentation()){
+                s.TrialTarget.TakeDamage(120,ElementType.None);
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);
+                Assert.AreEqual(0,s.TrialTarget.CurrentHp);Assert.AreEqual(90,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void 探索ソードは二体同時に削らず第一標的優先と死亡標的除外を保つ(int kind)
+        {
+            using(var s=Sword161(kind==2?190:180,1))using(var view=s.AttachPresentation()){
+                if(kind==1)s.TrialTarget.TakeDamage(120,ElementType.None);
+                if(kind==2)s.SecondTrialTarget.TakeDamage(120,ElementType.None);
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));
+                Assert.AreEqual(kind==1?0:kind==0?90:120,s.TrialTarget.CurrentHp);
+                Assert.AreEqual(kind==2?0:kind==1?90:120,s.SecondTrialTarget.CurrentHp);
+                Assert.AreEqual(kind!=2,s.TrialStrike.Hit);
+            }
+        }
+        [TestCase(1,90000L,0L,true)] [TestCase(1,90001L,0L,false)]
+        [TestCase(-1,90000L,0L,true)] [TestCase(-1,90001L,0L,false)]
+        [TestCase(1,-1L,0L,false)] [TestCase(-1,-1L,0L,false)]
+        [TestCase(1,1000L,90000L,true)] [TestCase(-1,1000L,90000L,true)]
+        [TestCase(1,1000L,90001L,false)] [TestCase(-1,1000L,90001L,false)]
+        public void 第二標的の単体ソードも左右の距離一単位と空中高度境界を守る(int facing,long distance,long height,bool hit)
+        {
+            using(var s=Sword161())using(var view=s.AttachPresentation()){
+                s.TrialTarget.TakeDamage(120,ElementType.None);var state=s.Core.CaptureState();state.Position=OutsideKickTrialDefinition.SecondTargetX-facing*distance;state.Facing=facing;state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;
+                typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Assert.AreEqual(hit?90:120,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(hit,s.TrialStrike.Hit);
+            }
+        }
+        [Test] public void 第一標的の無敵で防がれても第二標的へ振り替えない()
+        {
+            using(var s=Sword161(180,1))using(var view=s.AttachPresentation()){
+                s.TrialTarget.SetInvincible(1000);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));
+                Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(0,0)] [TestCase(0,3)] [TestCase(1,0)] [TestCase(1,3)] [TestCase(2,0)] [TestCase(2,3)] [TestCase(3,0)] [TestCase(3,3)]
+        public void 第二標的への通常上位炎ソードは保存失敗再試行と発動前後coldで一度だけ命中する(int kind,int at)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"sword269-"+Guid.NewGuid().ToString("N"));
+            try{using(var s=kind==3?Fire180(190,1):Sword161(190,1,startup:3,recovery:8,level:kind==0?ExceedLevel.Normal:kind==1?ExceedLevel.Lv1:ExceedLevel.Lv2)){
+                int power=s.Cards.SelectedCard.GetFinalPower();long revision=s.Cards.HandRevision;
+                using(var view=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,revision,out _));for(int n=0;n<at;n++)Tick160(s,false);}
+                var definitions=Kick214Definitions(s);var runtime=s.CaptureRuntime(definitions);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                Assert.IsNull(runtime.TrialTarget);Assert.AreEqual(at==0?null:(int?)(120-power),runtime.SecondTrialTarget?.Hp);
+                var profile=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=actor,OutsideRuntimeSave=runtime,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};
+                var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,profile,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(0,profile,out var error),error);
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,profile,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var loaded=store.Read(out error);
+                using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null,definitions);using(var view=cold.AttachPresentation())for(int n=at;n<20;n++)Tick160(cold,false);
+                    Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.AreEqual(120-power,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(revision+1,cold.Cards.HandRevision);var saved=cold.CaptureRuntime(definitions);Assert.IsNull(saved.TrialTarget);Assert.AreEqual(1,saved.SecondTrialTarget.Hits);
+                }
+            }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
         public sealed class LegacyContact267 {public string DefinitionId;public long NextFrame;}
         [Test] public void 標的二体の接触間隔を共有せず個別に保存復元する()
         {
@@ -1007,10 +1064,10 @@ namespace Olca.Tests
         }
         private static OutsideExplorationSession Air237(int kind,int x=170,int facing=1)
         {var s=kind==0?Fire180(x,facing):Sword161(x,facing,startup:3,recovery:8,level:kind==1?ExceedLevel.Lv1:ExceedLevel.Lv2);if(kind==0){for(int i=0;i<1000&&(!s.Cards.Hand.Any(c=>c.Id=="fire_sword")||!s.Cards.Hand.Any(c=>c.Id=="sword"&&c.ExceedLevel==ExceedLevel.Normal));i++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="fire_sword")));}return s;}
-        private static System.Collections.Generic.IEnumerable<TestCaseData> Air237Cases(){for(int kind=0;kind<3;kind++)foreach(var row in new[]{(X:170,Facing:1,Height:0L,Hit:true),(X:170,Facing:1,Height:90000L,Hit:true),(X:170,Facing:1,Height:90001L,Hit:false),(X:190,Facing:-1,Height:90000L,Hit:true),(X:190,Facing:1,Height:0L,Hit:false)})yield return new TestCaseData(kind,row.X,row.Facing,row.Height,row.Hit);}
-        [TestCaseSource(nameof(Air237Cases))] public void 明示空中ソード三種は発動frameの高さと向きで判定し一度だけ消費命中する(int kind,int x,int facing,long height,bool hit)
+        private static System.Collections.Generic.IEnumerable<TestCaseData> Air237Cases(){for(int kind=0;kind<3;kind++)foreach(var row in new[]{(X:170,Facing:1,Height:0L,Hit:true,Second:false),(X:170,Facing:1,Height:90000L,Hit:true,Second:false),(X:170,Facing:1,Height:90001L,Hit:false,Second:false),(X:190,Facing:-1,Height:90000L,Hit:true,Second:false),(X:190,Facing:1,Height:0L,Hit:false,Second:true)})yield return new TestCaseData(kind,row.X,row.Facing,row.Height,row.Hit,row.Second);}
+        [TestCaseSource(nameof(Air237Cases))] public void 明示空中ソード三種は発動frameの高さと向きで判定し一度だけ消費命中する(int kind,int x,int facing,long height,bool hit,bool secondHit)
         {
-            using(var s=Air237(kind,x,facing))using(var lease=s.AttachPresentation()){s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();var c=s.Cards.SelectedCard;int power=c.GetFinalPower();ElementType? observed=null;s.TrialTarget.OnDamageObserved+=notice=>observed=notice.Element;string hash=CollectionDisplay.DefinitionHash(c);long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsTrue(s.TryUseSelectedCard(c,revision,out var error),error);Assert.AreEqual(gauge-c.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);for(int i=0;i<2;i++)Tick160(s,false);Assert.AreEqual(120,s.TrialTarget.CurrentHp);s.Core.TickFrame(0);var state=s.Core.CaptureState();state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.AdvancePlayerFrame();Assert.AreEqual(hit?120-power:120,s.TrialTarget.CurrentHp);Assert.AreEqual(hit,s.TrialStrike.Hit);Assert.AreEqual(hit?(ElementType?)c.GetFinalElement():null,observed);Assert.AreEqual(height,s.TrialStrike.Y);for(int i=0;i<10;i++)s.AdvancePlayerFrame();Assert.AreEqual(hit?120-power:120,s.TrialTarget.CurrentHp);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(c));}
+            using(var s=Air237(kind,x,facing))using(var lease=s.AttachPresentation()){s.Core.TickFrame(0,true,true);s.AdvancePlayerFrame();var c=s.Cards.SelectedCard;int power=c.GetFinalPower();ElementType? observed=null;s.TrialTarget.OnDamageObserved+=notice=>observed=notice.Element;string hash=CollectionDisplay.DefinitionHash(c);long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsTrue(s.TryUseSelectedCard(c,revision,out var error),error);Assert.AreEqual(gauge-c.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);for(int i=0;i<2;i++)Tick160(s,false);Assert.AreEqual(120,s.TrialTarget.CurrentHp);s.Core.TickFrame(0);var state=s.Core.CaptureState();state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.AdvancePlayerFrame();Assert.AreEqual(hit?120-power:120,s.TrialTarget.CurrentHp);Assert.AreEqual(secondHit?120-power:120,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(hit||secondHit,s.TrialStrike.Hit);Assert.AreEqual(hit?(ElementType?)c.GetFinalElement():null,observed);Assert.AreEqual(height,s.TrialStrike.Y);for(int i=0;i<10;i++)s.AdvancePlayerFrame();Assert.AreEqual(hit?120-power:120,s.TrialTarget.CurrentHp);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(c));}
         }
         [TestCase(0)][TestCase(1)][TestCase(2)] public void 明示空中ソード三種は停止中に進まず未使用と同じ落下と着地を保つ(int kind)
         {
@@ -1086,9 +1143,9 @@ namespace Olca.Tests
         {
             var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100,staggerDurationFrames:stagger));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(startup,recovery)}});var source=factory.CreateStarterDeck().GetAllCards().ToArray();if(level!=ExceedLevel.Normal){int index=Array.FindIndex(source,c=>c.Id=="sword");source[index]=factory.CreateExceeded(source[index],level);}Assert.IsTrue(s.TryInitializeCards(source,Owned(source),new SeededBattleRandom(161),out _));for(int n=0;n<1000&&(s.Cards.Hand.Count(c=>c.Id=="sword")<2||!s.Cards.Hand.Any(c=>c.Id=="sword"&&c.ExceedLevel==level));n++)s.Cards.Reload();Assert.GreaterOrEqual(s.Cards.Hand.Count(c=>c.Id=="sword"),2);s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword"&&c.ExceedLevel==level));long x=tenths*6000L+(facing<0?6000:0);while(s.Core.Position<x)s.Core.TickFrame(1);if(facing<0)s.Core.TickFrame(-1);Assert.AreEqual(tenths*6000L,s.Core.Position);return s;
         }
-        [TestCase(164,1,false)] [TestCase(165,1,true)] [TestCase(170,1,true)] [TestCase(180,1,true)] [TestCase(185,1,false)] [TestCase(190,-1,true)] [TestCase(196,-1,false)] public void 試用ソードは向きと暫定一点範囲を判定し実カード威力を一度だけ与える(int x,int facing,bool hit)
+        [TestCase(164,1,false,false)] [TestCase(165,1,true,false)] [TestCase(170,1,true,false)] [TestCase(180,1,true,false)] [TestCase(185,1,false,true)] [TestCase(190,-1,true,false)] [TestCase(196,-1,false,true)] public void 試用ソードは向きと暫定一点範囲を判定し実カード威力を一度だけ与える(int x,int facing,bool hit,bool secondHit)
         {
-            using(var s=Sword161(x,facing))using(var view=s.AttachPresentation()){var card=s.Cards.SelectedCard;long rev=s.Cards.HandRevision;int count=0;s.TrialTarget.OnCombatFeedback+=e=>{if(e.Kind==CombatFeedbackKind.Damage)count++;};Assert.IsTrue(s.TryUseSelectedCard(card,rev,out _));Assert.AreEqual(hit?90:120,s.TrialTarget.CurrentHp);Assert.AreEqual(hit,s.TrialStrike.Hit);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.IsFalse(s.TryUseSelectedCard(card,rev,out _));for(int n=0;n<20;n++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}Assert.AreEqual(hit?90:120,s.TrialTarget.CurrentHp);Assert.AreEqual(hit?1:0,count);Assert.AreEqual(100,s.Player.CurrentHp);}
+            using(var s=Sword161(x,facing))using(var view=s.AttachPresentation()){var card=s.Cards.SelectedCard;long rev=s.Cards.HandRevision;int count=0;s.TrialTarget.OnCombatFeedback+=e=>{if(e.Kind==CombatFeedbackKind.Damage)count++;};Assert.IsTrue(s.TryUseSelectedCard(card,rev,out _));Assert.AreEqual(hit?90:120,s.TrialTarget.CurrentHp);Assert.AreEqual(secondHit?90:120,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(hit||secondHit,s.TrialStrike.Hit);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.IsFalse(s.TryUseSelectedCard(card,rev,out _));for(int n=0;n<20;n++){s.Core.TickFrame(0);s.AdvancePlayerFrame();}Assert.AreEqual(hit?90:120,s.TrialTarget.CurrentHp);Assert.AreEqual(hit?1:0,count);Assert.AreEqual(100,s.Player.CurrentHp);}
         }
         [TestCase(0,false)] [TestCase(3,false)] [TestCase(6,false)] [TestCase(0,true)] [TestCase(3,true)] [TestCase(6,true)] public void 試用ソードの前隙と命中済みは保存失敗再試行と冷起動で再命中しない(int at,bool air)
         {

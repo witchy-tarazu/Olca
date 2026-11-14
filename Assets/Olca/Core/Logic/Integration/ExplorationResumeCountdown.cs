@@ -246,9 +246,18 @@ namespace Olca.Core.Logic.Integration
         // 静止標的に対する試用の縦範囲。正式な敵の当たり形状ではない。
         public const long TrialSwordVerticalRange=90000;
         private void ApplyTrialSword(Card card){
-            long dx=(TrialTargetX-Core.Position)*Core.Facing;bool vertical=Core.IsGrounded||(OutsideCardUseDefinition.AllowsAir(card)&&Core.Height>=0&&Core.Height<=TrialSwordVerticalRange);bool hit=vertical&&dx>=0&&dx<=TrialSwordRange&&!TrialTarget.IsDead;
-            trialStrike=new OutsideTrialStrike{Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=hit};
-            if(hit){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);TrialTarget.TakeDamage(card.GetFinalPower(),card.GetFinalElement(),card.Properties,card.PoiseDamage,card.HitInvincibilityMs);}
+            bool vertical=Core.IsGrounded||(OutsideCardUseDefinition.AllowsAir(card)&&Core.Height>=0&&Core.Height<=TrialSwordVerticalRange);
+            bool InRange(long x,Enemy enemy){long dx=(x-Core.Position)*Core.Facing;return vertical&&!enemy.IsDead&&dx>=0&&dx<=TrialSwordRange;}
+            // 単体命中と従来の第一標的優先を保持する。描画の生成順に依存させない。
+            Enemy target=null;bool second=false;
+            if(InRange(TrialTargetX,TrialTarget))target=TrialTarget;
+            else if(InRange(OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget)){target=SecondTrialTarget;second=true;}
+            trialStrike=new OutsideTrialStrike{Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=target!=null};
+            if(target!=null){
+                if(second)secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
+                else{trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}
+                target.TakeDamage(card.GetFinalPower(),card.GetFinalElement(),card.Properties,card.PoiseDamage,card.HitInvincibilityMs);
+            }
         }
         private readonly Olca.Core.Logic.Battle.AttackInputReservation attackReservation=new Olca.Core.Logic.Battle.AttackInputReservation();
         private OutsideNormalKickSequence normalKick;
