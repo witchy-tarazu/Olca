@@ -2946,7 +2946,7 @@ namespace Olca.Tests.Application
         }
 
         [TestCase(false)][TestCase(true)]
-        public void 自然回復の途中状態と一時上書きは出撃保存へ混入できない(bool enemySide)
+        public void 自然回復途中はプレイヤーだけ保存復元でき敵と一時上書きは拒否する(bool enemySide)
         {
             foreach (bool temporary in new[] { false, true }) {
                 var map = EnemyPoiseMap(recovery: 6); var deck = new Deck();
@@ -2960,7 +2960,12 @@ namespace Olca.Tests.Application
                 }
                 var manager = new Olca.Core.Logic.Integration.DungeonBattleManager(map, player, deck,
                     new MockRandomProvider(), new MockLogger(), checkpoints: source);
-                Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked); Assert.IsNull(source.Store.Read());
+                if(!enemySide&&!temporary){
+                    Assert.IsFalse(manager.Dungeon.IsCheckpointBlocked);var dto=source.Store.Read();Assert.IsNotNull(dto.Player.HitState);
+                    Assert.AreEqual(7,dto.Player.HitState.AccumulatedDamage);Assert.AreEqual(6*50,dto.Player.HitState.RecoveryUnits);
+                    Assert.IsTrue(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(dto,source.Definitions,out var restored,out var error),error);
+                    Assert.AreEqual(7,restored.Player.AccumulatedDamage);Assert.AreEqual(6,restored.Player.PoiseRecoveryRemainingFrames);
+                }else{Assert.IsTrue(manager.Dungeon.IsCheckpointBlocked);Assert.IsNull(source.Store.Read());}
             }
         }
 

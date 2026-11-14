@@ -2154,3 +2154,75 @@ namespace Olca.Tests.Dungeon
         }
     }
 }
+
+namespace Olca.Tests.Dungeon
+{
+    [TestFixture] public class S13DungeonStatusTests
+    {
+        private static DungeonSystem World(PlayerCharacter p=null)=>new DungeonSystem(new DungeonConfig("s13-empty","S13",100,Enumerable.Range(0,100).Select(i=>new MapCell(i)).ToList()),p??new PlayerCharacter(100,staggerDurationFrames:18),new Deck(Enumerable.Range(0,20).Select(_=>CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal)).ToList()),new MockRandomProvider(),new MockLogger());
+        private static Olca.Core.Logic.Dungeon.PlayerMovement Movement(DungeonSystem d)=>(Olca.Core.Logic.Dungeon.PlayerMovement)typeof(DungeonSystem).GetField("playerMovement",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(d);
+        private static string Timed(PlayerCharacter p)=>System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(p.CaptureTimedAilments()));
+        [TestCase(1)][TestCase(2)][TestCase(3)][TestCase(18)]
+        public void S13麻痺は最終frameまで停止し自然解除の次frameから通常前進する(int frames)
+        {
+            var d=World();d.Player.ApplyParalysis(frames);d.Player.ApplyConfusion(frames+2);d.Player.ApplyBlindness(frames+3);d.StartDash();d.Jump();Assert.IsFalse(d.IsDashing);Assert.IsFalse(d.IsJumping);
+            for(int i=0;i<frames;i++){d.TickFrame();Assert.AreEqual(0,Movement(d).CurrentPositionMilli);Assert.AreEqual(frames-i-1,d.Player.ParalysisRemainingFrames);}
+            d.TickFrame();Assert.Greater(Movement(d).CurrentPositionMilli,0);Assert.AreEqual(1,d.Player.ConfusionRemainingFrames);Assert.AreEqual(2,d.Player.BlindRemainingFrames);d.StartDash();Assert.IsTrue(d.IsDashing);d.Jump();Assert.IsTrue(d.IsJumping);
+        }
+        [TestCase(false)][TestCase(true)] public void S13途中解除と停止中の予約はmsと論理frameの双方で自然再開する(bool ms)
+        {
+            var d=World();d.Player.ApplyParalysis(30);if(ms)d.Tick(17);else d.TickFrame();Assert.AreEqual(0,d.PlayerPosition);d.Player.ClearParalysis();if(ms)d.Tick(17);else d.TickFrame();Assert.Greater(d.PlayerPosition,0);Assert.AreEqual(0,d.Player.ParalysisRemainingFrames);
+        }
+        [Test] public void S13ポーズは三状態と強靭時計を完全保持し再開で一度だけ進める()
+        {
+            var d=World();d.Player.ApplyParalysis(60);d.Player.ApplyConfusion(80);d.Player.ApplyBlindness(90);d.TickFrame();var timed=Timed(d.Player);var hit=PortableCheckpointJson.Serialize(OutsidePlayerSaveData.Capture(d.Player).HitState);Movement(d).Pause();for(int i=0;i<60;i++){d.TickFrame();d.Tick(17);}Assert.AreEqual(timed,Timed(d.Player));Assert.AreEqual(hit,PortableCheckpointJson.Serialize(OutsidePlayerSaveData.Capture(d.Player).HitState));Movement(d).Resume();d.TickFrame();Assert.AreEqual(58,d.Player.ParalysisRemainingFrames);
+        }
+        [TestCase(false)][TestCase(true)] public void S13空中麻痺は横移動を止めダッシュを解除して既存の着地を継続する(bool dash)
+        {
+            var d=World();if(dash)d.StartDash();d.Jump();d.TickFrame();long x=Movement(d).CurrentPositionMilli;d.Player.ApplyParalysis(60);
+            for(int i=0;i<29;i++){d.TickFrame();Assert.AreEqual(x,Movement(d).CurrentPositionMilli);Assert.IsFalse(d.IsDashing);Assert.IsFalse(d.IsDashJumping);int frame=i+2;float expected=frame>=30?0:(int)(System.Math.Sin(frame*System.Math.PI/30)*1500)/1000f;Assert.AreEqual(expected,d.PlayerHeight,.002f);d.Jump();}
+            Assert.IsFalse(d.IsJumping);Assert.AreEqual(0,d.PlayerHeight);Assert.Greater(d.Player.ParalysisRemainingFrames,0);
+        }
+        [Test] public void S13混乱と暗闇は割当や自動前進とダッシュジャンプを変えず残時間だけ進む()
+        {
+            var d=World();var control=World();d.Player.ApplyConfusion(60);d.Player.ApplyBlindness(90);d.StartDash();control.StartDash();d.Jump();control.Jump();for(int i=0;i<30;i++){d.TickFrame();control.TickFrame();Assert.AreEqual(control.PlayerPosition,d.PlayerPosition);Assert.AreEqual(control.PlayerHeight,d.PlayerHeight);Assert.AreEqual(control.IsDashing,d.IsDashing);}Assert.AreEqual(30,d.Player.ConfusionRemainingFrames);Assert.AreEqual(60,d.Player.BlindRemainingFrames);
+        }
+        [Test] public void S13旧PlayerDTOのnull欄と予約状態のbytesを変更せず初回持込の安全停止を維持する()
+        {
+            var a=new PlayerCharacter(100);var b=new PlayerCharacter(101);b.ApplyParalysis(3);b.ApplyConfusion(4);b.ApplyBlindness(5);var values=new[]{OutsidePlayerSaveData.Capture(a).Player,OutsidePlayerSaveData.Capture(b).Player};Assert.AreEqual(@"[{""AdditionalElementResistances"":null,""AttackGrowth"":null,""AttackPower"":10,""BlindResistance"":0,""ConfusionResistance"":0,""CustomSpeed"":1,""CustomizationAbilities"":null,""EarthResistance"":0,""FireResistance"":0,""GridX"":0,""GridY"":0,""Hp"":100,""MaxHp"":100,""ParalyzeResistance"":0,""Poise"":30,""PoiseRecoveryFrames"":null,""PoisonResistance"":0,""Poisons"":[],""RawBaseEarthResistance"":null,""RawBaseFireResistance"":null,""RawBaseWaterResistance"":null,""RawBaseWindResistance"":null,""StaggerFrames"":0,""Style"":null,""TimedAilments"":null,""WaterResistance"":0,""WindResistance"":0},{""AdditionalElementResistances"":null,""AttackGrowth"":null,""AttackPower"":10,""BlindResistance"":0,""ConfusionResistance"":0,""CustomSpeed"":1,""CustomizationAbilities"":null,""EarthResistance"":0,""FireResistance"":0,""GridX"":0,""GridY"":0,""Hp"":101,""MaxHp"":101,""ParalyzeResistance"":0,""Poise"":30,""PoiseRecoveryFrames"":null,""PoisonResistance"":0,""Poisons"":[],""RawBaseEarthResistance"":null,""RawBaseFireResistance"":null,""RawBaseWaterResistance"":null,""RawBaseWindResistance"":null,""StaggerFrames"":0,""Style"":null,""TimedAilments"":{""Blindness"":{""ClearPending"":false,""DisplayFrames"":0,""InterruptPending"":false,""PendingFrames"":5,""RemainingUnits"":0},""Confusion"":{""ClearPending"":false,""DisplayFrames"":0,""InterruptPending"":false,""PendingFrames"":4,""RemainingUnits"":0},""Paralysis"":{""ClearPending"":false,""DisplayFrames"":0,""InterruptPending"":false,""PendingFrames"":3,""RemainingUnits"":0},""Version"":1},""WaterResistance"":0,""WindResistance"":0}]",System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(values)));Assert.IsFalse((bool)typeof(PlayerCharacter).GetProperty("CanCaptureOutsideDeparture",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(b));
+        }
+        [Test] public void S13同じ位置の障害物は一度だけ処理し停止制御中も三状態時計を進める()
+        {
+            var cells=Enumerable.Range(0,20).Select(i=>i==0?new MapCell(i,new Obstacle("s13-spike","試用",7,new ObstacleControl(12))):new MapCell(i)).ToList();var d=new DungeonSystem(new DungeonConfig("s13-obstacle","S13",20,cells),new PlayerCharacter(100,staggerDurationFrames:18),new Deck(new System.Collections.Generic.List<Card>()),new MockRandomProvider(),new MockLogger());d.Player.ApplyParalysis(30);d.Player.ApplyConfusion(40);d.Player.ApplyBlindness(50);for(int i=0;i<10;i++)d.TickFrame();Assert.AreEqual(93,d.Player.CurrentHp);Assert.AreEqual(20,d.Player.ParalysisRemainingFrames);Assert.AreEqual(30,d.Player.ConfusionRemainingFrames);Assert.AreEqual(40,d.Player.BlindRemainingFrames);
+        }
+        [Test] public void S13地形落下復帰の既存演出停止は三状態と毒にも適用し再開後に一度進める()
+        {
+            var cells=Enumerable.Range(0,20).Select(i=>new MapCell(i)).ToList();var config=new DungeonConfig("s13-hole","S13",20,cells,explorationTerrain:new[]{new ExplorationTerrainCell(2,PanelType.Hole)});var d=new DungeonSystem(config,new PlayerCharacter(100,staggerDurationFrames:18),new Deck(new System.Collections.Generic.List<Card>()),new MockRandomProvider(),new MockLogger());Movement(d).SetPositionMilli(2000);d.Player.ApplyParalysis(60);d.Player.ApplyConfusion(70);d.Player.ApplyBlindness(80);d.TickFrame();Assert.IsTrue(d.IsTerrainRecovering);var before=Timed(d.Player);for(int i=0;i<30;i++)d.TickFrame();Assert.IsFalse(d.IsTerrainRecovering);Assert.AreEqual(before,Timed(d.Player));d.TickFrame();Assert.AreEqual(58,d.Player.ParalysisRemainingFrames);
+        }
+        [Test] public void S13致死障害物は三状態を解除し死亡後に移動と時計を進めない()
+        {
+            var cells=Enumerable.Range(0,20).Select(i=>i==0?new MapCell(i,new Obstacle("s13-lethal","試用",100)):new MapCell(i)).ToList();var d=new DungeonSystem(new DungeonConfig("s13-lethal","S13",20,cells),new PlayerCharacter(100,staggerDurationFrames:18),new Deck(new System.Collections.Generic.List<Card>()),new MockRandomProvider(),new MockLogger());d.Player.SetHp(1);d.Player.ApplyParalysis(60);d.Player.ApplyConfusion(70);d.Player.ApplyBlindness(80);d.TickFrame();Assert.IsTrue(d.Player.IsDead);Assert.IsNull(d.Player.CaptureTimedAilments());long x=Movement(d).CurrentPositionMilli;for(int i=0;i<10;i++)d.TickFrame();Assert.AreEqual(x,Movement(d).CurrentPositionMilli);
+        }
+        [Test] public void S13三状態と毒は併存し毒のHP一下限を変更しない()
+        {
+            var d=World();d.Player.SetHp(1);d.Player.ApplyParalysis(60);d.Player.ApplyConfusion(70);d.Player.ApplyBlindness(80);d.Player.ApplyPoison("s13",new StatusEffect(StatusEffectType.Poison,1000,1),1);d.TickFrame();Assert.IsFalse(d.Player.IsDead);Assert.AreEqual(1,d.Player.CurrentHp);Assert.AreEqual(59,d.Player.ParalysisRemainingFrames);Assert.AreEqual(69,d.Player.ConfusionRemainingFrames);Assert.AreEqual(79,d.Player.BlindRemainingFrames);Assert.IsNotEmpty(d.Player.CapturePoisons());
+        }
+        [Test] public void S13訪問中の停止と退出保存は確定済み状態だけを持ち復元後も再入しない()
+        {
+            var cells=Enumerable.Range(0,20).Select(i=>new MapCell(i)).ToList();var config=new DungeonConfig("s13-visit","S13",20,cells,visits:new[]{new DungeonVisitDefinition(1,false,new[]{new DungeonVisitOption("heal",0,heal:1)},1)});var deck=new Deck(new System.Collections.Generic.List<Card>());var defaults=DungeonCheckpointSession.CreateDefault(config,deck);var d=new DungeonSystem(config,new PlayerCharacter(100,staggerDurationFrames:18),deck,new MockRandomProvider(),new MockLogger(),checkpoints:defaults);Movement(d).SetPositionMilli(1000);d.Player.ApplyParalysis(3);d.Player.ApplyConfusion(20);d.Player.ApplyBlindness(30);d.TickFrame();Assert.IsNotNull(d.ActiveVisit);var before=Timed(d.Player);for(int i=0;i<20;i++)d.TickFrame();Assert.AreEqual(before,Timed(d.Player));Assert.IsTrue(d.ExitVisit(),d.CheckpointError);Assert.IsFalse(d.IsCheckpointBlocked);var saved=defaults.Store.Read();Assert.IsNotNull(saved.Player.HitState);Assert.IsTrue(CheckpointCodec.TryRestore(saved,defaults.Definitions,out var restored,out var error),error);Assert.AreEqual(1000,saved.PositionMilli);d.TickFrame();Assert.IsNull(d.ActiveVisit);Assert.AreEqual(1,d.Player.ParalysisRemainingFrames);
+        }
+        private sealed class FaultIo:Olca.Unity.CheckpointFileIo
+        {public bool Before,After;public override void MoveNew(string a,string b){if(Before)throw new System.IO.IOException("before");base.MoveNew(a,b);if(After)throw new System.IO.IOException("after");}public override void Replace(string a,string b,string c){if(Before)throw new System.IO.IOException("before");base.Replace(a,b,c);if(After)throw new System.IO.IOException("after");}}
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)]
+        public void S13接敵checkpointは三状態とのけぞりを一括保存し失敗停止とcoldで二重適用しない(bool failBefore,bool failAfter)
+        {
+            string directory=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"olca-s13-"+System.Guid.NewGuid().ToString("N"));try{
+                var cells=Enumerable.Range(0,20).Select(i=>i==1?new MapCell(i,new Enemy("s13","試用",100,ElementType.None,new Vector2Int(3,0))):new MapCell(i)).ToList();var config=new DungeonConfig("s13-contact","S13",20,cells);var deck=new Deck(Enumerable.Range(0,20).Select(_=>CardRewardSystem.CreateFallbackCard("sword",CardRarity.Normal)).ToList());var defaults=DungeonCheckpointSession.CreateDefault(config,deck);var io=new FaultIo();var store=new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory,io);var session=new DungeonCheckpointSession(defaults.Definitions,store);var p=new PlayerCharacter(100,staggerDurationFrames:18);p.ApplyParalysis(3);p.ApplyConfusion(10);p.ApplyBlindness(20);var game=new DungeonBattleManager(config,p,deck,new MockRandomProvider(),new MockLogger(),checkpoints:session);
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);io.Before=failBefore;io.After=failAfter;game.TickFrame(17);
+                if(failBefore){Assert.IsTrue(game.Dungeon.IsCheckpointBlocked);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var frozen=Timed(p);for(int i=0;i<20;i++)game.TickFrame(17);Assert.AreEqual(frozen,Timed(p));io.Before=false;Assert.IsTrue(game.Dungeon.RetryCheckpoint());}
+                Assert.IsFalse(game.Dungeon.IsCheckpointBlocked);Assert.IsNotNull(game.CurrentBattle,"接敵した戦闘");var saved=store.Read();Assert.IsNotNull(saved.Player.HitState,"麻痺発症後の保存body");Assert.AreEqual(18*50,saved.Player.HitState.StaggerUnits);Assert.AreEqual(2,p.ParalysisRemainingFrames);var copy=saved.Copy();copy.Player.HitState.StaggerUnits++;Assert.AreNotEqual(copy.Player.HitState.StaggerUnits,saved.Player.HitState.StaggerUnits);copy.Player.HitState.StaggerUnits=19*50;Assert.IsFalse(CheckpointCodec.TryRestore(copy,defaults.Definitions,out _,out _));
+                var cold=new DungeonCheckpointSession(defaults.Definitions,new Olca.Unity.FileCheckpointStore(defaults.Definitions,directory));Assert.IsTrue(DungeonBattleManager.TryRestoreCheckpoint(cold,new MockRandomProvider(),new MockLogger(),out var resumed,out var error),error);resumed.ActivateCheckpoint();Assert.AreEqual(Timed(p),Timed(resumed.Dungeon.Player));Assert.AreEqual(PortableCheckpointJson.Serialize(OutsidePlayerSaveData.Capture(p).HitState),PortableCheckpointJson.Serialize(OutsidePlayerSaveData.Capture(resumed.Dungeon.Player).HitState));game.TickFrame(17);resumed.TickFrame(17);Assert.AreEqual(Timed(p),Timed(resumed.Dungeon.Player));Assert.AreEqual(1,p.ParalysisRemainingFrames);
+            }finally{if(System.IO.Directory.Exists(directory))System.IO.Directory.Delete(directory,true);}
+        }
+    }
+}

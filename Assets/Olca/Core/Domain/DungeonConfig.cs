@@ -126,25 +126,28 @@ namespace Olca.Core.Domain
             GrantKeys = GrantKeys == null ? null : (string[])GrantKeys.Clone() };
     }
 
+    [System.Runtime.Serialization.DataContract]
     public sealed class CheckpointPlayerDto
     {
-        public Olca.Core.Logic.Customization.CustomizationAbilitiesDto CustomizationAbilities; // 旧欠損は装備能力なし
-        public int[] AdditionalElementResistances; // 金/木/陰/陽の原値。旧欠損は0、旧Wind欄と別。
-        public int? RawBaseFireResistance,RawBaseWaterResistance,RawBaseWindResistance,RawBaseEarthResistance; // 装備補正との合算前の基礎値
-        public int PoisonResistance,ParalyzeResistance,ConfusionResistance,BlindResistance; // 基礎状態耐性。旧欠損は0
-        public AttackMilestoneDto AttackGrowth; // 旧保存nullは速度/タメの成長なしを維持
-        public DepartureStyleDto Style; // 旧省略/nullは既存の基本スタイル
-        public int Hp, MaxHp, AttackPower, Poise;
-        public int? PoiseRecoveryFrames; // 旧保存の省略/nullは自然回復未設定。残り時間ではなく定義
-        public PlayerTimedAilmentsDto TimedAilments; // 旧nullは時間状態なし。確定境界の予約も保存する。
-        public PlayerPoisonDto[] Poisons; // 旧保存の省略/nullは毒なし
-        public int StaggerFrames; // 旧保存の省略/0は時間付きのけぞり未設定
-        public int FireResistance, WaterResistance, WindResistance, EarthResistance;
-        public float CustomSpeed;
-        public int GridX, GridY;
+        [System.Runtime.Serialization.DataMember] public Olca.Core.Logic.Customization.CustomizationAbilitiesDto CustomizationAbilities; // 旧欠損は装備能力なし
+        [System.Runtime.Serialization.DataMember] public int[] AdditionalElementResistances; // 金/木/陰/陽の原値。旧欠損は0、旧Wind欄と別。
+        [System.Runtime.Serialization.DataMember] public int? RawBaseFireResistance,RawBaseWaterResistance,RawBaseWindResistance,RawBaseEarthResistance; // 装備補正との合算前の基礎値
+        [System.Runtime.Serialization.DataMember] public int PoisonResistance,ParalyzeResistance,ConfusionResistance,BlindResistance; // 基礎状態耐性。旧欠損は0
+        [System.Runtime.Serialization.DataMember] public AttackMilestoneDto AttackGrowth; // 旧保存nullは速度/タメの成長なしを維持
+        [System.Runtime.Serialization.DataMember] public DepartureStyleDto Style; // 旧省略/nullは既存の基本スタイル
+        [System.Runtime.Serialization.DataMember] public int Hp, MaxHp, AttackPower, Poise;
+        [System.Runtime.Serialization.DataMember] public int? PoiseRecoveryFrames; // 旧保存の省略/nullは自然回復未設定。残り時間ではなく定義
+        [System.Runtime.Serialization.DataMember] public PlayerTimedAilmentsDto TimedAilments; // 旧nullは時間状態なし。確定境界の予約も保存する。
+        [System.Runtime.Serialization.DataMember] public PlayerPoisonDto[] Poisons; // 旧保存の省略/nullは毒なし
+        [System.Runtime.Serialization.DataMember] public int StaggerFrames; // 旧保存の省略/0は時間付きのけぞり未設定
+        [System.Runtime.Serialization.DataMember] public int FireResistance, WaterResistance, WindResistance, EarthResistance;
+        [System.Runtime.Serialization.DataMember] public float CustomSpeed;
+        [System.Runtime.Serialization.DataMember] public int GridX, GridY;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public PlayerHitStateData HitState;
         public void ValidatePermanentAbilities()
         {
-            TimedAilments?.Validate();
+            TimedAilments?.Validate();HitState?.Validate(Poise,StaggerFrames,PoiseRecoveryFrames);
+            if(Hp==0&&HitState!=null)throw new System.ArgumentException("死亡保存に被弾状態を保持できません");
             if(Hp==0&&TimedAilments!=null&&!TimedAilments.IsEmpty)throw new System.ArgumentException("死亡保存に時間状態を保持できません");
             ElementResistances.ValidateAdditional(AdditionalElementResistances);
             CustomizationAbilities?.Validate();
@@ -159,7 +162,7 @@ namespace Olca.Core.Domain
             var copy=(CheckpointPlayerDto)MemberwiseClone();
             copy.AdditionalElementResistances=AdditionalElementResistances==null?null:(int[])AdditionalElementResistances.Clone();
             copy.Style=Style?.Copy();copy.AttackGrowth=AttackGrowth?.Copy();copy.CustomizationAbilities=CustomizationAbilities?.Copy();
-            copy.TimedAilments=TimedAilments?.Copy();
+            copy.TimedAilments=TimedAilments?.Copy();copy.HitState=HitState?.Copy();
             copy.Poisons=Poisons==null ? null : System.Array.ConvertAll(Poisons,p=>p?.Copy()); return copy;
         }
     }

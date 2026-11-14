@@ -6,7 +6,9 @@ namespace Olca.Core.Logic.Dungeon
     /// <summary>検証済みのチェックポイントとPlayerの対応表。保存境界/一時状態の許可はSession/Codecが決める。</summary>
     internal static class CheckpointPlayerMapper
     {
-        internal static CheckpointPlayerDto Capture(PlayerCharacter player)
+        internal static CheckpointPlayerDto Capture(PlayerCharacter player)=>CaptureInternal(player,false);
+        internal static CheckpointPlayerDto CaptureDungeon(PlayerCharacter player)=>CaptureInternal(player,true);
+        private static CheckpointPlayerDto CaptureInternal(PlayerCharacter player,bool includeHitState)
         {
             return new CheckpointPlayerDto {
                 AdditionalElementResistances = player.BaseElementResistances.CaptureAdditional(),
@@ -22,6 +24,7 @@ namespace Olca.Core.Logic.Dungeon
                 AttackGrowth = player.AttackGrowth?.Capture(),
                 Style = player.DepartureStyle.Id == DepartureStyleDefinition.BasicId && player.DepartureStyle.TransformationPhaseBonus == 0 ? null : player.DepartureStyle.Capture(),
                 TimedAilments = player.CaptureTimedAilments(),
+                HitState = includeHitState&&!player.IsDead&&(player.IsStaggered||player.AccumulatedDamage!=0||player.PoiseRecoveryRemainingFrames>0)?player.CaptureHitState():null,
                 Poisons = player.CapturePoisons(),
                 Hp = player.CurrentHp,
                 MaxHp = player.MaxHp,
@@ -48,6 +51,7 @@ namespace Olca.Core.Logic.Dungeon
             player.TakeDamage(p.MaxHp - p.Hp, affectsPoise: false);
             player.RestorePoisons(p.Poisons);
             player.RestoreTimedAilments(p.TimedAilments);
+            player.RestoreHitState(p.HitState);
             return player;
         }
     }

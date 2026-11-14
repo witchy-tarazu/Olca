@@ -279,6 +279,13 @@ namespace Olca.Core.Logic.Dungeon
             }
         }
 
+        /// <summary>麻痺中は横移動/小数余りを保ち、ダッシュを解除して既存のジャンプ時間だけ進める。</summary>
+        internal void AdvanceStoppedGravity(int milliseconds,bool logical)
+        {
+            if(isPaused)return;
+            if(isDashing||isDashJumping){isDashing=isDashJumping=false;ControlChanged();}
+            if(isJumping)UpdateJump(logical?1:Math.Max(0,milliseconds)*3d/50d);
+        }
         /// <summary>戦闘からの復帰演出で着地した後に、接敵時の空中状態を破棄する。</summary>
         internal void ResetAirborneMovement()
         {

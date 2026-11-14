@@ -131,7 +131,7 @@ namespace Olca.Core.Logic.Dungeon
         public bool IsDashing => playerMovement.IsDashing;
         /// <summary>描画間の座標差によらない自動前進の有効状態。移動量や更新頻度は変更しない。</summary>
         public bool IsExplorationMoving => !IsInBattle && !IsDungeonCleared && !IsFloorCompleted
-            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead && !IsObstacleStopped && !IsTerrainRecovering;
+            && !IsCheckpointBlocked && !checkpointSuspended && !playerMovement.IsPaused && !playerCharacter.IsDead && !IsObstacleStopped && !IsTerrainRecovering && !playerCharacter.IsParalyzed;
         public PlayerCharacter Player => playerCharacter;
         /// <summary>ダンジョンマップ（View側の敵スプライト初期配置に使用）</summary>
         public DungeonMap Map => map;
@@ -360,16 +360,18 @@ namespace Olca.Core.Logic.Dungeon
             catch(ArgumentException e){BlockCheckpoint(e.Message);return false;}
         }
 
-        private bool explorationHpFrame, explorationHpUpdated;
+        private bool explorationHpFrame, explorationHpUpdated, explorationStatusFrame;
         private readonly List<PenaltyInfo> pendingObstaclePenalties = new List<PenaltyInfo>();
         private ContactInfo pendingPoisonFrameContact;
         private void CommitExplorationHp()
         {
-            if (!explorationHpFrame) return;
-            explorationHpFrame=false; explorationHpUpdated=true;
-            playerCharacter.CommitHpFrame(); playerCharacter.PublishHpFrame();
-            var notices = pendingObstaclePenalties.ToArray(); pendingObstaclePenalties.Clear();
-            foreach (var penalty in notices) OnObstaclePenalty?.Invoke(penalty);
+            bool hp=explorationHpFrame;
+            if(hp){explorationHpFrame=false;explorationHpUpdated=true;playerCharacter.CommitHpFrame();}
+            if(explorationStatusFrame){explorationStatusFrame=false;playerCharacter.EndParalysisFrame(true);playerCharacter.EndConfusionFrame(true);playerCharacter.EndBlindnessFrame(true);}
+            if(!hp)return;
+            playerCharacter.PublishHpFrame();
+            var notices=pendingObstaclePenalties.ToArray();pendingObstaclePenalties.Clear();
+            foreach(var penalty in notices)OnObstaclePenalty?.Invoke(penalty);
         }
         private bool processingTick;
         private int encounterRevision;
@@ -383,12 +385,16 @@ namespace Olca.Core.Logic.Dungeon
             if(IsTerrainRecovering){TickTerrainFall(logicalFrame?50:Math.Max(0,deltaTimeMs)*3L);return;}
             processingTick = true; explorationHpUpdated=false;
             obstacleVisualUnits += logicalFrame ? 50 : Math.Max(0,deltaTimeMs) * 3L;
-            if (playerCharacter.HasPoisonState || IsObstacleStopped || hasFieldItems || map.ExplorationTerrain.Count>0) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
+            explorationStatusFrame=playerCharacter.HasParalysisState||playerCharacter.HasConfusionState||playerCharacter.HasBlindnessState||playerCharacter.IsStaggered||playerCharacter.PoiseRecoveryRemainingFrames>0;
+            if (explorationStatusFrame || playerCharacter.HasPoisonState || IsObstacleStopped || hasFieldItems || map.ExplorationTerrain.Count>0) { playerCharacter.BeginHpFrame(); explorationHpFrame=true; }
             try
             {
+                if(explorationStatusFrame){playerCharacter.BeginParalysisFrame(true);playerCharacter.BeginConfusionFrame(true);playerCharacter.BeginBlindnessFrame(true);playerCharacter.TickParalysis(deltaTimeMs,logicalFrame);playerCharacter.TickConfusion(deltaTimeMs,logicalFrame);playerCharacter.TickBlindness(deltaTimeMs,logicalFrame);playerCharacter.TickStagger(deltaTimeMs,logicalFrame);playerCharacter.TickPoiseRecovery(deltaTimeMs,logicalFrame);}
                 playerCharacter.TickPoisons(deltaTimeMs, logicalFrame);
                 if (IsObstacleStopped) { TickObstacleControl(logicalFrame ? 50 : Math.Max(0, deltaTimeMs) * 3L); return; }
-                var step = logicalFrame ? playerMovement.PreviewFrame() : playerMovement.PreviewStep(deltaTimeMs);
+                bool paralyzed=playerCharacter.IsParalyzed;
+                if(paralyzed)playerMovement.AdvanceStoppedGravity(deltaTimeMs,logicalFrame);
+                var step = paralyzed?playerMovement.PreviewStep(0):logicalFrame ? playerMovement.PreviewFrame() : playerMovement.PreviewStep(deltaTimeMs);
                 long terrainFrom=step.Start;bool terrainAirReset=false;
                 int control = playerMovement.ControlRevision, encounter = encounterRevision;
                 var contacts = new List<ContactSystem.SweptContact>();
@@ -459,7 +465,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void Jump()
         {
-            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || IsTerrainRecovering || playerCharacter.IsDead) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || IsTerrainRecovering || playerCharacter.IsDead || playerCharacter.IsParalysisActionPrevented) return;
             bool wasJumping=playerMovement.IsJumping;
             playerMovement.Jump();
             if(!wasJumping&&playerMovement.IsJumping&&playerCharacter.TerrainState.ReceivesPanelEffects){
@@ -475,7 +481,7 @@ namespace Olca.Core.Logic.Dungeon
         /// </summary>
         public void StartDash()
         {
-            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || IsTerrainRecovering || playerCharacter.IsDead) return;
+            if (IsInBattle || IsFloorCompleted || IsCheckpointBlocked || checkpointSuspended || IsObstacleStopped || IsTerrainRecovering || playerCharacter.IsDead || playerCharacter.IsParalysisActionPrevented) return;
             playerMovement.StartDash();
         }
 
@@ -1791,7 +1797,7 @@ namespace Olca.Core.Logic.Dungeon
                 throw new ArgumentException("通常移動途中の状態は保存できません");
             var player = dungeon.Player;
             Definitions.ValidateCurrentMap(dungeon.Map);
-            if (!player.BattleStatusResistances.IsNeutral || player.Guard.IsActive || player.IsStaggered || !player.CanCaptureTimedAilments || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsTemporarilyFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames || player.PoiseRecoveryRemainingFrames > 0) || player.IsConcentrating)
+            if (!player.BattleStatusResistances.IsNeutral || player.Guard.IsActive || player.IsInvincible || !player.CanCaptureTimedAilments || player.HasTransformationPreview || player.HasTransformationDefense || player.IsInTemporaryMove || player.TerrainState.IsTemporarilyFloating || player.HasBarrier || player.HasAura || (player.PoiseRecoveryDelayFrames != player.PoiseRecoveryDefinitionFrames) || player.IsConcentrating)
                 throw new ArgumentException("未対応の一時状態を保存できません");
             var deck = dungeon.GetCurrentDeck().GetAllCards().ToList();
             var obtained = dungeon.GetObtainedCards().ToList();
@@ -1817,7 +1823,7 @@ namespace Olca.Core.Logic.Dungeon
                 DefinitionsRevision = Definitions.Revision, MapHash = Definitions.MapHash, DungeonId = Definitions.DungeonId,
                 RunId = RunId, DepartureTermsKey=DepartureTermsKey, Sequence = (Last?.Sequence ?? 0) + 1, Boundary = boundary, PositionMilli = dungeon.CheckpointPositionMilli, Currency = dungeon.Currency,
                 Visits=dungeon.CaptureVisits(),
-                Player = CheckpointPlayerMapper.Capture(player),
+                Player = CheckpointPlayerMapper.CaptureDungeon(player),
                 Cards = all.Select(c => Definitions.CaptureKnownCard(Identify(c), c)).ToArray(),
                 DeckOrder = deck.Select(Identify).ToArray(), ObtainedOrder = obtained.Select(Identify).ToArray(), Enemies = enemyStates.ToArray()
             };
