@@ -4755,6 +4755,40 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        [TestCase(false,false)] [TestCase(false,true)] [TestCase(true,false)] [TestCase(true,true)]
+        public void 複合回復は一方でも有効なら一個消費し両方無効なら書込もCDも発生しない(bool hurt,bool poisoned)
+        {
+            var definition=OutsideRecoveryItemDefinition.CombinedProvisional;var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2},new OutsideItemCount{Id="unknown264",Count=7}},Shortcuts=new[]{definition.Id,null,null,null}}}));var save=new ClearReturnSession(store);
+            using(var world=new OutsideExplorationSession()){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100));if(hurt)world.Player.SetHp(90);if(poisoned){world.Player.ApplyPoison("a",new StatusEffect(StatusEffectType.Poison,1000,1),60);world.Player.ApplyPoison("b",new StatusEffect(StatusEffectType.Poison,2000,2),120);}
+                using(var shown=world.AttachPresentation()){
+                    var before=System.IO.File.ReadAllBytes(store.ActivePath);var hand=world.Cards;long frame=world.Core.Frame;bool effective=hurt||poisoned;
+                    Assert.AreEqual(effective,world.TryUseRecoveryItem(save,definition,null,out var error),error);Assert.AreEqual(100,world.Player.CurrentHp);Assert.IsEmpty(world.Player.CapturePoisons());Assert.AreEqual(effective?1:2,save.OutsideInventorySnapshot.Items.Single(v=>v.Id==definition.Id).Count);Assert.AreEqual(7,save.OutsideInventorySnapshot.Items.Single(v=>v.Id=="unknown264").Count);Assert.AreEqual(effective?180:0,world.ItemCooldownRemaining(definition.Id));Assert.AreEqual(frame,world.Core.Frame);Assert.AreSame(hand,world.Cards);Assert.IsFalse(save.HasPendingSave);
+                    if(!effective){CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));return;}
+                    var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+                    var coldSave=new ClearReturnSession(Store());using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(coldSave.Snapshot.OutsidePlayerSave,coldSave.Snapshot.OutsideRuntimeSave,null));cold.RestoreItemCooldowns(coldSave.Snapshot.OutsideItemState,coldSave.Snapshot.OutsidePlayerSave,coldSave.Snapshot.OutsideRuntimeSave);Assert.AreEqual(100,cold.Player.CurrentHp);Assert.IsEmpty(cold.Player.CapturePoisons());Assert.AreEqual(180,cold.ItemCooldownRemaining(definition.Id));}
+                }
+            }
+        }
+        [TestCase(false,false)] [TestCase(true,false)] [TestCase(false,true)]
+        public void 複合回復の保存失敗は両効果と所持と時計を変更せず再試行で一括確定する(bool beforeFailure,bool afterWrite)
+        {
+            var definition=OutsideRecoveryItemDefinition.CombinedProvisional;var io=new FaultIo();var store=Store(io);System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2}}}}));var save=new ClearReturnSession(store);
+            using(var world=new OutsideExplorationSession()){
+                world.TryInitializePlayer(()=>new PlayerCharacter(100));world.Player.SetHp(20);world.Player.ApplyPoison("pending",new StatusEffect(StatusEffectType.Poison,1000,1),60);
+                using(var shown=world.AttachPresentation()){
+                    var bytes=System.IO.File.ReadAllBytes(store.ActivePath);var poisons=PortableCheckpointJson.Serialize(world.Player.CapturePoisons());io.Before=beforeFailure;io.After=afterWrite;
+                    Assert.AreEqual(!beforeFailure,world.TryUseRecoveryItem(save,definition,null,out var error),error);
+                    if(beforeFailure){Assert.AreEqual(20,world.Player.CurrentHp);Assert.AreEqual(poisons,PortableCheckpointJson.Serialize(world.Player.CapturePoisons()));Assert.AreEqual(2,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));Assert.IsFalse(save.HasPendingSave);io.Before=false;Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out error),error);}
+                    Assert.AreEqual(45,world.Player.CurrentHp);Assert.IsEmpty(world.Player.CapturePoisons());Assert.AreEqual(1,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(180,world.ItemCooldownRemaining(definition.Id));Assert.AreEqual(0,world.Core.Frame);var cold=new ClearReturnSession(Store());Assert.AreEqual(45,cold.Snapshot.OutsidePlayerSave.Player.Hp);Assert.IsEmpty(cold.Snapshot.OutsidePlayerSave.Player.Poisons);
+                }
+            }
+        }
+        [Test] public void 複合回復定義は旧値と旧二品を維持し不正な効果を拒否する()
+        {
+            Assert.AreEqual(0,(int)OutsideRecoveryEffect.Hp);Assert.AreEqual(1,(int)OutsideRecoveryEffect.Poison);Assert.AreEqual(25,OutsideRecoveryItemDefinition.Provisional.HealHp);Assert.AreEqual(180,OutsideRecoveryItemDefinition.Provisional.CooldownFrames);Assert.AreEqual(120,OutsideRecoveryItemDefinition.PoisonProvisional.CooldownFrames);
+            Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",0,180,OutsideRecoveryEffect.HpAndPoison));Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",1,180,OutsideRecoveryEffect.Poison));Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",25,180,(OutsideRecoveryEffect)3));
+        }
         [TestCase(false,false)] [TestCase(true,false)] [TestCase(false,true)]
         public void 試用カード箱は所持図鑑と開封を原子保存し再起動連打失敗を保全する(bool failure,bool after)
         {
