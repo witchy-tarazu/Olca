@@ -1002,6 +1002,24 @@ namespace Olca.Tests.Application
             }
         }
 
+        [TestCase(-1)][TestCase(1)] public async Task 外界空中前蹴りは命中窓だけ補正済み試用本体を描き着地で解除する(int facing)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            var contact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_air_forward_kick_contact");Assert.IsNotNull(contact);Assert.AreEqual(256,contact.texture.width);Assert.AreEqual(256,contact.texture.height);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(156f,contact.pivot.x,.01f);Assert.AreEqual(14f,contact.pivot.y,.01f);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var rise=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredJumpRiseSprite;
+                model.TickTraversal(facing);model.TickTraversal(0,true,true);Assert.IsFalse(model.Core.IsGrounded);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.AirForward,model.NormalKick.Kind);
+                for(int age=0;age<21;age++){
+                    if(age>0)model.TickTraversal(facing,false,true);long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();Assert.AreSame(age>=6&&age<9?contact:rise,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(age==7){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);view.Render();Assert.AreSame(contact,body.sprite);}
+                }
+                model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);
+                while(!model.Core.IsGrounded)model.TickTraversal(0);model.TickTraversal(0,true,true);while(model.Core.VerticalVelocity>0||model.Core.Height>15000)model.TickTraversal(0);
+                Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out error),error);while(!model.Core.IsGrounded)model.TickTraversal(0);view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
         [Test] public async Task 外界カエン識別は実切替保存の成功だけを読み被覆再入と解除で本体と時計を変えない()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var store=new DoorBoundaryStore();var save=new Olca.Core.Domain.ClearReturnSession(store);

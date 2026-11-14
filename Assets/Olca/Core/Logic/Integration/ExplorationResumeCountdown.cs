@@ -276,7 +276,7 @@ namespace Olca.Core.Logic.Integration
             if(!SupportedCard(expected)||Core.CardGauge.CurrentUnits<(long)expected.GetFinalCost()*OutsideCardGauge.UnitsPerPoint)return false;
             return StartCardAfterRecovery(expected,revision,out error);
         }
-        private void KickFeedback(){AdvanceTrialKickHits();CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / ダッシュ シセイをリヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+(NormalKick.Kind<=OutsideKickKind.GroundThird?"":" / モーション ミセツゾク");CardUseMessageFrame=Core.Frame;}
+        private void KickFeedback(){AdvanceTrialKickHits();CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / ダッシュ シセイをリヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+(NormalKick.Kind<=OutsideKickKind.AirForward?"":" / モーション ミセツゾク");CardUseMessageFrame=Core.Frame;}
         private bool CanCancelAnyAttack()=>attackState!=null?CanCancelAttack():normalKick?.IsActive==true&&normalKick.CanCancelNormal;
         private bool StartCardAfterRecovery(Card card,long revision,out string error)
         {
