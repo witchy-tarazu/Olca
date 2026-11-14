@@ -1,0 +1,291 @@
+fileFormatVersion: 2
+guid: 1ceaf2f271355d81eb4edb38b7968d27
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -4014864572571973232
+    second: jump_rise_0
+  - first:
+      213: -8891568559405207396
+    second: jump_rise_1
+  - first:
+      213: 9204743914365655035
+    second: jump_rise_2
+  - first:
+      213: 1064394262098037831
+    second: jump_rise_3
+  - first:
+      213: 2897624795366378011
+    second: jump_rise_4
+  - first:
+      213: 8352272556176486427
+    second: jump_rise_5
+  - first:
+      213: -903843959996025734
+    second: jump_rise_6
+  - first:
+      213: -5303975034335798131
+    second: jump_rise_7
+  - first:
+      213: -8052077125831965771
+    second: jump_rise_8
+  - first:
+      213: 8764490758930725078
+    second: jump_rise_9
+  - first:
+      213: -1633177746201778925
+    second: jump_rise_10
+  - first:
+      213: 2317977428546645189
+    second: jump_rise_11
+  - first:
+      213: -8167504873921888090
+    second: jump_rise_12
+  - first:
+      213: -3492913191425149434
+    second: jump_rise_13
+  - first:
+      213: 4464180847772887903
+    second: jump_rise_14
+  - first:
+      213: 6956175357065039223
+    second: jump_rise_15
+  - first:
+      213: -8320855986099954182
+    second: jump_rise_16
+  - first:
+      213: 8307004524098888550
+    second: jump_rise_17
+  - first:
+      213: -3657049274487871472
+    second: jump_rise_18
+  - first:
+      213: 6622017988253587013
+    second: jump_rise_19
+  - first:
+      213: -6031265983891106227
+    second: jump_rise_20
+  - first:
+      213: 2757422185601085579
+    second: jump_rise_21
+  - first:
+      213: -4046512452274226085
+    second: jump_rise_22
+  - first:
+      213: 1442657289121356594
+    second: jump_rise_23
+  - first:
+      213: 8474790692996504967
+    second: jump_rise_24
+  - first:
+      213: -894666171048530555
+    second: jump_rise_25
+  - first:
+      213: -6506187268959931710
+    second: jump_rise_26
+  - first:
+      213: -1590281012688168239
+    second: jump_rise_27
+  - first:
+      213: -2083580774624759175
+    second: jump_rise_28
+  - first:
+      213: 3113222434453252063
+    second: jump_rise_29
+  - first:
+      213: 4445417319149813866
+    second: jump_rise_30
+  - first:
+      213: 8917243960558015601
+    second: jump_rise_31
+  - first:
+      213: 7703964993704469280
+    second: jump_rise_32
+  - first:
+      213: 7214921791843397347
+    second: jump_rise_33
+  - first:
+      213: 2346117696686336908
+    second: jump_rise_34
+  - first:
+      213: 6156858767582385091
+    second: jump_rise_35
+  - first:
+      213: 4672260755671716576
+    second: jump_rise_36
+  - first:
+      213: -1027870402830553131
+    second: trial_fire_jump_rise
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 489.84375
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 256
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_fire_jump_rise
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 1254
+        height: 1254
+      alignment: 9
+      pivot: {x: 0.49609375, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5dfa52480554cb1f0800000000000000
+      internalID: -1027870402830553131
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      jump_rise_0: -4014864572571973232
+      jump_rise_1: -8891568559405207396
+      jump_rise_10: -1633177746201778925
+      jump_rise_11: 2317977428546645189
+      jump_rise_12: -8167504873921888090
+      jump_rise_13: -3492913191425149434
+      jump_rise_14: 4464180847772887903
+      jump_rise_15: 6956175357065039223
+      jump_rise_16: -8320855986099954182
+      jump_rise_17: 8307004524098888550
+      jump_rise_18: -3657049274487871472
+      jump_rise_19: 6622017988253587013
+      jump_rise_2: 9204743914365655035
+      jump_rise_20: -6031265983891106227
+      jump_rise_21: 2757422185601085579
+      jump_rise_22: -4046512452274226085
+      jump_rise_23: 1442657289121356594
+      jump_rise_24: 8474790692996504967
+      jump_rise_25: -894666171048530555
+      jump_rise_26: -6506187268959931710
+      jump_rise_27: -1590281012688168239
+      jump_rise_28: -2083580774624759175
+      jump_rise_29: 3113222434453252063
+      jump_rise_3: 1064394262098037831
+      jump_rise_30: 4445417319149813866
+      jump_rise_31: 8917243960558015601
+      jump_rise_32: 7703964993704469280
+      jump_rise_33: 7214921791843397347
+      jump_rise_34: 2346117696686336908
+      jump_rise_35: 6156858767582385091
+      jump_rise_36: 4672260755671716576
+      jump_rise_4: 2897624795366378011
+      jump_rise_5: 8352272556176486427
+      jump_rise_6: -903843959996025734
+      jump_rise_7: -5303975034335798131
+      jump_rise_8: -8052077125831965771
+      jump_rise_9: 8764490758930725078
+      trial_fire_jump_rise: -1027870402830553131
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
