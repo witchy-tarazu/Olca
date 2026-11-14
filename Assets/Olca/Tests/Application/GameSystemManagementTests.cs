@@ -1128,7 +1128,8 @@ namespace Olca.Tests.Application
                     if(hit){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);view.Render();Assert.AreSame(contact,body.sprite);}
                     model.TickTraversal(-facing);
                 }
-                Assert.AreEqual(facing>0?90:100,model.Player.CurrentHp); // 右進行は試用敵へ一度接触。描画自身はHPを変更しない。
+                Assert.AreEqual(facing>0?90:100,model.Player.CurrentHp); // このダッシュ区間は標的1まで。標的2の接触域へは届かない。描画自身はHPを変更しない。
+                StringAssert.Contains("セッショク10（カリ）",view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().text);StringAssert.Contains("AIコウゲキ",view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().text);
                 view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.IsFalse(model.Core.IsDashing);model.TickTraversal(0);view.Render();if(fire)Assert.AreEqual("trial_fire_idle",body.sprite.name);else StringAssert.EndsWith("/Idle/heroine_idle_01.png",UnityEditor.AssetDatabase.GetAssetPath(body.sprite));
             }
         }
@@ -1445,6 +1446,23 @@ namespace Olca.Tests.Application
             Assert.Throws<ArgumentException>(()=>system.ResetOutsideForNewProgress(generation));
             Assert.AreSame(model,system.OutsideExploration);Assert.AreSame(runtime,system.OutsideRuntime);
             Assert.IsFalse(model.IsEnded);Assert.AreEqual(position,model.Core.Position);Assert.IsNull(system.OutsideProgressGeneration);
+        }
+        [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)] public async Task 接触二体と任意AIの案内は最終描画でも全字が板内に収まる(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(model.Core,new object[]{18L*60000});
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;
+                foreach(int mode in new[]{0,1,2,3}){
+                    if(mode==1)Assert.IsTrue(model.SetTrialEnemyAttack(true));if(mode==2)model.TrialTarget.TakeDamage(120,Olca.Core.Domain.ElementType.None);if(mode==3)model.SecondTrialTarget.TakeDamage(120,Olca.Core.Domain.ElementType.None);view.Render();Canvas.ForceUpdateCanvases();var text=view.transform.Find("OutsideTrialTargetName").GetComponent<Text>();var plate=(RectTransform)view.transform.Find("OutsideTrialTargetNamePlate");if(mode==3)Assert.AreEqual("カイフクデ サイセイ",text.text);else {StringAssert.Contains((mode==2?"1タイ":"2タイ")+" / セッショク10（カリ）",text.text);StringAssert.Contains(mode==1?"AIコウゲキON":"AIコウゲキOFF",text.text);}
+                    var generator=new TextGenerator();Assert.IsTrue(generator.Populate(text.text,text.GetGenerationSettings(text.rectTransform.rect.size)));Assert.AreEqual(text.text.Length,generator.characterCountVisible);Assert.AreEqual(mode==3?1:2,generator.lineCount);
+                    // UICharInfoのbaseline差と実fontのglyph寸法で行間を測る。改行にはquadがないためi*4で行分割しない。
+                    if(mode!=3){float[] low={float.PositiveInfinity,float.PositiveInfinity},high={float.NegativeInfinity,float.NegativeInfinity};for(int row=0;row<2;row++){int start=generator.lines[row].startCharIdx,end=row==0?generator.lines[1].startCharIdx:text.text.Length;for(int i=start;i<end;i++){if(char.IsWhiteSpace(text.text[i]))continue;Assert.IsTrue(text.font.GetCharacterInfo(text.text[i],out var glyph,text.fontSize,text.fontStyle),"glyph: "+text.text[i]);float baseline=generator.characters[i].cursorPos.y/text.pixelsPerUnit;low[row]=Mathf.Min(low[row],baseline+glyph.minY);high[row]=Mathf.Max(high[row],baseline+glyph.maxY);}}Assert.GreaterOrEqual(low[0]-high[1],6f,"640画面で2px以上の行間を確保する");}
+                    foreach(var vertex in generator.verts){float y=vertex.position.y/text.pixelsPerUnit;Assert.That(y,Is.InRange(plate.rect.yMin+2,plate.rect.yMax-2));}
+                    ((System.IDisposable)generator).Dispose();Assert.That(text.rectTransform.rect.width,Is.LessThan(plate.rect.width));Assert.That(text.rectTransform.rect.height,Is.LessThan(plate.rect.height));Assert.AreEqual(100,model.Player.CurrentHp);Assert.AreEqual(0,model.Core.Frame);
+                }
+            }
         }
         [Test] public void 通常Rootの初回と新規進行だけ試用敵の接触を明示登録する()
         {

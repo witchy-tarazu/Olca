@@ -10,6 +10,59 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        public sealed class LegacyContact267 {public string DefinitionId;public long NextFrame;}
+        [Test] public void 標的二体の接触間隔を共有せず個別に保存復元する()
+        {
+            using(var s=Contact266()){
+                using(var l=s.AttachPresentation()){
+                    s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);
+                    var state=s.Core.CaptureState();state.Position=OutsideKickTrialDefinition.SecondTargetX;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TickTraversal(0);Assert.AreEqual(80,s.Player.CurrentHp);
+                }
+                var runtime=s.CaptureRuntime(null);Assert.AreEqual(61,runtime.TrialContact.NextFrame);Assert.AreEqual(62,runtime.TrialContact.SecondNextFrame);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                using(var cold=new OutsideExplorationSession(trialContactDamage:true)){
+                    cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime)),null);
+                    using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){
+                        for(int n=0;n<59;n++){s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(80,cold.Player.CurrentHp);}s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(70,cold.Player.CurrentHp);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);
+                    }
+                }
+                var after=s.CaptureRuntime(null);Assert.AreEqual(0,after.TrialContact.NextFrame);Assert.AreEqual(122,after.TrialContact.SecondNextFrame);Assert.AreEqual(0,after.Copy().TrialContact.NextFrame);Assert.AreEqual(122,after.Copy().TrialContact.SecondNextFrame);
+                s.RecoverOutside(null);Assert.IsNull(s.CaptureRuntime(null).TrialContact);
+            }
+        }
+        [Test] public void 二体目の接触保存は旧一体目payloadとkeyを変えず不正時計を拒否する()
+        {
+            var old=new LegacyContact267{DefinitionId="trial-contact-no-poise-v1",NextFrame=60};var bytes=PortableCheckpointJson.Serialize(old);var loaded=PortableCheckpointJson.Deserialize<OutsideTrialContactData>(bytes);loaded.Validate(0);CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(loaded));Assert.AreEqual(0,loaded.SecondNextFrame);
+            var second=new OutsideTrialContactData{SecondNextFrame=60};second.Validate(0);var copy=PortableCheckpointJson.Deserialize<OutsideTrialContactData>(PortableCheckpointJson.Serialize(second));Assert.AreEqual(0,copy.NextFrame);Assert.AreEqual(60,copy.SecondNextFrame);
+            foreach(long invalid in new long[]{-1,0,61}){second.SecondNextFrame=invalid;Assert.Throws<ArgumentException>(()=>second.Validate(0));}second.NextFrame=60;second.SecondNextFrame=-1;Assert.Throws<ArgumentException>(()=>second.Validate(0));
+        }
+        [TestCase(-1)] [TestCase(1)] public void 二体目も左右境界と空中を既存身体寸法で判定する(int side)
+        {
+            using(var probe=Contact266()){long edge=OutsideExplorationSession.TrialContactHalfWidth+probe.Core.TraversalProfile.BodyHalfWidth;long delta=OutsideKickTrialDefinition.SecondTargetX-OutsideExplorationSession.TrialTargetX;
+                using(var outside=Contact266(delta+side*(edge+1)))using(var l=outside.AttachPresentation()){outside.TrialTarget.TakeDamage(120,ElementType.None);outside.TickTraversal(0);Assert.AreEqual(100,outside.Player.CurrentHp);}
+                using(var inside=Contact266(delta+side*edge))using(var l=inside.AttachPresentation()){inside.TrialTarget.TakeDamage(120,ElementType.None);inside.TickTraversal(0);Assert.AreEqual(90,inside.Player.CurrentHp);}
+                using(var high=Contact266(delta,OutsideExplorationSession.TrialContactHeight+10000))using(var l=high.AttachPresentation()){high.TickTraversal(0);Assert.AreEqual(100,high.Player.CurrentHp);}
+            }
+        }
+        [Test] public void 一体目死亡でも二体目は接触し二体目死亡後は被害なし()
+        {
+            using(var s=Contact266(OutsideKickTrialDefinition.SecondTargetX-OutsideExplorationSession.TrialTargetX))using(var l=s.AttachPresentation()){
+                s.TrialTarget.TakeDamage(120,ElementType.None);s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);s.SecondTrialTarget.TakeDamage(120,ElementType.None);for(int n=0;n<120;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 二体の接触が同じframeに重なる時も各一回だけ計上する()
+        {
+            using(var s=Contact266((OutsideKickTrialDefinition.SecondTargetX-OutsideExplorationSession.TrialTargetX)/2))using(var l=s.AttachPresentation()){
+                s.TickTraversal(0);Assert.AreEqual(80,s.Player.CurrentHp);Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(80,s.Player.CurrentHp);for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(80,s.Player.CurrentHp);s.TickTraversal(0);Assert.AreEqual(60,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 二体目だけ接触した保存も失敗再試行とcoldで間隔を厳密復元する()
+        {
+            using(var s=Contact266(OutsideKickTrialDefinition.SecondTargetX-OutsideExplorationSession.TrialTargetX)){
+                using(var lease=s.AttachPresentation())s.TickTraversal(0);var runtime=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var item=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()};var store=new Style231Store{Fail=true};var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(store.Value);var method=typeof(ClearReturnSession).GetMethod("TryCommitOutsideTrialPoison",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);var args=new object[]{actor,runtime,item,null};
+                Assert.IsFalse((bool)method.Invoke(save,args));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(0,runtime.TrialContact.NextFrame);Assert.AreEqual(61,runtime.TrialContact.SecondNextFrame);store.Fail=false;Assert.IsTrue((bool)method.Invoke(save,args),(string)args[3]);var loaded=new ClearReturnSession(store).Snapshot;Assert.AreEqual(61,loaded.OutsideRuntimeSave.TrialContact.SecondNextFrame);
+                using(var cold=new OutsideExplorationSession(trialContactDamage:true)){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null);using(var lease=cold.AttachPresentation()){for(int n=0;n<59;n++)cold.TickTraversal(0);Assert.AreEqual(90,cold.Player.CurrentHp);cold.TickTraversal(0);Assert.AreEqual(80,cold.Player.CurrentHp);}}
+            }
+        }
         private static OutsideExplorationSession Contact266(long offset=0,long height=0)
         {
             var s=new OutsideExplorationSession(trialContactDamage:true);s.TryInitializePlayer(()=>new PlayerCharacter(100));
@@ -26,8 +79,8 @@ namespace Olca.Tests
         [TestCase(-1)] [TestCase(1)] public void 接触試用の左右境界と通り抜けは別判定(int side)
         {
             using(var probe=Contact266()){long edge=OutsideExplorationSession.TrialContactHalfWidth+probe.Core.TraversalProfile.BodyHalfWidth;
-                using(var outside=Contact266(side*(edge+1)))using(var l=outside.AttachPresentation()){outside.TickTraversal(0);Assert.AreEqual(100,outside.Player.CurrentHp);}
-                using(var inside=Contact266(side*edge))using(var l=inside.AttachPresentation()){inside.TickTraversal(0);Assert.AreEqual(90,inside.Player.CurrentHp);for(int n=0;n<30;n++)inside.TickTraversal(-side);Assert.That((inside.Core.Position-OutsideExplorationSession.TrialTargetX)*side,Is.LessThan(0));}
+                using(var outside=Contact266(side*(edge+1)))using(var l=outside.AttachPresentation()){outside.SecondTrialTarget.TakeDamage(120,ElementType.None);outside.TickTraversal(0);Assert.AreEqual(100,outside.Player.CurrentHp);}
+                using(var inside=Contact266(side*edge))using(var l=inside.AttachPresentation()){inside.SecondTrialTarget.TakeDamage(120,ElementType.None);inside.TickTraversal(0);Assert.AreEqual(90,inside.Player.CurrentHp);for(int n=0;n<30;n++)inside.TickTraversal(-side);Assert.That((inside.Core.Position-OutsideExplorationSession.TrialTargetX)*side,Is.LessThan(0));}
             }
         }
         [Test] public void 接触試用は上空と死亡敵と別マップでは発生しない()
