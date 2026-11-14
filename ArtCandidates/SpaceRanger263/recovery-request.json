@@ -1,0 +1,23 @@
+{
+  "stage": 263,
+  "kind": "new armored space ranger airborne recovery candidate",
+  "prompt": "Create ONE recovery animation keyframe for the NEW armored space-ranger character in the references. The first image defines the standing design; the second shows the upward-kick action this frame follows. Keep the same closed navy helmet and opaque cyan visor, boxy white padded jacket and shoulder panels, backpack, loose navy cargo trousers, knee pads, thick gloves, broad white/navy boots, mustard utility belt and cyan lights. Fully closed practical flight suit, unchanged proportions and hard-edged pixel-cluster palette.\nPose: right-facing airborne recovery immediately after a rising kick. The extended boot is pulled back down; both boots are now below the waist, the knees are slightly bent and separated, torso returning toward upright, elbows still bent in a balanced guard. No crouching on a floor and no floor contact: this is a controlled falling/landing-ready silhouette in midair. Make it visually different from the fully extended kick and from the straight standing idle, but natural as the middle recovery pose before returning to idle after landing.\nUse the same fixed square 256x256 game canvas and body origin. Keep pelvis near x=127,y=150, with the helmet and both boots fully inside the image and transparent margin around the limbs. Do not crop, zoom, reframe, add effects, or add text. Crisp pixel art, genuine alpha-transparent background, no checkerboard, no floor or shadow. One full-body character, one pose only.",
+  "referenced_image_paths": [
+    "/workspace/generated_images/exec-b0ca8be0-20dd-402d-82a8-dbfaea3724e4.png",
+    "/workspace/generated_images/exec-d6e75959-f065-4a81-92a6-9633310cd2c5.png"
+  ],
+  "transparent_background": true,
+  "status": "success; concept only",
+  "notes": "New independent armored character only, not the earlier rejected character.",
+  "outputPath": "/workspace/generated_images/exec-5cd72452-a83a-4832-bd4b-6ca02c4e6cdc.png",
+  "outputSha256": "1a3617141e093506e02a7f91151a90b34d8589209cdf39f4d0cb5beb6274f974",
+  "outputSize": [
+    1254,
+    1254
+  ],
+  "outputMode": "RGBA",
+  "alphaRange": [
+    0,
+    255
+  ]
+}

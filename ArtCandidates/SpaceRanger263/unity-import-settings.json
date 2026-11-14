@@ -1,0 +1,136 @@
+{
+  "candidateOnly": true,
+  "sourcePixels": [
+    1254,
+    1254
+  ],
+  "textureType": "Sprite",
+  "spriteImportMode": "Multiple (one full source rectangle)",
+  "spriteRectSource": [
+    0,
+    0,
+    1254,
+    1254
+  ],
+  "spritePixelsPerUnitSource": 489.84375,
+  "maxTextureSize": 256,
+  "npotScale": "ToNearest",
+  "filterMode": "Point",
+  "compression": "Uncompressed",
+  "mipmap": false,
+  "alphaIsTransparency": true,
+  "wrapMode": "Clamp",
+  "sharedNormalizedPivot": [
+    0.49609375,
+    0.0390625
+  ],
+  "actualEditorReadback": [
+    {
+      "key": "idle",
+      "width": 256,
+      "height": 256,
+      "ppu": 100,
+      "pivot": [
+        127,
+        10
+      ],
+      "opaqueBounds": [
+        77,
+        10,
+        170,
+        243
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "air_idle",
+      "width": 256,
+      "height": 256,
+      "ppu": 100,
+      "pivot": [
+        127,
+        10
+      ],
+      "opaqueBounds": [
+        75,
+        21,
+        178,
+        239
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "air_prepare",
+      "width": 256,
+      "height": 256,
+      "ppu": 100,
+      "pivot": [
+        127,
+        10
+      ],
+      "opaqueBounds": [
+        64,
+        17,
+        180,
+        239
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "air_up",
+      "width": 256,
+      "height": 256,
+      "ppu": 100,
+      "pivot": [
+        127,
+        10
+      ],
+      "opaqueBounds": [
+        42,
+        26,
+        221,
+        239
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "key": "recovery",
+      "width": 256,
+      "height": 256,
+      "ppu": 100,
+      "pivot": [
+        127,
+        10
+      ],
+      "opaqueBounds": [
+        66,
+        25,
+        180,
+        240
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    }
+  ],
+  "sourceSha256": {
+    "idle.png": "5fd6ec1f3ba4baa5698e859a1928b9ae09779e86921c5632144f43ee9bf4f7ef",
+    "recovery.png": "1a3617141e093506e02a7f91151a90b34d8589209cdf39f4d0cb5beb6274f974",
+    "air_idle.png": "63ebb340b9b91fc74a144fb191131e0566211b364ff464e0eb598e307c398940",
+    "air_prepare.png": "b5ee19712a8946eef0972eab64ac7bdd7b12203ede4cf228a17d0f26f039982d",
+    "air_up.png": "bcc0da13e9fb88a5c0cada854ccc0e805f9c4b7d26e7c9e8b1086a6f6bc2e863"
+  }
+}
