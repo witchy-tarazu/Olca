@@ -1060,6 +1060,24 @@ namespace Olca.Tests.Application
             }
         }
 
+        [TestCase(-1)][TestCase(1)] public async Task 外界ダッシュ攻撃は命中窓だけ専用試用本体を描き方向と時計を変えず終了復帰する(int facing)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(model.Core,new object[]{14L*60000});
+            var contact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_dash_kick_contact");Assert.IsNotNull(contact);Assert.AreEqual(256,contact.texture.width);Assert.AreEqual(256,contact.texture.height);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(new Vector2(127,14),contact.pivot+contact.rect.position);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var dash=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredDashPlayerSprite;
+                model.TickTraversal(facing,dashDown:true,dashHeld:true);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.Dash,model.NormalKick.Kind);
+                long end=model.NormalKick.EndsAt;
+                while(model.Core.Frame<end){long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;bool hit=model.NormalKick.IsHitWindow;view.Render();Assert.AreSame(hit?contact:dash,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);for(int n=0;n<3;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                    if(hit){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);view.Render();Assert.AreSame(contact,body.sprite);}
+                    model.TickTraversal(-facing);
+                }
+                view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.IsFalse(model.Core.IsDashing);model.TickTraversal(0);view.Render();StringAssert.EndsWith("/Idle/heroine_idle_01.png",UnityEditor.AssetDatabase.GetAssetPath(body.sprite));
+            }
+        }
+
         [Test] public async Task 外界カエンの走行八枚は既存時計を読み通常復帰とView再生成で参照を残さない()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var save=new Olca.Core.Domain.ClearReturnSession(new DoorBoundaryStore());

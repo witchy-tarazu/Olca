@@ -69,11 +69,15 @@ namespace Olca.Presentation.Exploration
         private void ClearOutsideDefensiveField(){if(outsideDefensiveField!=null){outsideDefensiveField.enabled=false;outsideDefensiveField.sprite=null;}outsideDefensiveAssets?.Dispose();outsideDefensiveAssets=null;}
         private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
         private Sprite ResolveBodyCostume(Sprite sprite)=>(trialFireBody??(trialFireBody=new Olca.Presentation.Effects.TrialFireBodyMotion())).Resolve(sprite,presentation?.Player);
-        private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact;
+        private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
         private Sprite TrialKickSprite()
         {
             var kind=presentation?.NormalKickKind;
             if(!kind.HasValue||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
+            if(kind.Value==OutsideKickKind.Dash){
+                if(trialDashKickContact==null)trialDashKickContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_dash_kick_contact");
+                return presentation.IsKickHitWindow&&trialDashKickContact!=null?trialDashKickContact:null;
+            }
             if(kind.Value==OutsideKickKind.AirForward){
                 if(trialAirForwardContact==null)trialAirForwardContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_air_forward_kick_contact");
                 // 前後隙は既存の上昇姿勢を暫定利用。時刻や物理位置は表示側で進めない。
@@ -127,7 +131,7 @@ namespace Olca.Presentation.Exploration
         }
         private Sprite TraversalSprite(OutsideExplorationCore core)
         {
-            if(presentation?.IsDashAttacking==true&&core.IsMoving)return traversalDashSprite; // 専用本体素材未登録のため既存ダッシュ姿勢を試用
+            if(presentation?.IsDashAttacking==true&&core.IsMoving)return traversalDashSprite; // 接触素材欠損時も既存ダッシュ姿勢へ戻す
             if(core.IsWallSliding){
                 if(wallSlideFrames==null)wallSlideFrames=new[]{traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_01"),traversalResources.GetShared<Sprite>("OlcaTraversal/WallSlide_02")};
                 return wallSlideFrames[(int)(core.WallSlideFrame/6%wallSlideFrames.Length)];
@@ -201,7 +205,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
