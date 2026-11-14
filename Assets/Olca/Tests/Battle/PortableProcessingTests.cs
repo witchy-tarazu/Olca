@@ -451,3 +451,257 @@ namespace Olca.Tests.Battle
         }
     }
 }
+
+namespace Olca.Tests.Battle
+{
+    public sealed class TrialInitialCardBattleTests
+    {
+        private static Olca.Core.Logic.Battle.BattleSystem Battle271(int x=3,int y=0,int actor=13)
+            =>new Olca.Core.Logic.Battle.BattleSystem(new PlayerCharacter(100,new Vector2Int(2,0),attackPower:actor),new System.Collections.Generic.List<Enemy>{new Enemy("first","first",1000,ElementType.None,new Vector2Int(x,y)),new Enemy("second","second",1000,ElementType.None,new Vector2Int(5,0))},new Deck(new System.Collections.Generic.List<Card>()),customGaugeSpeed:0);
+        private static void Frames(Olca.Core.Logic.Battle.BattleSystem b,int count){for(int i=0;i<count;i++)b.TickFrame(16);}
+        [TestCase(TrialInitialCardDefinitions.Shot,1)] [TestCase(TrialInitialCardDefinitions.Spear,2)]
+        [TestCase(TrialInitialCardDefinitions.WideSword,2)] [TestCase(TrialInitialCardDefinitions.AirShot,1)]
+        public void 明示仮登録は無印Normalと割合をPortable往復して旧定義と混ぜない(string id,int cost)
+        {
+            var f=new SimpleCardFactory();var c=f.CreateById(id);Assert.NotNull(c);Assert.AreEqual(cost,c.Cost);Assert.AreEqual(ExceedLevel.Normal,c.ExceedLevel);Assert.AreEqual(CardRarity.Normal,c.Rarity);Assert.AreEqual(ElementType.None,c.Element);Assert.AreEqual(10000,c.AttackPowerBasisPoints);Assert.AreEqual(13,c.GetFinalPower(13));Assert.IsTrue(TrialInitialCardDefinitions.IsRegistered(c));
+            var dto=PortableCardDefinition.Capture("trial271",c);var restored=PortableCheckpointJson.Deserialize<PortableCardDefinition>(PortableCheckpointJson.Serialize(dto)).Restore();Assert.AreEqual(CollectionDisplay.DefinitionHash(c),CollectionDisplay.DefinitionHash(restored));Assert.IsTrue(TrialInitialCardDefinitions.IsRegistered(restored));
+            Assert.AreNotSame(c,f.CreateById(id));Assert.IsFalse(f.FusionCards.Any(v=>v.Id==id));Assert.AreEqual(20,f.CreateStarterDeck().GetAllCards().Count); // 旧fixture入口は維持。
+        }
+        [TestCase(TrialInitialCardDefinitions.Spear,4,0)] [TestCase(TrialInitialCardDefinitions.WideSword,3,1)]
+        public void 新近接は拡張範囲内の一体だけに割合威力で命中する(string id,int x,int y)
+        {
+            var b=Battle271(x,y);var c=new SimpleCardFactory().CreateById(id);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{c});var use=b.CardUsage.TryUseCurrentCardAsync();Frames(b,5);Assert.AreEqual(1000,b.Enemies[0].CurrentHp);Frames(b,1);Assert.AreEqual(987,b.Enemies[0].CurrentHp);Assert.AreEqual(1000,b.Enemies[1].CurrentHp);Frames(b,12);Assert.IsTrue(use.GetAwaiter().GetResult());Assert.IsFalse(b.HasPlayerAction);Assert.AreEqual(0,b.CardUsage.RemainingCount);Assert.AreEqual(10000,c.AttackPowerBasisPoints);
+        }
+        [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.AirShot)]
+        public void 直進弾は前隙後に発射して八論理frameで隣接に一回命中する(string id)
+        {
+            var b=Battle271();var c=new SimpleCardFactory().CreateById(id);b.Player.SetConcentrateBuff(2);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{c});var use=b.CardUsage.TryUseCurrentCardAsync();Frames(b,6);Assert.AreEqual(1,b.DelayedEffects.ActiveEffectCount);Assert.AreEqual(1000,b.Enemies[0].CurrentHp);Frames(b,7);Assert.AreEqual(1000,b.Enemies[0].CurrentHp);Frames(b,1);Assert.AreEqual(974,b.Enemies[0].CurrentHp);Assert.AreEqual(1000,b.Enemies[1].CurrentHp);Assert.AreEqual(0,b.DelayedEffects.ActiveEffectCount);Frames(b,50);Assert.AreEqual(974,b.Enemies[0].CurrentHp);Assert.IsTrue(use.GetAwaiter().GetResult());Assert.IsFalse(b.Player.IsConcentrating);
+        }
+        [Test] public void 弾の時計はポーズで停止し空振りは六十frameで終了する()
+        {
+            var b=Battle271(2,1);b.Enemies[1].TakeDamage(1000,ElementType.None);var c=new SimpleCardFactory().CreateById(TrialInitialCardDefinitions.Shot);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{c});var use=b.CardUsage.TryUseCurrentCardAsync();Frames(b,6);var flight=b.DelayedEffects.GetActiveEffects().Single();Assert.AreEqual(0,flight.Progress);b.Pause(Olca.Core.Logic.Battle.BattlePauseReason.User);Frames(b,100);Assert.AreEqual(0,flight.ElapsedDisplayFrames);b.Resume(Olca.Core.Logic.Battle.BattlePauseReason.User);Frames(b,59);Assert.AreEqual(1,b.DelayedEffects.ActiveEffectCount);Frames(b,1);Assert.AreEqual(0,b.DelayedEffects.ActiveEffectCount);Assert.AreEqual(1000,b.Enemies[0].CurrentHp);Assert.IsTrue(use.GetAwaiter().GetResult());
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 偽の同IDと割合overflowは使用開始前にカードと集中を保持する(bool overflow)
+        {
+            var b=Battle271(actor:overflow?int.MaxValue:13);var good=new SimpleCardFactory().CreateById(TrialInitialCardDefinitions.Shot);var c=overflow?good:new Card(good.Id,"偽",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,"",attackPowerBasisPoints:10000);b.Player.SetConcentrateBuff(2);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{c});Assert.IsFalse(b.CardUsage.CanUseCurrentCard);Assert.IsFalse(b.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());Assert.AreEqual(1,b.CardUsage.RemainingCount);Assert.AreEqual(2,b.Player.NextCardMultiplier);Assert.IsFalse(b.HasPlayerAction);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 偽固定威力の同IDは集中の有無に関わらず無消費拒否し直接copyでも実行しない(bool concentrate)
+        {
+            var b=Battle271();var c=new Card(TrialInitialCardDefinitions.Shot,"偽",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,999,"");if(concentrate)b.Player.SetConcentrateBuff(2);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{c});Assert.IsFalse(b.CardUsage.CanUseCurrentCard);Assert.IsFalse(b.CardUsage.TryUseCurrentCard());Assert.IsFalse(b.CardUsage.TryUseCurrentCardAsync().GetAwaiter().GetResult());Assert.AreEqual(1,b.CardUsage.RemainingCount);Assert.AreEqual(concentrate?2:1,b.Player.NextCardMultiplier);Assert.Throws<NotSupportedException>(()=>Olca.Core.Logic.CardEffects.CardEffectFactory.CreateEffect(c.WithPowerMultiplier(2)));Assert.Throws<NotSupportedException>(()=>Olca.Core.Logic.CardEffects.CardEffectFactory.CreateEffect(c.ResolveAttackPower(13)));
+        }
+        [Test] public void 真正IDの不正modifierも使用開始前に拒否する()
+        {var b=Battle271();var c=new SimpleCardFactory().CreateById(TrialInitialCardDefinitions.Shot);c.Modifier.AdditionalEffects.Add(null);b.CardUsage.EnqueueCards(new List<Card>{c});Assert.IsFalse(b.CardUsage.CanUseCurrentCard);Assert.IsFalse(b.CardUsage.TryUseCurrentCard());Assert.AreEqual(1,b.CardUsage.RemainingCount);Assert.IsFalse(b.HasPlayerAction);var unknown=new Card(null,"unknown",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,1,"");Assert.IsFalse(TrialInitialCardDefinitions.IsRegistered(unknown));Assert.IsFalse(TrialInitialCardDefinitions.IsResolved(unknown.WithPowerMultiplier(2)));}
+        [TestCase(false)] [TestCase(true)]
+        public void 新試用品の未登録時間を生成時に拒否し既存の時間注入は保つ(bool different)
+        {
+            var timings=new Dictionary<string,PlayerAttackTiming>{{TrialInitialCardDefinitions.Shot,new PlayerAttackTiming(different?3:6,12)}};
+            if(different)Assert.Throws<ArgumentException>(()=>new SimpleCardFactory(cardTimings:timings));else Assert.IsTrue(TrialInitialCardDefinitions.IsRegistered(new SimpleCardFactory(cardTimings:timings).CreateById(TrialInitialCardDefinitions.Shot)));
+            var old=new SimpleCardFactory(cardTimings:new Dictionary<string,PlayerAttackTiming>{{"sword",new PlayerAttackTiming(3,9)}}).CreateById("sword");Assert.AreEqual(3,old.StartupFrames);Assert.AreEqual(9,old.RecoveryFrames);
+        }
+        [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.Spear)]
+        [TestCase(TrialInitialCardDefinitions.WideSword)] [TestCase(TrialInitialCardDefinitions.AirShot)]
+        public void 新四品の調律個体は定義参照保存から復元し集中を一度だけ適用する(string id)
+        {
+            var f=new SimpleCardFactory();var source=f.CreateById(id);var cards=f.CreateStarterDeck().GetAllCards().ToArray();cards[0]=source;var deck=new Deck(cards.ToList());var map=DungeonConfig.CreateTestDungeon(6,1,2);var session=DungeonCheckpointSession.CreateDefault(map,deck);var material=f.CreateById("tuning");var grant=f.GetTuningDefinition(material);session.Definitions.RegisterGrant("initial-power271",grant);
+            var manager=new DungeonBattleManager(map,new PlayerCharacter(100),deck,new SeededBattleRandom(271),new MockLogger(),checkpoints:session);var state=session.Store.Read();var tuned=new TuningSystem(f.GetTuningDefinition).Execute(source,material).ResultCard;Assert.NotNull(tuned);Assert.IsTrue(TrialInitialCardDefinitions.IsRegistered(tuned));int index=Array.FindIndex(state.Cards,c=>c.DefinitionKey=="initial/v1/"+CollectionDisplay.DefinitionHash(source));Assert.GreaterOrEqual(index,0);state.Cards[index]=session.Definitions.CaptureKnownCard(state.Cards[index].InstanceId,tuned);
+            Assert.IsTrue(CheckpointCodec.TryRestore(PortableCheckpointJson.Decode(PortableCheckpointJson.Encode(state)),session.Definitions,out var loaded,out var error),error);var restored=loaded.Deck.GetAllCards().Single(c=>c.Id==id);Assert.AreEqual(23,restored.GetFinalPower(13));var battle=Battle271();battle.Player.SetConcentrateBuff(2);battle.CardUsage.EnqueueCards(new List<Card>{restored});var use=battle.CardUsage.TryUseCurrentCardAsync();Frames(battle,20);Assert.IsTrue(use.GetAwaiter().GetResult());Assert.AreEqual(954,battle.Enemies[0].CurrentHp);Assert.IsFalse(battle.Player.IsConcentrating);Assert.AreEqual(10000,restored.AttackPowerBasisPoints);Assert.AreEqual(0,source.TuningCount);
+        }
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    public sealed class TrialInitialCardOutsideTests
+    {
+        private static OutsideExplorationSession Outside271(string id,out CheckpointDefinitions defs)
+        {
+            var f=new SimpleCardFactory();var source=f.CreateStarterDeck().GetAllCards().Select(c=>c.Id=="sword"?f.CreateById(id):c).ToArray();defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(source.ToList())).Definitions;
+            var s=new OutsideExplorationSession();Assert.IsTrue(s.TryInitializePlayer(()=>new PlayerCharacter(100,attackPower:13)));Assert.IsTrue(s.TryInitializeCards(source,source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new SeededBattleRandom(271),out var error),error);
+            for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id==id);n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==id)));return s;
+        }
+        private static void Frames(OutsideExplorationSession s,int n){for(int i=0;i<n;i++)s.TickTraversal(0);}
+        private static void Go(OutsideExplorationSession s,long target){for(int i=0;i<300&&s.Core.Position<target;i++)s.TickTraversal(1);Assert.AreEqual(target,s.Core.Position);}
+        [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.Spear)]
+        [TestCase(TrialInitialCardDefinitions.WideSword)] [TestCase(TrialInitialCardDefinitions.AirShot)]
+        public void 新四品は探索選択から一回消費し割合威力を一体に適用する(string id)
+        {
+            using(var s=Outside271(id,out _))using(var lease=s.AttachPresentation()){
+                Go(s,(TrialInitialCardDefinitions.IsShot(id)?14:17)*60000);long rev=s.Cards.HandRevision;Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,rev,out var error),error);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.AreEqual(13,s.AttackState.ResolvedPower);Frames(s,5);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Frames(s,TrialInitialCardDefinitions.IsShot(id)?31:1);Assert.AreEqual(107,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Frames(s,70);Assert.AreEqual(107,s.TrialTarget.CurrentHp);Assert.IsEmpty(s.InitialShots);
+            }
+        }
+        [TestCase(TrialInitialCardDefinitions.Shot,3)] [TestCase(TrialInitialCardDefinitions.Shot,8)] [TestCase(TrialInitialCardDefinitions.Shot,20)] [TestCase(TrialInitialCardDefinitions.Shot,36)]
+        [TestCase(TrialInitialCardDefinitions.Spear,3)] [TestCase(TrialInitialCardDefinitions.Spear,8)] [TestCase(TrialInitialCardDefinitions.Spear,20)] [TestCase(TrialInitialCardDefinitions.Spear,36)]
+        [TestCase(TrialInitialCardDefinitions.WideSword,3)] [TestCase(TrialInitialCardDefinitions.WideSword,8)] [TestCase(TrialInitialCardDefinitions.WideSword,20)] [TestCase(TrialInitialCardDefinitions.WideSword,36)]
+        [TestCase(TrialInitialCardDefinitions.AirShot,3)] [TestCase(TrialInitialCardDefinitions.AirShot,8)] [TestCase(TrialInitialCardDefinitions.AirShot,20)] [TestCase(TrialInitialCardDefinitions.AirShot,36)]
+        public void 前隙飛翔命中後の冷復元は消費と一度命中を保つ(string id,int saveAt)
+        {
+            using(var warm=Outside271(id,out var defs)){
+                var lease=warm.AttachPresentation();Go(warm,(TrialInitialCardDefinitions.IsShot(id)?14:17)*60000);Assert.IsTrue(warm.TryUseSelectedCard(warm.Cards.SelectedCard,warm.Cards.HandRevision,out _));Frames(warm,saveAt);lease.Dispose();var runtime=warm.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(warm.Player);actor.Id=runtime.Id;
+                var encoded=PortableCheckpointJson.Serialize(runtime);var data=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(encoded);Assert.AreEqual(runtime.Key(),data.Key());using(var cold=new OutsideExplorationSession()){
+                    Assert.IsTrue(cold.RestoreSavedState(actor,data,null,defs));Assert.IsFalse(cold.RestoreSavedState(actor,data,null,defs));using(var view=cold.AttachPresentation()){Assert.IsFalse(cold.AdvancePlayerFrame());Frames(cold,90);Assert.AreEqual(107,cold.TrialTarget.CurrentHp);Assert.IsEmpty(cold.InitialShots);}var after=cold.CaptureRuntime(defs);Assert.AreEqual(1,after.TrialTarget.Hits);Assert.IsNull(after.InitialShots);
+                }
+            }
+        }
+        [Test] public void 発射後の行動中断と手札再装填は既存弾を消さず同じframeの再評価も進めない()
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out _))using(var lease=s.AttachPresentation()){
+                Go(s,14*60000);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,6);Assert.AreEqual(1,s.InitialShots.Count);long x=s.InitialShots[0].Position(s.Core.Frame);for(int i=0;i<20;i++)Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(x,s.InitialShots[0].Position(s.Core.Frame));s.Player.ApplyParalysis(60);s.Cards.Reload();Frames(s,30);Assert.IsNull(s.AttackState);Assert.AreEqual(107,s.TrialTarget.CurrentHp);Assert.IsEmpty(s.InitialShots);
+            }
+        }
+        [TestCase(TrialInitialCardDefinitions.Shot,false)] [TestCase(TrialInitialCardDefinitions.AirShot,true)]
+        [TestCase(TrialInitialCardDefinitions.Spear,true)] [TestCase(TrialInitialCardDefinitions.WideSword,true)]
+        public void 空中可否は明示登録で判定し不許可は無消費(string id,bool allowed)
+        {
+            using(var s=Outside271(id,out _))using(var lease=s.AttachPresentation()){
+                Go(s,14*60000);s.TickTraversal(0,true,true);Assert.IsFalse(s.Core.IsGrounded);long revision=s.Cards.HandRevision,units=s.Core.CardGauge.CurrentUnits;Assert.AreEqual(allowed,s.TryUseSelectedCard(s.Cards.SelectedCard,revision,out _));Assert.AreEqual(revision+(allowed?1:0),s.Cards.HandRevision);if(!allowed)Assert.AreEqual(units,s.Core.CardGauge.CurrentUnits);
+            }
+        }
+        [Test] public void 旧攻撃保存の五欄は新欄nullでも完全な旧bytesを保つ()
+        {
+            const string old="[{\"CardIndex\":0,\"EffectApplied\":false,\"RecoveryFrames\":0,\"StartedAt\":0,\"StartupFrames\":0},{\"CardIndex\":3,\"EffectApplied\":false,\"RecoveryFrames\":12,\"StartedAt\":100,\"StartupFrames\":6},{\"CardIndex\":3,\"EffectApplied\":true,\"RecoveryFrames\":12,\"StartedAt\":100,\"StartupFrames\":6}]";
+            var bytes=System.Text.Encoding.UTF8.GetBytes(old);var values=PortableCheckpointJson.Deserialize<OutsideAttackStateData[]>(bytes);CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(values));Assert.IsTrue(values.All(v=>v.ResolvedPower==null));
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+        public void 不正弾は旧Sessionを部分上書きせず拒否する(int mode)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out var defs)){
+                var lease=s.AttachPresentation();Go(s,14*60000);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,8);lease.Dispose();var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var invalid=runtime.Copy();if(mode==0)invalid.InitialShots[0].CardId="unknown";if(mode==1)invalid.InitialShots[0].Power=-1;if(mode==2)invalid.InitialShots[0].StartedAt=invalid.Core.Frame+1;if(mode==3)invalid.InitialShots[0].Height=long.MaxValue;
+                using(var target=new OutsideExplorationSession()){target.TryInitializePlayer(()=>new PlayerCharacter(99));var before=target.Player;Assert.Throws<ArgumentException>(()=>target.RestoreSavedState(actor,invalid,null,defs));Assert.AreSame(before,target.Player);Assert.AreEqual(0,target.Core.Frame);}
+            }
+        }
+        [TestCase(1,0,true)] [TestCase(1,1,false)] [TestCase(-1,0,true)] [TestCase(-1,1,false)]
+        public void スピアの左右射程端一単位は判定を超えて命中しない(int facing,int outside,bool expected)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Spear,out _))using(var lease=s.AttachPresentation()){
+                var state=s.Core.CaptureState();state.Position=OutsideExplorationSession.TrialTargetX-facing*(OutsideExplorationSession.TrialSwordRange*3/2+outside);state.Facing=facing;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,6);Assert.AreEqual(expected?107:120,s.TrialTarget.CurrentHp);Assert.AreEqual(facing<0&&!expected?107:120,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(1,TrialInitialCardDefinitions.Shot)] [TestCase(-1,TrialInitialCardDefinitions.Shot)]
+        [TestCase(1,TrialInitialCardDefinitions.AirShot)] [TestCase(-1,TrialInitialCardDefinitions.AirShot)]
+        public void 射撃は左右とも経路上の先着一体だけに命中する(int facing,string id)
+        {
+            using(var s=Outside271(id,out _))using(var lease=s.AttachPresentation()){
+                Go(s,(facing>0?14:22)*60000);if(facing<0)s.TickTraversal(-1);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,66);Assert.AreEqual(facing>0?107:120,s.TrialTarget.CurrentHp);Assert.AreEqual(facing<0?107:120,s.SecondTrialTarget.CurrentHp);Assert.IsEmpty(s.InitialShots);
+            }
+        }
+        [TestCase(90000,true)] [TestCase(90001,false)] [TestCase(-90000,true)] [TestCase(-90001,false)]
+        public void 固定高度の試用弾は上下端で一単位外れると標的へ当たらない(long height,bool hit)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.AirShot,out var defs)){
+                var lease=s.AttachPresentation();Go(s,14*60000);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,6);lease.Dispose();var runtime=s.CaptureRuntime(defs);runtime.InitialShots[0].Height=height;var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null,defs));using(var view=cold.AttachPresentation()){Frames(cold,60);Assert.AreEqual(hit?107:120,cold.TrialTarget.CurrentHp);}}
+            }
+        }
+        [Test] public void 空振り弾は五十九frameでは保存可能で六十frame目に消える()
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out var defs)){
+                var lease=s.AttachPresentation();Go(s,14*60000);s.TrialTarget.TakeDamage(120,ElementType.None);s.SecondTrialTarget.TakeDamage(120,ElementType.None);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,6+59);Assert.AreEqual(1,s.InitialShots.Count);lease.Dispose();var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null,defs));using(var view=cold.AttachPresentation()){Frames(cold,1);Assert.IsEmpty(cold.InitialShots);}}
+            }
+        }
+        private sealed class FlyingItemStore:IClearReturnStore
+        {
+            public bool Fail=true;public ClearReturnProfile Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=OutsideRecoveryItemDefinition.Provisional.Id,Count=2}}}};
+            public ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
+            public bool TryWrite(long revision,ClearReturnProfile plan,out string error){error=Fail?"flying item failure":null;if(Fail)return false;if(revision!=Value.Revision)return false;Value=plan.Copy();return true;}
+        }
+        [Test] public void 飛翔中の即時保存失敗は効果消費CDと弾を変えず再試行後coldでも一命中()
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out var defs))using(var lease=s.AttachPresentation()){
+                Go(s,14*60000);s.Player.SetHp(50);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,18);var before=PortableCheckpointJson.Serialize(s.InitialShots.ToArray());var store=new FlyingItemStore();var save=new ClearReturnSession(store);var item=OutsideRecoveryItemDefinition.Provisional;
+                Assert.IsFalse(s.TryUseRecoveryItem(save,item,defs,out _));Assert.AreEqual(50,s.Player.CurrentHp);Assert.AreEqual(2,store.Value.OutsideInventory.Items[0].Count);Assert.AreEqual(0,s.ItemCooldownRemaining(item.Id));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.InitialShots.ToArray()));
+                store.Fail=false;Assert.IsTrue(s.TryUseRecoveryItem(save,item,defs,out var error),error);Assert.AreEqual(75,s.Player.CurrentHp);Assert.AreEqual(1,store.Value.OutsideInventory.Items[0].Count);Assert.AreEqual(item.CooldownFrames,s.ItemCooldownRemaining(item.Id));using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(store.Value.OutsidePlayerSave,store.Value.OutsideRuntimeSave,null,defs));using(var view=cold.AttachPresentation()){Frames(cold,60);Assert.AreEqual(107,cold.TrialTarget.CurrentHp);Assert.IsEmpty(cold.InitialShots);}}
+            }
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 未登録マップへ移した弾保存と復元は拒否し現個体を変更しない(bool capture)
+        {
+            using(var source=Outside271(TrialInitialCardDefinitions.Shot,out var defs)){
+                var lease=source.AttachPresentation();Go(source,14*60000);Assert.IsTrue(source.TryUseSelectedCard(source.Cards.SelectedCard,source.Cards.HandRevision,out _));Frames(source,6);lease.Dispose();var runtime=source.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;var d=source.Core.Definition;var foreign=new OutsideMovementDefinition("foreign-initial271",d.Width,d.Start,d.SpeedPerSecond,d.LandingSurfaces.ToArray());var core=new OutsideExplorationCore(foreign,source.Core.TraversalProfile);runtime.Core.DefinitionKey=core.CaptureState().DefinitionKey;
+                var field=typeof(OutsideExplorationSession).GetField("<Core>k__BackingField",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);Assert.NotNull(field);
+                if(capture){typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(core,new object[]{runtime.Core});field.SetValue(source,core);var player=source.Player;Assert.Throws<ArgumentException>(()=>source.CaptureRuntime(defs));Assert.AreSame(player,source.Player);Assert.AreEqual(1,source.InitialShots.Count);}
+                else using(var target=new OutsideExplorationSession()){field.SetValue(target,core);target.TryInitializePlayer(()=>new PlayerCharacter(99));var before=target.Player;Assert.Throws<ArgumentException>(()=>target.RestoreSavedState(actor,runtime,null,defs));Assert.AreSame(before,target.Player);Assert.AreEqual(0,target.Core.Frame);Assert.IsEmpty(target.InitialShots);}
+            }
+        }
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    public sealed class InitialDeckLoadoutTests
+    {
+        private sealed class ProgressStore:IClearReturnStore,INewClearReturnStore
+        {
+            public ClearReturnProfile Value=new ClearReturnProfile();public bool FailBefore,FailAfter;public int Commits,Attempts;public bool IsNewProfile=>Commits==0;
+            public ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
+            public bool TryWrite(long revision,ClearReturnProfile plan,out string error){Attempts++;error=null;if(FailBefore){error="progress before";return false;}if(Value.CommitId==plan.CommitId&&Value.Revision==plan.Revision)return true;if(revision!=Value.Revision){error="revision";return false;}Value=plan.Copy();Commits++;if(FailAfter){error="progress ack";return false;}return true;}
+        }
+        private sealed class SeedWriter:IInitialExplorationDeckWriter
+        {
+            public readonly Dictionary<string,ExplorationDeckProfile> Seeds=new Dictionary<string,ExplorationDeckProfile>();public bool FailBefore,FailAfter;public string Generation,Commit;public int Commits;
+            public bool TryPrepare(string generation,ExplorationDeckProfile plan,out string error){error=null;if(Generation!=null){Assert.AreEqual(Generation,generation);Assert.AreEqual(Commit,plan.CommitId);}Generation=generation;Commit=plan.CommitId;if(FailBefore){error="seed before";return false;}if(Seeds.TryGetValue(generation,out var previous)){CollectionAssert.AreEqual(PortableCheckpointJson.Serialize(previous),PortableCheckpointJson.Serialize(plan));return true;}Seeds.Add(generation,plan.Copy());Commits++;if(FailAfter){error="seed ack";return false;}return true;}
+        }
+        private static InitialDeckLoadout Plan()=>new SimpleCardFactory().CreateTrialInitialLoadout();
+        private static void AssertBoth(ProgressStore store,SeedWriter seeds)
+        {
+            var p=store.Value;Assert.AreEqual(30,p.Owned.Sum(v=>v.Count));Assert.AreEqual(8,p.Owned.Length);Assert.AreEqual(20,p.SavedDecks.Single().Cards.Length);Assert.AreEqual(p.SavedDecks.Single().Id,p.EquippedDeckId);var outside=seeds.Seeds[p.CheckpointGeneration];Assert.AreEqual(30,outside.Decks.Single().Cards.Length);Assert.AreEqual(outside.Decks.Single().Id,outside.SelectedDeckId);Assert.IsTrue(ExplorationDeckRules.TryValidate(p,outside.Decks[0],out var error),error);Assert.IsTrue(p.Owned.All(v=>v.Rarity==CardRarity.Normal&&v.Level==ExceedLevel.Normal));Assert.AreEqual(0,p.Tokens);Assert.AreEqual(0,p.OutsideInventory?.Currency??0);Assert.AreEqual(0,p.OutsideInventory?.Items.Length??0);
+        }
+        [Test] public void 仮初期編成は二十と三十を最大共有数だけ配り各個体を分離する()
+        {
+            var plan=Plan();Assert.AreEqual(20,plan.Dungeon.Count);Assert.AreEqual(30,plan.Outside.Count);Assert.AreEqual(30,plan.Owned.Sum(v=>v.Count));var counts=plan.Owned.ToDictionary(v=>v.Id,v=>v.Count);foreach(var id in new[]{"sword","bomb","heal","shield",TrialInitialCardDefinitions.Shot,TrialInitialCardDefinitions.Spear,TrialInitialCardDefinitions.WideSword})Assert.AreEqual(4,counts[id]);Assert.AreEqual(2,counts[TrialInitialCardDefinitions.AirShot]);Assert.IsFalse(counts.ContainsKey("tuning"));var d=plan.Dungeon;d[0].Modifier.BonusDamage=999;Assert.AreEqual(0,plan.Dungeon[0].Modifier.BonusDamage);Assert.AreEqual(0,plan.Outside[0].Modifier.BonusDamage);Assert.AreNotSame(plan.Dungeon[0],plan.Outside[0]);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+        public void 片側保存失敗と応答不明は同じ世代と計画を再試行して二重配布しない(int mode)
+        {
+            var store=new ProgressStore();var legacy=new SimpleCardFactory().CreateStarterDeck().GetAllCards();var s=new ClearReturnSession(store);Assert.IsTrue(s.InitializeStarter(legacy));var old=PortableCheckpointJson.Serialize(s.Snapshot);store.Commits=0;store.Attempts=0;var writer=new SeedWriter();writer.FailBefore=mode==0;writer.FailAfter=mode==1;store.FailBefore=mode==2;store.FailAfter=mode==3;
+            Assert.IsFalse(s.StartNewGameWithLoadout(s.Snapshot.Revision,Plan(),writer));Assert.IsTrue(s.HasPendingSave);CollectionAssert.AreEqual(old,PortableCheckpointJson.Serialize(s.Snapshot));if(mode<2)Assert.AreEqual(0,store.Attempts);if(mode<3)CollectionAssert.AreEqual(old,PortableCheckpointJson.Serialize(new ClearReturnSession(store).Snapshot));else AssertBoth(store,writer);
+            writer.FailBefore=writer.FailAfter=store.FailBefore=store.FailAfter=false;Assert.IsTrue(s.Retry(),s.Error);AssertBoth(store,writer);Assert.AreEqual(1,writer.Commits);Assert.AreEqual(1,store.Commits);Assert.IsTrue(s.Retry());Assert.AreEqual(1,store.Commits);
+        }
+        [Test] public void 既存継続と確認revision不一致は無断配布せず書込みを開始しない()
+        {
+            var store=new ProgressStore();var s=new ClearReturnSession(store);Assert.IsTrue(s.InitializeStarter(new SimpleCardFactory().CreateStarterDeck().GetAllCards()));var old=PortableCheckpointJson.Serialize(store.Value);var writer=new SeedWriter();Assert.IsFalse(s.StartNewGameWithLoadout(s.Snapshot.Revision-1,Plan(),writer));Assert.AreEqual(0,writer.Commits);var cold=new ClearReturnSession(store);Assert.AreEqual(20,cold.Snapshot.Owned.Sum(v=>v.Count));Assert.IsFalse(cold.Snapshot.Owned.Any(v=>TrialInitialCardDefinitions.IsId(v.Id)));CollectionAssert.AreEqual(old,PortableCheckpointJson.Serialize(store.Value));
+        }
+        private sealed class SeedIo:Olca.Unity.CheckpointFileIo{public bool Fail;public override void WriteAndFlush(string path,byte[] bytes){if(Fail)throw new System.IO.IOException("initial seed fault");base.WriteAndFlush(path,bytes);}}
+        [Test] public void 実探索保存の失敗再試行と冷読取は使用選択済三十枚を保つ()
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"initial271-"+Guid.NewGuid().ToString("N"));try{
+                var io=new SeedIo{Fail=true};var writer=new Olca.Unity.InitialExplorationDeckWriter(dir,io);var store=new ProgressStore();var s=new ClearReturnSession(store);Assert.IsFalse(s.StartNewGameWithLoadout(0,Plan(),writer));Assert.AreEqual(0,store.Commits);Assert.IsTrue(s.HasPendingSave);io.Fail=false;Assert.IsTrue(s.Retry(),s.Error);var p=new ClearReturnSession(store).Snapshot;var decks=Olca.Unity.SaveManager.OpenExplorationDecks(dir,p.CheckpointGeneration).Read(out var error);Assert.NotNull(decks,error);Assert.AreEqual(30,decks.Decks.Single().Cards.Length);Assert.AreEqual(decks.Decks.Single().Id,decks.SelectedDeckId);Assert.IsTrue(ExplorationDeckRules.TryValidate(p,decks.Decks.Single(),out error),error);Assert.AreEqual(30,p.Owned.Sum(v=>v.Count));
+            }finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void 不正な初期計画は枚数や上位品や予備を黙って補完しない(int mode)
+        {
+            var good=Plan();var d=good.Dungeon.ToList();var o=good.Outside.ToList();if(mode==0)o.RemoveAt(0);if(mode==1)d[0]=new SimpleCardFactory().CreateExceeded(d[0],ExceedLevel.Lv1);if(mode==2)o[0]=new Card(d[0].Id,d[0].Name,1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,999,"");Assert.Throws<ArgumentException>(()=>new InitialDeckLoadout(d,o));
+        }
+        [Test] public void 旧二十枚と進行を保持したまま実ファイルの進行失敗を同一計画で再試行する()
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"initial-progress271-"+Guid.NewGuid().ToString("N"));try{
+                var io=new SeedIo();var store=new Olca.Unity.ClearReturnFileStore(dir,io);var s=new ClearReturnSession(store);var cards=new SimpleCardFactory().CreateStarterDeck().GetAllCards();Assert.IsTrue(s.InitializeStarter(cards));var oldProgress=System.IO.File.ReadAllBytes(store.ActivePath);
+                var oldDeck=new ExplorationDeckProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),Decks=new[]{new SavedDepartureDeck{Id=Guid.NewGuid().ToString("N"),Name="旧20",Cards=cards.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(c)}).ToArray()}}};var legacy=Olca.Unity.SaveManager.OpenExplorationDecks(dir,s.Snapshot.CheckpointGeneration);Assert.IsTrue(legacy.TryWrite(0,oldDeck,out _));var oldBytes=System.IO.File.ReadAllBytes(legacy.ActivePath);
+                io.Fail=true;Assert.IsFalse(s.StartNewGameWithLoadout(s.Snapshot.Revision,Plan(),new Olca.Unity.InitialExplorationDeckWriter(dir)));CollectionAssert.AreEqual(oldProgress,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(20,new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(dir)).Snapshot.Owned.Sum(v=>v.Count));CollectionAssert.AreEqual(oldBytes,System.IO.File.ReadAllBytes(legacy.ActivePath));
+                io.Fail=false;Assert.IsTrue(s.Retry(),s.Error);var cold=new ClearReturnSession(new Olca.Unity.ClearReturnFileStore(dir));Assert.AreEqual(30,cold.Snapshot.Owned.Sum(v=>v.Count));var outside=Olca.Unity.SaveManager.OpenExplorationDecks(dir,cold.Snapshot.CheckpointGeneration).Read(out var error);Assert.NotNull(outside,error);Assert.AreEqual(30,outside.Decks.Single().Cards.Length);Assert.AreEqual(outside.Decks[0].Id,outside.SelectedDeckId);Assert.AreEqual(20,cold.Snapshot.SavedDecks.Single().Cards.Length);CollectionAssert.AreEqual(oldBytes,System.IO.File.ReadAllBytes(legacy.ActivePath));
+            }finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [Test] public void 新世代に既存の別seedがあれば上書きせず同計画だけを再読取する()
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"initial-conflict271-"+Guid.NewGuid().ToString("N"));try{
+                string generation=Guid.NewGuid().ToString("N"),id=Guid.NewGuid().ToString("N");var plan=new ExplorationDeckProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),SelectedDeckId=id,Decks=new[]{new SavedDepartureDeck{Id=id,Name="スターター",Cards=Plan().Outside.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(c)}).ToArray()}}};var writer=new Olca.Unity.InitialExplorationDeckWriter(dir);Assert.IsTrue(writer.TryPrepare(generation,plan,out _));var store=Olca.Unity.SaveManager.OpenExplorationDecks(dir,generation);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(writer.TryPrepare(generation,plan.Copy(),out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var other=plan.Copy();other.CommitId=Guid.NewGuid().ToString("N");other.Decks[0].Name="別計画";Assert.IsFalse(writer.TryPrepare(generation,other,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+            }finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+    }
+}
+
+namespace Olca.Tests.Battle
+{
+    public sealed class InitialCardObservationTests
+    {
+        [TestCase(false)] [TestCase(true)]
+        public void 通常選択の観測は使用者不在で式を保持し使用者があれば実威力を解決する(bool attached)
+        {
+            var card=new SimpleCardFactory().CreateById(TrialInitialCardDefinitions.Shot);var deck=new Deck();var screen=attached?new BattleSystem(new PlayerCharacter(100,attackPower:13),new List<Enemy>{new Enemy("fixture","fixture",1000,ElementType.None,new Vector2Int(3,0))},deck).CustomScreen:new CustomScreenSystem(deck);
+            screen.Open(new[]{card},new SeededBattleRandom(271));var value=screen.Commands.Observe().Available.Single();if(attached)Assert.AreEqual(13,value.Power);else{Assert.IsNull(value.Power);StringAssert.Contains("コウゲキリョク100%",value.PowerText);}Assert.AreEqual(CollectionDisplay.DefinitionHash(card),value.DefinitionHash);Assert.IsFalse(card.IsEffectCopy);
+        }
+    }
+}

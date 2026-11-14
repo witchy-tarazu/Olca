@@ -51,7 +51,10 @@ namespace Olca.Application.Management
                     var controllers=prefab.GetComponentsInChildren<DungeonBattleController>(true);
                     if(controllers.Length!=1)throw new InvalidOperationException("hostのControllerは1つ必要です");
                     return controllers[0].CreateNewGameStarterCards();
-                },()=>!closed&&context.IsCurrent&&services.CurrentSession==null);
+                },()=>!closed&&context.IsCurrent&&services.CurrentSession==null,revision=>{
+                    var prefab=services.Resources.GetShared<GameObject>(GameplayHostPrefabPath);var controllers=prefab.GetComponentsInChildren<DungeonBattleController>(true);if(controllers.Length!=1)throw new InvalidOperationException("hostのControllerは1つ必要です");
+                    return progress.StartNewGameWithLoadout(revision,controllers[0].CreateNewGameLoadout(),new InitialExplorationDeckWriter(progressStore.DirectoryPath));
+                });
                 async void Begin(bool newGame=false){
                     if(starting||!context.IsCurrent)return;starting=true;view.SetBusy(true,null);
                     try{if(newGame)services.ResetOutsideForNewProgress(progress.Snapshot.CheckpointGeneration);var result=await root.StartGameplayHostAsync(lifetime.Token);if(!context.IsCurrent||view==null)return;if(result.Succeeded){layer.UnregisterOwner(owner);return;}view.SetBusy(false,result.Error??"開始を取り消しました");}

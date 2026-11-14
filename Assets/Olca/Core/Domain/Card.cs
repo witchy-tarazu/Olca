@@ -118,6 +118,9 @@ namespace Olca.Core.Domain
         public System.Collections.Generic.IReadOnlyList<TuningGrantDefinition> TuningHistory => tuningHistory.AsReadOnly();
         /// <summary>使用時だけのコピー。定義・保存・加工素材へ登録しない。</summary>
         public bool IsEffectCopy { get; private set; }
+        // 効果copyだけの由来。保存/hashへ混ぜず、同IDの偽固定カードを実行しない。
+        internal string EffectDefinitionHash { get; private set; }
+
         internal CardModifier GetTuningBaseModifier() => (tuningBaseModifier ?? Modifier).Clone();
 
         /// <summary>加工素材の同一性用。定義固有の効果は残し、付与された調律履歴だけを除く。</summary>
@@ -264,7 +267,7 @@ namespace Olca.Core.Domain
                 modifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
                 ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames
-            ) { IsEffectCopy = true };
+            ) { IsEffectCopy = true, EffectDefinitionHash = this.EffectDefinitionHash };
         }
 
         /// <summary>
@@ -314,7 +317,7 @@ namespace Olca.Core.Domain
         /// <summary>定義は変更せず、使用者を明示した効果専用コピーを作る。登録・保存へ戻さない。</summary>
         public Card ResolveAttackPower(int actorAttackPower)
         {
-            GetFinalPower(actorAttackPower);var copy=Clone();copy.Power=ResolvedBasePower(actorAttackPower);copy.AttackPowerBasisPoints=0;copy.IsEffectCopy=true;return copy;
+            GetFinalPower(actorAttackPower);var copy=Clone();copy.EffectDefinitionHash=EffectDefinitionHash??CollectionDisplay.DefinitionHash(CreateUntunedDefinitionCopy());copy.Power=ResolvedBasePower(actorAttackPower);copy.AttackPowerBasisPoints=0;copy.IsEffectCopy=true;return copy;
         }
         /// <summary>使用者基準の解決後に最終威力を一度だけ集中等の倍率で強化する。</summary>
         public Card WithPowerMultiplier(float multiplier,int actorAttackPower)
@@ -478,5 +481,34 @@ namespace Olca.Core.Domain
         {
             return $"{Name} (コスト:{Cost}, 威力:{(AttackPowerBasisPoints==0?Power.ToString():CollectionDisplay.PowerText(this))}, {Element})";
         }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    /// <summary>初期編成向け試用v1。正式な性能表とは分離した明示定義。</summary>
+    public static class TrialInitialCardDefinitions
+    {
+        public const string Shot="trial-shot-v1",Spear="trial-spear-v1",WideSword="trial-wide-sword-v1",AirShot="trial-air-shot-v1";
+        private static readonly System.Collections.Generic.Dictionary<string,Card> definitions=Build();
+        private static System.Collections.Generic.Dictionary<string,Card> Build()
+        {
+            var result=new System.Collections.Generic.Dictionary<string,Card>();
+            void Add(string id,string name,int cost,bool shot){result.Add(id,new Card(id,name+"（カリ）",cost,CardRarity.Normal,CardCategory.Attack,ElementType.None,shot?CardSeries.None:CardSeries.Sword,0,
+                "ショキカード（カリ） / コウゲキリョク100% / "+(shot?"チョクシン タンパツ":id==Spear?"ソードのゼンポウキョリ1.5バイ":"ソードのタテハバ1.5バイ"),
+                targetType:DamageTargetType.FrontTile,properties:shot?AttackProperty.Shooting:AttackProperty.Sword,poiseDamage:0,startupFrames:6,recoveryFrames:12,attackPowerBasisPoints:10000));}
+            Add(Shot,"ショット",1,true);Add(Spear,"スピア",2,false);Add(WideSword,"ワイドソード",2,false);Add(AirShot,"エアショット",1,true);return result;
+        }
+        public static Card Create(string id)=>id!=null&&definitions.TryGetValue(id,out var card)?card.Clone():null;
+        public static bool IsId(string id)=>id!=null&&definitions.ContainsKey(id);
+        public static bool IsShot(string id)=>id==Shot||id==AirShot;
+        public static bool IsRegistered(Card card)
+        {
+            if(card==null||string.IsNullOrEmpty(card.Id)||card.IsEffectCopy||card.Modifier?.AdditionalEffects==null||System.Linq.Enumerable.Any(card.Modifier.AdditionalEffects,e=>e==null)||!definitions.TryGetValue(card.Id,out var definition))return false;
+            try{return CollectionDisplay.DefinitionHash(card.CreateUntunedDefinitionCopy())==CollectionDisplay.DefinitionHash(definition);}
+            catch(System.ArgumentException){return false;}
+        }
+        public static bool IsResolved(Card card)=>card!=null&&card.IsEffectCopy&&card.AttackPowerBasisPoints==0&&IsId(card.Id)&&definitions.TryGetValue(card.Id,out var definition)&&card.EffectDefinitionHash==CollectionDisplay.DefinitionHash(definition);
+        public static System.Collections.Generic.IReadOnlyList<Card> All=>new[]{Create(Shot),Create(Spear),Create(WideSword),Create(AirShot)};
     }
 }

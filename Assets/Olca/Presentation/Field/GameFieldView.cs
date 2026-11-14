@@ -597,6 +597,12 @@ namespace Olca.Presentation.Field
         {
             if (!isActiveAndEnabled || currentBattle == null ||
                 (currentBattle.IsGameOver && currentBattle.State != BattleState.Victory) || battleGridView == null) { ClearBombVisuals(); return; }
+            if(projectilePoseRenderer==null&&currentBattle.DelayedEffects.GetActiveEffects().Any(e=>e.ProjectileVisualKey=="trial-initial-straight-v1")){
+                if(SharedAttackPropCatalog.TryGetSprite(SharedAttackPropCatalog.Blast,out var sprite,generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)))){
+                    projectilePoseRenderer=new ProjectilePoseRenderer(transform);
+                    projectilePoseRenderer.Configure(new[]{new ProjectileAppearance("trial-initial-straight-v1",new[]{sprite},new[]{new Olca.Core.Logic.CardEffects.ActionDisplayFrame(0,60)},1.2f,1.2f,0,logicalWidth:.35f)});
+                }
+            }
             bool victory = currentBattle.State == BattleState.Victory;
             if (victory) projectilePoseRenderer?.Clear();
             else projectilePoseRenderer?.Refresh(currentBattle, p => new Vector3(battleGridView.GridIndexToWorldX(p.X), battleGridView.GroundY, 0),

@@ -425,6 +425,8 @@ namespace Olca.Presentation.Management
         long Revision {get;} bool Pending {get;} ProgressPendingAction PendingAction {get;} string Error {get;} bool CanStartNewGame {get;}
         bool ManualSave();bool Retry();bool StartNewGame(long confirmedRevision);
     }
+    // 新規開始のデータ準備を表示側から実行せず、実際の操作経路だけを案内する。
+    public interface IInitialDeckLoadoutPresentation { bool HasDualStarter {get;} }
     public enum ProgressActionOutcome { Closed,Cancelled,NewGameStarted }
     public readonly struct ProgressActionResult
     {
@@ -482,7 +484,9 @@ namespace Olca.Presentation.Management
             purpose=Purpose.NewGame;operations=service;revision=service.Revision;pending=service.Pending;newGameSucceeded=false;confirm.interactable=cancel.interactable=false;
             if(!Begin(manager,parent,live)){operations=null;return;}
             if(pending){ShowPending();return;}
-            Set(titlePresentation?"スロット1の シンコウを ショキカします。\n\nショジカード・ホゾンデッキ・セイチョウ・ツウカ・ズカン、\nカイホウリレキ・コウリャクシンコウが タイショウです。\nスターター20マイで アタラしい シンコウを カイシします。\n\nソウサ・エンシュツ・オンリョウの セッテイは ホジします。\nジッコウマエの シンコウブンショ・キュウコウリャクデータは\nフッキュウヨウに ホゼンします。":"スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\nスターター20枚で新しい進行を開始します。\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
+            bool dual=service is IInitialDeckLoadoutPresentation info&&info.HasDualStarter;
+            string starter=titlePresentation?(dual?"キョウユウショジ30マイ / タンサク30・コウリャク20マイの\nショキヘンセイで アタラしい シンコウを カイシします。":"スターター20マイで アタラしい シンコウを カイシします。"):(dual?"共有所持30枚、探索30枚・攻略20枚の初期編成で新しい進行を開始します。":"スターター20枚で新しい進行を開始します。");
+            Set(titlePresentation?$"スロット1の シンコウを ショキカします。\n\nショジカード・ホゾンデッキ・セイチョウ・ツウカ・ズカン、\nカイホウリレキ・コウリャクシンコウが タイショウです。\n{starter}\n\nソウサ・エンシュツ・オンリョウの セッテイは ホジします。\nジッコウマエの シンコウブンショ・キュウコウリャクデータは\nフッキュウヨウに ホゼンします。":$"スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\n{starter}\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
         }
         public void OpenNotice(string message,bool accept,bool close,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {

@@ -28,6 +28,7 @@ namespace Olca.Presentation.CustomScreen
         public Sprite GetCardIllustration(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.Illustration;if(assigned!=null)return assigned;
+            if(TrialInitialCardDefinitions.IsId(id))return GetCardIcon(id);
             if(id!="sword"&&id!="fire_sword"&&id!="bomb"&&id!="heal"&&id!="shield"&&id!="tuning"&&id!="fire"&&id!="ice")return null;
             if(!registeredIllustrations.TryGetValue(id,out var result)||result==null){
                 var texture=Resources.Load<Texture2D>("OlcaCards/"+id);if(texture==null)return null;
@@ -54,9 +55,9 @@ namespace Olca.Presentation.CustomScreen
         public Sprite GetCardIcon(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.CustomIcon;
-            if(assigned!=null||(id!="sword"&&id!="fire_sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"&&id!="fire"&&id!="ice"))return assigned;
+            if(assigned!=null||(!TrialInitialCardDefinitions.IsId(id)&&id!="sword"&&id!="fire_sword"&&id!="heal"&&id!="shield"&&id!="bomb"&&id!="tuning"&&id!="fire"&&id!="ice"))return assigned;
             if(!generatedMiniIcons.TryGetValue(id,out var icon)||icon==null){
-                icon=(id=="sword"||id=="fire_sword"||id=="fire"||id=="ice")?SwordMiniIcon.Create(id=="fire_sword"):SupportMiniIcon.Create(id);
+                icon=TrialInitialCardDefinitions.IsId(id)?TrialInitialMiniIcon.Create(id):(id=="sword"||id=="fire_sword"||id=="fire"||id=="ice")?SwordMiniIcon.Create(id=="fire_sword"):SupportMiniIcon.Create(id);
                 generatedMiniIcons[id]=icon;
             }
             return icon;

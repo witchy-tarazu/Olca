@@ -1583,7 +1583,7 @@ namespace Olca.Application.Dungeon
         {
             if(progressOperations!=null)return progressOperations;
             var binding=hostPanels;var session=clearReturnSession;
-            return progressOperations=new Olca.Application.Management.ProgressActionOperations(session,()=>CanStartNewGame,()=>CreateCardFactory().CreateStarterDeck().GetAllCards(),()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&binding.IsAlive&&ReferenceEquals(clearReturnSession,session));
+            return progressOperations=new Olca.Application.Management.ProgressActionOperations(session,()=>CanStartNewGame,()=>CreateCardFactory().CreateStarterDeck().GetAllCards(),()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&binding.IsAlive&&ReferenceEquals(clearReturnSession,session),clearReturnStore is ClearReturnFileStore progressFile?(System.Func<long,bool>)(revision=>session.StartNewGameWithLoadout(revision,CreateNewGameLoadout(),new InitialExplorationDeckWriter(progressFile.DirectoryPath))):null);
         }
         private void SaveProgressFromUi()
         {
@@ -2220,7 +2220,9 @@ namespace Olca.Application.Dungeon
         {
             var defs=DungeonCheckpointSession.CreateDefault(map,deck).Definitions;
             var hashes=new HashSet<string>(defs.CollectionDefinitions.Select(CollectionDisplay.DefinitionHash));
-            foreach(var card in CreateCardFactory().CollectionCards){var hash=CollectionDisplay.DefinitionHash(card);if(hashes.Add(hash))defs.RegisterCard("product/catalog/v1/"+hash,card);}
+            // 新4品は新しい編成だけへ登録。旧ルート全体のcatalog hashを増分だけで変更しない。
+            bool initialV1=deck.GetAllCards().Any(c=>TrialInitialCardDefinitions.IsId(c.Id))||clearReturnSession?.Snapshot?.Owned.Any(o=>TrialInitialCardDefinitions.IsId(o.Id)&&o.DefinitionHash==CollectionDisplay.DefinitionHash(TrialInitialCardDefinitions.Create(o.Id)))==true;
+            foreach(var card in CreateCardFactory().CollectionCards.Where(c=>initialV1||!TrialInitialCardDefinitions.IsId(c.Id))){var hash=CollectionDisplay.DefinitionHash(card);if(hashes.Add(hash))defs.RegisterCard("product/catalog/v1/"+hash,card);}
             return defs;
         }
         private readonly List<DungeonChoice> knownLegacyDungeons=new List<DungeonChoice>();
@@ -3025,7 +3027,8 @@ namespace Olca.Application.Dungeon
         private Olca.Application.Management.DungeonCoreFactory CreateCoreFactory(bool suppressEvaluation=false,DungeonChoice rewardChoice=null)
             => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider??rewardChoice?.Rewards);
         /// <summary>タイトルの新規保存も、host prefabの既存スターター定義を副作用なく使用する。</summary>
-        public IReadOnlyList<Card> CreateNewGameStarterCards()=>CreateCardFactory().CreateStarterDeck().GetAllCards();
+        public IReadOnlyList<Card> CreateNewGameStarterCards()=>CreateNewGameLoadout().Dungeon;
+        public InitialDeckLoadout CreateNewGameLoadout()=>CreateCardFactory().CreateTrialInitialLoadout();
         private SimpleCardFactory CreateCardFactory()
             => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 

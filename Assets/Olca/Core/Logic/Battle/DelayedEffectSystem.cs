@@ -53,6 +53,11 @@ namespace Olca.Core.Logic.Battle
                 }
                 else effect.Tick(deltaTimeMs);
 
+                var advanced=effect.OnAdvanced;
+                if(advanced!=null){
+                    advanced(effect);if(battleSystem.IsGameOver)return;
+                    if(!activeEffects.Contains(effect)){i=System.Math.Min(i,activeEffects.Count);continue;}
+                }
                 if (effect.RemainingTimeMs <= 0)
                 {
                     // コールバック内の戦闘終了でClearされるため、実行前に取り除く。

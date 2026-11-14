@@ -883,6 +883,8 @@ namespace Olca.Core.Domain
         private readonly CollectionRecipe[] collectionRecipes;
         private Card[] collectionDefinitions;
         private bool writing;
+        private IInitialExplorationDeckWriter initialDeckWriter;
+        private ExplorationDeckProfile initialDeckSeed;
         private readonly Func<string> commitIdFactory;
         public bool Ready { get; private set; }
         public string Error { get; private set; }
@@ -943,6 +945,20 @@ namespace Olca.Core.Domain
             var next=new ClearReturnProfile { CheckpointGeneration=Guid.NewGuid().ToString("N") };
             if(!PopulateStarter(next,starter,out var error))return Fail(error);
             return Stage(next);
+        }
+        public bool StartNewGameWithLoadout(long confirmedRevision,InitialDeckLoadout loadout,IInitialExplorationDeckWriter writer)
+        {
+            if(!Available()||current.Revision!=confirmedRevision)return Fail("確認後に進行が変わりました。確認し直してください");
+            if(loadout==null||writer==null)return Fail("両用途の初期編成と探索保存先が必要です");
+            var next=new ClearReturnProfile{CheckpointGeneration=Guid.NewGuid().ToString("N")};
+            if(!PopulateStarter(next,loadout.Dungeon,out var error))return Fail(error);
+            next.Owned=loadout.Owned.Select(v=>v.Copy()).ToArray();
+            foreach(var card in loadout.Outside)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,CollectionDisplay.DefinitionHash(card));
+            string id=Guid.NewGuid().ToString("N");
+            var seed=new ExplorationDeckProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),SelectedDeckId=id,Decks=new[]{new SavedDepartureDeck{Id=id,Name="スターター",Cards=loadout.Outside.Select(c=>new SavedDeckCard{Id=c.Id,Level=c.ExceedLevel,DefinitionKey=CollectionDisplay.DefinitionHash(c)}).ToArray()}}};
+            if(!ExplorationDeckRules.TryValidate(next,seed.Decks[0],out error))return Fail(error);
+            ExplorationDeckProfile.Validate(seed);initialDeckWriter=writer;initialDeckSeed=seed;
+            bool saved=Stage(next);if(pending==null){initialDeckWriter=null;initialDeckSeed=null;}return saved;
         }
         public void ConfigureCollectionDefinitions(IReadOnlyList<Card> definitions)
         {
@@ -1284,8 +1300,10 @@ namespace Olca.Core.Domain
             if (pending == null) return Reload();
             writing = true;
             try {
+                // 未公開の新世代に探索編成を準備・照合してから、進行側の世代参照を最後に確定する。
+                if(initialDeckSeed!=null&&!initialDeckWriter.TryPrepare(pending.CheckpointGeneration,initialDeckSeed.Copy(),out var initialError))return Fail(initialError);
                 if (!store.TryWrite(current.Revision, pending.Copy(), out var error)) return Fail(error);
-                current = pending; pending = null; Error = null; return true;
+                current = pending; pending = null; initialDeckWriter=null;initialDeckSeed=null;Error = null; return true;
             } finally { writing = false; }
         }
     }
@@ -1710,6 +1728,33 @@ namespace Olca.Core.Domain
         {
             var next=cardProfile??current.Copy();next.OutsideInventory=inventory.Copy();if(equipment!=null)next.Customization=equipment.Copy();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
             writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;Error=null;return true;}finally{writing=false;}
+        }
+    }
+}
+
+namespace Olca.Core.Domain
+{
+    public interface IInitialExplorationDeckWriter
+    {
+        bool TryPrepare(string generation,ExplorationDeckProfile plan,out string error);
+    }
+    /// <summary>両編成を共有所持の最大必要数へ解決する。通常の新規開始だけで使用する不変計画。</summary>
+    public sealed class InitialDeckLoadout
+    {
+        private readonly Card[] dungeon,outside;private readonly OwnedCardCount[] owned;
+        public IReadOnlyList<Card> Dungeon=>dungeon.Select(c=>c.Clone()).ToArray();
+        public IReadOnlyList<Card> Outside=>outside.Select(c=>c.Clone()).ToArray();
+        public IReadOnlyList<OwnedCardCount> Owned=>owned.Select(v=>v.Copy()).ToArray();
+        public InitialDeckLoadout(IReadOnlyList<Card> dungeonCards,IReadOnlyList<Card> outsideCards)
+        {
+            if(dungeonCards==null||outsideCards==null||dungeonCards.Concat(outsideCards).Any(c=>c==null||c.IsEffectCopy||c.Rarity!=CardRarity.Normal||c.ExceedLevel!=ExceedLevel.Normal||c.TuningCount!=0))throw new ArgumentException("初期編成は未加工の無印Normalだけです");
+            var all=dungeonCards.Concat(outsideCards).ToArray();
+            if(all.GroupBy(c=>(c.Id,c.ExceedLevel)).Any(g=>g.Select(CollectionDisplay.DefinitionHash).Distinct().Count()!=1))throw new ArgumentException("同品目の初期定義が一致しません");
+            var a=dungeonCards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var b=outsideCards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            var counts=all.Select(c=>(c.Id,c.ExceedLevel)).Distinct().ToDictionary(k=>k,k=>Math.Max(a.TryGetValue(k,out var x)?x:0,b.TryGetValue(k,out var y)?y:0));
+            if(!DepartureDeckRules.TryCreate(dungeonCards,counts,out _,out var error)||!DepartureDeckRules.TryCreateForSize(outsideCards,counts,ExplorationDeckRules.RequiredCards,out _,out error))throw new ArgumentException(error);
+            dungeon=dungeonCards.Select(c=>c.Clone()).ToArray();outside=outsideCards.Select(c=>c.Clone()).ToArray();
+            owned=all.GroupBy(c=>(c.Id,c.ExceedLevel)).Select(g=>new OwnedCardCount{Id=g.Key.Id,Level=g.Key.ExceedLevel,Name=g.First().Name,Rarity=g.First().Rarity,DefinitionHash=CollectionDisplay.DefinitionHash(g.First()),Count=counts[g.Key]}).ToArray();
         }
     }
 }

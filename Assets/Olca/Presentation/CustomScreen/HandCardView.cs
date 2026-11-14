@@ -414,3 +414,27 @@ namespace Olca.Presentation.CustomScreen
         private void OnApplicationFocus(bool focused){if(!focused)CancelPress();}
     }
 }
+
+namespace Olca.Presentation.CustomScreen
+{
+    public static class TrialInitialMiniIcon
+    {
+        public static Sprite Create(string id)
+        {
+            if(!Olca.Core.Domain.TrialInitialCardDefinitions.IsId(id))throw new System.ArgumentException("試用新カードIDが必要です");
+            const int size=256;var pixels=new Color32[size*size];
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++){
+                int px=x/4,py=y/4;bool ink=false,core=false;
+                if(Olca.Core.Domain.TrialInitialCardDefinitions.IsShot(id)){
+                    ink=px>=10&&px<=43&&System.Math.Abs(py-35)<=2||px>=35&&px<=50&&System.Math.Abs(py-35)<=50-px;
+                    if(id==Olca.Core.Domain.TrialInitialCardDefinitions.AirShot)ink|=px>=12&&px<=28&&System.Math.Abs(py-20-(px-12)/2)<=1;
+                    core=px>=16&&px<=44&&System.Math.Abs(py-35)<=1;
+                }else if(id==Olca.Core.Domain.TrialInitialCardDefinitions.Spear){ink=px>=12&&px<=48&&System.Math.Abs(py-px)<=1||px>=39&&px<=51&&py>=39&&py<=51&&System.Math.Abs(py-px)<=51-System.Math.Max(px,py);core=ink&&py==px;}
+                else{ink=py>=18&&py<=48&&System.Math.Abs(px-32)<=8-(py-18)/6||py>=15&&py<=18&&px>=20&&px<=44||py>=6&&py<=15&&System.Math.Abs(px-32)<=2;core=ink&&System.Math.Abs(px-32)<=2&&py>20;}
+                if(ink)pixels[y*size+x]=core?new Color32(224,255,255,255):new Color32(39,151,177,255);
+            }
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,false){name=id+"TrialIcon",filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp,hideFlags=HideFlags.HideAndDontSave};texture.SetPixels32(pixels);texture.Apply(false,true);
+            var sprite=Sprite.Create(texture,new Rect(0,0,size,size),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect);sprite.name=texture.name;sprite.hideFlags=HideFlags.HideAndDontSave;return sprite;
+        }
+    }
+}

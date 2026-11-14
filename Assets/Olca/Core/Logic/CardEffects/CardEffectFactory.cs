@@ -86,6 +86,11 @@ namespace Olca.Core.Logic.CardEffects
             if (card == null) return new NullEffect();
             if(card.AttackPowerBasisPoints!=0)throw new NotSupportedException("使用者攻撃力の明示解決が必要です");
 
+            if(TrialInitialCardDefinitions.IsId(card.Id)){
+                if(!TrialInitialCardDefinitions.IsResolved(card))throw new NotSupportedException("試用初期カードには登録定義由来の使用者解決copyが必要です");
+                return new ModifiableCardEffect(card.Id);
+            }
+
             // 一時移動カードの判定（モーション時間が設定されている）
             if (card.MoveMotionTime > 0 || card.AttackMotionTime > 0)
             {

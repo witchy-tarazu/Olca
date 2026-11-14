@@ -47,7 +47,7 @@ namespace Olca.Application.Battle
             .Concat(bombUpgrades.Values.Where(c=>c.ExceedLevel!=ExceedLevel.Lv3).Select(c=>c.Clone()))
             .Concat(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
 
-        public IReadOnlyList<Card> FusionCards => catalog.Values.Concat(swordUpgrades.Values).Concat(bombUpgrades.Values).Select(c=>c.Clone()).ToArray();
+        public IReadOnlyList<Card> FusionCards => catalog.Values.Where(c=>c.AttackPowerBasisPoints==0).Concat(swordUpgrades.Values).Concat(bombUpgrades.Values).Select(c=>c.Clone()).ToArray();
 
         public Deck CreateStarterDeck()
         {
@@ -57,6 +57,13 @@ namespace Olca.Application.Battle
             return new Deck(cards);
         }
 
+        /// <summary>初期試用v1。旧5種fixtureはCreateStarterDeckで維持する。</summary>
+        public InitialDeckLoadout CreateTrialInitialLoadout()
+        {
+            var dungeon=new List<Card>();foreach(var id in new[]{Sword,Bomb,Heal,Shield,TrialInitialCardDefinitions.Shot})for(int n=0;n<4;n++)dungeon.Add(CreateById(id));
+            var outside=dungeon.Select(c=>c.Clone()).ToList();foreach(var id in new[]{TrialInitialCardDefinitions.Spear,TrialInitialCardDefinitions.WideSword,TrialInitialCardDefinitions.AirShot})for(int n=0;n<(id==TrialInitialCardDefinitions.AirShot?2:4);n++)outside.Add(CreateById(id));
+            return new InitialDeckLoadout(dungeon,outside);
+        }
         public TuningGrantDefinition GetTuningDefinition(Card card)
             => card != null && card.Id == Tuning && catalog.TryGetValue(Tuning,out var definition) &&
                 CollectionDisplay.DefinitionHash(card)==CollectionDisplay.DefinitionHash(definition) ? StandardTuning : null;
@@ -91,10 +98,14 @@ namespace Olca.Application.Battle
                 [FireSword] = new Card(FireSword, "ファイアソード", 2, CardRarity.Limited, CardCategory.Attack,
                     ElementType.Fire, CardSeries.Sword, 60, "前方1マス炎属性攻撃（ソード＋ボムの融合）", poiseDamage: legacyPoise ? (int?)null : poise.FireSword),
             };
+            foreach(var card in TrialInitialCardDefinitions.All)catalog.Add(card.Id,card);
             if (cardTimings != null)
                 foreach (var entry in cardTimings) {
                     if (entry.Key == null || entry.Value == null || !catalog.ContainsKey(entry.Key))
                         throw new System.ArgumentException("既存カードIDと時間定義が必要です", nameof(cardTimings));
+                    var original=catalog[entry.Key];
+                    if(TrialInitialCardDefinitions.IsId(entry.Key)&&(original.StartupFrames!=entry.Value.StartupFrames||original.RecoveryFrames!=entry.Value.RecoveryFrames||original.RecoveryCancelAfterFrames!=entry.Value.CancelAfterFrames))
+                        throw new System.ArgumentException("試用初期4品の時間変更は別の登録版が必要です",nameof(cardTimings));
                     catalog[entry.Key] = catalog[entry.Key].WithAttackTiming(entry.Value);
                 }
             // 旧互換の倍率生成とは分離した、同じシリーズの上位カード定義。

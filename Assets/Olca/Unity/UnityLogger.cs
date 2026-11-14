@@ -547,3 +547,26 @@ namespace Olca.Unity
         private static bool Equal(byte[] a, byte[] b) => System.Linq.Enumerable.SequenceEqual(a, b);
     }
 }
+
+namespace Olca.Unity
+{
+    /// <summary>新世代だけへ書き、同一計画の再試行と完全一致読取を確認する。</summary>
+    public sealed class InitialExplorationDeckWriter:Olca.Core.Domain.IInitialExplorationDeckWriter
+    {
+        private readonly string root;private readonly CheckpointFileIo io;
+        public InitialExplorationDeckWriter(string progressDirectory,CheckpointFileIo io=null){root=System.IO.Path.GetFullPath(progressDirectory);this.io=io;}
+        public bool TryPrepare(string generation,Olca.Core.Domain.ExplorationDeckProfile plan,out string error)
+        {
+            error=null;if(!System.Guid.TryParseExact(generation,"N",out _)){error="新規保存世代が不正です";return false;}
+            Olca.Core.Domain.ExplorationDeckProfile.Validate(plan);
+            if(plan.Revision!=1||plan.SelectedDeckId==null||plan.Decks.Length!=1||plan.Decks[0].Cards.Length!=30){error="新規探索編成の計画が不正です";return false;}
+            var store=SaveManager.OpenExplorationDecks(root,generation,io);var current=store.Read(out error);if(current==null)return false;
+            var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(plan);
+            bool Matches(Olca.Core.Domain.ExplorationDeckProfile value)=>System.Linq.Enumerable.SequenceEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(value));
+            if(Matches(current))return true;
+            if(!store.IsNewProfile||current.Revision!=0||current.Decks.Length!=0||current.SelectedDeckId!=null){error="新規探索保存先に異なる計画があります。上書きしていません";return false;}
+            if(!store.TryWrite(0,plan.Copy(),out error))return false;
+            var read=store.Read(out error);if(read!=null&&Matches(read))return true;error=error??"新規探索編成を読み戻せません";return false;
+        }
+    }
+}

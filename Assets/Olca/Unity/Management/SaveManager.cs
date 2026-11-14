@@ -23,10 +23,14 @@ namespace Olca.Unity
             public AudioVolumeFileStore Audio => audio ?? (audio = new AudioVolumeFileStore(SettingsDirectory));
             public ExplorationDeckFileStore ExplorationDecks(string generation)
             {
-                if(generation!=null&&!Guid.TryParseExact(generation,"N",out _))throw new ArgumentException("保存世代が不正です",nameof(generation));
-                return new ExplorationDeckFileStore(Path.Combine(ProgressDirectory,"exploration-decks",generation??"legacy"));
+                return OpenExplorationDecks(ProgressDirectory,generation);
             }
             public ClearReturnFileStore Progress => progress ?? (progress = new ClearReturnFileStore(ProgressDirectory));
+        }
+        public static ExplorationDeckFileStore OpenExplorationDecks(string progressDirectory,string generation,CheckpointFileIo io=null)
+        {
+            if(generation!=null&&!Guid.TryParseExact(generation,"N",out _))throw new ArgumentException("保存世代が不正です",nameof(generation));
+            return new ExplorationDeckFileStore(Path.Combine(Path.GetFullPath(progressDirectory),"exploration-decks",generation??"legacy"),io);
         }
         // Contextの作成だけでは読み書きしない。検証用保存ガードは呼出元が先に確定する。
         public Context OpenContext(string settings, string checkpoints, string progress) => new Context(settings, checkpoints, progress);

@@ -21,6 +21,10 @@ namespace Olca.Core.Logic.CardEffects.Effects
     {
         private readonly DamageTargetType baseTargetType;
 
+        private readonly string trialInitialId;
+        internal ModifiableCardEffect(string trialId):this(DamageTargetType.Single){
+            if(!TrialInitialCardDefinitions.IsId(trialId))throw new ArgumentException("試用初期カードIDが必要です");trialInitialId=trialId;
+        }
         private readonly int hitStopFrames;
         private readonly bool productBomb;
         private readonly Vector2Int? explosionCenter;
@@ -138,10 +142,12 @@ namespace Olca.Core.Logic.CardEffects.Effects
             using (var influence = new AttackInfluence()) ExecuteHitbox(context.WithInfluence(influence));
         }
 
-        private void ExecuteHitbox(BattleContext context)
+        private void ExecuteHitbox(BattleContext context, List<CardTarget> explicitTargets=null)
         {
             var card = context.UsedCard;
             if (productBomb) { RegisterProductBomb(context); return; }
+            if(explicitTargets==null&&TrialInitialCardDefinitions.IsShot(trialInitialId)){RegisterInitialShot(context);return;}
+
             foreach (var effect in card.Modifier.AdditionalEffects) effect?.ValidateHitInvincibilityStages();
             var modifier = card.Modifier;
 
@@ -150,7 +156,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
             ElementType finalElement = card.GetFinalElement();
 
             // 基本的な対象を取得
-            var targets = GetBaseTargets(context, baseTargetType);
+            var targets = explicitTargets??GetBaseTargets(context, baseTargetType);
 
             // 効果をトリガータイミングで分類
             var immediateEffects = new List<AdditionalEffect>();
@@ -290,6 +296,25 @@ namespace Olca.Core.Logic.CardEffects.Effects
         /// <summary>
         /// 基本的な対象リストを取得
         /// </summary>
+        // v1: ダンジョンは1マス=1論理座標。8座標/秒・60frame、最初の生存対象一体で消える。
+        private void RegisterInitialShot(BattleContext context)
+        {
+            var origin=context.GetEffectivePlayerPosition();long previous=0;
+            var flight=new DelayedEffect(1000,new Vector2Int(origin.X+context.ForwardX*8,origin.Y),false);
+            flight.SourcePosition=origin;flight.TargetPosition=new Vector2Int(origin.X+context.ForwardX*8,origin.Y);
+            flight.ProjectileVisualKey="trial-initial-straight-v1";flight.CancelOnHole=false;
+            flight.OnAdvanced=e=>{
+                long distance=System.Math.Min(60,e.ElapsedDisplayFrames)*8;
+                var hit=context.GetAliveOpponents().Where(t=>t.GridPosition.Y==origin.Y)
+                    .Select(t=>new{Target=t,Distance=(long)(t.GridPosition.X-origin.X)*context.ForwardX*60})
+                    .Where(t=>t.Distance>0&&t.Distance>=previous&&t.Distance<=distance).OrderBy(t=>t.Distance).FirstOrDefault();
+                previous=distance;
+                if(hit==null)return;
+                e.OnAdvanced=null;e.RemainingTimeMs=0;
+                ExecuteHitbox(context,new List<CardTarget>{hit.Target});
+            };
+            context.Battle.DelayedEffects.RegisterDelayedEffect(flight);
+        }
         private List<CardTarget> GetBaseTargets(BattleContext context, DamageTargetType targetType)
         {
             var aliveEnemies = context.GetAliveOpponents();
@@ -300,6 +325,13 @@ namespace Olca.Core.Logic.CardEffects.Effects
                 return aliveEnemies.Where(e => e.GridPosition.Y == center.Y && System.Math.Abs(e.GridPosition.X - center.X) <= 1).ToList();
             }
             if (aliveEnemies.Count == 0) return targets;
+            if(trialInitialId==TrialInitialCardDefinitions.Spear||trialInitialId==TrialInitialCardDefinitions.WideSword){
+                var origin=context.GetEffectivePlayerPosition();double length=trialInitialId==TrialInitialCardDefinitions.Spear?1.5:1, width=trialInitialId==TrialInitialCardDefinitions.WideSword?1.5:1;
+                // 対象マスの矩形と厳密に重なる範囲。境界が接するだけでは命中しない。
+                return aliveEnemies.Where(t=>{double dx=(t.GridPosition.X-origin.X)*context.ForwardX;return dx>0&&dx-.5<.5+length&&System.Math.Abs(t.GridPosition.Y-origin.Y)<(width+1)/2;})
+                    .OrderBy(t=>(t.GridPosition.X-origin.X)*context.ForwardX).ThenBy(t=>System.Math.Abs(t.GridPosition.Y-origin.Y)).Take(1).ToList();
+            }
+
 
             switch (targetType)
             {

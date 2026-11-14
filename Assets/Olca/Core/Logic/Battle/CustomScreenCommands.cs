@@ -45,12 +45,18 @@ namespace Olca.Core.Logic.Battle
         public long Handle { get; }
         public string Id { get; }
         public string DefinitionHash { get; }
-        public int Power { get; }
+        public int? Power { get; }
+        public string PowerText {get;}
         public int Cost { get; }
         public int TuningCount { get; }
-        internal CustomCardObservation(long handle, Card card)
-        { Handle = handle; Id = card.Id; DefinitionHash = CollectionDisplay.DefinitionHash(card); Power = card.GetFinalPower(); Cost = card.GetFinalCost(); TuningCount = card.TuningCount; }
-        public string Canonical => Handle + ":" + Uri.EscapeDataString(Id) + ":" + DefinitionHash + ":" + Power + ":" + Cost + ":" + TuningCount;
+        internal CustomCardObservation(long handle, Card card,int? actorAttackPower)
+        {
+            Handle=handle;Id=card.Id;DefinitionHash=CollectionDisplay.DefinitionHash(card);Cost=card.GetFinalCost();TuningCount=card.TuningCount;
+            if(card.AttackPowerBasisPoints==0)Power=card.GetFinalPower();
+            else if(actorAttackPower.HasValue){try{Power=card.GetFinalPower(actorAttackPower.Value);}catch(OverflowException){Power=null;}}
+            PowerText=Power.HasValue?Power.Value.ToString():CollectionDisplay.PowerText(card);
+        }
+        public string Canonical => Handle + ":" + Uri.EscapeDataString(Id) + ":" + DefinitionHash + ":" + (Power.HasValue?Power.Value.ToString():"formula:"+PowerText) + ":" + Cost + ":" + TuningCount;
     }
     /// <summary>後続操作で変わらない選択・手札・加工履歴の観測値。保存DTOではない。</summary>
     public sealed class CustomScreenObservation
@@ -68,7 +74,7 @@ namespace Olca.Core.Logic.Battle
         {
             Transformation = new TransformationObservation(battle, transformation);
             IsOpen = screen.IsOpen; IsConfirming = screen.IsConfirming; UndoCount = screen.CustomizationUndoCount; UsedCost = screen.GetTotalUsedCost();
-            CustomCardObservation[] Capture(IEnumerable<Card> cards) => cards.Select(c => new CustomCardObservation(handle(c), c)).ToArray();
+            CustomCardObservation[] Capture(IEnumerable<Card> cards) => cards.Select(c => new CustomCardObservation(handle(c), c,battle?.Player.AttackPower)).ToArray();
             Hand = Array.AsReadOnly(Capture(screen.CurrentHand)); Selected = Array.AsReadOnly(Capture(screen.SelectedCards)); Available = Array.AsReadOnly(Capture(screen.AvailableCards));
             string List(IReadOnlyList<CustomCardObservation> values) => string.Join(",", values.Select(c => c.Canonical));
             Canonical = string.Join("/", IsOpen, IsConfirming, UndoCount, UsedCost, List(Hand), List(Selected), List(Available), Transformation.Canonical);

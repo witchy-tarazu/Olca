@@ -78,11 +78,20 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 現在のカード（先頭のカード）を使用
         /// </summary>
-        public bool CanUseCurrentCard => !IsEmpty && (CurrentCard?.AttackPowerBasisPoints??0)==0 && (!isUsingCard || battleSystem.CanCancelPlayerRecovery) && battleSystem.CanPlayerBasicAttack;
+        private bool CanResolveCard(Card card)
+        {
+            if(card==null)return false;
+            if(TrialInitialCardDefinitions.IsId(card.Id)){if(!TrialInitialCardDefinitions.IsRegistered(card))return false;}
+            else if(card.AttackPowerBasisPoints==0)return true;
+            else return false;
+            try {card.GetFinalPower(battleSystem.Player.AttackPower);if(battleSystem.Player.IsConcentrating)card.WithPowerMultiplier(battleSystem.Player.NextCardMultiplier,battleSystem.Player.AttackPower);return true;}
+            catch(System.OverflowException){return false;}
+        }
+        public bool CanUseCurrentCard => !IsEmpty && CanResolveCard(CurrentCard) && (!isUsingCard || battleSystem.CanCancelPlayerRecovery) && battleSystem.CanPlayerBasicAttack;
 
         public bool TryUseCurrentCard()
         {
-            if (IsEmpty || (CurrentCard?.AttackPowerBasisPoints??0)!=0 || isUsingCard || battleSystem.HasPlayerAction || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
+            if (IsEmpty || !CanResolveCard(CurrentCard) || isUsingCard || battleSystem.HasPlayerAction || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;
@@ -130,6 +139,7 @@ namespace Olca.Core.Logic.Battle
 
         private Card ApplyConcentrate(Card card)
         {
+            if(card.AttackPowerBasisPoints!=0)card=card.ResolveAttackPower(battleSystem.Player.AttackPower);
             if (card.Category != CardCategory.Attack || !battleSystem.Player.IsConcentrating)
                 return card;
 

@@ -53,6 +53,9 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>発動時に実行する処理</summary>
         public Action ExecuteAction { get; set; }
+        // 直進試用弾だけ。論理経過を読取り、旧投擲の着弾時計は変更しない。
+        internal Action<DelayedEffect> OnAdvanced { get; set; }
+
 
         /// <summary>キャンセル時に実行する処理（オプション）</summary>
         public Action OnCancelled { get; set; }

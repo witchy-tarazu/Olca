@@ -17,17 +17,20 @@ namespace Olca.Presentation.Field
         public float EndHeight { get; }
         public float ArcHeight { get; }
         public bool Loop { get; }
+        public float? LogicalWidth {get;}
+
         /// <summary>右向きに描かれた素材だけ、表示上の進行方向へ反転する。</summary>
         public bool FaceTravelDirection { get; }
         private readonly long duration;
         public ProjectileAppearance(string key, IEnumerable<Sprite> sprites, IEnumerable<ActionDisplayFrame> frames,
-            float startHeight, float endHeight, float arcHeight, bool loop = false, bool faceTravelDirection = false)
+            float startHeight, float endHeight, float arcHeight, bool loop = false, bool faceTravelDirection = false,float? logicalWidth=null)
         {
             if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("飛翔素材参照が必要です");
             var images = sprites?.ToArray() ?? throw new ArgumentNullException(nameof(sprites));
             var schedule = frames?.ToArray() ?? throw new ArgumentNullException(nameof(frames));
             if (images.Length == 0 || images.Any(s => s == null) || schedule.Length == 0 || schedule.Any(f => f == null || f.Index >= images.Length) ||
                 new[] { startHeight, endHeight, arcHeight }.Any(f => float.IsNaN(f) || float.IsInfinity(f))) throw new ArgumentException("飛翔素材とコマ配分が不正です");
+            if(logicalWidth.HasValue&&(float.IsNaN(logicalWidth.Value)||float.IsInfinity(logicalWidth.Value)||logicalWidth<=0))throw new ArgumentException("飛翔表示幅が不正です");LogicalWidth=logicalWidth;
             Key = key; Sprites = Array.AsReadOnly(images); Frames = Array.AsReadOnly(schedule);
             StartHeight = startHeight; EndHeight = endHeight; ArcHeight = arcHeight; Loop = loop; FaceTravelDirection = faceTravelDirection;
             duration = schedule.Sum(f => (long)f.Frames);
@@ -74,6 +77,8 @@ namespace Olca.Presentation.Field
                 var source = world(effect.SourcePosition.Value);
                 var target = world(effect.TargetPosition);
                 renderer.sprite = appearance.SelectFrame(effect.ElapsedDisplayFrames);
+                if(appearance.LogicalWidth.HasValue)renderer.transform.localScale=Vector3.one*(logicalLength(appearance.LogicalWidth.Value)/renderer.sprite.bounds.size.x);
+
                 renderer.sortingLayerID = sortingLayer; renderer.sortingOrder = sortingOrder;
                 // 素材の基準向きは明示指定。判定座標・軌道・スケールは変えない。
                 renderer.flipX = appearance.FaceTravelDirection && target.x < source.x;
