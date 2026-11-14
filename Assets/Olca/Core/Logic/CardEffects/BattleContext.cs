@@ -169,6 +169,7 @@ namespace Olca.Core.Logic.CardEffects
             if(forwardX!=1&&forwardX!=-1)throw new ArgumentOutOfRangeException(nameof(forwardX));
             Battle = battle ?? throw new ArgumentNullException(nameof(battle));
             if(enemySource!=null&&!battle.Enemies.Contains(enemySource))throw new ArgumentException("未登録の使用者です",nameof(enemySource));
+            if(usedCard?.AttackPowerBasisPoints>0)throw new NotSupportedException("効果用コピーで使用者攻撃力を明示してください");
             UsedCard = usedCard; EnemySource=enemySource; ForwardX=forwardX;
         }
 

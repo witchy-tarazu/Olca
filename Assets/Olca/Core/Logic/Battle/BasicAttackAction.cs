@@ -114,6 +114,7 @@ namespace Olca.Core.Logic.Battle
         internal static void ValidateCard(Card value)
         {
             if(value==null)throw new ArgumentNullException(nameof(value));
+            if(value.AttackPowerBasisPoints!=0)throw new NotSupportedException("敵カードの攻撃力基準は未登録です");
         }
         public bool CanExecute(AIContext context)
         {

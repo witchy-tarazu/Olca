@@ -62,7 +62,7 @@ namespace Olca.Application.Battle
                 CollectionDisplay.DefinitionHash(card)==CollectionDisplay.DefinitionHash(definition) ? StandardTuning : null;
 
         public bool HasExceededDefinition(Card card, ExceedLevel nextLevel)
-            => card != null && nextLevel == (ExceedLevel)((int)card.ExceedLevel + 1) &&
+            => card != null && card.AttackPowerBasisPoints==0 && !card.IsEffectCopy && nextLevel == (ExceedLevel)((int)card.ExceedLevel + 1) &&
                 ((card.Id == Sword && card.Series?.Equals(CardSeries.Sword) == true && swordUpgrades.ContainsKey(nextLevel)) ||
                  (card.Id == Bomb && card.Series?.Equals(CardSeries.Bomb) == true && bombUpgrades.ContainsKey(nextLevel)));
 
@@ -143,6 +143,7 @@ namespace Olca.Application.Battle
         public Card CreateExceeded(Card baseCard, ExceedLevel nextLevel)
         {
             if (baseCard == null) return null;
+            if(baseCard.AttackPowerBasisPoints!=0||baseCard.IsEffectCopy)throw new System.NotSupportedException("使用時コピーまたは攻撃力基準カードの超越は未登録です");
             if (baseCard.Id == Sword && swordUpgrades.TryGetValue(nextLevel, out var definition))
                 return definition.Clone();
             if (baseCard.Id == Bomb && bombUpgrades.TryGetValue(nextLevel, out var bombDefinition))

@@ -843,7 +843,7 @@ namespace Olca.Presentation.Dungeon
                 var button=Button("RemovalCard_"+index,card==null?(selected[index]?"［削除対象］ ":"")+names[index]:"",0,y,1660,88,()=>choose(index));button.interactable=!blocked;
                 if(card!=null){var label=button.GetComponentInChildren<UnityEngine.UI.Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name+new string('★',(int)card.ExceedLevel));label.alignment=TextAnchor.MiddleLeft;label.fontSize=28;label.resizeTextMaxSize=28;label.rectTransform.anchoredPosition=new Vector2(-120,14);label.rectTransform.sizeDelta=new Vector2(980,40);
                     var provenance=Text("RemovalOrigin_"+index,obtained!=null&&index<obtained.Count&&obtained[index]?"攻略中取得・持帰り履歴は保持":"持込・永続所持は保持",-120,y-22,980,32,20);provenance.alignment=TextAnchor.MiddleLeft;
-                    Text("RemovalCost_"+index,$"コスト {card.GetFinalCost()}",620,y+14,330,36,22).alignment=TextAnchor.MiddleRight;Text("RemovalPower_"+index,$"威力 {card.GetFinalPower()}",620,y-14,330,36,22).alignment=TextAnchor.MiddleRight;
+                    Text("RemovalCost_"+index,$"コスト {card.GetFinalCost()}",620,y+14,330,36,22).alignment=TextAnchor.MiddleRight;Text("RemovalPower_"+index,$"威力 {CollectionDisplay.PowerText(card)}",620,y-14,330,36,22).alignment=TextAnchor.MiddleRight;
                     var sprite=icon?.Invoke(card);if(sprite!=null)CollectionIcon("RemovalCardIcon_"+index,card,-790,y,56,_=>sprite);
                     var state=Text("RemovalState_"+index,selected[index]?"削除対象":"",-690,y,132,40,21);state.color=new Color(.50f,.19f,.10f,1);
                 }
@@ -1078,7 +1078,7 @@ namespace Olca.Presentation.Dungeon
             for (int row = 0; row < rows && departurePage * rows + row < profile.Owned.Length; row++) {
                 int index = departurePage * rows + row; var owned = profile.Owned[index]; var option = options[index];
                 int count = draftKeys!=null?draftKeys.Count(k=>k==OwnedDefinition.Key(owned)):draft.Count(c=>OwnedDefinition.CardMatches(owned,c)); float y = 145 - row * 75;
-                var fullRow=OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {option.GetFinalPower()}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : "");
+                var fullRow=OwnedDefinition.DisplayName(owned) + (option==null?"":$"　威力 {CollectionDisplay.PowerText(option)}") + $"　編成 {count} / 所持 {owned.Count}" + (option == null ? "（定義未解決）" : "");
                 var sprite=option==null?null:resolveReturnIcon?.Invoke(option);
                 if(sprite!=null)CollectionIcon("DepartureCardIcon_"+index,option,-815,y,54,_=>sprite);
                 var rowText=Text("DepartureCard_" + index,OwnedDefinition.DisplayName(owned),-320,y+13,880,44,27);
@@ -1087,7 +1087,7 @@ namespace Olca.Presentation.Dungeon
                     rowText.rectTransform.sizeDelta-=new Vector2(180,0);rowText.rectTransform.anchoredPosition-=new Vector2(90,0);
                     TextDetailsButton("DepartureRow_"+index+"Details",Olca.Presentation.CustomScreen.CustomDisplay.Katakana(fullRow),"ヘンセイのジョウホウ",35,y,140,50);
                 }
-                var metrics=Text("DeparturePerformance_"+index,option==null?"定義未解決":$"威力 {option.GetFinalPower()}",-410,y-22,700,36,22);metrics.alignment=TextAnchor.MiddleLeft;
+                var metrics=Text("DeparturePerformance_"+index,option==null?"定義未解決":$"威力 {CollectionDisplay.PowerText(option)}",-410,y-22,700,36,22);metrics.alignment=TextAnchor.MiddleLeft;
                 var quantity=Text("DepartureDraftQuantity_"+index,count.ToString(),515,y,64,50,28);quantity.resizeTextForBestFit=true;quantity.resizeTextMinSize=18;quantity.resizeTextMaxSize=28;
                 Text("DepartureOwnedQuantity_"+index,owned.Count.ToString(),775,y,140,50,27);
                 Button("DepartureDetails_"+index,"詳細",230,y,170,60,Live(()=>OpenCardDetails(option,"DepartureDetails_"+index))).interactable=option!=null&&!pending;

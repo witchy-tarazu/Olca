@@ -29,6 +29,7 @@ namespace Olca.Core.Logic.Battle
         public static string MaterialRoleError(IReadOnlyList<Card> cards)
         {
             if(cards==null||cards.Count<2||cards.Any(c=>c==null))return null;
+            if(cards.Any(c=>c.AttackPowerBasisPoints!=0||c.IsEffectCopy))return "使用時コピーまたは攻撃力基準カードの融合は未登録です";
             int count=cards.Count(TuningSystem.IsMaterial);
             if(count>0&&count!=cards.Count)return "調律素材とそれ以外の融合はできません";
             return null;
@@ -159,7 +160,7 @@ namespace Olca.Core.Logic.Battle
         private static string Rule(string a,string b,CardRarity regulation)=>Pair(a,b)+"/"+(int)regulation;
         public void RegisterCard(Card card,string family,string series,int level)
         {
-            if(card==null||string.IsNullOrWhiteSpace(family)||string.IsNullOrWhiteSpace(series)||level<0||level>3||level!=(int)card.ExceedLevel||!Enum.IsDefined(typeof(CardRarity),card.Rarity))throw new ArgumentException("融合カード分類が不正です");
+            if(card==null||card.IsEffectCopy||string.IsNullOrWhiteSpace(family)||string.IsNullOrWhiteSpace(series)||level<0||level>3||level!=(int)card.ExceedLevel||!Enum.IsDefined(typeof(CardRarity),card.Rarity))throw new ArgumentException("融合カード分類が不正です");
             string key=Hash(card);if(cards.TryGetValue(key,out var old)) { if(old.Family!=family||old.Series!=series||old.Level!=level)throw new ArgumentException("同一定義の分類が競合しています");return; }
             if(cards.Values.Any(c=>c.Series==series&&(c.Regulation!=card.Rarity||c.Level==level)))throw new ArgumentException("シリーズのレギュレーションまたはレベル定義が競合しています");
             cards.Add(key,new Entry{Card=card.CreateUntunedDefinitionCopy(),Family=family,Series=series,Level=level,Regulation=card.Rarity});
@@ -171,7 +172,7 @@ namespace Olca.Core.Logic.Battle
         }
         public void RegisterSpecial(string recipeId,Card a,Card b,Card result)
         {
-            if(string.IsNullOrWhiteSpace(recipeId)||a==null||b==null||result==null||!cards.ContainsKey(Hash(a))||!cards.ContainsKey(Hash(b))||!cards.ContainsKey(Hash(result)))throw new ArgumentException("特殊融合の定義が不足しています");
+            if(string.IsNullOrWhiteSpace(recipeId)||a==null||b==null||result==null||a.IsEffectCopy||b.IsEffectCopy||result.IsEffectCopy||!cards.ContainsKey(Hash(a))||!cards.ContainsKey(Hash(b))||!cards.ContainsKey(Hash(result)))throw new ArgumentException("特殊融合の定義が不足しています");
             string key=Pair(Hash(a),Hash(b));if(special.ContainsKey(key))throw new ArgumentException("特殊融合が重複しています");special.Add(key,(recipeId,result.CreateUntunedDefinitionCopy()));specialDefinitions.Add((recipeId,a.CreateUntunedDefinitionCopy(),b.CreateUntunedDefinitionCopy(),result.CreateUntunedDefinitionCopy()));
         }
         public FusionValidationResult Validate(IReadOnlyList<Card> materials)

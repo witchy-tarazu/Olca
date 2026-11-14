@@ -2040,7 +2040,7 @@ namespace Olca.Presentation.CustomScreen
             float scaled=card.Power*card.Modifier.DamageMultiplier;
             bool powerValid=!float.IsNaN(scaled)&&!float.IsInfinity(scaled)&&(double)scaled>=int.MinValue&&(double)scaled<=int.MaxValue;
             long total=powerValid?(long)(int)scaled+card.Modifier.BonusDamage:0;
-            string power=powerValid&&total>=int.MinValue&&total<=int.MaxValue?card.GetFinalPower().ToString(System.Globalization.CultureInfo.InvariantCulture):"ハンイガイ";
+            string power=card.AttackPowerBasisPoints!=0?CollectionDisplay.PowerText(card):powerValid&&total>=int.MinValue&&total<=int.MaxValue?card.GetFinalPower().ToString(System.Globalization.CultureInfo.InvariantCulture):"ハンイガイ";
             var result=$"{card.Name}\nコスト: {cost} / イリョク: {power}\nゾクセイ {ElementName(card.GetFinalElement())} / {Regulation(card.Rarity)} / {card.Series} / {(card.ExceedLevel==ExceedLevel.Normal?"ツウジョウ":"チョウエツ "+(int)card.ExceedLevel)}\n\n{card.Description}\n\nカードホセイ (ゴウケイ)\n{Modifier(card.Modifier)}";
             foreach(var grant in card.TuningHistory){
                 result+="\n\nチョウリツ / コスト "+Signed(grant.FixedCostAdjustment)+(grant.ZeroCost?" / コスト0カ":"");

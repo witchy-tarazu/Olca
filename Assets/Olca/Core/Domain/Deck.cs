@@ -803,6 +803,18 @@ namespace Olca.Core.Domain
     }
     public static class CollectionDisplay
     {
+        /// <summary>使用者なしで動的威力を0と表示しない。固定威力は既存の表示を維持する。</summary>
+        public static string PowerText(Card card)
+        {
+            if(card==null)return "—";if(card.AttackPowerBasisPoints==0)return card.GetFinalPower().ToString();
+            if(float.IsNaN(card.Modifier.DamageMultiplier)||float.IsInfinity(card.Modifier.DamageMultiplier))return "ハンイガイ";
+            var culture=System.Globalization.CultureInfo.InvariantCulture;
+            string value="コウゲキリョク"+((decimal)card.AttackPowerBasisPoints/100m).ToString("0.##",culture)+"%";
+            if(card.Power!=0)value="("+value+" + "+card.Power.ToString(culture)+")";
+            if(card.Modifier.DamageMultiplier!=1f)value+=" × "+card.Modifier.DamageMultiplier.ToString("G",culture);
+            if(card.Modifier.BonusDamage!=0)value+=" "+(card.Modifier.BonusDamage>0?"+ ":"- ")+System.Math.Abs((long)card.Modifier.BonusDamage).ToString(culture);
+            return value;
+        }
         public static string DefinitionHash(Card card) => Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(card);
         public static bool MetadataMatches(DiscoveredCard known,Card card) => known.Id==card.Id&&known.Level==card.ExceedLevel&&known.Rarity==card.Rarity&&known.Name==card.Name;
         public static bool MetadataKnown(ClearReturnProfile profile,Card card) => (profile?.DiscoveredCards??Array.Empty<DiscoveredCard>()).Any(c=>MetadataMatches(c,card));
@@ -823,7 +835,7 @@ namespace Olca.Core.Domain
         public static string CardText(ClearReturnProfile profile,Card card,IReadOnlyList<Card> catalog=null)
         {
             if(!IsKnown(profile,card,catalog))return "？？？　未入手";
-            return card.Name+new string('★',(int)card.ExceedLevel)+"\n"+card.Rarity+"　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n"+card.Description;
+            return card.Name+new string('★',(int)card.ExceedLevel)+"\n"+card.Rarity+"　コスト "+card.GetFinalCost()+"　威力 "+PowerText(card)+"\n"+card.Description;
         }
         public static string[] CardRows(ClearReturnProfile profile,IReadOnlyList<Card> definitions)
         {
@@ -843,7 +855,7 @@ namespace Olca.Core.Domain
             => recipes.Select(r=>new CollectionRecipeRow(RecipeText(profile,r,catalog),r.TryGetResult(profile,out var card,catalog)?card:null,r.ResultPerformance(profile,catalog))).ToArray();
         private static string DisplayElement(ElementType value) => value==ElementType.Metal?"キン":value==ElementType.Wood?"キ":value==ElementType.Yin?"イン":value==ElementType.Yang?"ヨウ":System.Enum.IsDefined(typeof(ElementType),value)?value.ToString():"未定義";
         public static string PerformanceText(Card card,string description=null) => card.Name+new string('★',(int)card.ExceedLevel)+
-            "　コスト "+card.GetFinalCost()+"　威力 "+card.GetFinalPower()+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+DisplayElement(card.Element)+"　シリーズ "+card.Series?.Name+
+            "　コスト "+card.GetFinalCost()+"　威力 "+PowerText(card)+"\n分類 "+card.Category+"　"+card.Rarity+"\n属性 "+DisplayElement(card.Element)+"　シリーズ "+card.Series?.Name+
             "\n"+(description??card.Description);
     }
     /// <summary>公開判定後の表示専用値。未公開行には結果定義自体を渡さない。</summary>

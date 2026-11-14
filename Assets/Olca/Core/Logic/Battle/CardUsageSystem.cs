@@ -78,11 +78,11 @@ namespace Olca.Core.Logic.Battle
         /// <summary>
         /// 現在のカード（先頭のカード）を使用
         /// </summary>
-        public bool CanUseCurrentCard => !IsEmpty && (!isUsingCard || battleSystem.CanCancelPlayerRecovery) && battleSystem.CanPlayerBasicAttack;
+        public bool CanUseCurrentCard => !IsEmpty && (CurrentCard?.AttackPowerBasisPoints??0)==0 && (!isUsingCard || battleSystem.CanCancelPlayerRecovery) && battleSystem.CanPlayerBasicAttack;
 
         public bool TryUseCurrentCard()
         {
-            if (IsEmpty || isUsingCard || battleSystem.HasPlayerAction || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
+            if (IsEmpty || (CurrentCard?.AttackPowerBasisPoints??0)!=0 || isUsingCard || battleSystem.HasPlayerAction || battleSystem.IsGameOver || battleSystem.IsPaused || battleSystem.PlayerMovement.IsNormalMoving || battleSystem.Player.IsActionPrevented)
             {
                 logger?.LogWarning("使用可能なカードがありません");
                 return false;

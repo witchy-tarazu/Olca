@@ -23,9 +23,13 @@ namespace Olca.Core.Logic.Battle
         /// 調律可能かどうかを検証する
         /// </summary>
         public TuningValidationResult Validate(Card targetCard, Card tuningCard)
+            => Validate(targetCard, tuningCard, false);
+
+        private TuningValidationResult Validate(Card targetCard, Card tuningCard, bool allowEffectTarget)
         {
             if (targetCard == null || tuningCard == null)
                 return TuningValidationResult.Fail("カードがnullです");
+            if((targetCard.IsEffectCopy&&!allowEffectTarget)||tuningCard.IsEffectCopy||tuningCard.AttackPowerBasisPoints!=0)return TuningValidationResult.Fail("使用時コピーまたは攻撃力基準素材には調律できません");
             if (!IsMaterial(tuningCard))
                 return TuningValidationResult.Fail("調律カードとしての適性がありません");
             if (IsMaterial(targetCard))
@@ -45,9 +49,12 @@ namespace Olca.Core.Logic.Battle
         /// <returns>調律結果</returns>
         public TuningResult Execute(Card targetCard, Card tuningCard)
         {
-            var validation = Validate(targetCard, tuningCard);
+            var validation = Validate(targetCard, tuningCard, true);
             if (!validation.IsValid)
                 return TuningResult.Fail(validation.ErrorMessage);
+            // 既存の構造検証後に、使用時コピーの従来の未定義結果を維持する。
+            if (targetCard.IsEffectCopy)
+                return TuningResult.Undefined("調律付与履歴が不足しているか使用時コピーです");
 
             var definition = Definition(tuningCard);
             if (definition == null)

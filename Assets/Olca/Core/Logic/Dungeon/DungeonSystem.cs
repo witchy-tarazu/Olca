@@ -1445,6 +1445,7 @@ namespace Olca.Core.Logic.Dungeon
         internal static string ObstacleHash(Obstacle obstacle) => Hash(writer => WriteObstacle(writer, obstacle));
         internal static string GrantHash(TuningGrantDefinition g) => Hash(w => Grant(w, g));
         internal static string CardHash(Card c) => Hash(w => {
+            if(c.AttackPowerBasisPoints<0)throw new ArgumentOutOfRangeException("攻撃力基準が不正です");
             Text(w, c.Id); Text(w, c.Name); Text(w, c.Description);
             w.Write(c.Cost); w.Write((int)c.Rarity); w.Write((int)c.Category); w.Write((int)c.Element); Text(w, c.Series?.Name);
             w.Write(c.Power); w.Write((int)c.TargetType); Text(w, c.PanelChangeType); Text(w, c.MoveDirection); w.Write(c.MoveDistance);
@@ -1464,6 +1465,7 @@ namespace Olca.Core.Logic.Dungeon
             if (c.HitInvincibilityMs > 0) { w.Write("hit-invincibility-ms"); w.Write(c.HitInvincibilityMs); }
             if (c.PoiseDamage.HasValue) { w.Write("poise-damage"); w.Write(c.PoiseDamage.Value); }
             if (c.Properties != AttackProperty.None) { w.Write("attack-properties"); w.Write((int)c.Properties); }
+            if(c.AttackPowerBasisPoints!=0){w.Write("attack-power-basis-points-v1");w.Write(c.AttackPowerBasisPoints);}
         });
         internal static void Require(bool valid, string message) { if (!valid) throw new ArgumentException(message); }
         internal static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

@@ -2475,7 +2475,7 @@ namespace Olca.Application.Dungeon
             if(selectingVisitRemoval && selectedVisit>=0 && selectedVisit<state.Options.Length) {
                 var option=definition.Options[state.Options[selectedVisit]];var cards=d.GetCurrentDeck().GetAllCards().ToArray();
                 visitRemovalTargets.RemoveWhere(c=>!cards.Contains(c));int needed=d.VisitRemovalCount(selectedVisit);
-                var labels=cards.Select((c,i)=>$"カード {i+1}: {c.Name}{new string('★',(int)c.ExceedLevel)} / コスト {c.GetFinalCost()} / 威力 {c.GetFinalPower()}"+(d.GetObtainedCards().Contains(c)?" ［攻略中取得・持帰り履歴は保持］":" ［持込・永続所持は保持］")).ToArray();
+                var labels=cards.Select((c,i)=>$"カード {i+1}: {c.Name}{new string('★',(int)c.ExceedLevel)} / コスト {c.GetFinalCost()} / 威力 {CollectionDisplay.PowerText(c)}"+(d.GetObtainedCards().Contains(c)?" ［攻略中取得・持帰り履歴は保持］":" ［持込・永続所持は保持］")).ToArray();
             EnsureReturnView();
                 clearReturnView.RenderVisitRemoval("攻略中カード削除 / 所持 "+d.Currency+" 通貨",labels,cards.Select(c=>visitRemovalTargets.Contains(c)).ToArray(),needed,option.Price,d.IsCheckpointBlocked,
                     needed>0&&visitRemovalTargets.Count==needed&&d.CanChooseVisit(selectedVisit),

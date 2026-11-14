@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,39 +12,41 @@ using Olca.Core.Logic.CardEffects.Effects;
 namespace Olca.Core.Logic.Dungeon
 {
     // 純C#の値DTO。未対応をhash不一致/明示拒否にし、欠落値を製品既定値へ推測しない。
+    [DataContract]
     public sealed class PortableCardDefinition
     {
-        public string Key, Hash;
-        public PortableTuningGrant TuningDefinition;
-        public string Id;
-        public string Name;
-        public int Cost;
-        public CardRarity Rarity;
-        public CardCategory Category;
-        public ElementType Element;
-        public string Series;
-        public int Power;
-        public string Description;
-        public DamageTargetType TargetType;
-        public string PanelChangeType;
-        public string MoveDirection;
-        public int MoveDistance;
-        public CardModifier Modifier;
-        public float MoveMotionTime;
-        public float AttackMotionTime;
-        public MovePenetrationMode PenetrationMode;
-        public float StartupTime;
-        public float RecoveryTime;
-        public bool ExtendRecoveryDuringDerivative;
-        public bool IsInstantEffect;
-        public ExceedLevel ExceedLevel;
-        public CardSubCategory SubCategory;
-        public AttackProperty Properties;
-        public int? PoiseDamage;
-        public int HitInvincibilityMs;
-        public int? StartupFrames;
-        public int? RecoveryFrames;
-        public int? RecoveryCancelAfterFrames;
+        [DataMember] public string Key, Hash;
+        [DataMember] public PortableTuningGrant TuningDefinition;
+        [DataMember] public string Id;
+        [DataMember] public string Name;
+        [DataMember] public int Cost;
+        [DataMember] public CardRarity Rarity;
+        [DataMember] public CardCategory Category;
+        [DataMember] public ElementType Element;
+        [DataMember] public string Series;
+        [DataMember] public int Power;
+        [DataMember] public string Description;
+        [DataMember] public DamageTargetType TargetType;
+        [DataMember] public string PanelChangeType;
+        [DataMember] public string MoveDirection;
+        [DataMember] public int MoveDistance;
+        [DataMember] public CardModifier Modifier;
+        [DataMember] public float MoveMotionTime;
+        [DataMember] public float AttackMotionTime;
+        [DataMember] public MovePenetrationMode PenetrationMode;
+        [DataMember] public float StartupTime;
+        [DataMember] public float RecoveryTime;
+        [DataMember] public bool ExtendRecoveryDuringDerivative;
+        [DataMember] public bool IsInstantEffect;
+        [DataMember] public ExceedLevel ExceedLevel;
+        [DataMember] public CardSubCategory SubCategory;
+        [DataMember] public AttackProperty Properties;
+        [DataMember] public int? PoiseDamage;
+        [DataMember] public int HitInvincibilityMs;
+        [DataMember] public int? StartupFrames;
+        [DataMember] public int? RecoveryFrames;
+        [DataMember] public int? RecoveryCancelAfterFrames;
+        [DataMember(EmitDefaultValue=false)] public int AttackPowerBasisPoints;
         public static PortableCardDefinition Capture(string key, Card card)
         {
             if(card==null||card.TuningCount!=0||card.IsEffectCopy)throw new NotSupportedException("加工/付与定義付きカードの輸送は未対応です");
@@ -55,7 +58,7 @@ namespace Olca.Core.Logic.Dungeon
                 Category=card.Category,
                 Element=card.Element,
                 Series=card.Series?.Name,
-                Power=card.Power,
+                Power=card.Power,AttackPowerBasisPoints=card.AttackPowerBasisPoints,
                 Description=card.Description,
                 TargetType=card.TargetType,
                 PanelChangeType=card.PanelChangeType,
@@ -81,7 +84,7 @@ namespace Olca.Core.Logic.Dungeon
         public Card Restore()
         {
             if(string.IsNullOrWhiteSpace(Key)||Hash==null||Modifier==null||Modifier.AdditionalEffects==null)throw new ArgumentException("カード定義が欠損しています");
-            var card=new Card(Id, Name, Cost, Rarity, Category, Element, Series == null ? null : new CardSeries(Series), Power, Description, TargetType, PanelChangeType, MoveDirection, MoveDistance, Modifier.Clone(), MoveMotionTime, AttackMotionTime, PenetrationMode, StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect, ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames);
+            var card=new Card(Id, Name, Cost, Rarity, Category, Element, Series == null ? null : new CardSeries(Series), Power, Description, TargetType, PanelChangeType, MoveDirection, MoveDistance, Modifier.Clone(), MoveMotionTime, AttackMotionTime, PenetrationMode, StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect, ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames, AttackPowerBasisPoints);
             if(TuningDefinition!=null)card=card.WithTuningDefinition(TuningDefinition.Restore());
             if(CollectionDisplay.DefinitionHash(card)!=Hash)throw new ArgumentException("カード定義のhashが一致しません");return card;
         }

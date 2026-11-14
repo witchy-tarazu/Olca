@@ -615,9 +615,11 @@ namespace Olca.Tests.CardEffects
                 var copy = source.CreateSelfChainCopy(percent);
                 foreach (var property in typeof(Card).GetProperties())
                 {
-                    if (property.Name == nameof(Card.Modifier) || property.Name == nameof(Card.Power)) continue;
+                    if (property.Name == nameof(Card.Modifier) || property.Name == nameof(Card.Power) || property.Name == nameof(Card.IsEffectCopy)) continue;
                     Assert.AreEqual(property.GetValue(source), property.GetValue(copy), property.Name);
                 }
+                Assert.IsFalse(source.IsEffectCopy);
+                Assert.IsTrue(copy.IsEffectCopy);
                 Assert.AreEqual(percent > 0 ? source.Power * percent / 100 : source.Power, copy.Power);
                 Assert.AreEqual(0, copy.Modifier.BonusDamage);
                 Assert.AreEqual(1f, copy.Modifier.DamageMultiplier);

@@ -25,6 +25,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (cardA == null || cardB == null)
                 return ExceedValidationResult.Fail("カードがnullです");
+            if(cardA.AttackPowerBasisPoints!=0||cardB.AttackPowerBasisPoints!=0||cardA.IsEffectCopy||cardB.IsEffectCopy)return ExceedValidationResult.Fail("使用時コピーまたは攻撃力基準カードの超越は未登録です");
             if (cardA.Id != cardB.Id)
                 return ExceedValidationResult.Fail("同名カード2枚が必要です");
             if (cardA.ExceedLevel != cardB.ExceedLevel)

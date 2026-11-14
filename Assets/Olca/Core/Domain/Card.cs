@@ -49,6 +49,8 @@ namespace Olca.Core.Domain
 
         /// <summary>威力（攻撃カードの場合）</summary>
         public int Power { get; private set; }
+        /// <summary>使用者攻撃力の基準点。10000が100%。0は既存の固定威力契約。</summary>
+        public int AttackPowerBasisPoints { get; private set; }
 
         /// <summary>説明文</summary>
         public string Description { get; }
@@ -114,7 +116,8 @@ namespace Olca.Core.Domain
         private CardModifier tuningBaseModifier;
         private System.Collections.Generic.List<TuningGrantDefinition> tuningHistory = new System.Collections.Generic.List<TuningGrantDefinition>();
         public System.Collections.Generic.IReadOnlyList<TuningGrantDefinition> TuningHistory => tuningHistory.AsReadOnly();
-        internal bool IsEffectCopy { get; private set; }
+        /// <summary>使用時だけのコピー。定義・保存・加工素材へ登録しない。</summary>
+        public bool IsEffectCopy { get; private set; }
         internal CardModifier GetTuningBaseModifier() => (tuningBaseModifier ?? Modifier).Clone();
 
         /// <summary>加工素材の同一性用。定義固有の効果は残し、付与された調律履歴だけを除く。</summary>
@@ -172,7 +175,7 @@ namespace Olca.Core.Domain
             bool extendRecoveryDuringDerivative = false,
             bool isInstantEffect = false,
             ExceedLevel exceedLevel = ExceedLevel.Normal,
-            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int? startupFrames = null, int? recoveryFrames = null, int? recoveryCancelAfterFrames = null)
+            CardSubCategory subCategory = CardSubCategory.None, AttackProperty properties = AttackProperty.None, int? poiseDamage = null, int hitInvincibilityMs = 0, int? startupFrames = null, int? recoveryFrames = null, int? recoveryCancelAfterFrames = null, int attackPowerBasisPoints = 0)
         {
             if (float.IsNaN(startupTime) || float.IsInfinity(startupTime) || startupTime < 0 ||
                 float.IsNaN(recoveryTime) || float.IsInfinity(recoveryTime) || recoveryTime < 0)
@@ -180,6 +183,9 @@ namespace Olca.Core.Domain
             double recoveryLimit = recoveryFrames.HasValue ? recoveryFrames.Value : System.Math.Ceiling(recoveryTime * 60d - 0.00001d);
             if (startupFrames < 0 || recoveryFrames < 0 || recoveryCancelAfterFrames < 0 || recoveryCancelAfterFrames > recoveryLimit)
                 throw new System.ArgumentOutOfRangeException("前後隙とキャンセル開始は有効なフレーム数が必要です");
+            if(attackPowerBasisPoints<0)throw new System.ArgumentOutOfRangeException(nameof(attackPowerBasisPoints));
+            if(attackPowerBasisPoints>0&&(category!=CardCategory.Attack||power<0))throw new System.ArgumentException("攻撃力基準は非負の攻撃カードに明示してください");
+            AttackPowerBasisPoints=attackPowerBasisPoints;
             StartupFrames = startupFrames; RecoveryFrames = recoveryFrames; RecoveryCancelAfterFrames = recoveryCancelAfterFrames;
             if (poiseDamage < 0) throw new System.ArgumentOutOfRangeException(nameof(poiseDamage));
             if (hitInvincibilityMs < 0) throw new System.ArgumentOutOfRangeException(nameof(hitInvincibilityMs));
@@ -221,6 +227,7 @@ namespace Olca.Core.Domain
         /// <returns>調律後の新しいカードインスタンス</returns>
         public Card ApplyTuning(Card tuningCard)
         {
+            if(IsEffectCopy||tuningCard?.IsEffectCopy==true||tuningCard?.AttackPowerBasisPoints>0)throw new System.NotSupportedException("使用時コピーまたは攻撃力基準カードを調律素材にできません");
             if (tuningCard == null) return this;
 
             // 調律元のカードから追加効果を取得
@@ -232,7 +239,7 @@ namespace Olca.Core.Domain
                 TargetType, PanelChangeType, MoveDirection, MoveDistance,
                 newModifier, MoveMotionTime, AttackMotionTime, PenetrationMode,
                 StartupTime, RecoveryTime, ExtendRecoveryDuringDerivative, IsInstantEffect,
-                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames
+                ExceedLevel, SubCategory, Properties, PoiseDamage, HitInvincibilityMs, StartupFrames, RecoveryFrames, RecoveryCancelAfterFrames, AttackPowerBasisPoints
             )
             {
                 TuningCount = TuningCount + 1,
@@ -265,9 +272,13 @@ namespace Olca.Core.Domain
         /// </summary>
         public Card CreateSelfChainCopy(int powerPercent)
         {
+            if(AttackPowerBasisPoints!=0)throw new System.InvalidOperationException("自己派生の前に使用者攻撃力を解決してください");
             var copy = Clone();
-            if (powerPercent > 0 && powerPercent != 100)
-                copy.Power = (Power * powerPercent) / 100;
+            if (powerPercent > 0 && powerPercent != 100) {
+                long value=(long)Power*powerPercent/100;
+                if(value<int.MinValue||value>int.MaxValue)throw new System.OverflowException("自己派生の威力が範囲外です");
+                copy.Power=(int)value;
+            }
             copy.Modifier = new CardModifier();
             copy.IsEffectCopy = true;
             return copy;
@@ -278,9 +289,40 @@ namespace Olca.Core.Domain
         /// </summary>
         public int GetFinalPower()
         {
+            if(AttackPowerBasisPoints!=0)throw new System.InvalidOperationException("使用者攻撃力が必要なカードです");
             int finalPower = (int)(Power * Modifier.DamageMultiplier);
             finalPower += Modifier.BonusDamage;
             return finalPower;
+        }
+
+        private int ResolvedBasePower(int actorAttackPower)
+        {
+            if(actorAttackPower<0)throw new System.ArgumentOutOfRangeException(nameof(actorAttackPower));
+            if(AttackPowerBasisPoints==0)return Power;
+            long value=checked((long)actorAttackPower*AttackPowerBasisPoints/10000L+Power);
+            if(value<int.MinValue||value>int.MaxValue)throw new System.OverflowException("攻撃力基準の威力が範囲外です");return (int)value;
+        }
+        /// <summary>基準分を整数切捨てして固定加算し、その後に既存倍率・Bonusを一度ずつ適用する。</summary>
+        public int GetFinalPower(int actorAttackPower)
+        {
+            int basis=ResolvedBasePower(actorAttackPower);
+            if(AttackPowerBasisPoints==0)return GetFinalPower(); // 旧float丸め・加算契約を変更しない。
+            float scaled=basis*Modifier.DamageMultiplier;
+            if(float.IsNaN(scaled)||float.IsInfinity(scaled)||(double)scaled<int.MinValue||(double)scaled>int.MaxValue)throw new System.OverflowException("補正後の威力が範囲外です");
+            return checked((int)scaled+Modifier.BonusDamage);
+        }
+        /// <summary>定義は変更せず、使用者を明示した効果専用コピーを作る。登録・保存へ戻さない。</summary>
+        public Card ResolveAttackPower(int actorAttackPower)
+        {
+            GetFinalPower(actorAttackPower);var copy=Clone();copy.Power=ResolvedBasePower(actorAttackPower);copy.AttackPowerBasisPoints=0;copy.IsEffectCopy=true;return copy;
+        }
+        /// <summary>使用者基準の解決後に最終威力を一度だけ集中等の倍率で強化する。</summary>
+        public Card WithPowerMultiplier(float multiplier,int actorAttackPower)
+        {
+            if(float.IsNaN(multiplier)||float.IsInfinity(multiplier)||multiplier<0)throw new System.ArgumentOutOfRangeException(nameof(multiplier));
+            var resolved=ResolveAttackPower(actorAttackPower);float power=resolved.GetFinalPower()*multiplier;
+            if(float.IsNaN(power)||float.IsInfinity(power)||(double)power<int.MinValue||(double)power>int.MaxValue)throw new System.OverflowException("使用時倍率の威力が範囲外です");
+            return resolved.WithPowerMultiplier(multiplier);
         }
 
         /// <summary>
@@ -434,7 +476,7 @@ namespace Olca.Core.Domain
 
         public override string ToString()
         {
-            return $"{Name} (コスト:{Cost}, 威力:{Power}, {Element})";
+            return $"{Name} (コスト:{Cost}, 威力:{(AttackPowerBasisPoints==0?Power.ToString():CollectionDisplay.PowerText(this))}, {Element})";
         }
     }
 }

@@ -84,6 +84,7 @@ namespace Olca.Core.Logic.CardEffects
         public static ICardEffect CreateEffect(Card card)
         {
             if (card == null) return new NullEffect();
+            if(card.AttackPowerBasisPoints!=0)throw new NotSupportedException("使用者攻撃力の明示解決が必要です");
 
             // 一時移動カードの判定（モーション時間が設定されている）
             if (card.MoveMotionTime > 0 || card.AttackMotionTime > 0)
