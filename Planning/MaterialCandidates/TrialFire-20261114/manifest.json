@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "scope": "trial Fire costume source candidates only, not Unity imported or runtime verified",
+  "images": {
+    "idle.png": {
+      "sha256": "72d92f99f5b181508c6e77a1646f6ed7251b787d2696010c453e231587f19581",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "generationId": "364cc5ca-63cc-47af-9d68-1386fa1a9772",
+      "status": "unregistered-provisional-source"
+    },
+    "jump_rise.png": {
+      "sha256": "e0449b21169055a97e557673cfaa1c82c0954a5e42dfea7cafefb940fd021fef",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "generationId": "a917823d-2b9a-4b68-ab23-1eb527b05678",
+      "status": "unregistered-provisional-source"
+    },
+    "run_01.png": {
+      "sha256": "085abfca296c1c2f657a6ae779fdc860a0a7843ff24fbbc0f88f6947da33078f",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "generationId": "9fa26996-02f5-43fd-9a3b-c274702bebd5",
+      "status": "unregistered-provisional-source"
+    },
+    "run_03.png": {
+      "sha256": "f7fdd05775225a7a1061cc319a3c9577a8f6d1edac1eff048c6e358549d89766",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "generationId": "d0455063-3c7b-4772-8018-d06e6fc3f1aa",
+      "status": "unregistered-provisional-source"
+    },
+    "run_05.png": {
+      "sha256": "4d8696c7fb2abd18f568df4421dcaab86c082286b75ef99b54488ad1a73e788e",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "generationId": "4baae3a8-e942-4be4-a692-1f7c96bf7d51",
+      "status": "unregistered-provisional-source"
+    },
+    "run_07.png": {
+      "sha256": "fe4f406cce0db74a7de491f0c17bf4ad5730d807266c52e716be7583cdcaf741",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "generationId": "edf7cef2-5361-4a5a-9ce8-05a55ccb04c2",
+      "status": "unregistered-provisional-source"
+    }
+  },
+  "logicalCanvas": [
+    256,
+    256
+  ],
+  "suggestedUniformRunPivot": [
+    127,
+    17
+  ],
+  "idleJumpPivotReference": [
+    127,
+    14
+  ],
+  "sourcePpuForFuture256Import": 489.84375
+}
