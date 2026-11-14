@@ -12,7 +12,8 @@ namespace Olca.Presentation.Effects
         private static readonly string[] PoseKeys = {
             "idle", "run_01", "run_02", "run_03", "run_04", "run_05", "run_06", "run_07", "run_08",
             "jump_rise", "jump_apex", "jump_fall", "dash", "wall_slide_01", "wall_slide_02",
-            "ground_kick_prepare", "ground_kick_contact", "air_forward_contact"
+            "ground_kick_prepare", "ground_kick_contact", "air_forward_contact",
+            "idle_breathe_mid", "idle_breathe_high", "knockback_01", "knockback_02", "knockback_03"
         };
         private readonly Func<string, Sprite> load;
         private Dictionary<string, Sprite> sprites;
@@ -50,9 +51,11 @@ namespace Olca.Presentation.Effects
         private static string PoseKey(string name)
         {
             int index = Numbered(name, "heroine_idle_", 10);
-            if (index > 0) return "idle"; // 呼吸連番は未完成のため、試用の立ち姿1枚を使う。
+            if (index > 0) return index>=3&&index<=5?"idle_breathe_high":index==2||index==6?"idle_breathe_mid":"idle"; // 既存10コマ時計で試用3姿勢を往復。
             index = Numbered(name, "move_", 8);
             if (index > 0) return "run_" + index.ToString("00", CultureInfo.InvariantCulture);
+            index = Numbered(name, "knockback_", 3);
+            if (index > 0) return "knockback_" + index.ToString("00", CultureInfo.InvariantCulture);
             switch (name)
             {
                 case "jump_rise": case "jump_apex": case "jump_fall": return name;

@@ -147,6 +147,14 @@ namespace Olca.Presentation.Exploration
             recoveryMarker.rectTransform.anchoredPosition=new Vector2(p.x,p.y-340);
             if(visible&&!grounded&&BoundsInView((RectTransform)recoveryPoint.transform).Overlaps(BoundsInView(player.rectTransform)))recoveryPoint.gameObject.SetActive(false);
         }
+        // 操作不能な空中で本体を覆う補給詳細だけを退避する。Shopは独立した表示規則を保つ。
+        private void PlaceSupplyPanels(bool grounded)
+        {
+            if(grounded)return;
+            var actor=BoundsInView(player.rectTransform);
+            foreach(var slot in supplySlots)if(slot!=null&&slot.Index<4&&slot.Button.gameObject.activeSelf&&
+                BoundsInView((RectTransform)slot.Button.transform).Overlaps(actor))slot.Button.gameObject.SetActive(false);
+        }
         // ワールド追従の案内だけを避け、固定HUDやゲーム座標は動かさない。
         private void PlaceReloadBelowVitals()
         {
@@ -289,7 +297,7 @@ namespace Olca.Presentation.Exploration
             if(sprite==null)sprite=idleSprite;
             sprite=ResolveBodyCostume(sprite);
             player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);PlaceRecoveryPanel(core.IsGrounded);
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);PlaceRecoveryPanel(core.IsGrounded);PlaceSupplyPanels(core.IsGrounded);
             RenderOutsideDefensiveField(presentation.Player?.HasBarrier==true,presentation.Player?.HasAura==true);RenderOutsideKamui();RenderMapDoor(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorPosition(core)/unit)),verticalOffset);RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)

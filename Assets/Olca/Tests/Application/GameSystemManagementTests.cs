@@ -147,6 +147,28 @@ namespace Olca.Tests.Application
             }
         }
 
+        [TestCase(1920f,1080f,0)][TestCase(1920f,1080f,1)][TestCase(1920f,1080f,2)][TestCase(1920f,1080f,3)]
+        [TestCase(3840f,2160f,0)][TestCase(3840f,2160f,1)][TestCase(3840f,2160f,2)][TestCase(3840f,2160f,3)]
+        [TestCase(1280f,960f,0)][TestCase(1280f,960f,1)][TestCase(1280f,960f,2)][TestCase(1280f,960f,3)]
+        public async Task 外界補給詳細は空中で本体と交差する時だけ退避し着地後の操作と文言を保持する(float width,float height,int index)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var state=model.Core.CaptureState();state.Position=index==0?Olca.Core.Logic.Integration.OutsideTrialRoute.SupplyX:index==1?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonSupplyX:index==2?Olca.Core.Logic.Integration.OutsideTrialRoute.PoisonTrialX:Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyX;typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(model.Core,new object[]{state});int calls=0;string message="シヨウ ハコ\nミウケトリ";
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;Action claim=()=>calls++;Func<bool> ready=()=>model.Core.IsGrounded;
+                if(index==0)view.ConfigureSupply(claim,ready,()=>message);else if(index==1)view.ConfigurePoisonSupply(claim,ready,()=>message);else if(index==2)view.ConfigureTrialPoison(claim,ready,()=>message);else view.ConfigureCardSupply(claim,ready,()=>message);
+                var button=view.transform.Find(index==0?"OutsideSupplyChest":index==1?"OutsidePoisonSupplyChest":index==2?"OutsideTrialPoisonPoint":"OutsideCardSupplyChest").GetComponent<Button>();var actor=view.transform.Find("OutsideEntryPlayer").GetComponent<RectTransform>();
+                Rect Area(RectTransform q){var c=new Vector3[4];q.GetWorldCorners(c);return Rect.MinMaxRect(c.Min(x=>x.x),c.Min(x=>x.y),c.Max(x=>x.x),c.Max(x=>x.y));}
+                for(int cycle=0;cycle<2;cycle++){
+                    view.Render();Assert.IsTrue(button.gameObject.activeSelf);var old=button.onClick;var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.Render();CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));int hidden=0;
+                    model.Core.TickFrame(0,true,true);for(int n=0;n<100&&!model.Core.IsGrounded;n++){long frame=model.Core.Frame;view.Render();bool overlap=Area((RectTransform)button.transform).Overlaps(Area(actor));Assert.AreEqual(!overlap,button.gameObject.activeSelf);if(overlap)hidden++;Assert.IsFalse(button.interactable);old.Invoke();Assert.AreEqual(cycle,calls);view.Render();Assert.AreEqual(frame,model.Core.Frame);model.Core.TickFrame(0,false,n<10);}
+                    Assert.Greater(hidden,0);view.Render();Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(button.interactable);StringAssert.Contains(cycle==0?"ミウケトリ":"ウケトリズミ",button.GetComponentInChildren<Text>().text);button.onClick.Invoke();Assert.AreEqual(cycle+1,calls);message="シヨウ ハコ\nウケトリズミ";
+                }
+                Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
         [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
         {
             var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
@@ -1048,6 +1070,16 @@ namespace Olca.Tests.Application
                 Assert.AreEqual(8,seen.Count);model.TickTraversal(0);view.Render();Assert.AreEqual("trial_fire_idle",body.sprite.name);long stopped=model.Core.Frame;view.SetCovered(true);view.Render();Assert.AreEqual(stopped,model.Core.Frame);view.SetCovered(false);
                 Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.Basic,null,out error),error);view.Render();StringAssert.StartsWith("heroine_idle_",body.sprite.name);Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.TrialFire,null,out error),error);view.Render();Assert.AreEqual("trial_fire_idle",body.sprite.name);
                 UnityEngine.Object.DestroyImmediate(view.gameObject);Assert.IsTrue((await binding.OpenAsync()).Succeeded);body=binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>();Assert.AreEqual("trial_fire_idle",body.sprite.name);Assert.AreEqual(stopped,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
+
+        [Test] public async Task 外界カエン呼吸は既存Idle時計から三姿勢を描き足の基準と停止再入を維持する()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var save=new Olca.Core.Domain.ClearReturnSession(new DoorBoundaryStore());
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.TrySwitchOutsideStyle(save,Olca.Core.Domain.DepartureStyleDefinition.TrialFire,null,out var error),error);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var seen=new System.Collections.Generic.HashSet<string>();long position=model.Core.Position;
+                for(int n=0;n<240;n++){model.TickTraversal(0);long frame=model.Core.Frame;view.Render();seen.Add(body.sprite.name);Assert.AreEqual(new Vector2(127,14),body.sprite.rect.position+body.sprite.pivot);view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(position,model.Core.Position);}Assert.AreEqual(3,seen.Count);CollectionAssert.AreEquivalent(new[]{"trial_fire_idle","trial_fire_idle_breathe_mid","trial_fire_idle_breathe_high"},seen);var stopped=body.sprite;long clock=model.Core.Frame;view.SetCovered(true);for(int n=0;n<5;n++)view.Render();Assert.AreSame(stopped,body.sprite);Assert.AreEqual(clock,model.Core.Frame);view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(stopped,body.sprite);Assert.AreEqual(clock,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);
             }
         }
 

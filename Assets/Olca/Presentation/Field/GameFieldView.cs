@@ -109,6 +109,9 @@ namespace Olca.Presentation.Field
         /// <summary>接敵表示の進捗だけを受け取る。位置・回転・倍率は変更しない。</summary>
         public void SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase phase, float progress)
         {
+            RestoreTrialBody();
+            try
+            {
             if (phase == Olca.Presentation.Dungeon.ContactVisualPhase.None) {
                 contactPoseSprite = null;
                 if (contactPoseActive && playerSprite != null) playerSprite.sprite = contactPreviousSprite;
@@ -126,6 +129,7 @@ namespace Olca.Presentation.Field
                 sprite = frames == null || frames.Length == 0 ? null : frames[SelectContactFrame(phase, progress, frames.Length)];
             }
             if(sprite==null){if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f);return;} // 未登録は別モーションや回転で代替しない。
+            trialBasicKick?.Clear();
             if (!contactPoseActive) {
                 actionPoseRenderer?.Clear();
                 contactPreviousSprite = playerSprite != null ? playerSprite.sprite : null;
@@ -135,6 +139,8 @@ namespace Olca.Presentation.Field
             if (playerAnimator != null) playerAnimator.enabled = false;
             contactPoseSprite = sprite;
             SetPlayerSprite(sprite);
+
+            }finally{ApplyTrialBody();}
         }
 
         public static int SelectContactFrame(Olca.Presentation.Dungeon.ContactVisualPhase phase, float progress, int count)
@@ -218,6 +224,25 @@ namespace Olca.Presentation.Field
         public SpriteRenderer PlayerSprite => playerSprite;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
         private Olca.Presentation.Effects.TrialFireKamuiVisual trialKamuiVisual;
+        private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
+        private Olca.Presentation.Effects.TrialBasicKickBody trialBasicKick;
+        private Sprite trialBodyOriginal,trialBodyMapped;
+        private void RestoreTrialBody()
+        {
+            if(playerSprite!=null&&trialBodyMapped!=null&&playerSprite.sprite==trialBodyMapped)playerSprite.sprite=trialBodyOriginal;
+            trialBodyOriginal=trialBodyMapped=null;
+        }
+        private void ApplyTrialBody()
+        {
+            RestoreTrialBody();
+            if(!isActiveAndEnabled||playerSprite==null||playerSprite.sprite==null)return;
+            var actor=currentBattle?.Player??dungeonSystem?.Player;
+            var original=playerSprite.sprite;
+            var mapped=(trialFireBody??(trialFireBody=new Olca.Presentation.Effects.TrialFireBodyMotion())).Resolve(original,actor);
+            if(mapped==original)return;
+            trialBodyOriginal=original;trialBodyMapped=mapped;playerSprite.sprite=mapped;
+        }
+
         private Olca.Presentation.Effects.ActorConditionVisual guardVisual, paralysisVisual;
         private void RefreshConditionVisuals()
         {
@@ -707,9 +732,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { RestoreTrialBody();trialBasicKick?.Clear();worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); RestoreTrialBody(); }
         private void OnDestroy()
         {
+            RestoreTrialBody();trialBasicKick?.Dispose();trialBasicKick=null;trialFireBody?.Dispose();trialFireBody=null;
             ReleasePresentation();
             guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose(); trialKamuiVisual?.Dispose();
             actionPoseRenderer?.Dispose();
@@ -1088,10 +1114,15 @@ namespace Olca.Presentation.Field
         }
         private void UpdatePlayerSprite()
         {
+            RestoreTrialBody();
+            try
+            {
+            if(!Olca.Presentation.Effects.TrialBasicKickBody.CanDisplay(currentBattle))trialBasicKick?.Clear();
             // 取消・終了は停止中にも反映し、古い武器を残さない。
             if (currentBattle?.PlayerActionVisual == null) actionPoseRenderer?.Clear();
             if(Olca.Unity.BattleVisualClock.IsPaused)return;
             if (dungeonSystem != null && dungeonSystem.IsObstacleStopped && !dungeonSystem.IsInBattle) {
+                trialBasicKick?.Clear();
                 if (!obstaclePoseActive) { obstaclePoseActive = true; obstacleAnimatorWasEnabled = playerAnimator != null && playerAnimator.enabled; }
                 if (playerAnimator != null) playerAnimator.enabled = false;
                 // 既存ののけぞりSpriteだけを使う。未設定時はidleで停止し、専用素材完成とは扱わない。
@@ -1101,8 +1132,11 @@ namespace Olca.Presentation.Field
                 return;
             }
             RestoreObstaclePose();
-            if (contactPoseActive && contactPoseSprite != null) { SetPlayerSprite(contactPoseSprite); return; }
+            if (contactPoseActive && contactPoseSprite != null) { trialBasicKick?.Clear();SetPlayerSprite(contactPoseSprite); return; }
+            if(currentBattle?.PlayerActionVisual!=null)trialBasicKick?.Clear();
             if (actionPoseRenderer?.Apply(currentBattle?.PlayerActionVisual) == true) return;
+            if(isActiveAndEnabled&&playerSprite!=null&&currentBattle?.IsPlayerBasicAction==true&&
+                (trialBasicKick??(trialBasicKick=new Olca.Presentation.Effects.TrialBasicKickBody(playerSprite,playerAnimator))).Apply(currentBattle))return;
             int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && (dungeonSystem.IsJumping||dungeonSystem.IsTerrainRecovering)
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
                 dungeonSystem?.IsTerrainRecovering==true?.8f:dungeonSystem?.JumpProgress ?? 0f);
@@ -1129,6 +1163,8 @@ namespace Olca.Presentation.Field
 
             var jumpSprite = jumpPhase == 1 ? jumpRisePlayerSprite : jumpPhase == 2 ? jumpApexPlayerSprite : jumpPhase == 3 ? jumpFallPlayerSprite : null;
             SetPlayerSprite(jumpSprite != null ? jumpSprite : isDashing ? dashPlayerSprite : idlePlayerSprite);
+
+            }finally{ApplyTrialBody();}
         }
 
         private void ResetMovementAnimation()
