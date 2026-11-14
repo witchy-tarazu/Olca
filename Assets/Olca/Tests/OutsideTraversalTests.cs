@@ -50,21 +50,56 @@ namespace Olca.Tests
             }
         }
 
-        private static OutsideExplorationSession TrialKickPit241(){var s=TrialKick212();Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationPit));return s;}
-        private static void DashPosition(OutsideExplorationSession s,long x)=>typeof(OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{x});
-        [TestCase(-1)] [TestCase(1)] public void 専用ダッシュ攻撃は開始向き速度を保ち終了frameで通常移動へ戻り保持ジャンプを発火しない(int side)
+        private static void TrialFire261(OutsideExplorationSession s){s.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);s.Player.SetElementResistances(Olca.Core.Domain.ElementAffinity.CreatePlayerBase(Olca.Core.Domain.ElementType.Fire));}
+        [TestCase(false)][TestCase(true)] public void 試用カエンダッシュは未知神依と耐性不一致を直接入力と保存復元で拒否する(bool invalidResistance)
+        {
+            using(var s=TrialKick212())using(var cold=TrialKick212()){
+                if(invalidResistance)s.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);else s.Player.SetDepartureStyle(new Olca.Core.Domain.DepartureStyleDefinition("unknown-dash-style","unknown",null));
+                var lease=s.AttachPresentation();s.TickTraversal(1,dashDown:true,dashHeld:true);long frame=s.Core.Frame,x=s.Core.Position;Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,1,out var error));StringAssert.Contains("未登録",error);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);
+                // ガード外で作った不正進行も保存・復元の境界で拒否する。
+                Assert.IsTrue(s.NormalKick.TryRequest(s.Core.Frame,true,s.Core.Facing,dashing:true));lease.Dispose();Assert.Throws<ArgumentException>(()=>s.CaptureRuntime());
+                using(var valid=TrialKick212()){
+                    TrialFire261(valid);var display=valid.AttachPresentation();valid.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(valid.ProcessCardUseInput(false,false,true,0,1,out _));display.Dispose();var runtime=valid.CaptureRuntime();var actor=Olca.Core.Domain.OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var before=cold.CaptureRuntime();var oldPlayer=cold.Player;Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,runtime,null));var after=cold.CaptureRuntime();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(oldPlayer,cold.Player);
+                }
+            }
+        }
+        [TestCase(0)][TestCase(6)][TestCase(13)] public void 試用カエンダッシュの各位相はActorと同時復元し停止中不変で二重命中しない(int age)
+        {
+            using(var s=TrialKick212())using(var cold=TrialKick212()){
+                TrialFire261(s);DashPosition(s,15*60000);var lease=s.AttachPresentation();s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));for(int n=0;n<age;n++)s.TickTraversal(-1);lease.Dispose();var data=s.CaptureRuntime();var actor=Olca.Core.Domain.OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;long frame=s.Core.Frame;Assert.IsTrue(cold.RestoreSavedState(actor,data,null));Assert.AreEqual(frame,cold.Core.Frame);Assert.AreEqual(Olca.Core.Domain.ElementType.Fire,cold.Player.ActiveElement);Assert.IsFalse(cold.RestoreSavedState(actor,data,null));Assert.AreEqual(frame,cold.Core.Frame);
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){
+                    while(s.IsAttacking){s.TickTraversal(-1);cold.TickTraversal(-1);Assert.AreEqual(s.Core.Frame,cold.Core.Frame);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.AreEqual(s.TrialTarget.CurrentHp,cold.TrialTarget.CurrentHp);Assert.AreEqual(s.SecondTrialTarget.CurrentHp,cold.SecondTrialTarget.CurrentHp);}
+                    Assert.AreEqual(110,cold.TrialTarget.CurrentHp);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);Assert.IsFalse(cold.Core.IsDashing);Assert.AreEqual(1,cold.NormalKick.NextGroundStage);
+                }
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)] public void 試用カエンダッシュは同IDの攻撃性能と名称と延長補正の偽装を受け付けない(int mode)
         {
             using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
-                DashPosition(s,14*60000);s.TickTraversal(side,dashDown:true,dashHeld:true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.AreEqual(OutsideKickKind.Dash,s.NormalKick.Kind);long x=s.Core.Position,end=s.NormalKick.EndsAt;long step=s.Core.TraversalProfile.DashSpeedPerSecond/60;
+                var registered=Olca.Core.Domain.DepartureStyleDefinition.TrialFire;var attack=mode==0?new Olca.Core.Domain.TransformationAttackDefinition(Olca.Core.Domain.ElementType.Fire,101,200,60,12):registered.Attack;s.Player.SetDepartureStyle(new Olca.Core.Domain.DepartureStyleDefinition(registered.Id,mode==1?"altered":registered.Name,null,attack,mode==2?1:0));s.Player.SetElementResistances(Olca.Core.Domain.ElementAffinity.CreatePlayerBase(Olca.Core.Domain.ElementType.Fire));s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,1,out var error));StringAssert.Contains("未登録",error);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.None,s.PendingAttack);
+            }
+        }
+        [Test] public void 試用カエンダッシュ後の六frame予約は再評価して地上一段目から始める()
+        {
+            using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
+                TrialFire261(s);s.TickTraversal(1,dashDown:true,dashHeld:true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));long end=s.NormalKick.EndsAt;while(s.Core.Frame<end-3)s.TickTraversal(0);Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,2,out _));Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.Basic,s.PendingAttack);while(s.Core.Frame<end){s.TickTraversal(0);s.ProcessCardUseInput(false,false,false,0,0,out _);}Assert.AreEqual(OutsideKickKind.GroundFirst,s.NormalKick.Kind);Assert.IsTrue(s.IsAttacking);Assert.AreEqual(end,s.NormalKick.StartedAt);Assert.IsFalse(s.Core.IsDashing);
+            }
+        }
+        private static OutsideExplorationSession TrialKickPit241(){var s=TrialKick212();Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationPit));return s;}
+        private static void DashPosition(OutsideExplorationSession s,long x)=>typeof(OutsideExplorationCore).GetMethod("RestoreRecoveryPosition",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{x});
+        [TestCase(-1,false)] [TestCase(1,false)] [TestCase(-1,true)] [TestCase(1,true)] public void 専用ダッシュ攻撃は開始向き速度を保ち終了frameで通常移動へ戻り保持ジャンプを発火しない(int side,bool fire=false)
+        {
+            using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
+                if(fire)TrialFire261(s);DashPosition(s,14*60000);s.TickTraversal(side,dashDown:true,dashHeld:true);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.AreEqual(OutsideKickKind.Dash,s.NormalKick.Kind);long x=s.Core.Position,end=s.NormalKick.EndsAt;long step=s.Core.TraversalProfile.DashSpeedPerSecond/60;
                 while(s.Core.Frame+1<end){s.TickTraversal(-side,jumpDown:true,jumpHeld:true);x+=side*step;Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(side,s.Core.Facing);Assert.IsTrue(s.Core.IsGrounded);Assert.IsTrue(s.NormalKick.IsDashAttack);}
                 s.TickTraversal(-side,jumpDown:true,jumpHeld:true);Assert.AreEqual(end,s.Core.Frame);Assert.AreEqual(x-side*s.Core.Definition.SpeedPerSecond/60,s.Core.Position);Assert.IsFalse(s.Core.IsDashing);Assert.IsFalse(s.IsAttacking);Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(1,s.NormalKick.NextGroundStage);
                 s.TickTraversal(0);s.TickTraversal(0,true,true);Assert.IsFalse(s.Core.IsGrounded);
             }
         }
-        [Test] public void ダッシュ攻撃は崖から通常落下して継続し空中ジャンプを受け付けない()
+        [TestCase(false)][TestCase(true)] public void ダッシュ攻撃は崖から通常落下して継続し空中ジャンプを受け付けない(bool fire)
         {
             using(var s=TrialKickPit241())using(var lease=s.AttachPresentation()){
-                DashPosition(s,324000);s.TickTraversal(-1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsGrounded,"接地開始");Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out var failure),"攻撃開始: "+failure);bool fell=false;
+                if(fire)TrialFire261(s);DashPosition(s,324000);s.TickTraversal(-1,dashDown:true,dashHeld:true);Assert.IsTrue(s.Core.IsGrounded,"接地開始");Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out var failure),"攻撃開始: "+failure);bool fell=false;
                 while(s.Core.Frame+1<s.NormalKick.EndsAt){long velocity=s.Core.VerticalVelocity;s.TickTraversal(1,true,true);if(!s.Core.IsGrounded){fell=true;Assert.IsTrue(s.NormalKick.IsDashAttack);Assert.LessOrEqual(s.Core.VerticalVelocity,velocity);Assert.IsFalse(s.Core.IsWallKicking);Assert.IsFalse(s.Core.AirJumpUsed);}}
                 Assert.IsTrue(fell);s.TickTraversal(0,true,true);Assert.IsFalse(s.IsAttacking);Assert.IsFalse(s.Core.IsDashing);
             }
@@ -73,10 +108,10 @@ namespace Olca.Tests
         {
             var k=Kick(out var b,6,3,12,6);k.ConfigureDash(OutsideKickTrialDefinition.DashTiming());Assert.IsTrue(k.TryRequest(0,true,1,dashing:true));Assert.IsFalse(k.TryRequest(19,!airborne,1,dashing:!airborne));Assert.AreEqual(Olca.Core.Logic.Battle.AttackReservationKind.Basic,b.Kind);Assert.IsTrue(k.TryExecuteReserved(21,!airborne,1));Assert.AreEqual(airborne?OutsideKickKind.AirForward:OutsideKickKind.GroundFirst,k.Kind);
         }
-        [TestCase(0)] [TestCase(4)] public void 専用攻撃の自然Dash期限後保存と再表示は同じ移動と各敵一回命中を復元する(int delay)
+        [TestCase(0,false)] [TestCase(4,false)] [TestCase(0,true)] [TestCase(4,true)] public void 専用攻撃の自然Dash期限後保存と再表示は同じ移動と各敵一回命中を復元する(int delay,bool fire)
         {
             using(var s=TrialKick212()){
-                DashPosition(s,15*60000);var l=s.AttachPresentation();s.TickTraversal(1,dashDown:true,dashHeld:true);for(int n=0;n<delay;n++)s.TickTraversal(1);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));for(int n=0;n<13;n++)s.TickTraversal(-1);Assert.IsFalse(s.Core.IsDashing);Assert.IsTrue(s.NormalKick.IsDashAttack);Assert.AreEqual(110,s.TrialTarget.CurrentHp);Assert.AreEqual(110,s.SecondTrialTarget.CurrentHp);
+                if(fire)TrialFire261(s);DashPosition(s,15*60000);var l=s.AttachPresentation();s.TickTraversal(1,dashDown:true,dashHeld:true);for(int n=0;n<delay;n++)s.TickTraversal(1);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));for(int n=0;n<13;n++)s.TickTraversal(-1);Assert.IsFalse(s.Core.IsDashing);Assert.IsTrue(s.NormalKick.IsDashAttack);Assert.AreEqual(110,s.TrialTarget.CurrentHp);Assert.AreEqual(110,s.SecondTrialTarget.CurrentHp);
                 l.Dispose();var data=s.CaptureRuntime();Assert.AreEqual(OutsideKickTrialDefinition.DashSaveDefinitionKey,data.NormalKick.DefinitionKey);var actor=Olca.Core.Domain.OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;long frame=s.Core.Frame;l.Dispose();Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(1));Assert.AreEqual(frame,s.Core.Frame);
                 using(var cold=new OutsideExplorationSession())using(var a=s.AttachPresentation()){
                     Assert.IsTrue(cold.RestoreSavedState(actor,data,null,null));using(var c=cold.AttachPresentation()){while(s.IsAttacking){s.TickTraversal(-1);cold.TickTraversal(-1);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.Core.Frame,cold.Core.Frame);}Assert.IsFalse(cold.IsAttacking);Assert.AreEqual(110,cold.TrialTarget.CurrentHp);Assert.AreEqual(110,cold.SecondTrialTarget.CurrentHp);}

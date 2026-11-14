@@ -257,7 +257,7 @@ namespace Olca.Core.Logic.Integration
             if(basicRequested&&(!requested||cardAt!=0&&basicAt!=0&&basicAt>cardAt)){
                 if(normalKick?.IsConfigured!=true){CancelAttackReservation();error="固有攻撃は未接続です";return false;}
                 CancelAttackReservation();
-                if(Core.IsDashing&&Player.DepartureStyle.Id!=DepartureStyleDefinition.BasicId){error="この神依のダッシュ攻撃は未登録です";return false;}
+                if(Core.IsDashing&&!HasRegisteredDash(Player)){error="この神依のダッシュ攻撃は未登録です";return false;}
                 bool started=normalKick.TryRequest(Core.Frame,Core.IsGrounded,Core.Facing,vertical,BodyCanAttack,Core.IsDashing,attackState!=null&&!CanCancelAttack(),true);
                 if(started){attackState=null;reservedCard=null;reservedOwner=null;KickFeedback();}return started;
             }
@@ -269,7 +269,7 @@ namespace Olca.Core.Logic.Integration
                 return StartCardAfterRecovery(card,Cards.HandRevision,out error);
             }
             if(attackReservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic){
-                if(Core.IsDashing&&Player.DepartureStyle.Id!=DepartureStyleDefinition.BasicId){CancelAttackReservation();return false;}
+                if(Core.IsDashing&&!HasRegisteredDash(Player)){CancelAttackReservation();return false;}
                 bool started=normalKick?.TryExecuteReserved(Core.Frame,Core.IsGrounded,Core.Facing,BodyCanAttack,Core.IsDashing,attackState!=null&&!CanCancelAttack())==true;
                 if(started){attackState=null;reservedCard=null;reservedOwner=null;KickFeedback();}return started;
             }
@@ -282,7 +282,7 @@ namespace Olca.Core.Logic.Integration
         {
             AdvanceTrialKickHits();
             string motion=NormalKick.Kind==OutsideKickKind.AirDown?" / ジュンビのみキソン":NormalKick.Kind==OutsideKickKind.AirUp?" / モーション ミセツゾク":"";
-            CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / セッショクはシヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+motion;
+            CardUseMessage=NormalKick.IsDashAttack?(Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id?"シヨウ カエン ダッシュ / 10ヒダメージ（カリ） / セッショクはシヨウ":"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / セッショクはシヨウ"):"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+motion;
             CardUseMessageFrame=Core.Frame;
         }
 
@@ -967,9 +967,17 @@ namespace Olca.Core.Logic.Integration
             // 通常continueのCDは既存の保存復元契約を維持する。再表示で残秒を戻さない。
             RestoreItemCooldowns(itemState,player,runtime);startupRecoveryPending=false;return true;
         }
+        // 通常状態の既存許可は維持し、追加は明示試用カエンの登録耐性との組だけ。
+        // geometry/time keyは共通。火属性は保存済みActorが所有し、正式神依の性能とはしない。
+        private static bool HasRegisteredDash(PlayerCharacter actor)
+        {
+            if(actor==null)return false;var style=actor.DepartureStyle;if(style.Id==DepartureStyleDefinition.BasicId)return true;
+            var trial=DepartureStyleDefinition.TrialFire;var attack=style.Attack;var registered=trial.Attack;
+            return style.Id==trial.Id&&style.Name==trial.Name&&style.RequiredClear==trial.RequiredClear&&style.TransformationPhaseBonus==trial.TransformationPhaseBonus&&attack!=null&&attack.Element==registered.Element&&attack.NormalPowerPercent==registered.NormalPowerPercent&&attack.ChargedPowerPercent==registered.ChargedPowerPercent&&attack.ChargeFrames==registered.ChargeFrames&&attack.IntervalFrames==registered.IntervalFrames&&attack.Timing==registered.Timing&&actor.BaseElementResistances.HasSameValues(ElementAffinity.CreatePlayerBase(ElementType.Fire));
+        }
         private string savedRuntimeId,savedRuntimeKey;
         private int CaptureTrialBarrier(){if(Player==null)return 0;if(Player.HasPendingHpFrame||Player.HasAura||Player.ProtectionRemainingFrames.HasValue||Player.BarrierHp>15||Player.BarrierHp>0&&Core.Definition.Id!="validation-landing-32")throw new ArgumentException("未登録の外界防御は保存できません");return Player.BarrierHp;}
-        private OutsideKickStateData CaptureKickState(){var value=normalKick?.CaptureState(Core.Frame,Core.IsGrounded,Core.Facing);if(value!=null&&Core.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの蹴り保存は未登録です");if(value?.Kind==OutsideKickKind.Dash&&Player.DepartureStyle.Id!=DepartureStyleDefinition.BasicId)throw new ArgumentException("この神依のダッシュ攻撃保存は未登録です");if(value!=null&&!BodyCanAttack)throw new ArgumentException("行動不能中の蹴り保存は行いません");return value;}
+        private OutsideKickStateData CaptureKickState(){var value=normalKick?.CaptureState(Core.Frame,Core.IsGrounded,Core.Facing);if(value!=null&&Core.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの蹴り保存は未登録です");if(value?.Kind==OutsideKickKind.Dash&&!HasRegisteredDash(Player))throw new ArgumentException("この神依のダッシュ攻撃保存は未登録です");if(value!=null&&!BodyCanAttack)throw new ArgumentException("行動不能中の蹴り保存は行いません");return value;}
         public OutsideRuntimeSaveData CaptureRuntime(CheckpointDefinitions definitions=null)
         {
             var kick=CaptureKickState();
@@ -987,7 +995,7 @@ namespace Olca.Core.Logic.Integration
             var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);var target=CreateTrialTarget(runtime.TrialTarget);var secondTarget=CreateSecondTrialTarget(runtime.SecondTrialTarget);
             ValidateAttack(runtime.Attack,cards,runtime.Core.Frame);
             if((runtime.TrialBarrierHp>0||runtime.TrialEnemyAttack!=null)&&Core.Definition.Id!="validation-landing-32")throw new ArgumentException("このマップの試用バリアは未登録です");
-            if(runtime.NormalKick?.Kind==OutsideKickKind.Dash&&actor.DepartureStyle.Id!=DepartureStyleDefinition.BasicId)throw new ArgumentException("この神依のダッシュ攻撃復元は未登録です");
+            if(runtime.NormalKick?.Kind==OutsideKickKind.Dash&&!HasRegisteredDash(actor))throw new ArgumentException("この神依のダッシュ攻撃復元は未登録です");
             if(runtime.NormalKick!=null){if(Core.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの蹴り復元は未登録です");var candidateKick=new OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());candidateKick.Configure(OutsideKickTrialDefinition.Timings());candidateKick.ConfigureDash(OutsideKickTrialDefinition.DashTiming());candidateKick.RestoreState(runtime.NormalKick,candidateCore.Frame,candidateCore.IsGrounded,candidateCore.Facing);if(actor.IsDead||actor.IsParalyzed||actor.IsStaggered||runtime.Fall?.LockedUntil>candidateCore.Frame)throw new ArgumentException("行動不能中の蹴り保存は復元できません");}
             ValidateWater(runtime.Water,candidateCore);
             if(runtime.Fall!=null&&runtime.Fall.Peak>candidateCore.MaximumReachableHeight())throw new ArgumentException("落下頂点が外界地形の上限を超えています");
