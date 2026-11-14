@@ -34,7 +34,7 @@ namespace Olca.Presentation.Field
         {
             UnbindPlayerDamage();
             if(currentBattle!=null){currentBattle.OnSummonAdded-=OnSummonAdded;currentBattle.OnBattleEnd-=OnSummonBattleEnd;}
-            currentBattle=null;dungeonSystem=null;cameraObservedDungeon=null;
+            basicKickVisual?.Bind(null);currentBattle=null;dungeonSystem=null;cameraObservedDungeon=null;
             enemyViews.Clear();visualResources=null;fieldCamera=null;ConfigureDungeonHud(null);
         }
 
@@ -226,6 +226,7 @@ namespace Olca.Presentation.Field
         private Olca.Presentation.Effects.TrialFireKamuiVisual trialKamuiVisual;
         private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
         private Olca.Presentation.Effects.TrialBasicKickBody trialBasicKick;
+        private Olca.Presentation.Effects.BattleKickVisual basicKickVisual;
         private Sprite trialBodyOriginal,trialBodyMapped;
         private void RestoreTrialBody()
         {
@@ -732,9 +733,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { RestoreTrialBody();trialBasicKick?.Clear();worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); RestoreTrialBody(); }
+        private void OnDisable() { basicKickVisual?.Bind(null);RestoreTrialBody();trialBasicKick?.Clear();worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); RestoreTrialBody(); }
         private void OnDestroy()
         {
+            basicKickVisual?.Dispose();basicKickVisual=null;
             RestoreTrialBody();trialBasicKick?.Dispose();trialBasicKick=null;trialFireBody?.Dispose();trialFireBody=null;
             ReleasePresentation();
             guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose(); trialKamuiVisual?.Dispose();
@@ -824,6 +826,7 @@ namespace Olca.Presentation.Field
             UpdateMovementAnimation();
             UpdatePlayerSprite();
             UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
+            basicKickVisual?.Bind(currentBattle);basicKickVisual?.Tick(currentBattle?.IsGameOver==true?Olca.Unity.GameplayPause.DeltaTime:Olca.Unity.BattleVisualClock.DeltaTime);
             RefreshDefensiveField();
             RefreshConditionVisuals();
         }
@@ -914,6 +917,7 @@ namespace Olca.Presentation.Field
                 originX = playerTransform.position.x - LogicalToWorld(battle.Player.GridPosition.X);
 
             battleGridView?.Show(battle.Field, originX);
+            if(playerSprite!=null){if(basicKickVisual==null)basicKickVisual=new Olca.Presentation.Effects.BattleKickVisual(transform,()=>playerSprite,()=>battleGridView);basicKickVisual.Warmup();basicKickVisual.Bind(battle);}
             battleGridView?.BindTelegraphs(battle);
 
             if (cameraDiagnostics) Debug.Log($"[Camera] OnBattleStarted: playerPos={playerTransform?.position.x:F2}, gridColumn={battle.Player.GridPosition.X}, originX={originX:F2}, gridCenterX={battleGridView?.GridCenterWorldX:F2}, cameraX={fieldCamera?.transform.position.x:F2}, CameraOffsetX={CameraOffsetX:F2}");
@@ -974,7 +978,7 @@ namespace Olca.Presentation.Field
                 currentBattle.OnSummonAdded -= OnSummonAdded;
                 currentBattle.OnBattleEnd -= OnSummonBattleEnd;
             }
-            currentBattle = null;
+            basicKickVisual?.Bind(null);currentBattle = null;
             ClearSummonViews();
             ResetMovementAnimation();
             battleGridView?.Hide();

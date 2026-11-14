@@ -381,6 +381,19 @@ namespace Olca.Tests
             } finally {Olca.Unity.BattleVisualClock.SetPaused(owner,false);UnityEngine.Object.DestroyImmediate(go);}
         }
 
+        [Test] public void 撃破粒子は既存フェード内だけ表示し暗闇と再初期化で旧演出を再生しない()
+        {
+            var go=new GameObject("Death265");var body=go.AddComponent<SpriteRenderer>();var visual=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",Private).SetValue(visual,body);
+            var view=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();var type=view.GetType();type.GetField("enemyView",Private).SetValue(view,visual);type.GetField("deathFadeDuration",Private).SetValue(view,60f);
+            var clock=new object();Olca.Unity.BattleVisualClock.SetPaused(clock,true);
+            try{
+                var enemy=new Olca.Core.Domain.Enemy("dead265","シヨウ",10,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0));view.Initialize(enemy,0);var burst=(PixelBurstWorld)type.GetField("deathBurst",Private).GetValue(view);Assert.AreEqual(13,burst.Capacity);Assert.AreEqual(0,burst.ActiveCount);
+                enemy.TakeDamage(10,Olca.Core.Domain.ElementType.None);var render=type.GetMethod("RenderDeathBurst",Private);render.Invoke(view,new object[]{.08f,body});Assert.Greater(burst.ActiveCount,0);Assert.IsTrue(go.activeSelf);Assert.IsFalse(view.IsDeathPresentationComplete);
+                render.Invoke(view,new object[]{.24f,body});Assert.AreEqual(0,burst.ActiveCount,"既存消滅待機を延長しない");render.Invoke(view,new object[]{.08f,body});Assert.Greater(burst.ActiveCount,0);
+                view.SetHiddenByBlindness(true);Assert.AreEqual(0,burst.ActiveCount);view.SetHiddenByBlindness(false);render.Invoke(view,new object[]{.1f,body});Assert.AreEqual(0,burst.ActiveCount,"暗闇解除で過去の撃破を再表示しない");
+                var next=new Olca.Core.Domain.Enemy("next265","シヨウ",10,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0));view.Initialize(next,0);Assert.AreEqual(0,burst.ActiveCount);Assert.AreSame(next,view.TrackedEnemy);Assert.AreEqual(1,body.color.a);next.TakeDamage(10,Olca.Core.Domain.ElementType.None);render.Invoke(view,new object[]{.1f,body});Assert.Greater(burst.ActiveCount,0);go.SetActive(false);type.GetMethod("OnDisable",Private).Invoke(view,null);Assert.AreEqual(0,burst.ActiveCount);
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(clock,false);UnityEngine.Object.DestroyImmediate(go);}
+        }
         private static async Task Completed(Task task)
         {
             // Editor主スレッド停止中のwall-clockタイマー勝利だけで失敗させない。

@@ -1206,6 +1206,22 @@ namespace Olca.Tests.Application
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var old=binding.View.GetComponentsInChildren<Button>().Single(v=>v.name=="CloseOutsideExploration").onClick;allowed=false;pending=true;var lost=binding.View;typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(lost,null);UnityEngine.Object.DestroyImmediate(lost.gameObject);Assert.IsTrue(binding.HasLostView);Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(40,model.Player.CurrentHp);Assert.IsFalse(binding.ReturnToHub());old.Invoke();Assert.AreEqual(0,returned);Assert.IsTrue(binding.IsOpen);pending=false;allowed=true;Assert.IsTrue(binding.ReturnToHub());Assert.AreEqual(1,returned);
             }
         }
+        [TestCase(1920,1080)][TestCase(3840,2160)][TestCase(1440,1080)]
+        public async Task 探索攻撃表示は両対象の撃破を一度だけ描き保持再描画と再入で進行を変えない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();
+                var fx=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true);Assert.AreEqual(3,fx.Length);Assert.IsTrue(fx.All(v=>!v.raycastTarget));Assert.IsTrue(fx.All(v=>v.GetComponent<CanvasRenderer>()!=null),"実描画に必要なRendererを全ピクセル演出へ付ける");
+                var burst=fx.Where(v=>v.name.StartsWith("OutsideProvisionalTargetDeath_")).ToArray();Assert.IsTrue(burst.All(v=>!v.enabled));
+                model.TrialTarget.TakeDamage(999,Olca.Core.Domain.ElementType.None);model.SecondTrialTarget.TakeDamage(999,Olca.Core.Domain.ElementType.None);view.Render();Assert.IsTrue(burst.All(v=>v.enabled));
+                long frame=model.Core.Frame;for(int n=0;n<100;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.IsTrue(burst.All(v=>v.enabled));
+                Assert.IsTrue(binding.ReturnToHub());Assert.IsTrue(burst.All(v=>!v.enabled));Assert.IsTrue((await binding.OpenAsync()).Succeeded);view=binding.View;view.Render();Assert.IsTrue(view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Where(v=>v.name.StartsWith("OutsideProvisionalTargetDeath_")).All(v=>!v.enabled),"再入済みdeadを新たな撃破として表示しない");
+                Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out _));view.Render();var caption=view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideProvisionalKickCaptionText");StringAssert.Contains("1ダンメ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.height,caption.preferredHeight);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);
+                for(int n=0;n<6;n++)model.TickTraversal(0);view.Render();Assert.IsTrue(view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Single(v=>v.name=="OutsideProvisionalKickTrail").enabled);frame=model.Core.Frame;for(int n=0;n<10;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);
+            }
+        }
         [Test] public async Task 外界手札の枯渇表示は空枠を無効化し古い選択でも落ちず再装填で戻る()
         {
             var model=system.OutsideExploration;var source=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(model.TryInitializeCards(source,source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(157),out _));

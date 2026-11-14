@@ -64,6 +64,14 @@ namespace Olca.Presentation.Field
 
         [SerializeField,Min(0f)] private float deathFadeDuration=.3f;
         private bool deathStarted,terminalDeathPresentation;
+        private PixelBurstWorld deathBurst;private bool deathBurstSuppressed,deadAtBind;
+        private void RenderDeathBurst(float elapsed,SpriteRenderer body)
+        {
+            float duration=Mathf.Min(.24f,deathFadeDuration);
+            if(deathBurstSuppressed||hiddenByBlindness||hiddenForBattle||body==null||duration<=0||elapsed>=duration){deathBurst?.Clear();return;}
+            var bounds=DefensiveFieldVisual.GetBodyBounds(body);float side=Mathf.Max(.4f,Mathf.Max(bounds.size.x,bounds.size.y)*1.4f);
+            deathBurst?.Burst(new Rect(bounds.center.x-side*.5f,bounds.center.y-side*.5f,side,side),elapsed/duration,ProvisionalPixelPattern.Tint(false),body);
+        }
         private int deathVersion;
         private Color? preDeathColor;
         private CancellationTokenSource deathCts;
@@ -73,6 +81,7 @@ namespace Olca.Presentation.Field
         {
             if(deathStarted||enemy==null)return;
             preDeathColor=enemyView?.BodyRenderer!=null?(Color?)enemyView.BodyRenderer.color:null;
+            deathBurstSuppressed=deadAtBind||hiddenByBlindness||hiddenForBattle;
             deathStarted=true;destroyCts?.Cancel();enemyView?.SetDeathPresentationActive(true);enemyView?.HideHp();
             deathCts=new CancellationTokenSource();deathCompletion=new UniTaskCompletionSource();
             FadeDeathAsync(deathVersion,deathCompletion,deathCts.Token).Forget();
@@ -95,18 +104,20 @@ namespace Olca.Presentation.Field
                 {
                     elapsed+=terminalDeathPresentation?Olca.Unity.GameplayPause.DeltaTime:Olca.Unity.BattleVisualClock.DeltaTime;
                     var faded=color;faded.a=color.a*(1f-Mathf.Clamp01(elapsed/deathFadeDuration));body.color=faded;
+                    if(version==deathVersion)RenderDeathBurst(elapsed,body);
                     await Olca.Unity.GameplayPause.NextFrame(ct);
                 }
             }
             catch(System.OperationCanceledException){}
             finally
             {
-                if(this!=null&&version==deathVersion){enemyView?.SetDeathPresentationActive(false);if(enemy!=null&&enemy.IsDead)gameObject.SetActive(false);}
+                if(this!=null&&version==deathVersion){deathBurst?.Clear();enemyView?.SetDeathPresentationActive(false);if(enemy!=null&&enemy.IsDead)gameObject.SetActive(false);}
                 completion.TrySetResult();
             }
         }
         private void ResetDeathPresentation()
         {
+            deathBurst?.Clear();deathBurstSuppressed=false;
             deathVersion++;deathCts?.Cancel();deathCts?.Dispose();deathCts=null;
             if(preDeathColor.HasValue&&enemyView?.BodyRenderer!=null)enemyView.BodyRenderer.color=preDeathColor.Value;
             preDeathColor=null;
@@ -131,7 +142,7 @@ namespace Olca.Presentation.Field
         public void SetHiddenByBlindness(bool hidden)
         {
             hiddenByBlindness=hidden;
-            if(hidden){
+            if(hidden){if(deathStarted)deathBurstSuppressed=true;deathBurst?.Clear();
                 foreach(var renderer in GetComponentsInChildren<Renderer>(true)){
                     if(!blindRendererStates.ContainsKey(renderer))blindRendererStates.Add(renderer,renderer.forceRenderingOff);
                     renderer.forceRenderingOff=true;
@@ -142,7 +153,7 @@ namespace Olca.Presentation.Field
             }
             damageNumberPool?.SetOwnerVisible(this,!hidden);
         }
-        private void OnDisable(){UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
+        private void OnDisable(){deathBurst?.Clear();if(deathStarted)deathBurstSuppressed=true;UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
 
         private void Awake()
         {
@@ -170,6 +181,7 @@ namespace Olca.Presentation.Field
             this.dungeonWorldX = dungeonX;
             this.gridView = null;
             this.previousHp = enemy.CurrentHp;
+            deadAtBind=enemy.IsDead;
             if(!enemy.IsDead&&!gameObject.activeSelf)gameObject.SetActive(true);
             SubscribeFeedback();
             SetStrongEnemy(false);
@@ -180,6 +192,7 @@ namespace Olca.Presentation.Field
                 bodyRenderer.sprite = GetOwnedWhiteSprite();
 
             enemyView?.Initialize(enemy);
+            if(bodyRenderer!=null)(deathBurst??(deathBurst=new PixelBurstWorld(transform))).Warmup();
             UpdatePosition();
         }
 
@@ -372,6 +385,7 @@ namespace Olca.Presentation.Field
         private void OnDestroy()
         {
             ResetDeathPresentation();
+            deathBurst?.Dispose();deathBurst=null;
             UnsubscribeFeedback();
             SetHiddenByBlindness(false);
             destroyCts?.Cancel();

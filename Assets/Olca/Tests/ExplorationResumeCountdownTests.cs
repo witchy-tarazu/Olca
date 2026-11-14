@@ -10,6 +10,21 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [Test] public void 試用回復初期販売は旧売切れ履歴を保持して無制限に購入し失敗と上限を守る()
+        {
+            var old=OutsideShopDefinition.TrialLimited;var id=old.Offers[1].Id;
+            var store=new Style231Store{Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=20}}};var save=new ClearReturnSession(store);
+            for(int n=0;n<2;n++)Assert.IsTrue(save.TryPurchaseOutsideShop(old,id,out _));
+            Assert.AreEqual(0,save.OutsideShopRemaining(old,id));var history=save.OutsideInventorySnapshot.ClaimedSources.ToArray();
+            var catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();var shop=Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(catalog,Olca.Application.Management.TrialCustomizationDefinitions.Abilities());
+            Assert.AreEqual(int.MaxValue,save.OutsideShopRemaining(shop,id));Assert.AreEqual(0,shop.Offers[0].PurchaseLimit);Assert.AreEqual(0,shop.Offers[1].PurchaseLimit);
+            var before=PortableCheckpointJson.Serialize(store.Value);store.Fail=true;Assert.IsFalse(save.TryPurchaseOutsideShop(shop,id,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));store.Fail=false;
+            for(int n=0;n<3;n++)Assert.IsTrue(save.TryPurchaseOutsideShop(shop,id,out var error),error);
+            var cold=new ClearReturnSession(store);Assert.AreEqual(15,cold.OutsideInventorySnapshot.Currency);Assert.AreEqual(5,cold.OutsideInventorySnapshot.Items.Single(v=>v.Id==OutsideRecoveryItemDefinition.PoisonProvisional.Id).Count);CollectionAssert.AreEqual(history,cold.OutsideInventorySnapshot.ClaimedSources);
+            Assert.AreEqual(int.MaxValue,cold.OutsideShopRemaining(shop,id));Assert.AreEqual(0,cold.OutsideShopRemaining(old,id));
+            var full=new Style231Store{Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=20,Items=new[]{new OutsideItemCount{Id=OutsideRecoveryItemDefinition.PoisonProvisional.Id,Count=99}}}}};var capped=new ClearReturnSession(full);Assert.IsFalse(capped.TryPurchaseOutsideShop(shop,id,out _));Assert.AreEqual(0,full.Writes);
+            foreach(var fallback in new[]{Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(null,null),shop})Assert.AreEqual(0,fallback.Offers[1].PurchaseLimit);
+        }
         private static CheckpointDefinitions Door239Definitions(OutsideExplorationSession session)
             =>DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(((Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(session.Cards)).GetAllCards().ToList())).Definitions;
         [TestCase(false)] [TestCase(true)] public void 扉到着点で死亡後にcold復帰しても選択30枚を一度だけ再装填する(bool annex)

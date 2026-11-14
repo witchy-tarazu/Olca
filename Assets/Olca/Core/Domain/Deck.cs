@@ -1624,8 +1624,10 @@ namespace Olca.Core.Domain
         public OutsideShopDefinition(string id,System.Collections.Generic.IEnumerable<OutsideShopOffer> offers,Olca.Core.Logic.Customization.CustomizationCatalog equipmentCatalog=null){var copy=offers?.ToArray();if(string.IsNullOrWhiteSpace(id)||copy==null||copy.Length==0||copy.Any(v=>v==null)||copy.Select(v=>v.Id).Distinct().Count()!=copy.Length)throw new ArgumentException("外界店の定義が不正です");if(copy.Any(v=>v.IsEquipment&&(equipmentCatalog==null||v.PartId!=null&&!equipmentCatalog.Parts.ContainsKey(v.PartId)||v.AccessoryId!=null&&!equipmentCatalog.Accessories.Contains(v.AccessoryId))))throw new ArgumentException("ショップの装備定義が未登録です");Id=id;Offers=Array.AsReadOnly(copy);EquipmentCatalog=equipmentCatalog;}
         public const string TrialFundsId="validation-shop-funds-v1";public const long TrialFunds=10;
         public static readonly OutsideShopDefinition Trial=new OutsideShopDefinition("validation-outside-shop-v1",new[]{new OutsideShopOffer("heal",OutsideRecoveryItemDefinition.Provisional.Id,"カイフクヤク（カリ）",2,99),new OutsideShopOffer("poison",OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99)});
-        // 新商品IDだけに永続2個制限を設定。旧無制限商品の取引を遡って数えない。
+        // 過去の有限在庫試験を維持。通常入口は下のTrialInitialを使う。
         public static readonly OutsideShopDefinition TrialLimited=new OutsideShopDefinition("validation-outside-shop-v1",new[]{Trial.Offers[0],new OutsideShopOffer("poison-limited-v1",OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99,2)});
+        // 2026-11-14仕様。ID/履歴は保ち、試用回復2品の購入回数だけ無制限にする。
+        public static readonly OutsideShopDefinition TrialInitial=new OutsideShopDefinition(TrialLimited.Id,new[]{TrialLimited.Offers[0],new OutsideShopOffer(TrialLimited.Offers[1].Id,OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99)});
     }
     public sealed partial class ClearReturnSession
     {
