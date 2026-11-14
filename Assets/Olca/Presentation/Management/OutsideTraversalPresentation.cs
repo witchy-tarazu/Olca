@@ -320,6 +320,20 @@ namespace Olca.Presentation.Management
         public void TickPc(Olca.Unity.UnityInputProvider.OutsidePcWheelInput input)
         {
             if(!open)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true||!input.KeyboardAvailable){Abort();return;}
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+            if(input.Events!=null&&input.Events.Count>0){
+                foreach(var step in input.Events){
+                    if(!open)return;if(owner?.IsCurrent!=true||parentAlive?.Invoke()!=true){Abort();return;}
+                    switch(step.Kind){
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Direction:Select(step.Value);break;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Pointer:SelectMouse(step.Value,true);break;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Toggle:cancel.onClick.Invoke();return;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Click:SelectMouse(step.Value,true);ConfirmPcChoice();break;
+                        case Olca.Unity.UnityInputProvider.OutsidePcWheelEventKind.Confirm:ConfirmPcChoice();break;
+                    }
+                }
+                return;
+            }
             if(input.ToggleDown){cancel.onClick.Invoke();return;}
             if(input.KeyboardChanged&&(!input.PointerChanged||input.KeyboardOrder>=input.PointerOrder))Select(input.Direction);
             else if(input.PointerChanged)SelectMouse(input.Pointer,input.PointerAvailable);
@@ -327,9 +341,9 @@ namespace Olca.Presentation.Management
             // クリックは新しいマウス操作。静止hoverとは区別し、その位置の項目を選んで確定する。
             if(input.ClickDown)SelectMouse(input.Pointer,input.PointerAvailable);
             // 選択入力が静止していても、現在の切替可否を確定直前に読み直す。
-            confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);
-            if((input.EnterDown||input.ClickDown)&&confirm.interactable)TryConfirmChoice();
+            if(input.EnterDown||input.ClickDown)ConfirmPcChoice();else confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);
         }
+        private void ConfirmPcChoice(){confirm.interactable=HasSelection&&(canConfirm?.Invoke()??false);if(confirm.interactable)TryConfirmChoice();}
         private void Finish(long ticket,DialogResult result)
         {
             if(ticket!=epoch)return;if(!open){if(LastResult==DialogResult.ParentClosed&&result!=DialogResult.ParentClosed)LastResult=result;return;}open=false;if(menuMode){SetMenuSurface(false);menuMode=false;}HasSelection=false;selectedChoice=-1;tryChoice=null;choiceError=null;LastResult=result;var callback=pause;pause=null;parentAlive=canConfirm=null;owner=null;dialogs=null;bool release=pauseOwned;pauseOwned=false;if(release)callback?.Invoke(false);

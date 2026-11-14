@@ -408,7 +408,7 @@ namespace Olca.Unity
         }
         public void Dispose()
         {
-            outsideInteractionPending=false;outsideInteractionContext=null;pcWheelKeys.Clear();pcWheelMouse=null;pcWheelContext=null;pcWheelClick=false;OutsidePcWheelInputOwned=null;
+            outsideInteractionPending=false;outsideInteractionContext=null;pcWheelKeys.Clear();pcWheelEvents.Clear();pcWheelMouse=null;pcWheelContext=null;pcWheelClick=false;OutsidePcWheelInputOwned=null;
             if (!capturing) return;
             InputSystem.onAfterUpdate -= FinishFocusResnapshot; InputSystem.onEvent -= CaptureEvent; InputSystem.onDeviceChange -= DeviceChanged;
 #if UNITY_EDITOR
@@ -458,15 +458,24 @@ namespace Olca.Unity
             if (device is Gamepad && (change == InputDeviceChange.Removed || change == InputDeviceChange.Disconnected))
                 OnGamepadDisconnected?.Invoke();
         }
+        public enum OutsidePcWheelEventKind {Direction,Pointer,Confirm,Click,Toggle}
+        public readonly struct OutsidePcWheelEvent
+        {
+            public readonly OutsidePcWheelEventKind Kind;public readonly Vector2 Value;public readonly int KeyboardId;
+            public OutsidePcWheelEvent(OutsidePcWheelEventKind kind,Vector2 value,int keyboardId=-1){Kind=kind;Value=value;KeyboardId=keyboardId;}
+        }
         public readonly struct OutsidePcWheelInput
         {
             public readonly bool KeyboardAvailable,ToggleDown,EnterDown,ClickDown,PointerAvailable,KeyboardChanged,PointerChanged;
             public readonly bool EnterHeld,ClickHeld;
+            public readonly System.Collections.Generic.IReadOnlyList<OutsidePcWheelEvent> Events;
             public readonly Vector2 Direction,Pointer;public readonly long KeyboardOrder,PointerOrder;
-            public OutsidePcWheelInput(bool available,bool toggle,bool enter,bool click,Vector2 direction,Vector2 pointer,bool pointerAvailable,bool keyboardChanged,bool pointerChanged,long keyboardOrder,long pointerOrder,bool enterHeld=false,bool clickHeld=false){KeyboardAvailable=available;ToggleDown=toggle;EnterDown=enter;ClickDown=click;Direction=direction;Pointer=pointer;PointerAvailable=pointerAvailable;KeyboardChanged=keyboardChanged;PointerChanged=pointerChanged;KeyboardOrder=keyboardOrder;PointerOrder=pointerOrder;EnterHeld=enterHeld;ClickHeld=clickHeld;}
+            public OutsidePcWheelInput(bool available,bool toggle,bool enter,bool click,Vector2 direction,Vector2 pointer,bool pointerAvailable,bool keyboardChanged,bool pointerChanged,long keyboardOrder,long pointerOrder,bool enterHeld=false,bool clickHeld=false,System.Collections.Generic.IReadOnlyList<OutsidePcWheelEvent> events=null){Events=events??System.Array.Empty<OutsidePcWheelEvent>();KeyboardAvailable=available;ToggleDown=toggle;EnterDown=enter;ClickDown=click;Direction=direction;Pointer=pointer;PointerAvailable=pointerAvailable;KeyboardChanged=keyboardChanged;PointerChanged=pointerChanged;KeyboardOrder=keyboardOrder;PointerOrder=pointerOrder;EnterHeld=enterHeld;ClickHeld=clickHeld;}
         }
         private sealed class PcWheelKeyboard {public int Mask;public bool Toggle,Enter;public long ToggleOrder,DirectionOrder,ReadOrder;}
         private readonly Dictionary<Keyboard,PcWheelKeyboard> pcWheelKeys=new Dictionary<Keyboard,PcWheelKeyboard>();
+        private readonly List<OutsidePcWheelEvent> pcWheelEvents=new List<OutsidePcWheelEvent>();
+        private void QueuePcWheelEvent(OutsidePcWheelEvent value){if(value.Kind==OutsidePcWheelEventKind.Pointer&&pcWheelEvents.Count>0&&pcWheelEvents[pcWheelEvents.Count-1].Kind==OutsidePcWheelEventKind.Pointer)pcWheelEvents[pcWheelEvents.Count-1]=value;else pcWheelEvents.Add(value);}
         private object pcWheelContext;private Mouse pcWheelMouse;private Vector2 pcWheelPointer;private long pcWheelOrder,pcWheelMouseOrder,pcWheelMouseReadOrder;private bool pcWheelClick;
         public System.Func<bool> OutsidePcWheelInputOwned {get;set;}
         public bool HasPendingOutsidePcOpen=>OutsideGamepad&&pcWheelKeys.Any(p=>p.Key.enabled&&p.Value.Toggle);
@@ -475,19 +484,22 @@ namespace Olca.Unity
         private static Vector2 PcDirection(int mask)=>new Vector2(((mask&8)!=0?1:0)-((mask&2)!=0?1:0),((mask&1)!=0?1:0)-((mask&4)!=0?1:0));
         private void SeedPcWheelInput()
         {
+            pcWheelEvents.Clear();
             foreach(var key in pcWheelKeys.Keys.Where(k=>!InputSystem.devices.Contains(k)).ToArray())pcWheelKeys.Remove(key);
             foreach(var keyboard in InputSystem.devices.OfType<Keyboard>().Where(k=>k.enabled)){if(!pcWheelKeys.TryGetValue(keyboard,out var state))pcWheelKeys.Add(keyboard,state=new PcWheelKeyboard());state.Mask=PcMask(keyboard);state.Toggle=state.Enter=false;state.ReadOrder=state.DirectionOrder;}
             pcWheelMouse=Mouse.current!=null&&Mouse.current.enabled?Mouse.current:null;if(pcWheelMouse!=null)pcWheelPointer=pcWheelMouse.position.ReadValue();pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;
         }
         private void CapturePcWheelInput(InputEventPtr evt,InputDevice device,List<ButtonControl> presses)
         {
-            if(!OutsideGamepad)return;
+            if(!OutsideGamepad){pcWheelEvents.Clear();return;}
+            bool ordered=OutsidePcWheelInputOwned?.Invoke()==true;if(!ordered)pcWheelEvents.Clear();
+            // 表示中だけ実イベント順を保存する。決定後の解放を、決定時の方向へ遡及しない。
             if(device is Keyboard keyboard&&keyboard.enabled){
-                if(!pcWheelKeys.TryGetValue(keyboard,out var state))pcWheelKeys.Add(keyboard,state=new PcWheelKeyboard());int mask=PcMask(keyboard);if(mask!=state.Mask){state.Mask=mask;state.DirectionOrder=++pcWheelOrder;}
-                if(KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null&&presses.Any(c=>ReferenceEquals(c,keyboard[System.Enum.Parse<Key>(key)]))){state.Toggle=true;state.ToggleOrder=++pcWheelOrder;}
-                if(presses.Any(c=>ReferenceEquals(c,keyboard.enterKey)||ReferenceEquals(c,keyboard.numpadEnterKey)))state.Enter=true;
+                if(!pcWheelKeys.TryGetValue(keyboard,out var state))pcWheelKeys.Add(keyboard,state=new PcWheelKeyboard());int mask=PcMask(keyboard);if(mask!=state.Mask){state.Mask=mask;state.DirectionOrder=++pcWheelOrder;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Direction,PcDirection(mask),keyboard.deviceId));}
+                if(KeyboardProfile.Bindings.TryGetValue(("keyboard","outside","WheelPrimary"),out var key)&&key!=null&&presses.Any(c=>ReferenceEquals(c,keyboard[System.Enum.Parse<Key>(key)]))){state.Toggle=true;state.ToggleOrder=++pcWheelOrder;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Toggle,Vector2.zero,keyboard.deviceId));}
+                if(presses.Any(c=>ReferenceEquals(c,keyboard.enterKey)||ReferenceEquals(c,keyboard.numpadEnterKey))){state.Enter=true;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Confirm,Vector2.zero,keyboard.deviceId));}
             }
-            if(device is Mouse mouse&&mouse.enabled){pcWheelMouse=mouse;if(mouse.position.ReadValueFromEvent(evt,out Vector2 point)&&point!=pcWheelPointer){pcWheelPointer=point;pcWheelMouseOrder=++pcWheelOrder;}if(presses.Any(c=>ReferenceEquals(c,mouse.leftButton)))pcWheelClick=true;}
+            if(device is Mouse mouse&&mouse.enabled){pcWheelMouse=mouse;if(mouse.position.ReadValueFromEvent(evt,out Vector2 point)&&point!=pcWheelPointer){pcWheelPointer=point;pcWheelMouseOrder=++pcWheelOrder;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Pointer,point));}if(presses.Any(c=>ReferenceEquals(c,mouse.leftButton))){pcWheelClick=true;if(ordered)QueuePcWheelEvent(new OutsidePcWheelEvent(OutsidePcWheelEventKind.Click,pcWheelPointer));}}
         }
         public OutsidePcWheelInput ReadOutsidePcWheel(object context,int ownerKeyboard,out int actualKeyboard)
         {
@@ -495,8 +507,9 @@ namespace Olca.Unity
             var keyboard=ownerKeyboard>=0?InputSystem.GetDeviceById(ownerKeyboard) as Keyboard:pcWheelKeys.Where(p=>p.Key.enabled&&p.Value.Toggle).OrderByDescending(p=>p.Value.ToggleOrder).Select(p=>p.Key).FirstOrDefault()??Keyboard.current;
             actualKeyboard=keyboard!=null?keyboard.deviceId:-1;PcWheelKeyboard state=null;if(keyboard!=null)pcWheelKeys.TryGetValue(keyboard,out state);
             bool available=keyboard!=null&&keyboard.enabled&&state!=null;
-            var value=new OutsidePcWheelInput(available,!fresh&&context!=null&&available&&state.Toggle,!fresh&&available&&state.Enter,!fresh&&pcWheelClick,available?PcDirection(state.Mask):Vector2.zero,pcWheelPointer,pcWheelMouse!=null&&pcWheelMouse.enabled,!fresh&&available&&state.DirectionOrder>state.ReadOrder,!fresh&&pcWheelMouseOrder>pcWheelMouseReadOrder,available?state.DirectionOrder:0,pcWheelMouseOrder,available&&(PcKey(keyboard,Key.Enter)||PcKey(keyboard,Key.NumpadEnter)),pcWheelMouse!=null&&buttons.TryGetValue(pcWheelMouse.leftButton,out var clickHeld)&&clickHeld);
-            foreach(var item in pcWheelKeys.Values){item.Toggle=item.Enter=false;item.ReadOrder=item.DirectionOrder;}pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;return value;
+            var ordered=!fresh&&context!=null&&available&&pcWheelEvents.Count>0?System.Array.AsReadOnly(pcWheelEvents.Where(e=>e.KeyboardId<0||e.KeyboardId==keyboard.deviceId).ToArray()):(System.Collections.Generic.IReadOnlyList<OutsidePcWheelEvent>)System.Array.Empty<OutsidePcWheelEvent>();
+            var value=new OutsidePcWheelInput(available,!fresh&&context!=null&&available&&state.Toggle,!fresh&&available&&state.Enter,!fresh&&pcWheelClick,available?PcDirection(state.Mask):Vector2.zero,pcWheelPointer,pcWheelMouse!=null&&pcWheelMouse.enabled,!fresh&&available&&state.DirectionOrder>state.ReadOrder,!fresh&&pcWheelMouseOrder>pcWheelMouseReadOrder,available?state.DirectionOrder:0,pcWheelMouseOrder,available&&(PcKey(keyboard,Key.Enter)||PcKey(keyboard,Key.NumpadEnter)),pcWheelMouse!=null&&buttons.TryGetValue(pcWheelMouse.leftButton,out var clickHeld)&&clickHeld,ordered);
+            foreach(var item in pcWheelKeys.Values){item.Toggle=item.Enter=false;item.ReadOrder=item.DirectionOrder;}pcWheelClick=false;pcWheelMouseReadOrder=pcWheelMouseOrder;pcWheelEvents.Clear();return value;
         }
         public string OutsideInteractionLabel {
             get{bool pad=InputGuideActivity.Current==InputGuideDevice.Gamepad;var profile=pad?GamepadProfile:KeyboardProfile;return profile.Bindings.TryGetValue((pad?"gamepad":"keyboard","outside","InteractionPrimary"),out var key)&&key!=null?(pad?GamepadBindingLabel(key):key):"ミワリアテ";}
