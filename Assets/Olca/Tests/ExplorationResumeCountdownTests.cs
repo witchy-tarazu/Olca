@@ -10,6 +10,85 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static OutsideExplorationSession Contact266(long offset=0,long height=0)
+        {
+            var s=new OutsideExplorationSession(trialContactDamage:true);s.TryInitializePlayer(()=>new PlayerCharacter(100));
+            var state=s.Core.CaptureState();state.Position=OutsideExplorationSession.TrialTargetX+offset;state.Height=height;state.SupportId=height==0?"floor":null;
+            typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});return s;
+        }
+        [Test] public void 接触試用は即時十ダメージ後六十論理フレームまで再被害なし()
+        {
+            using(var s=Contact266())using(var l=s.AttachPresentation()){
+                s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(0,s.Player.AccumulatedDamage);Assert.IsFalse(s.Player.IsInvincible);Assert.IsFalse(s.Player.IsStaggered);
+                for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);s.TickTraversal(0);Assert.AreEqual(80,s.Player.CurrentHp);
+            }
+        }
+        [TestCase(-1)] [TestCase(1)] public void 接触試用の左右境界と通り抜けは別判定(int side)
+        {
+            using(var probe=Contact266()){long edge=OutsideExplorationSession.TrialContactHalfWidth+probe.Core.TraversalProfile.BodyHalfWidth;
+                using(var outside=Contact266(side*(edge+1)))using(var l=outside.AttachPresentation()){outside.TickTraversal(0);Assert.AreEqual(100,outside.Player.CurrentHp);}
+                using(var inside=Contact266(side*edge))using(var l=inside.AttachPresentation()){inside.TickTraversal(0);Assert.AreEqual(90,inside.Player.CurrentHp);for(int n=0;n<30;n++)inside.TickTraversal(-side);Assert.That((inside.Core.Position-OutsideExplorationSession.TrialTargetX)*side,Is.LessThan(0));}
+            }
+        }
+        [Test] public void 接触試用は上空と死亡敵と別マップでは発生しない()
+        {
+            using(var s=Contact266(0,OutsideExplorationSession.TrialContactHeight+10000))using(var l=s.AttachPresentation()){s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);}
+            using(var s=Contact266())using(var l=s.AttachPresentation()){s.TrialTarget.TakeDamage(120,ElementType.None);s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);}
+            using(var s=Contact266()){s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);using(var l=s.AttachPresentation()){s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);}}
+        }
+        [Test] public void 接触試用のバリアと既存無敵を共通被弾判定へ委譲する()
+        {
+            using(var s=Contact266())using(var l=s.AttachPresentation()){s.Player.SetBarrier(15);s.TickTraversal(0);Assert.AreEqual(5,s.Player.BarrierHp);Assert.AreEqual(100,s.Player.CurrentHp);for(int n=0;n<60;n++)s.TickTraversal(0);Assert.AreEqual(0,s.Player.BarrierHp);Assert.AreEqual(100,s.Player.CurrentHp);for(int n=0;n<60;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);}
+            using(var s=Contact266())using(var l=s.AttachPresentation()){s.Player.SetInvincible(1000);s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);for(int n=0;n<60;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);}
+        }
+        [Test] public void 接触後の再入とcold復元は間隔を保持し読込時に再被害を出さない()
+        {
+            using(var s=Contact266()){
+                using(var l=s.AttachPresentation()){s.TickTraversal(0);for(int n=0;n<17;n++)s.TickTraversal(0);}
+                long frame=s.Core.Frame;var runtime=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;Assert.NotNull(runtime.TrialContact);
+                using(var cold=new OutsideExplorationSession(trialContactDamage:true)){
+                    cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime)),null);Assert.AreEqual(90,cold.Player.CurrentHp);Assert.AreEqual(frame,cold.Core.Frame);
+                    using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){for(int n=0;n<42;n++){s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(90,cold.Player.CurrentHp);}s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(80,cold.Player.CurrentHp);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);}
+                }
+                var run=runtime.ForRun(Guid.NewGuid().ToString("N"));Assert.IsNull(run.TrialContact);Assert.NotNull(runtime.TrialContact);Assert.AreNotSame(runtime.TrialContact,runtime.Copy().TrialContact);
+            }
+        }
+        [Test] public void 接触保存は未知定義と範囲外時計を拒否し旧nullを追加出力しない()
+        {
+            using(var s=Contact266()){
+                var runtime=s.CaptureRuntime(null);Assert.IsNull(runtime.TrialContact);Assert.That(System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(runtime)),Does.Not.Contain("TrialContact"));
+                runtime.TrialContact=new OutsideTrialContactData{DefinitionId="unknown",NextFrame=1};Assert.Throws<ArgumentException>(()=>runtime.Validate());runtime.TrialContact.DefinitionId="trial-contact-no-poise-v1";runtime.TrialContact.NextFrame=0;Assert.Throws<ArgumentException>(()=>runtime.Validate());runtime.TrialContact.NextFrame=61;Assert.Throws<ArgumentException>(()=>runtime.Validate());runtime.TrialContact.NextFrame=1;runtime.Validate();
+            }
+        }
+        [Test] public void 未登録Sessionへの接触保存の復元拒否は元個体と時計を維持する()
+        {
+            using(var s=Contact266())using(var other=new OutsideExplorationSession()){
+                using(var l=s.AttachPresentation())s.TickTraversal(0);var runtime=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;other.TryInitializePlayer(()=>new PlayerCharacter(77));var prior=other.Player;var before=PortableCheckpointJson.Serialize(other.Core.CaptureState());
+                Assert.Throws<ArgumentException>(()=>other.RestoreSavedState(actor,runtime,null));Assert.AreSame(prior,other.Player);Assert.AreEqual(77,other.Player.CurrentHp);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(other.Core.CaptureState()));
+            }
+        }
+        [Test] public void 接触後の保存失敗は元保存と被害間隔を保ち成功再試行後のcoldと一致する()
+        {
+            using(var s=Contact266()){
+                using(var l=s.AttachPresentation())s.TickTraversal(0);var runtime=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var state=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()};
+                var store=new Style231Store{Value=new ClearReturnProfile()};var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(store.Value);string key=runtime.Key();
+                var method=typeof(ClearReturnSession).GetMethod("TryCommitOutsideTrialPoison",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);var args=new object[]{actor,runtime,state,null};store.Fail=true;Assert.IsFalse((bool)method.Invoke(save,args));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(runtime.TrialContact.NextFrame,s.CaptureRuntime(null).TrialContact.NextFrame);Assert.AreEqual(key,runtime.Key());
+                store.Fail=false;Assert.IsTrue((bool)method.Invoke(save,args),(string)args[3]);var cold=new ClearReturnSession(store);Assert.AreEqual(runtime.Key(),cold.Snapshot.OutsideRuntimeSave.Key());Assert.AreEqual(90,cold.Snapshot.OutsidePlayerSave.Player.Hp);Assert.AreEqual(runtime.TrialContact.NextFrame,cold.Snapshot.OutsideRuntimeSave.TrialContact.NextFrame);
+            }
+        }
+        [Test] public void 同フレームの蹴りで撃破した敵から接触ダメージを受けない()
+        {
+            using(var s=Contact266(-60000))using(var l=s.AttachPresentation()){
+                s.EnableTrialNormalKick();s.TrialTarget.TakeDamage(110,ElementType.None);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));for(int n=0;n<5;n++)s.TickTraversal(0);
+                var state=s.Core.CaptureState();state.Position=OutsideExplorationSession.TrialTargetX;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.TickTraversal(0);
+                Assert.IsTrue(s.TrialTarget.IsDead);Assert.AreEqual(100,s.Player.CurrentHp);l.Dispose();Assert.IsNull(s.CaptureRuntime(null).TrialContact);
+            }
+        }
+        [Test] public void 接触の致死後は一度だけ死亡し回復で間隔を初期化する()
+        {
+            using(var s=Contact266()){s.Player.TakeDamage(95,affectsPoise:false);int deaths=0;s.Player.OnDeath+=()=>deaths++;using(var l=s.AttachPresentation()){s.TickTraversal(0);for(int n=0;n<120;n++)s.TickTraversal(0);Assert.AreEqual(0,s.Player.CurrentHp);Assert.AreEqual(1,deaths);}s.RecoverOutside(null);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsNull(s.CaptureRuntime(null).TrialContact);}
+        }
+
         [Test] public void 試用回復初期販売は旧売切れ履歴を保持して無制限に購入し失敗と上限を守る()
         {
             var old=OutsideShopDefinition.TrialLimited;var id=old.Offers[1].Id;
