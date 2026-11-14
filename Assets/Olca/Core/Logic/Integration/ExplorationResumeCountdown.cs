@@ -919,17 +919,19 @@ namespace Olca.Core.Logic.Integration
             error=null;
             if(usingItem||save==null||definition==null||!IsPresented||!CanPerformAttack||!Player.CanCaptureTimedAilments){error="今はアイテムを使用できません";return false;}
             if(ItemCooldownRemaining(definition.Id)>0){error="クールタイム中です";return false;}
-            if(definition.Effect==OutsideRecoveryEffect.Poison?!Player.HasPoisonState:Player.CurrentHp==Player.MaxHp){error=definition.Effect==OutsideRecoveryEffect.Poison?"解除する毒状態がありません":"HPは満タンです";return false;}
+            bool heals=definition.RestoresHp&&Player.CurrentHp<Player.MaxHp;
+            bool cures=definition.ClearsPoison&&Player.HasPoisonState;
+            if(!heals&&!cures){error=definition.Effect==OutsideRecoveryEffect.Poison?"解除する毒状態がありません":definition.Effect==OutsideRecoveryEffect.Hp?"HPは満タンです":"HPは満タンで、解除するドク状態もありません";return false;}
             usingItem=true;
             try{
                 long until=checked(Core.Frame+definition.CooldownFrames);
-                var actor=OutsidePlayerSaveData.Capture(Player);if(definition.Effect==OutsideRecoveryEffect.Poison)actor.Player.Poisons=Array.Empty<PlayerPoisonDto>();else actor.Player.Hp=(int)System.Math.Min(actor.Player.MaxHp,(long)actor.Player.Hp+definition.HealHp);actor.Validate();
+                var actor=OutsidePlayerSaveData.Capture(Player);if(cures)actor.Player.Poisons=Array.Empty<PlayerPoisonDto>();if(heals)actor.Player.Hp=(int)System.Math.Min(actor.Player.MaxHp,(long)actor.Player.Hp+definition.HealHp);actor.Validate();
                 var runtime=CaptureItemRuntime(definitions);runtime.Id=actor.Id;
                 var cooldowns=itemCooldowns.Where(v=>v.Value>Core.Frame&&v.Key!=definition.Id).Select(v=>new OutsideItemCooldownData{Id=v.Key,RemainingFrames=checked((int)(v.Value-Core.Frame))}).Concat(new[]{new OutsideItemCooldownData{Id=definition.Id,RemainingFrames=definition.CooldownFrames}}).ToArray();
                 var itemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key(),Cooldowns=cooldowns};itemState.Validate(actor,runtime);
                 if(!save.TryCommitOutsideItem(definition.Id,actor,runtime,itemState,out error))return false;
                 // 保存成功後だけ現個体へ効果を適用。個体/時計/手札を置換しない。
-                itemCooldowns[definition.Id]=until;appliedItemStateId=actor.Id;if(definition.Effect==OutsideRecoveryEffect.Poison)Player.ClearPoisons();else Player.Heal(definition.HealHp);savedPlayerId=actor.Id;savedPlayerKey=actor.Key();savedRuntimeId=runtime.Id;savedRuntimeKey=runtime.Key();return true;
+                itemCooldowns[definition.Id]=until;appliedItemStateId=actor.Id;if(cures)Player.ClearPoisons();if(heals)Player.Heal(definition.HealHp);savedPlayerId=actor.Id;savedPlayerKey=actor.Key();savedRuntimeId=runtime.Id;savedRuntimeKey=runtime.Key();return true;
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
             finally{usingItem=false;}
         }

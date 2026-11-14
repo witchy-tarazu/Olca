@@ -1457,13 +1457,17 @@ namespace Olca.Core.Domain
         }
     }
     /// <summary>効果量と種類別CDの暫定データ。表示定義や未知所持IDとは分離する。</summary>
-    public enum OutsideRecoveryEffect { Hp, Poison }
+    public enum OutsideRecoveryEffect { Hp=0, Poison=1, HpAndPoison=2 }
     public sealed class OutsideRecoveryItemDefinition
     {
         public string Id{get;} public int HealHp{get;} public int CooldownFrames{get;} public OutsideRecoveryEffect Effect{get;}
+        public bool RestoresHp=>Effect!=OutsideRecoveryEffect.Poison;
+        public bool ClearsPoison=>Effect!=OutsideRecoveryEffect.Hp;
         public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames):this(id,healHp,cooldownFrames,OutsideRecoveryEffect.Hp){}
-        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames,OutsideRecoveryEffect effect){if(string.IsNullOrWhiteSpace(id)||cooldownFrames<=0||!Enum.IsDefined(typeof(OutsideRecoveryEffect),effect)||(effect==OutsideRecoveryEffect.Hp?healHp<=0:healHp!=0))throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;Effect=effect;}
+        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames,OutsideRecoveryEffect effect){if(string.IsNullOrWhiteSpace(id)||cooldownFrames<=0||!Enum.IsDefined(typeof(OutsideRecoveryEffect),effect)||(effect==OutsideRecoveryEffect.Poison?healHp!=0:healHp<=0))throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;Effect=effect;}
         public static readonly OutsideRecoveryItemDefinition Provisional=new OutsideRecoveryItemDefinition("outside-recovery-sample-v1",25,180);
+        // 複合使用の試用値。既存品のID・性能・在庫履歴は変更しない。
+        public static readonly OutsideRecoveryItemDefinition CombinedProvisional=new OutsideRecoveryItemDefinition("outside-combined-recovery-sample-v1",25,180,OutsideRecoveryEffect.HpAndPoison);
         // 毒だけを解除する仮データ。麻痺等の使用禁止や他状態を変更しない。
         public static readonly OutsideRecoveryItemDefinition PoisonProvisional=new OutsideRecoveryItemDefinition("outside-poison-recovery-sample-v1",0,120,OutsideRecoveryEffect.Poison);
     }
@@ -1481,6 +1485,7 @@ namespace Olca.Core.Domain
         public OutsideItemDisplayDefinition(string id,string name,string mark){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(name)||string.IsNullOrWhiteSpace(mark))throw new ArgumentException("表示用アイテム定義が必要です");Id=id;Name=name;Mark=mark;}
         // 表示候補だけ。入手・効果量・価格・CDを仮決めした実用品として登録しない。
         public static readonly OutsideItemDisplayDefinition PoisonSample=new OutsideItemDisplayDefinition("outside-poison-recovery-sample-v1","ドクケシ（カリ）","ドク");
+        public static readonly OutsideItemDisplayDefinition CombinedSample=new OutsideItemDisplayDefinition("outside-combined-recovery-sample-v1","HP+ドクケシ（カリ）","HPドク");
         public static readonly OutsideItemDisplayDefinition RecoverySample=new OutsideItemDisplayDefinition("outside-recovery-sample-v1","HPカイフク（カリ）","HP");
     }
     public sealed partial class ClearReturnSession
