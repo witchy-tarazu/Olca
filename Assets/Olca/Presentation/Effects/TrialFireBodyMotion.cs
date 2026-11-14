@@ -13,7 +13,7 @@ namespace Olca.Presentation.Effects
             "idle", "run_01", "run_02", "run_03", "run_04", "run_05", "run_06", "run_07", "run_08",
             "jump_rise", "jump_apex", "jump_fall", "dash", "wall_slide_01", "wall_slide_02",
             "ground_kick_prepare", "ground_kick_contact", "air_forward_contact",
-            "idle_breathe_mid", "idle_breathe_high", "knockback_01", "knockback_02", "knockback_03", "dash_kick_contact"
+            "idle_breathe_mid", "idle_breathe_high", "knockback_01", "knockback_02", "knockback_03", "dash_kick_contact", "ground_second_prepare", "ground_second_contact", "ground_third_prepare", "ground_third_contact"
         };
         private readonly Func<string, Sprite> load;
         private Dictionary<string, Sprite> sprites;
@@ -62,6 +62,10 @@ namespace Olca.Presentation.Effects
                 case "heroine_dash_low_v4_nn256": return "dash";
                 case "WallSlide_01": return "wall_slide_01";
                 case "WallSlide_02": return "wall_slide_02";
+                case "trial_ground_second_prepare": return "ground_second_prepare";
+                case "trial_ground_second_contact": return "ground_second_contact";
+                case "trial_ground_third_prepare": return "ground_third_prepare";
+                case "trial_ground_third_contact": return "ground_third_contact";
                 case "trial_dash_kick_contact": return "dash_kick_contact";
                 case "trial_ground_kick_prepare": return "ground_kick_prepare";
                 case "trial_ground_kick_contact": return "ground_kick_contact";

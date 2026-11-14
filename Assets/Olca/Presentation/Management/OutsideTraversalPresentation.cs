@@ -69,6 +69,7 @@ namespace Olca.Presentation.Exploration
         private void ClearOutsideDefensiveField(){if(outsideDefensiveField!=null){outsideDefensiveField.enabled=false;outsideDefensiveField.sprite=null;}outsideDefensiveAssets?.Dispose();outsideDefensiveAssets=null;}
         private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
         private Sprite ResolveBodyCostume(Sprite sprite)=>(trialFireBody??(trialFireBody=new Olca.Presentation.Effects.TrialFireBodyMotion())).Resolve(sprite,presentation?.Player);
+        private Sprite[] trialComboSprites;
         private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
         private Sprite TrialKickSprite()
         {
@@ -82,6 +83,11 @@ namespace Olca.Presentation.Exploration
                 if(trialAirForwardContact==null)trialAirForwardContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_air_forward_kick_contact");
                 // 前後隙は既存の上昇姿勢を暫定利用。時刻や物理位置は表示側で進めない。
                 return trialAirForwardContact!=null&&riseSprite!=null?(presentation.IsKickHitWindow?trialAirForwardContact:riseSprite):null;
+            }
+            if(kind.Value==OutsideKickKind.GroundSecond||kind.Value==OutsideKickKind.GroundThird){
+                if(trialComboSprites==null)trialComboSprites=new[]{Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_second_prepare"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_second_contact"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_third_prepare"),Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_third_contact")};
+                int index=kind.Value==OutsideKickKind.GroundSecond?0:2;
+                return trialComboSprites[index]!=null&&trialComboSprites[index+1]!=null?trialComboSprites[index+(presentation.IsKickHitWindow?1:0)]:null;
             }
             if(kind.Value>OutsideKickKind.GroundThird)return null;
             if(trialKickPrepare==null)trialKickPrepare=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_prepare");
@@ -205,7 +211,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
