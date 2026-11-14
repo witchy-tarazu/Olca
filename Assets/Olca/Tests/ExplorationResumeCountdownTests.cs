@@ -322,6 +322,16 @@ namespace Olca.Tests
         private static CheckpointDefinitions Kick214Definitions(OutsideExplorationSession s)
         {var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s.Cards);return DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),deck).Definitions;}
         private static void Kick214Tick(OutsideExplorationSession s,float horizontal=0){s.TickTraversal(horizontal);s.ProcessCardUseInput(false,false,false,0,0,out _);}
+        [TestCase(false)][TestCase(true)] public void 地上蹴り終了はIdleだけ再開始し冷起動後も位置時計と命中を再適用しない(bool cold)
+        {
+            using(var model=Sword161()){
+                model.EnableTrialNormalKick();var definitions=Kick214Definitions(model);long frame,position;OutsideRuntimeSaveData runtime;OutsidePlayerSaveData actor;
+                using(var lease=model.AttachPresentation()){for(int n=0;n<25;n++)Kick214Tick(model);Assert.Greater(model.Core.IdleFrame,0);model.TickTraversal(0);frame=model.Core.Frame;position=model.Core.Position;Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,frame+1,out _));for(int n=0;n<21;n++)Kick214Tick(model);Assert.AreEqual(frame+21,model.Core.Frame);Assert.AreEqual(position,model.Core.Position);Assert.AreEqual(0,model.Core.IdleFrame);}
+                runtime=model.CaptureRuntime(definitions);actor=OutsidePlayerSaveData.Capture(model.Player);actor.Id=runtime.Id;
+                if(cold){using(var restored=new OutsideExplorationSession()){restored.RestoreSavedState(actor,runtime,null,definitions);Assert.AreEqual(0,restored.Core.IdleFrame);using(var l=restored.AttachPresentation()){int hp=restored.TrialTarget.CurrentHp;Kick214Tick(restored);Assert.AreEqual(1,restored.Core.IdleFrame);Assert.AreEqual(hp,restored.TrialTarget.CurrentHp);Assert.AreEqual(frame+22,restored.Core.Frame);Assert.AreEqual(position,restored.Core.Position);}}}
+                else using(var l=model.AttachPresentation()){Kick214Tick(model);Assert.AreEqual(1,model.Core.IdleFrame);}
+            }
+        }
         [TestCase(0)] [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(9)] [TestCase(20)] [TestCase(21)] [TestCase(25)] [TestCase(38)]
         public void 試用蹴りは前隙と命中済みと後隙と継続猶予を同じ論理位置から復元する(int age)
         {

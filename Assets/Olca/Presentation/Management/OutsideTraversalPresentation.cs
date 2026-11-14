@@ -67,6 +67,16 @@ namespace Olca.Presentation.Exploration
             rect.sizeDelta=new Vector2(Mathf.Max(bounds.size.x*1.15f,bounds.size.y*.62f),bounds.size.y*1.15f)*pixelsPerWorldUnit;outsideDefensiveField.sprite=sprite;outsideDefensiveField.color=new Color(1,1,1,.55f);outsideDefensiveField.enabled=true;
         }
         private void ClearOutsideDefensiveField(){if(outsideDefensiveField!=null){outsideDefensiveField.enabled=false;outsideDefensiveField.sprite=null;}outsideDefensiveAssets?.Dispose();outsideDefensiveAssets=null;}
+        private Sprite trialKickPrepare,trialKickContact;
+        private Sprite TrialGroundKickSprite()
+        {
+            var kind=presentation?.NormalKickKind;
+            if(!kind.HasValue||kind.Value>Olca.Core.Logic.Integration.OutsideKickKind.GroundThird||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
+            if(trialKickPrepare==null)trialKickPrepare=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_prepare");
+            if(trialKickContact==null)trialKickContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_contact");
+            if(trialKickPrepare==null||trialKickContact==null)return null;
+            return presentation.IsKickHitWindow?trialKickContact:trialKickPrepare;
+        }
         private Sprite traversalDashSprite;
         private Sprite[] wallSlideFrames;
         private Olca.Unity.ResourceManager traversalResources;
@@ -182,7 +192,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 

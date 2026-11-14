@@ -146,6 +146,8 @@ namespace Olca.Core.Logic.Integration
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
             public Enemy TrialTarget=>owner?.TrialTarget;public Enemy SecondTrialTarget=>owner?.SecondTrialTarget;public OutsideTrialStrike TrialStrike=>owner?.TrialStrike;
             public bool IsDashAttacking=>IsCurrent&&owner.normalKick?.IsDashAttack==true;
+            public OutsideKickKind? NormalKickKind=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.Kind:(OutsideKickKind?)null;
+            public bool IsKickHitWindow=>IsCurrent&&owner.normalKick?.IsHitWindow==true;
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;
             public bool TrialEnemyAttackEnabled=>IsCurrent&&owner.trialEnemyAttack!=null;
@@ -215,7 +217,7 @@ namespace Olca.Core.Logic.Integration
         private readonly Olca.Core.Logic.Battle.AttackInputReservation attackReservation=new Olca.Core.Logic.Battle.AttackInputReservation();
         private OutsideNormalKickSequence normalKick;
         public OutsideNormalKickSequence NormalKick {get{if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));return normalKick??(normalKick=new OutsideNormalKickSequence(attackReservation));}}
-        /// <summary>試用時間だけを登録。威力/空間範囲/本体素材は未接続で、正式定義ではない。</summary>
+        /// <summary>試用時間を登録。威力・範囲・共通本体の試作は正式定義と区別する。</summary>
         public void EnableTrialNormalKick()
         {
             if(Core.TrialMapId!=null||Core.Definition.Id!=OutsideKickTrialDefinition.MapId||NormalKick.IsConfigured)return;
@@ -235,7 +237,7 @@ namespace Olca.Core.Logic.Integration
             }else Core.TickFrame(normalKick?.ResolveHorizontal(horizontal)??horizontal,jumpDown,jumpHeld,!kick&&dashDown,!kick&&dashHeld,IsMovementLockedForNextFrame);
             ObserveAttackBoundary(facing,grounded);AdvanceDeckLocation();AdvancePlayerFrame();
         }
-        private void ObserveNormalKick(bool allowed){bool dash=normalKick?.IsDashAttack==true;normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,allowed);if(dash&&normalKick?.IsDashAttack!=true)Core.EndDashAfterAttack();}
+        private void ObserveNormalKick(bool allowed){bool active=normalKick?.IsActive==true,dash=normalKick?.IsDashAttack==true;normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,allowed);if(dash&&normalKick?.IsDashAttack!=true)Core.EndDashAfterAttack();if(active&&normalKick?.IsActive!=true)Core.RestartIdleMotion();}
         private Card reservedCard;private OutsideExplorationCards reservedOwner;private long reservedRevision,reservedActionFrame,lastAttackInputFrame=-1;
         public Olca.Core.Logic.Battle.AttackReservationKind PendingAttack=>attackReservation.Kind;
         public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
@@ -274,7 +276,7 @@ namespace Olca.Core.Logic.Integration
             if(!SupportedCard(expected)||Core.CardGauge.CurrentUnits<(long)expected.GetFinalCost()*OutsideCardGauge.UnitsPerPoint)return false;
             return StartCardAfterRecovery(expected,revision,out error);
         }
-        private void KickFeedback(){AdvanceTrialKickHits();CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / ダッシュ シセイをリヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ） / モーション ミセツゾク";CardUseMessageFrame=Core.Frame;}
+        private void KickFeedback(){AdvanceTrialKickHits();CardUseMessage=NormalKick.IsDashAttack?"シヨウ ダッシュコウゲキ / 10ダメージ（カリ） / ダッシュ シセイをリヨウ":"シヨウ キック "+NormalKick.Kind+" / 10ダメージ（カリ）"+(NormalKick.Kind<=OutsideKickKind.GroundThird?"":" / モーション ミセツゾク");CardUseMessageFrame=Core.Frame;}
         private bool CanCancelAnyAttack()=>attackState!=null?CanCancelAttack():normalKick?.IsActive==true&&normalKick.CanCancelNormal;
         private bool StartCardAfterRecovery(Card card,long revision,out string error)
         {
@@ -312,6 +314,7 @@ namespace Olca.Core.Logic.Integration
             if(error!=null){CardUseMessage=error;CardUseMessageFrame=Core.Frame;return false;}
             // HealEffectと同じ既存HP反映。満タンでもカード/ゲージの消費を戻さない。
             if(SwordDefinition(expected))Core.FaceAwayFromWallForAttack();
+            if(normalKick?.IsActive==true)Core.RestartIdleMotion();
             normalKick?.CardStarted();
             attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected)};AdvanceAttack(true);CardUseMessage=expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
@@ -581,6 +584,8 @@ namespace Olca.Core.Logic.Integration
             else{Height=TraversalProfile?.VoidDepth>0?Math.Max(-TraversalProfile.VoidDepth,next):next;VerticalVelocity-=IsInWater?TraversalProfile.WaterGravity:ValidationGravity;if(IsWallSliding)VerticalVelocity=System.Math.Max(VerticalVelocity,-TraversalProfile.WallSlidePerFrame);SupportId=null;}
             TraceWater(previous,oldHeight);CompleteTraversalFrame();AdvanceIdleFrame(wasIdle);
         }
+        // 行動からIdleへ戻る境界だけ再開始する。ゲーム時計・位置には触れない。
+        internal void RestartIdleMotion()=>IdleFrame=0;
         private void AdvanceIdleFrame(bool wasIdle)
         {IdleFrame=IsIdleMotion?wasIdle?IdleFrame+1:0:0;}
     }

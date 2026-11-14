@@ -142,6 +142,47 @@ def metadata_facts(approval, repo, workspace):
             'editorEvidence': {'path': str(witness_path), 'sha256': witness['sha256']}}
 
 
+def unchanged_test_metadata(repo, workspace, evidence, base, staged, approved_metadata):
+    """公開差分ではない既存metaを、4箇所の同一byte証明付きで検証記録に残す。"""
+    proof = {}
+    for name in ('full-tests', 'related-tests'):
+        test = document(Path(evidence) / (name + '.json'))
+        hashes = dict(test.get('productionSourceHashes', {}))
+        for path, digest in test['sourceHashes'].items():
+            require(path not in hashes or hashes[path] == digest, 'conflicting test hash: ' + path)
+            hashes[path] = digest
+        for path, digest in hashes.items():
+            if not path.endswith('.meta') or path in approved_metadata:
+                continue
+            # 例外は検証記録だけ。今回追加/変更したmetaの承認を代替しない。
+            safe_path(path, {path})
+            require(path not in staged, 'staged metadata needs explicit approval: ' + path)
+            tree = git(repo, 'ls-tree', '-z', base, '--', path).decode().split('\0')
+            index = git(repo, 'ls-files', '--stage', '-z', '--', path).decode().split('\0')
+            require(len(tree) == 2 and tree[1] == '' and len(index) == 2 and index[1] == '',
+                    'existing test metadata not uniquely tracked: ' + path)
+            head_info, head_path = tree[0].split('\t', 1)
+            index_info, index_path = index[0].split('\t', 1)
+            head_mode, kind, head_blob = head_info.split()
+            index_mode, index_blob, stage = index_info.split()
+            require(head_path == index_path == path and kind == 'blob' and stage == '0' and
+                    head_mode == index_mode and head_mode in ('100644', '100755') and head_blob == index_blob,
+                    'existing test metadata HEAD/index differs: ' + path)
+            for root in (repo, workspace):
+                cursor = Path(root)
+                for part in PurePosixPath(path).parts:
+                    cursor = cursor / part
+                    require(not cursor.is_symlink(), 'symlink test metadata path: ' + path)
+            content = git(repo, 'show', base + ':' + path)
+            require(content == git(repo, 'show', ':' + path) == regular_bytes(repo, path) ==
+                    regular_bytes(workspace, path) and sha(content) == digest,
+                    'existing test metadata bytes/hash differ: ' + path)
+            require(path not in proof or proof[path]['sha256'] == digest, 'conflicting test metadata hash: ' + path)
+            proof[path] = {'sha256': digest, 'baseHead': base, 'blob': head_blob,
+                           'proof': 'HEAD/index/repo/workspace byte-identical; not staged'}
+    return proof
+
+
 def evidence_facts(directory, workspace, approved_metadata=()):
     directory = Path(directory).resolve()
     names = ['full-tests', 'related-tests', 'cleanup', 'final-source-hashes', 'independent-review']
@@ -269,11 +310,24 @@ def whitespace_exceptions(repo, base, approved_metadata=(), approved_files=None)
             empty_scalars = {'  userData: ', '  assetBundleName: ', '  assetBundleVariant: ',
                              '      customData: ', '      indices: ', '    customData: ', '    indices: ',
                              '  mipmapLimitGroupName: ', '  customCharacters: '}
+            # Multiple Spriteのsheet本体IDはEditorが空で出力する。子Sprite IDには適用しない。
+            sections = [j for j, row in enumerate(content) if row.startswith('  spriteSheet:')]
+            sheet = sections[0] if len(sections) == 1 and content[sections[0]] == '  spriteSheet:' else -1
+            sheet_end = next((j for j in range(sheet + 1, len(content))
+                              if content[j].strip() and not content[j].lstrip().startswith('#') and
+                              len(content[j]) - len(content[j].lstrip()) < 4), len(content)) if sheet >= 0 else -1
+            empty_sheet_id = (isinstance(approved_metadata, dict) and
+                              approved_metadata.get(path, {}).get('importer') == 'TextureImporter' and
+                              [row for row in content if row.startswith('  spriteMode:')] == ['  spriteMode: 2'] and
+                              sheet < number - 1 < sheet_end and
+                              0 < number <= len(content) and content[number - 1] == '    spriteID: ')
             require(path in approved_metadata and 0 < number <= len(content) and
-                    data.startswith('fileFormatVersion: 2\n') and content[number - 1] in empty_scalars and
+                    data.startswith('fileFormatVersion: 2\n') and
+                    (content[number - 1] in empty_scalars or empty_sheet_id) and
                     lines[i + 1] == '+' + content[number - 1], 'non-approved metadata whitespace: ' + lines[i])
             exceptions.append({'path': path, 'line': number, 'text': content[number - 1],
-                               'reason': 'Explicitly approved Editor importer empty scalar; tested bytes preserved'})
+                               'reason': ('Explicitly approved Editor Multiple Sprite sheet root empty spriteID; tested bytes preserved'
+                                          if empty_sheet_id else 'Explicitly approved Editor importer empty scalar; tested bytes preserved')})
             i += 2
             continue
         require(data.startswith('%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n') and
@@ -326,7 +380,8 @@ def snapshot(repo, workspace, evidence, base, metadata_approval=None):
     allowed_meta = metadata['metadata'] if metadata else {}
     if metadata:
         require(set(files) == set(metadata['approvedFiles']), 'staged scope differs from explicit approval')
-    facts = evidence_facts(evidence, workspace, allowed_meta)
+    unchanged_meta = unchanged_test_metadata(repo, workspace, evidence, base, files, allowed_meta)
+    facts = evidence_facts(evidence, workspace, set(allowed_meta) | set(unchanged_meta))
     if metadata:
         require(all(facts['testedHashes'].get(p) == row['sha256'] for p, row in allowed_meta.items()),
                 'approved metadata absent from tested hashes')
@@ -349,7 +404,7 @@ def snapshot(repo, workspace, evidence, base, metadata_approval=None):
             require(facts['testedHashes'].get(path) == sha(blob), 'staged asset absent from tested hashes: ' + path)
             require(blob == regular_bytes(workspace, path), 'index/Unity workspace bytes differ: ' + path)
     return {'tree': value(repo, 'write-tree'), 'stagedHashes': staged, 'metadataApproval': metadata,
-            'evidence': facts, 'whitespaceExceptions': whitespace_exceptions(repo, base, allowed_meta, metadata['approvedFiles'] if metadata else None),
+            'evidence': facts, 'unchangedTestMetadata': unchanged_meta, 'whitespaceExceptions': whitespace_exceptions(repo, base, allowed_meta, metadata['approvedFiles'] if metadata else None),
             'existingUnityEmptyScalars': existing_unity_scalars(repo)}
 
 

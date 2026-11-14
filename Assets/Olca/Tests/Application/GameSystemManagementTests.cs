@@ -987,6 +987,21 @@ namespace Olca.Tests.Application
                 Walk(10*60000);Assert.AreNotSame(old,model.Cards);Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(view.transform.Find("OutsideHandName0").gameObject.activeSelf);oldClick.Invoke();Assert.AreEqual(0,model.Cards.SelectedIndex);Assert.AreEqual(1,old.SelectedIndex);button.onClick.Invoke();Assert.AreEqual(2,model.Cards.SelectedIndex);var currentClick=button.onClick;Walk(8*60000);currentClick.Invoke();Assert.AreEqual(2,model.Cards.SelectedIndex);var hand=model.Cards.Hand.ToArray();long frame=model.Core.Frame;binding.SetCovered(true);view.Render();views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreEqual(frame,model.Core.Frame);CollectionAssert.AreEqual(hand,model.Cards.Hand);Assert.IsFalse(button.gameObject.activeSelf);
             }
         }
+        [TestCase(-1)][TestCase(1)] public async Task 外界地上三段は試用準備接触を論理命中窓から描き復帰Idleをゼロから始める(int facing)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            var prepare=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_prepare");var contact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_ground_kick_contact");Assert.IsNotNull(prepare);Assert.IsNotNull(contact);Assert.AreEqual(prepare.rect,contact.rect);Assert.AreEqual(prepare.pivot,contact.pivot);Assert.AreEqual(100f,prepare.pixelsPerUnit,.001f);Assert.AreEqual(100f,contact.pixelsPerUnit,.001f);Assert.AreEqual(256,prepare.texture.width);Assert.AreEqual(256,contact.texture.width);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;model.TickTraversal(facing);model.TickTraversal(0);for(int n=0;n<20;n++)model.TickTraversal(0);view.Render();var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var point=body.rectTransform.anchoredPosition;long start=model.Core.Frame;long position=model.Core.Position;
+                for(int stage=0;stage<3;stage++){
+                    Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,model.Core.Frame+1,out var error),error);view.Render();Assert.AreEqual(stage,(int)model.NormalKick.Kind);Assert.AreSame(prepare,body.sprite);
+                    for(int age=1;age<=21;age++){model.TickTraversal(0);view.Render();if(age<21)Assert.AreSame(age>=6&&age<9?contact:prepare,body.sprite);else{Assert.IsFalse(model.NormalKick.IsActive);Assert.AreEqual(0,model.Core.IdleFrame);StringAssert.EndsWith("/Idle/heroine_idle_01.png",UnityEditor.AssetDatabase.GetAssetPath(body.sprite));}Assert.AreEqual(point,body.rectTransform.anchoredPosition);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(position,model.Core.Position);}
+                }
+                Assert.AreEqual(start+63,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);model.TickTraversal(0);view.Render();Assert.AreEqual(1,model.Core.IdleFrame);
+            }
+        }
+
         [Test] public async Task 外界カエン識別は実切替保存の成功だけを読み被覆再入と解除で本体と時計を変えない()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var store=new DoorBoundaryStore();var save=new Olca.Core.Domain.ClearReturnSession(store);
