@@ -151,6 +151,8 @@ namespace Olca.Core.Logic.Integration
             public OutsideKickKind? NormalKickKind=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.Kind:(OutsideKickKind?)null;
             public bool IsKickHitWindow=>IsCurrent&&owner.normalKick?.IsHitWindow==true;
             public bool IsKickRecovery=>IsCurrent&&owner.normalKick?.IsRecovery==true;
+            public OutsideKickTiming KickTiming=>IsCurrent?owner.normalKick?.ActiveTiming:null;
+            public int KickElapsedFrames=>IsCurrent?owner.normalKick?.ElapsedFrames??-1:-1;
             public int? NormalKickFacing=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.AttackFacing:(int?)null;
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;

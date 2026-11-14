@@ -717,3 +717,61 @@ namespace Olca.Presentation.Management
         private void OnDestroy(){menu?.Dispose();menu=null;context=null;closed=null;session=null;}
     }
 }
+
+namespace Olca.Presentation.Exploration
+{
+    public sealed partial class OutsideExplorationView
+    {
+        private Olca.Presentation.Effects.ProvisionalCombatGraphic kickTrail;
+        private RectTransform kickCaptionPlate;private Text kickCaption;private int kickCaptionKey=-1;
+        private readonly Olca.Presentation.Effects.ProvisionalCombatGraphic[] targetBursts=new Olca.Presentation.Effects.ProvisionalCombatGraphic[2];
+        private readonly Olca.Core.Domain.Enemy[] observedBurstTargets=new Olca.Core.Domain.Enemy[2];
+        private readonly bool[] observedDead=new bool[2];private readonly long[] targetDeathAt={-1,-1};
+        private OutsideExplorationSession.PresentationLease burstLease;
+        public static string ProvisionalKickCaption(OutsideKickKind kind,bool hit,bool recovery)
+        {
+            string name=kind==OutsideKickKind.GroundFirst?"1ダンメ":kind==OutsideKickKind.GroundSecond?"2ダンメ":kind==OutsideKickKind.GroundThird?"3ダンメ":kind==OutsideKickKind.AirUp?"ウエキック":kind==OutsideKickKind.AirDown?"シタキック":kind==OutsideKickKind.Dash?"ダッシュ":"マエキック";
+            return name+"（カリ） / "+(hit?"ハツドウ":recovery?"フッキ":"ジュンビ");
+        }
+        private Olca.Presentation.Effects.ProvisionalCombatGraphic PixelGraphic(string name)
+        {
+            var go=new GameObject(name,typeof(RectTransform),typeof(Olca.Presentation.Effects.ProvisionalCombatGraphic));go.transform.SetParent(transform,false);var graphic=go.GetComponent<Olca.Presentation.Effects.ProvisionalCombatGraphic>();graphic.raycastTarget=false;graphic.rectTransform.anchorMin=graphic.rectTransform.anchorMax=new Vector2(0,.21f);graphic.enabled=false;return graphic;
+        }
+        private void InitializeKickEffects(Font font)
+        {
+            kickTrail=PixelGraphic("OutsideProvisionalKickTrail");kickTrail.transform.SetSiblingIndex(player.transform.GetSiblingIndex()+1);
+            var plate=new GameObject("OutsideProvisionalKickCaption",typeof(RectTransform),typeof(Image));plate.transform.SetParent(transform,false);kickCaptionPlate=(RectTransform)plate.transform;kickCaptionPlate.anchorMin=kickCaptionPlate.anchorMax=new Vector2(0,.21f);kickCaptionPlate.sizeDelta=new Vector2(360,36);plate.GetComponent<Image>().color=new Color(.01f,.055f,.08f,.9f);plate.GetComponent<Image>().raycastTarget=false;
+            var text=new GameObject("OutsideProvisionalKickCaptionText",typeof(RectTransform),typeof(Text));text.transform.SetParent(plate.transform,false);kickCaption=text.GetComponent<Text>();kickCaption.font=Olca.Presentation.Dungeon.UiLook.MenuFont(font);kickCaption.fontSize=22;kickCaption.color=Color.white;kickCaption.alignment=TextAnchor.MiddleCenter;kickCaption.raycastTarget=false;kickCaption.rectTransform.anchorMin=Vector2.zero;kickCaption.rectTransform.anchorMax=Vector2.one;kickCaption.rectTransform.offsetMin=kickCaption.rectTransform.offsetMax=Vector2.zero;plate.SetActive(false);
+            for(int i=0;i<2;i++){targetBursts[i]=PixelGraphic("OutsideProvisionalTargetDeath_"+i);targetBursts[i].transform.SetSiblingIndex(trialTargetHp.transform.GetSiblingIndex());}
+        }
+        private void RenderKickEffects(float camera,float viewport,float verticalOffset)
+        {
+            var kind=presentation.NormalKickKind;var timing=presentation.KickTiming;
+            if(!kind.HasValue||timing==null||presentation.Player==null){kickTrail.enabled=false;kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;return;}
+            var core=presentation.Core;bool hit=presentation.IsKickHitWindow,recovery=presentation.IsKickRecovery;int elapsed=presentation.KickElapsedFrames;OutsideKickTrialDefinition.Bounds(kind.Value,out long low,out long high);
+            float unit=OutsideMovementDefinition.UnitsPerWorldUnit,range=(kind.Value==OutsideKickKind.Dash?OutsideKickTrialDefinition.DashRange:OutsideKickTrialDefinition.Range)/unit;int facing=presentation.NormalKickFacing??core.Facing;
+            float center=(core.Position/unit+facing*range*.5f-camera+viewport*.5f)*pixelsPerWorldUnit,y=(core.Height/unit+(low+high)*.5f/unit-verticalOffset)*pixelsPerWorldUnit;
+            kickTrail.rectTransform.anchoredPosition=new Vector2(center,y);kickTrail.rectTransform.sizeDelta=new Vector2(range*pixelsPerWorldUnit,(high-low)/unit*pixelsPerWorldUnit);
+            float alpha=hit?1:recovery?.4f*Mathf.Clamp01(1-(elapsed-timing.StartupFrames-timing.ActiveFrames)/(float)Mathf.Max(1,timing.RecoveryFrames)):0;
+            float sweep=recovery?1:Mathf.Clamp01((elapsed-timing.StartupFrames+.5f)/timing.ActiveFrames);
+            kickTrail.Arc((int)kind.Value,sweep,alpha,Olca.Presentation.Effects.ProvisionalPixelPattern.Tint(presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id),facing<0);kickTrail.enabled=alpha>0;
+            int key=(int)kind.Value*3+(hit?1:recovery?2:0);if(kickCaptionKey!=key){kickCaptionKey=key;kickCaption.text=ProvisionalKickCaption(kind.Value,hit,recovery);}kickCaptionPlate.gameObject.SetActive(true);
+            float width=((RectTransform)transform).rect.width;float x=(core.Position/unit-camera+viewport*.5f)*pixelsPerWorldUnit;kickCaptionPlate.anchoredPosition=new Vector2(Mathf.Clamp(x,182,Mathf.Max(182,width-182)),(core.Height/unit-verticalOffset)*pixelsPerWorldUnit-30);
+        }
+        private void RenderTargetBursts(float camera,float viewport,float verticalOffset)
+        {
+            bool visible=presentation?.IsCurrent==true&&presentation.Core.TrialMapId==null;
+            if(!visible){ClearTargetBursts();return;}var core=presentation.Core;bool newLease=!ReferenceEquals(burstLease,presentation);burstLease=presentation;
+            for(int i=0;i<2;i++){
+                var target=i==0?presentation.TrialTarget:presentation.SecondTrialTarget;bool dead=target.IsDead;
+                if(newLease||!ReferenceEquals(observedBurstTargets[i],target)){observedBurstTargets[i]=target;observedDead[i]=dead;targetDeathAt[i]=-1;}
+                else if(!observedDead[i]&&dead)targetDeathAt[i]=presentation.Player?.IsBlind==true?-1:core.Frame;
+                observedDead[i]=dead;if(presentation.Player?.IsBlind==true||!dead)targetDeathAt[i]=-1;
+                long age=targetDeathAt[i]<0?-1:core.Frame-targetDeathAt[i];var effect=targetBursts[i];effect.enabled=age>=0&&age<14;if(!effect.enabled)continue;
+                long position=i==0?OutsideExplorationSession.TrialTargetX:OutsideKickTrialDefinition.SecondTargetX;float x=(position/(float)OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit,top=TrialTargetTop();effect.rectTransform.anchoredPosition=new Vector2(x,top*.5f-verticalOffset*pixelsPerWorldUnit);effect.rectTransform.sizeDelta=Vector2.one*Mathf.Max(48,top*1.2f);effect.Burst(age/14f,Olca.Presentation.Effects.ProvisionalPixelPattern.Tint(false));
+            }
+        }
+        private void ClearTargetBursts(){burstLease=null;for(int i=0;i<2;i++){observedBurstTargets[i]=null;observedDead[i]=false;targetDeathAt[i]=-1;if(targetBursts[i]!=null)targetBursts[i].enabled=false;}}
+        private void ClearKickEffects(){if(kickTrail!=null)kickTrail.enabled=false;if(kickCaptionPlate!=null)kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;ClearTargetBursts();}
+    }
+}

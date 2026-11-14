@@ -17,6 +17,61 @@ namespace Olca.Tests
         [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
         [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
 
+        [Test] public void ピクセル軌跡は各段を区別し矩形内でフェードして無描画終端を持つ()
+        {
+            var shapes=new System.Collections.Generic.HashSet<string>();
+            for(int kind=0;kind<7;kind++){
+                var keys=new System.Collections.Generic.List<string>();
+                for(int n=0;n<ProvisionalPixelPattern.ArcCount;n++){
+                    Assert.IsTrue(ProvisionalPixelPattern.Arc(n,kind,1,1,Color.cyan,out var rect,out var ink));
+                    Assert.GreaterOrEqual(rect.xMin,0);Assert.GreaterOrEqual(rect.yMin,0);Assert.LessOrEqual(rect.xMax,1);Assert.LessOrEqual(rect.yMax,1);Assert.Greater(ink.a,0);keys.Add(rect.ToString("F4"));
+                    Assert.IsFalse(ProvisionalPixelPattern.Arc(n,kind,1,0,Color.cyan,out _,out _));
+                }
+                if(kind<3)Assert.IsTrue(shapes.Add(string.Join(";",keys)),"地上3段を別の軌跡にする");
+            }
+            for(int n=0;n<ProvisionalPixelPattern.BurstCount;n++){Assert.IsFalse(ProvisionalPixelPattern.Burst(n,1,Color.cyan,out _,out _));for(int f=0;f<14;f++)if(ProvisionalPixelPattern.Burst(n,f/14f,Color.cyan,out var rect,out _)){Assert.GreaterOrEqual(rect.xMin,0);Assert.GreaterOrEqual(rect.yMin,0);Assert.LessOrEqual(rect.xMax,1);Assert.LessOrEqual(rect.yMax,1);}}
+            for(int kind=0;kind<3;kind++)StringAssert.Contains((kind+1)+"ダンメ",Olca.Presentation.Exploration.OutsideExplorationView.ProvisionalKickCaption((Olca.Core.Logic.Integration.OutsideKickKind)kind,true,false));
+        }
+        [TestCase(-1f)][TestCase(1f)] public void Worldピクセルは百回再利用し反転拡大でも領域内で借用Textureを破棄しない(float facing)
+        {
+            var white=Texture2D.whiteTexture;host.transform.localScale=new Vector3(facing*2,3,1);var area=new Rect(2,4,3,2);
+            using(var pool=new PixelCombatWorld(host.transform,"Pool265")){
+                pool.Warmup();Assert.AreEqual(24,pool.Capacity);var first=host.GetComponentsInChildren<SpriteRenderer>(true);var owned=first.First(v=>v!=body).sprite;
+                for(int use=0;use<100;use++){pool.Arc(area,use%7,1,1,Color.cyan,body,facing<0);Assert.Greater(pool.ActiveCount,0);foreach(var q in host.GetComponentsInChildren<SpriteRenderer>(true).Where(v=>v!=body&&v.enabled)){Assert.GreaterOrEqual(q.bounds.min.x,area.xMin-.001f);Assert.LessOrEqual(q.bounds.max.x,area.xMax+.001f);Assert.GreaterOrEqual(q.bounds.min.y,area.yMin-.001f);Assert.LessOrEqual(q.bounds.max.y,area.yMax+.001f);Assert.AreSame(owned,q.sprite);}pool.Clear();Assert.AreEqual(0,pool.ActiveCount);}
+                CollectionAssert.AreEqual(first,host.GetComponentsInChildren<SpriteRenderer>(true));pool.Burst(area,1,Color.cyan,body);Assert.AreEqual(0,pool.ActiveCount);
+            }
+            Assert.AreEqual(1,host.GetComponentsInChildren<SpriteRenderer>(true).Length);Assert.IsTrue(white!=null);Assert.AreSame(white,Texture2D.whiteTexture);
+        }
+        [TestCase(false)][TestCase(true)] public void 戦闘蹴り軌跡は読取だけで一攻撃一通知と停止再入を守る(bool fire)
+        {
+            var gridHost=new GameObject("Grid265");var grid=gridHost.AddComponent<WorldBattleGridView>();typeof(WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);var b=BodyBattle(fire);grid.Show(b.Field,0);
+            try{using(var effect=new BattleKickVisual(host.transform,()=>body,()=>grid)){
+                effect.Warmup();effect.Bind(b);Assert.IsTrue(b.TryStartPlayerBasicAttack(false));effect.Tick(0);Assert.AreEqual(0,effect.ActivePixels);Assert.AreEqual(0,effect.EmissionCount);
+                for(int n=0;n<3;n++)b.TickFrame(17);Assert.AreEqual(1,effect.EmissionCount);int hp=b.Enemies[0].CurrentHp;int age=b.RecoveryElapsedFrames;
+                for(int n=0;n<100;n++)effect.Tick(0);Assert.Greater(effect.ActivePixels,0);Assert.AreEqual(hp,b.Enemies[0].CurrentHp);Assert.AreEqual(age,b.RecoveryElapsedFrames);Assert.AreEqual(1,effect.EmissionCount);
+                b.Pause(Olca.Core.Logic.Battle.BattlePauseReason.User);for(int n=0;n<10;n++)effect.Tick(1);Assert.Greater(effect.ActivePixels,0);Assert.AreEqual(age,b.RecoveryElapsedFrames);b.Resume(Olca.Core.Logic.Battle.BattlePauseReason.User);
+                effect.Bind(null);Assert.AreEqual(0,effect.ActivePixels);for(int n=0;n<12;n++)b.TickFrame(17);Assert.IsTrue(b.TryStartPlayerBasicAttack(false));for(int n=0;n<3;n++)b.TickFrame(17);Assert.AreEqual(1,effect.EmissionCount,"購読解除後は古い戦闘を追わない");
+                var next=BodyBattle(fire);effect.Bind(next);grid.Show(next.Field,0);Assert.IsTrue(next.TryStartPlayerBasicAttack(false));for(int n=0;n<3;n++)next.TickFrame(17);Assert.AreEqual(2,effect.EmissionCount);Assert.AreEqual(0,effect.ObservationErrors);
+            }}finally{Object.DestroyImmediate(gridHost);}
+        }
+        [TestCase(-1f)][TestCase(1f)] public void World撃破メッシュは百回再利用し非入力で破棄後に資源を残さない(float facing)
+        {
+            host.transform.localScale=new Vector3(facing*2,3,1);var area=new Rect(2,4,3,2);
+            using(var burst=new PixelBurstWorld(host.transform)){
+                burst.Warmup();var all=host.GetComponentsInChildren<Transform>(true);Assert.AreEqual(13,burst.Capacity);
+                for(int n=0;n<100;n++){burst.Burst(area,.2f,Color.cyan,body);Assert.Greater(burst.ActiveCount,0);var graphic=host.GetComponentInChildren<ProvisionalCombatGraphic>(true);Assert.IsNotNull(graphic.GetComponent<CanvasRenderer>(),"描画に必須のRendererを持つ");Assert.IsFalse(graphic.raycastTarget);Assert.AreEqual(area.center.x,graphic.transform.position.x,.001f);Assert.AreEqual(area.center.y,graphic.transform.position.y,.001f);Assert.AreEqual(area.width,Mathf.Abs(graphic.transform.lossyScale.x),.001f);burst.Clear();Assert.AreEqual(0,burst.ActiveCount);}
+                CollectionAssert.AreEqual(all,host.GetComponentsInChildren<Transform>(true));burst.Burst(area,1,Color.cyan,body);Assert.AreEqual(0,burst.ActiveCount);
+            }
+            Assert.IsEmpty(host.GetComponentsInChildren<Canvas>(true));Assert.IsEmpty(host.GetComponentsInChildren<ProvisionalCombatGraphic>(true));
+        }
+        [Test] public void 最後の敵への通常命中は終端でも短い軌跡を残し停止と購読解除で重複しない()
+        {
+            var gridHost=new GameObject("Terminal265");var grid=gridHost.AddComponent<WorldBattleGridView>();typeof(WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);var b=BodyBattle(false);b.Enemies[0].TakeDamage(990,ElementType.None);grid.Show(b.Field,0);
+            try{using(var effect=new BattleKickVisual(host.transform,()=>body,()=>grid)){
+                effect.Bind(b);Assert.IsTrue(b.TryStartPlayerBasicAttack(false));for(int n=0;n<3;n++)b.TickFrame(17);Assert.IsTrue(b.IsGameOver);Assert.AreEqual(1,effect.EmissionCount);
+                effect.Tick(0);Assert.Greater(effect.ActivePixels,0);for(int n=0;n<20;n++)effect.Tick(0);Assert.Greater(effect.ActivePixels,0);Assert.AreEqual(1,effect.EmissionCount);effect.Tick(.2f);Assert.AreEqual(0,effect.ActivePixels);effect.Bind(null);Assert.AreEqual(0,effect.ObservationErrors);
+            }}finally{Object.DestroyImmediate(gridHost);}
+        }
         [TestCase(-1f)][TestCase(1f)] public void 試用カエン識別は通常と死亡を描かず本体と能力を変えず後方だけに保持する(float facing)
         {
             var normal=new PlayerCharacter(100);var fire=new PlayerCharacter(100);fire.SetDepartureStyle(DepartureStyleDefinition.TrialFire);var original=body.sprite;host.transform.localScale=new Vector3(facing*2,2,1);

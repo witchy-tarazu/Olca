@@ -332,7 +332,7 @@ namespace Olca.Core.Logic.Integration
             long dx=checked((targetX-x)*facing);if(dx<0||dx>(kind==OutsideKickKind.Dash?DashRange:Range))return false;
             Bounds(kind,out var bottom,out var top);return checked(y+bottom)<=TargetHeight&&checked(y+top)>=0;
         }
-        private static void Bounds(OutsideKickKind kind,out long bottom,out long top)
+        public static void Bounds(OutsideKickKind kind,out long bottom,out long top)
         {
             switch(kind){
                 case OutsideKickKind.Dash:case OutsideKickKind.GroundFirst:case OutsideKickKind.GroundSecond:case OutsideKickKind.GroundThird:bottom=-12000;top=90000;break;
@@ -393,6 +393,8 @@ namespace Olca.Core.Logic.Integration
         public bool HasProgress=>active||nextGroundStage!=1||reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic;
         public bool IsHitWindow=>active&&frame-StartedAt>=CurrentTiming.StartupFrames&&frame-StartedAt<CurrentTiming.StartupFrames+(long)CurrentTiming.ActiveFrames;
         public bool IsRecovery=>active&&frame-StartedAt>=CurrentTiming.StartupFrames+(long)CurrentTiming.ActiveFrames;
+        public OutsideKickTiming ActiveTiming=>active?CurrentTiming:null;
+        public int ElapsedFrames=>active?checked((int)(frame-StartedAt)):-1;
         public OutsideNormalKickSequence(Olca.Core.Logic.Battle.AttackInputReservation reservation)
         {this.reservation=reservation??throw new ArgumentNullException(nameof(reservation));}
         // 順序は地上1/2/3・空中横/上/下。全6定義が必要。検証値を製品既定として登録しない。
