@@ -37,7 +37,7 @@ namespace Olca.Application.Management
         public CameraRuntimeManager Cameras { get; }
         public UIRuntimeManager UI { get; }
         public Session CurrentSession { get; private set; }
-        public OutsideExplorationSession OutsideExploration { get; private set; } = new OutsideExplorationSession();
+        public OutsideExplorationSession OutsideExploration { get; private set; } = new OutsideExplorationSession(trialContactDamage:true);
         public OutsideExplorationRuntime OutsideRuntime {get;private set;}
         public string OutsideProgressGeneration {get;private set;}
         private bool disposed;
@@ -59,7 +59,7 @@ namespace Olca.Application.Management
             if(disposed)throw new ObjectDisposedException(nameof(GameSystem));
             if(!Guid.TryParseExact(generation,"N",out _))throw new ArgumentException("保存済みの新規進行世代が必要です",nameof(generation));
             if(OutsideProgressGeneration==generation)return false;
-            var next=new OutsideExplorationSession();
+            var next=new OutsideExplorationSession(trialContactDamage:true);
             var runtime=new OutsideExplorationRuntime(next);
             OutsideRuntime.Dispose();OutsideExploration.Dispose();
             OutsideExploration=next;OutsideRuntime=runtime;OutsideProgressGeneration=generation;

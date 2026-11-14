@@ -1124,10 +1124,11 @@ namespace Olca.Tests.Application
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var dash=fire?Resources.Load<Sprite>("OlcaCharacterMotion/TrialFire/dash"):resources.GetShared<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>().AuthoredDashPlayerSprite;
                 model.TickTraversal(facing,dashDown:true,dashHeld:true);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.Dash,model.NormalKick.Kind);
                 long end=model.NormalKick.EndsAt;
-                while(model.Core.Frame<end){long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;bool hit=model.NormalKick.IsHitWindow;view.Render();Assert.AreSame(hit?contact:dash,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);for(int n=0;n<3;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(100,model.Player.CurrentHp);
+                while(model.Core.Frame<end){long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;int hp=model.Player.CurrentHp;bool hit=model.NormalKick.IsHitWindow;view.Render();Assert.AreSame(hit?contact:dash,body.sprite);Assert.AreEqual(-facing,body.rectTransform.localScale.x);Assert.AreEqual(body.sprite.pivot/body.sprite.rect.size,body.rectTransform.pivot);for(int n=0;n<3;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);Assert.AreEqual(hp,model.Player.CurrentHp);
                     if(hit){view.SetCovered(true);view.Render();Assert.AreEqual(frame,model.Core.Frame);view.SetCovered(false);views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.AreSame(view,binding.View);view.Render();Assert.AreSame(contact,body.sprite);}
                     model.TickTraversal(-facing);
                 }
+                Assert.AreEqual(facing>0?90:100,model.Player.CurrentHp); // 右進行は試用敵へ一度接触。描画自身はHPを変更しない。
                 view.Render();Assert.IsFalse(model.NormalKick.IsActive);Assert.AreNotSame(contact,body.sprite);Assert.IsFalse(model.Core.IsDashing);model.TickTraversal(0);view.Render();if(fire)Assert.AreEqual("trial_fire_idle",body.sprite.name);else StringAssert.EndsWith("/Idle/heroine_idle_01.png",UnityEditor.AssetDatabase.GetAssetPath(body.sprite));
             }
         }
@@ -1444,6 +1445,12 @@ namespace Olca.Tests.Application
             Assert.Throws<ArgumentException>(()=>system.ResetOutsideForNewProgress(generation));
             Assert.AreSame(model,system.OutsideExploration);Assert.AreSame(runtime,system.OutsideRuntime);
             Assert.IsFalse(model.IsEnded);Assert.AreEqual(position,model.Core.Position);Assert.IsNull(system.OutsideProgressGeneration);
+        }
+        [Test] public void 通常Rootの初回と新規進行だけ試用敵の接触を明示登録する()
+        {
+            using(var lease=system.OutsideExploration.AttachPresentation())Assert.IsTrue(lease.TrialContactDamageEnabled);
+            Assert.IsTrue(system.ResetOutsideForNewProgress(Guid.NewGuid().ToString("N")));using(var lease=system.OutsideExploration.AttachPresentation())Assert.IsTrue(lease.TrialContactDamageEnabled);
+            using(var fixture=new Olca.Core.Logic.Integration.OutsideExplorationSession())using(var lease=fixture.AttachPresentation())Assert.IsFalse(lease.TrialContactDamageEnabled);
         }
         [Test] public void 外界新規進行は旧表示時計手札を終了し同世代の重複通知では再初期化しない()
         {
