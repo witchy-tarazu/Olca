@@ -1,0 +1,23 @@
+{
+  "stage": 263,
+  "kind": "new armored character neutral airborne pose",
+  "prompt": "Create ONE neutral airborne keyframe for the NEW armored space-ranger character shown in the references. Preserve the independent character exactly: rounded closed navy helmet and opaque cyan visor, boxy white padded jacket, broad shoulder panels, backpack, loose navy cargo trousers, knee pads, thick gloves and broad white/navy boots, mustard belt, cyan indicators. Same proportions and crisp pixel clusters; all clothing closed and intact.\nPose: right-facing neutral airborne/falling stance. Torso upright, both elbows gently bent near the body, hands between waist and chest rather than hanging straight down. Both knees gently bent, boots below the waist and slightly separated, ready for a soft landing. The forward knee is lower than in the recovery reference; avoid a crouched or seated silhouette. No foot contacts the ground. This is the relaxed airborne pose before and after the rising-kick sequence, not the grounded standing frame.\nFixed square 256x256 canvas with the same scale and origin. Keep pelvis near x=127,y=150 and helmet and every boot fully inside, with transparent margin. Genuine alpha transparency, no floor, shadow, checkerboard, weapons, effects or text. One full-body character, one pose, clean hard-edged pixel art matching the references. Do not crop, zoom or smooth-paint.",
+  "referenced_image_paths": [
+    "/workspace/generated_images/exec-b0ca8be0-20dd-402d-82a8-dbfaea3724e4.png",
+    "/workspace/generated_images/exec-5cd72452-a83a-4832-bd4b-6ca02c4e6cdc.png"
+  ],
+  "transparent_background": true,
+  "status": "success; concept only",
+  "notes": "New independent fully armored character, air-to-air recovery bridge. Old rejected character not referenced.",
+  "outputPath": "/workspace/generated_images/exec-39273820-b57a-4bfc-8043-a4d5b6a6bfcc.png",
+  "outputSha256": "63ebb340b9b91fc74a144fb191131e0566211b364ff464e0eb598e307c398940",
+  "outputSize": [
+    1254,
+    1254
+  ],
+  "outputMode": "RGBA",
+  "alphaRange": [
+    0,
+    255
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "stage": 263,
+  "kind": "new armored space ranger airborne up-kick contact candidate",
+  "prompt": "Create ONE new animation keyframe of the original armored space-ranger character shown in the attached reference. Preserve this NEW character design exactly: rounded closed navy helmet, opaque cyan visor, boxy white padded flight jacket and broad shoulder panels, small rectangular backpack, loose navy cargo trousers, knee pads, thick gloves, broad white-and-navy boots, mustard utility belt and cyan lights. Same proportions, same palette, same pixel-cluster style. Keep all clothing fully closed and intact.\nPose: a clear airborne rising kick facing RIGHT. One armored boot extends diagonally upward and forward, the other leg bends naturally beneath the body. The torso leans slightly backward to balance the kick, with elbows bent and hands near the upper torso. Helmet visor faces right. Make the kick leg easy to distinguish from the bent supporting leg. This is a practical sci-fi action-game animation pose, without weapons or effects.\nFixed square 256x256 game-sprite composition. Keep the pelvis around x=127,y=150, matching the reference body origin rather than recentering the bounding box. The whole helmet, hands and boots must fit inside the canvas with transparent margins; no limb clipping. Crisp hard-edged pixel art matching the reference, no smooth repainting, no added text. Genuine transparent alpha background, no floor, no ground shadow, no checkerboard. One character, one pose only.",
+  "referenced_image_paths": [
+    "/workspace/generated_images/exec-b0ca8be0-20dd-402d-82a8-dbfaea3724e4.png"
+  ],
+  "transparent_background": true,
+  "status": "success; concept only",
+  "notes": "New independent character only; no old character or rejected image references.",
+  "outputPath": "/workspace/generated_images/exec-d6e75959-f065-4a81-92a6-9633310cd2c5.png",
+  "outputSha256": "bcc0da13e9fb88a5c0cada854ccc0e805f9c4b7d26e7c9e8b1086a6f6bc2e863",
+  "outputSize": [
+    1254,
+    1254
+  ],
+  "outputMode": "RGBA",
+  "alphaRange": [
+    0,
+    255
+  ]
+}

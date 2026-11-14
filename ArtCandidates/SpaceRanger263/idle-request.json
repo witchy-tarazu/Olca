@@ -1,0 +1,20 @@
+{
+  "stage": 263,
+  "kind": "independent new armored space-ranger character concept",
+  "prompt": "Create one original 2D side-scrolling game pixel-art character sprite. This is a NEW character design: an adult space ranger in a rounded, fully closed navy helmet with a wide opaque cyan visor, a boxy white padded flight jacket with a closed high collar and broad angular shoulder panels, loose navy cargo trousers with visible knee pads, thick navy gloves, and broad white-and-navy boots. Small cyan indicator lights, a mustard-yellow utility belt, a small rectangular backpack. The silhouette is stocky and practical, with the jacket and loose trouser legs clearly readable. Full coverage of the body. No hair visible, no weapon, no cape.\nSingle full-body right-facing side-view neutral ready/idle stance, both boots on the same floor baseline, arms relaxed but ready. A clean professional Japanese sci-fi action-game sprite, carefully placed hard-edged pixel clusters, restrained navy/white/cyan palette with a tiny mustard accent, consistent dark outlines and crisp highlights. Native pixel-art appearance, no painted gradients or blurred edges.\nUse a fixed square 256 by 256 game canvas. Entire figure visible, helmet near y=18, boot soles near y=242, stance centered around x=127. Leave clear transparent margin around every limb. Transparent background with genuine alpha, no checkerboard, no backdrop, no ground shadow, no text, no UI. One character, one pose only.",
+  "referenced_image_paths": null,
+  "transparent_background": true,
+  "status": "success; concept only",
+  "notes": "No reference to the old character or rejected outputs. Not a replacement for existing runtime character.",
+  "outputPath": "/workspace/generated_images/exec-b0ca8be0-20dd-402d-82a8-dbfaea3724e4.png",
+  "outputSha256": "5fd6ec1f3ba4baa5698e859a1928b9ae09779e86921c5632144f43ee9bf4f7ef",
+  "outputSize": [
+    1254,
+    1254
+  ],
+  "outputMode": "RGBA",
+  "alphaRange": [
+    0,
+    255
+  ]
+}

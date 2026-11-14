@@ -1,0 +1,23 @@
+{
+  "stage": 263,
+  "kind": "new armored character airborne knee-lift preparation",
+  "prompt": "Create ONE airborne attack-preparation keyframe for the NEW armored space-ranger character in the two references. The standing reference defines this independent character design; the kick reference defines the following action. Preserve the closed navy helmet with opaque cyan visor, boxy white padded jacket, broad shoulder panels, small backpack, loose navy cargo trousers, knee pads, thick gloves, white/navy boots, mustard utility belt and cyan lights. Same body proportions and crisp pixel clusters, with every clothing item closed and intact.\nPose: facing RIGHT in midair, preparing a rising kick. Raise the forward knee to about waist height but keep the lower leg bent; do not extend the kicking boot yet. The other leg hangs below with a gentle knee bend. Both elbows are bent in a compact balanced guard. Torso mostly upright, just beginning to lean back toward the kick reference. No ground contact, no weapon, no effects.\nFixed 256x256 square game canvas, matching body origin and scale of the references. Pelvis near x=127,y=150. Keep helmet and every boot fully inside with transparent margins. Genuine transparent alpha background, no floor/shadow/checkerboard/text. One full-body character and one pose only; hard-edged pixel-art style, no zooming, cropping, blur or smooth painting.",
+  "referenced_image_paths": [
+    "/workspace/generated_images/exec-b0ca8be0-20dd-402d-82a8-dbfaea3724e4.png",
+    "/workspace/generated_images/exec-d6e75959-f065-4a81-92a6-9633310cd2c5.png"
+  ],
+  "transparent_background": true,
+  "status": "success; concept only",
+  "notes": "Independent new fully armored space-ranger design; bridge frame requested after motion review, not old rejected character.",
+  "outputPath": "/workspace/generated_images/exec-cc8db215-ea16-4398-8e01-6e82d94d9fb7.png",
+  "outputSha256": "b5ee19712a8946eef0972eab64ac7bdd7b12203ede4cf228a17d0f26f039982d",
+  "outputSize": [
+    1254,
+    1254
+  ],
+  "outputMode": "RGBA",
+  "alphaRange": [
+    0,
+    255
+  ]
+}
