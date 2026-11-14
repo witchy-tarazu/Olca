@@ -63,6 +63,13 @@ namespace Olca.Core.Logic.Battle
             var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));return behavior!=null&&behavior.TrySwitchRegisteredPattern(patternId);
         }
 
+        public bool TryGetAttackPreview(Enemy enemy,out EnemyAttackPreview preview)
+        {
+            preview=default;
+            foreach(var behavior in aiBehaviors)if(ReferenceEquals(behavior.Enemy,enemy))return behavior.TryGetAttackPreview(out preview);
+            return false;
+        }
+
         internal void ConfigureSwitchRule(Enemy enemy,Func<Enemy,EnemyAIObservationFrame,int?> rule)
         {aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy))?.ConfigureSwitchRule(rule);}
         internal void Observe(EnemyAIObservationFrame frame,IList<Enemy> participants)

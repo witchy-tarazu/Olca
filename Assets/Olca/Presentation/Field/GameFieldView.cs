@@ -822,6 +822,8 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
             RefreshEnemyPerception(); RefreshBombVisuals(); RefreshTerrainVisuals();
             battleGridView?.ShowTelegraphs(currentBattle!=null&&!currentBattle.IsGameOver?currentBattle.EnemyAttackTiles:System.Array.Empty<Olca.Core.Domain.Vector2Int>());
+            foreach(var view in enemyViews){if(view==null)continue;int elapsed=0,total=0;bool active=currentBattle!=null&&!currentBattle.IsGameOver&&currentBattle.TryGetEnemyAttackPreview(view.TrackedEnemy,out _,out elapsed,out total);view.SetAttackWindup(active,elapsed,total);}
+
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();
             UpdatePlayerSprite();

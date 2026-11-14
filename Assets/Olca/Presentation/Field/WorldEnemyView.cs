@@ -153,7 +153,25 @@ namespace Olca.Presentation.Field
             }
             damageNumberPool?.SetOwnerVisible(this,!hidden);
         }
-        private void OnDisable(){deathBurst?.Clear();if(deathStarted)deathBurstSuppressed=true;UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
+        private void OnDisable(){ResetAttackWindup();deathBurst?.Clear();if(deathStarted)deathBurstSuppressed=true;UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
+
+        private SpriteRenderer attackPoseBody;private Vector3 attackPosePosition,attackPoseScale;
+        private void ResetAttackWindup()
+        {
+            if(attackPoseBody!=null){attackPoseBody.transform.localPosition=attackPosePosition;attackPoseBody.transform.localScale=attackPoseScale;}
+        }
+        /// <summary>読取済みの論理前隙だけを描く。時計/Root/grid/HP文字は変更しない。既存絵の仮屈伸。</summary>
+        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0)
+        {
+            if(!active||totalFrames<=0||enemy==null||enemy.IsDead||deathStarted||hitReactionRunning||hiddenByBlindness||hiddenForBattle||!isActiveAndEnabled){ResetAttackWindup();return;}
+            var body=enemyView?.EnsureAttackPoseBody();if(body==null){ResetAttackWindup();return;}
+            if(attackPoseBody!=body){ResetAttackWindup();attackPoseBody=body;attackPosePosition=body.transform.localPosition;attackPoseScale=body.transform.localScale;}
+            float phase=Mathf.Clamp01(elapsedFrames/(float)totalFrames);
+            var scale=Vector3.Scale(attackPoseScale,new Vector3(1+.10f*phase,1-.20f*phase,1));
+            var local=body.sprite!=null?DefensiveFieldVisual.GetLocalBodyBounds(body.sprite):new Bounds(Vector3.zero,Vector3.zero);
+            float centerX=body.flipX?-local.center.x:local.center.x,foot=body.flipY?-local.max.y:local.min.y;
+            body.transform.localPosition=attackPosePosition+new Vector3((attackPoseScale.x-scale.x)*centerX,(attackPoseScale.y-scale.y)*foot,0);body.transform.localScale=scale;
+        }
 
         private void Awake()
         {
@@ -173,6 +191,7 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン配置時に呼ぶ</summary>
         public void Initialize(Enemy enemy, float dungeonX)
         {
+            ResetAttackWindup();
             ResetDeathPresentation();
             destroyCts?.Cancel();destroyCts?.Dispose();destroyCts=new CancellationTokenSource();hitReactionRunning=false;
             UnsubscribeFeedback();pendingContactFeedback.Clear();battleStarted=false;
@@ -384,6 +403,7 @@ namespace Olca.Presentation.Field
 
         private void OnDestroy()
         {
+            ResetAttackWindup();
             ResetDeathPresentation();
             deathBurst?.Dispose();deathBurst=null;
             UnsubscribeFeedback();

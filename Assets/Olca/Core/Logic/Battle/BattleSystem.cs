@@ -53,6 +53,13 @@ namespace Olca.Core.Logic.Battle
         private readonly PlayerMovementSystem playerMovement;
         private readonly PanelEffectSystem panelEffects;
         private readonly EnemyAISystem enemyAI;
+        public bool TryGetEnemyAttackPreview(Enemy enemy,out Vector2Int target,out int elapsedFrames,out int totalFrames)
+        {
+            target=default;elapsedFrames=totalFrames=0;
+            if(IsGameOver||enemy==null||enemy.IsDead||!enemyAI.TryGetAttackPreview(enemy,out var preview))return false;
+            target=preview.Target;elapsedFrames=preview.ElapsedFrames;totalFrames=preview.TotalFrames;return true;
+        }
+
         private readonly DelayedEffectSystem delayedEffects;
         private readonly IRandomProvider randomProvider;
         private bool checkpointRandom;

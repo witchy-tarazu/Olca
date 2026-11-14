@@ -13,6 +13,30 @@ namespace Olca.Tests.Application
 {
     public sealed class DungeonCoreFactoryTests
     {
+        private sealed class TelegraphProbeProvider:IEnemyAIProvider
+        {
+            public EnemyAIRegistration Result;public int Calls;
+            public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards){Calls++;return Result;}
+        }
+        [Test] public void 予告fallbackは明示登録を維持し個体ごとに可変行動を分離する()
+        {
+            var probe=new TelegraphProbeProvider();var provider=new TrialTelegraphFallbackEnemyAI(probe);var enemy=new Enemy("missing","テスト",50,ElementType.None,new Vector2Int(3,0));
+            var first=provider.Create(enemy,null);var second=provider.Create(enemy,null);Assert.AreNotSame(first,second);Assert.AreEqual(2,probe.Calls);
+            var copy=typeof(EnemyAIRegistration).GetMethod("CopyInitialActions",BindingFlags.Instance|BindingFlags.NonPublic);
+            var a=(System.Collections.Generic.List<IEnemyAIAction>)copy.Invoke(first,null);var b=(System.Collections.Generic.List<IEnemyAIAction>)copy.Invoke(second,null);
+            Assert.IsInstanceOf<TelegraphedBasicAttackAction>(a[0]);Assert.AreNotSame(a[0],b[0]);probe.Result=first;Assert.AreSame(first,provider.Create(enemy,null));
+        }
+        [TestCase(false)] [TestCase(true)] public void 標準Rootだけが予告fallbackを登録し外部providerと再入を変えない(bool custom)
+        {
+            var go=new UnityEngine.GameObject("TelegraphControllerBoundary");go.SetActive(false);
+            try{
+                var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var probe=new TelegraphProbeProvider();if(custom)controller.ConfigureEnemyAIProvider(probe);
+                var configure=controller.GetType().GetMethod("ConfigureDefaultTrialEnemyAI",BindingFlags.Instance|BindingFlags.NonPublic);configure.Invoke(controller,null);
+                var field=controller.GetType().GetField("enemyAIProvider",BindingFlags.Instance|BindingFlags.NonPublic);var value=field.GetValue(controller);
+                if(custom)Assert.AreSame(probe,value);else Assert.IsInstanceOf<TrialTelegraphFallbackEnemyAI>(value);
+                configure.Invoke(controller,null);Assert.AreSame(value,field.GetValue(controller));
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
         [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)] public void 外界持込みの未対応予約と未確定HPframeは無変更で拒否する(int kind)
         {
             var actor=new PlayerCharacter(100);actor.SetHp(37);if(kind==0)actor.ApplyParalysis(30);if(kind==1)actor.ApplyConfusion(30);if(kind==2)actor.ApplyBlindness(30);var flags=BindingFlags.Instance|BindingFlags.NonPublic;if(kind==3)typeof(PlayerCharacter).GetMethod("BeginHpFrame",flags).Invoke(actor,null);if(kind>=4)typeof(PlayerCharacter).GetMethod("Begin"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});

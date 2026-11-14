@@ -1074,5 +1074,90 @@ namespace Olca.Tests.Battle
             var context=new Olca.Core.Logic.CardEffects.BattleContext(battle,Card(),source);
             Assert.Throws<System.ArgumentException>(()=>new EnemySummonEffect(summon).Execute(context));Assert.AreEqual(2,battle.Enemies.Count);Assert.AreEqual(0,notified);
         }
+
+    }
+    [TestFixture]
+    public class BasicAttackTelegraphTests
+    {
+        private PlayerCharacter player;
+        private BattleField field;
+        private MockRandomProvider random;
+        private MockLogger logger;
+        [SetUp] public void SetupTelegraph()
+        {
+            player=new PlayerCharacter(100,new Vector2Int(2,0));
+            field=new BattleField();random=new MockRandomProvider();logger=new MockLogger();
+        }
+        private sealed class SequenceAction:IEnemyAIAction
+        {
+            public bool Enabled;
+            public bool CanExecute(AIContext context)=>Enabled;
+            public void Execute(AIContext context){}
+            public int GetCooldownMs()=>0;
+            public float GetCooldown()=>0;
+        }
+        [Test]
+        public void 予告取消後の同一行動再開始と別所有者の予告を旧待機が消さない()
+        {
+            var e=new Enemy("generation","テスト",100,ElementType.None,new Vector2Int(3,0));
+            var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);
+            b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{new SequenceAction{Enabled=false}});
+            var context=new AIContext(e,player,b.Field,random,logger,b);
+            var a=new TelegraphedBasicAttackAction(30,10,2000);var other=new TelegraphedBasicAttackAction(45,10,2000);
+            a.Execute(context);other.Execute(context);
+            for(int i=0;i<10;i++)b.TickFrame(17);a.Cancel(context);
+            Assert.AreEqual(1,b.EnemyAttackTiles.Count,"他所有者の同じマス予告を保持する");
+            a.Execute(context);other.Cancel(context);Assert.AreEqual(1,b.EnemyAttackTiles.Count);
+            for(int i=0;i<21;i++)b.TickFrame(17);
+            Assert.IsTrue(a.TryGetAttackPreview(out var preview));Assert.AreEqual(21,preview.ElapsedFrames);Assert.AreEqual(1,b.EnemyAttackTiles.Count,"旧世代のdeadline経過で新世代を消さない");
+            a.Cancel(context);Assert.AreEqual(0,b.EnemyAttackTiles.Count);
+        }
+        private BattleSystem TelegraphBattle(out Enemy e,out TelegraphedBasicAttackAction action)
+        {
+            e=new Enemy("preview","テスト",100,ElementType.None,new Vector2Int(3,0),poiseDefinition:new EnemyPoiseDefinition(10,3));
+            var b=new BattleSystem(player,new List<Enemy>{e},new Deck(new List<Card>()),customGaugeSpeed:0,randomProvider:random);
+            action=new TelegraphedBasicAttackAction(30,10,2000);b.ConfigureDefaultHitInvincibility(600);
+            Assert.IsTrue(b.TrySwitchEnemyActionPattern(e,new List<IEnemyAIAction>{action}));b.TickFrame(17);return b;
+        }
+        [Test]
+        public void 予告近接は開始時固定で29フレーム無傷30境界に命中し同値無敵と終了後待ちを使う()
+        {
+            var b=TelegraphBattle(out var e,out var a);
+            Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var target,out var elapsed,out var total));Assert.AreEqual(player.GridPosition,target);Assert.AreEqual(0,elapsed);Assert.AreEqual(30,total);
+            for(int i=0;i<29;i++)b.TickFrame(17);Assert.AreEqual(100,player.CurrentHp);
+            Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out target,out elapsed,out total));Assert.AreEqual(29,elapsed);
+            b.TickFrame(17);Assert.AreEqual(90,player.CurrentHp);Assert.IsFalse(b.TryGetEnemyAttackPreview(e,out target,out elapsed,out total));Assert.AreEqual(0,b.EnemyAttackTiles.Count);
+            for(int i=0;i<119;i++)b.TickFrame(17);Assert.IsFalse(a.IsRunning);
+            b.TickFrame(17);Assert.IsTrue(a.IsRunning);Assert.AreEqual(90,player.CurrentHp);
+        }
+        [TestCase(1,0)] [TestCase(4,0)]
+        public void 予告から離れた先の別隣接マスを追尾しない(int x,int y)
+        {
+            var b=TelegraphBattle(out var e,out var a);var locked=player.GridPosition;player.MoveTo(new Vector2Int(x,y));
+            for(int i=0;i<29;i++)b.TickFrame(17);
+            Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var target,out _,out _));Assert.AreEqual(locked,target);
+            b.TickFrame(17);Assert.AreEqual(100,player.CurrentHp);Assert.AreEqual(0,b.EnemyAttackTiles.Count);
+        }
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void 予告近接は停止中に進まず再開で残りだけを進める(BattlePauseReason reason)
+        {
+            var b=TelegraphBattle(out var e,out var a);for(int i=0;i<5;i++)b.TickFrame(17);b.Pause(reason);
+            for(int i=0;i<60;i++)b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out _,out var elapsed,out _));Assert.AreEqual(5,elapsed);Assert.AreEqual(100,player.CurrentHp);
+            b.Resume(reason);for(int i=0;i<24;i++)b.TickFrame(17);Assert.AreEqual(100,player.CurrentHp);b.TickFrame(17);Assert.AreEqual(90,player.CurrentHp);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public void 予告近接はのけぞり麻痺死亡で解除し予約命中を残さない(int kind)
+        {
+            var b=TelegraphBattle(out var e,out var a);
+            b.RunLogicalFrame(()=>{if(kind==0)e.TakeDamage(1,ElementType.None,poiseDamage:10);else if(kind==1)e.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));else e.TakeDamage(10000,ElementType.None);});
+            b.TickFrame(17);Assert.IsFalse(a.IsRunning);Assert.IsFalse(b.TryGetEnemyAttackPreview(e,out _,out _,out _));Assert.AreEqual(0,b.EnemyAttackTiles.Count);
+            for(int i=0;i<35;i++)b.TickFrame(17);Assert.AreEqual(100,player.CurrentHp);
+        }
+        [Test]
+        public void 旧Basic直接APIは即時隣接ダメージのまま維持する()
+        {
+            var e=new Enemy("instant","テスト",100,ElementType.None,new Vector2Int(3,0));
+            new BasicAttackAction(10,2000).Execute(new AIContext(e,player,field,random,logger));Assert.AreEqual(90,player.CurrentHp);
+        }
     }
 }

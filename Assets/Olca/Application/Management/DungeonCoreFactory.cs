@@ -208,3 +208,22 @@ namespace Olca.Application.Management
         }
     }
 }
+
+namespace Olca.Application.Management
+{
+    /// <summary>既存の明示AIを優先し、通常Rootの旧即時近接だけを予告付き試用版へ接続する。</summary>
+    public sealed class TrialTelegraphFallbackEnemyAI : Olca.Core.Logic.Battle.IEnemyAIProvider
+    {
+        public const string DefinitionId="trial-default-melee-telegraph-v1";
+        public const int StartupFrames=30,Damage=10,CooldownMs=2000;
+        private readonly Olca.Core.Logic.Battle.IEnemyAIProvider specified;
+        public TrialTelegraphFallbackEnemyAI(Olca.Core.Logic.Battle.IEnemyAIProvider specified){this.specified=specified;}
+        public Olca.Core.Logic.Battle.EnemyAIRegistration Create(Olca.Core.Domain.Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
+        {
+            if(enemy==null)throw new System.ArgumentNullException(nameof(enemy));
+            var registered=specified?.Create(enemy,cards);if(registered!=null)return registered;
+            var action=new Olca.Core.Logic.Battle.TelegraphedBasicAttackAction(StartupFrames,Damage,CooldownMs);
+            return new Olca.Core.Logic.Battle.EnemyAIRegistration(new[]{new Olca.Core.Logic.Battle.EnemyActionPattern(0,new Olca.Core.Logic.Battle.IEnemyAIAction[]{action},Olca.Core.Logic.Battle.EnemyPatternEndMode.Loop)},0);
+        }
+    }
+}

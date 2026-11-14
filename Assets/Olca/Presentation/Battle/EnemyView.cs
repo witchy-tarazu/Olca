@@ -116,7 +116,7 @@ namespace Olca.Presentation.Battle
             placedHudRects.Clear();
             foreach(var view in normalGauges){
                 if(view==null||!view.GaugeVisible||view.enemyImage==null||view.enemyImage.sprite==null)continue;
-                var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(view.enemyImage);
+                var body=view.GaugeBodyBounds();
                 // 既存の状態演出の最大1.35倍の外周を常時空け、付与/解除でHUDを跳ねさせない。
                 var candidate=new Vector3(body.center.x,body.max.y+body.size.y*.175f+radius*1.5f,view.hpText!=null?view.hpText.transform.position.z:view.transform.position.z);
                 var box=view.NormalHudRect(candidate,radius);
@@ -126,15 +126,15 @@ namespace Olca.Presentation.Battle
                 }
                 if(view==this){center=candidate;return true;}placedHudRects.Add(box);
             }
-            var fallback=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);center=new Vector3(fallback.center.x,fallback.max.y+fallback.size.y*.175f+radius*1.5f,hpText!=null?hpText.transform.position.z:transform.position.z);return true;
+            var fallback=GaugeBodyBounds();center=new Vector3(fallback.center.x,fallback.max.y+fallback.size.y*.175f+radius*1.5f,hpText!=null?hpText.transform.position.z:transform.position.z);return true;
         }
         private bool SharesVisibleBody(EnemyView other)
         {
             return other!=null&&other.GaugeVisible&&GaugeVisible&&enemyImage!=null&&other.enemyImage!=null&&enemyImage.sprite!=null&&
                 enemyImage.enabled&&other.enemyImage.enabled&&!enemyImage.forceRenderingOff&&!other.enemyImage.forceRenderingOff&&enemyImage.gameObject.activeInHierarchy&&other.enemyImage.gameObject.activeInHierarchy&&
                 enemyImage.sprite==other.enemyImage.sprite&&enemyImage.flipX==other.enemyImage.flipX&&enemyImage.flipY==other.enemyImage.flipY&&
-                Vector3.SqrMagnitude(enemyImage.bounds.center-other.enemyImage.bounds.center)<.0001f&&
-                Vector3.SqrMagnitude(enemyImage.bounds.size-other.enemyImage.bounds.size)<.0001f;
+                Vector3.SqrMagnitude(GaugeBodyBounds().center-other.GaugeBodyBounds().center)<.0001f&&
+                Vector3.SqrMagnitude(GaugeBodyBounds().size-other.GaugeBodyBounds().size)<.0001f;
         }
         private int CoincidentCount(out bool first)
         {
@@ -161,7 +161,7 @@ namespace Olca.Presentation.Battle
                 var obj=new GameObject("EnemyBodyLink");obj.transform.SetParent(transform,false);bodyLink=obj.AddComponent<LineRenderer>();bodyLink.sharedMaterial=gaugeMaterial;
                 bodyLink.useWorldSpace=true;bodyLink.numCapVertices=2;bodyLink.numCornerVertices=2;bodyLink.startColor=bodyLink.endColor=new Color(.25f,.62f,.67f,1f);bodyLink.sortingLayerID=enemyImage.sortingLayerID;bodyLink.sortingOrder=2;
             }
-            var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);float x=body.center.x+radius*1.65f,y=body.max.y+radius*.1f;
+            var body=GaugeBodyBounds();float x=body.center.x+radius*1.65f,y=body.max.y+radius*.1f;
             // 共通の幹で「一つの見た目に複数のHP」を示す。識別IDや本体のずらしは加えない。
             bodyLink.enabled=true;bodyLink.startWidth=bodyLink.endWidth=radius*.045f;bodyLink.positionCount=4;
             bodyLink.SetPosition(0,center+Vector3.right*radius*1.4f);bodyLink.SetPosition(1,new Vector3(x,center.y,center.z));
@@ -232,6 +232,29 @@ namespace Olca.Presentation.Battle
         public void SetDeathPresentationActive(bool active)=>deathPresentationActive=active;
 
         /// <summary>WorldEnemyView がダメージフラッシュに使う SpriteRenderer</summary>
+        private SpriteRenderer unposedBodyRenderer;
+        /// <summary>RootやHP文字を動かさず本体だけ変形するため、必要時に描画部品を子へ分ける。素材は借用する。</summary>
+        internal SpriteRenderer EnsureAttackPoseBody()
+        {
+            if(enemyImage==null)enemyImage=GetComponent<SpriteRenderer>();
+            if(enemyImage==null||!gameObject.scene.IsValid())return null;
+            if(enemyImage.transform!=transform)return enemyImage.transform.IsChildOf(transform)?enemyImage:null;
+            var original=enemyImage;
+            var go=new GameObject("EnemyAttackPoseBody");go.layer=gameObject.layer;go.transform.SetParent(transform,false);
+            var body=go.AddComponent<SpriteRenderer>();body.sprite=original.sprite;body.sharedMaterials=original.sharedMaterials;body.color=original.color;
+            body.flipX=original.flipX;body.flipY=original.flipY;body.sortingLayerID=original.sortingLayerID;body.sortingOrder=original.sortingOrder;
+            body.maskInteraction=original.maskInteraction;body.drawMode=original.drawMode;body.size=original.size;body.tileMode=original.tileMode;body.adaptiveModeThreshold=original.adaptiveModeThreshold;body.spriteSortPoint=original.spriteSortPoint;
+            body.shadowCastingMode=original.shadowCastingMode;body.receiveShadows=original.receiveShadows;body.lightProbeUsage=original.lightProbeUsage;body.reflectionProbeUsage=original.reflectionProbeUsage;body.renderingLayerMask=original.renderingLayerMask;body.forceRenderingOff=original.forceRenderingOff;body.enabled=original.enabled;
+            if(original.HasPropertyBlock()){var block=new MaterialPropertyBlock();original.GetPropertyBlock(block);body.SetPropertyBlock(block);}
+            original.enabled=false;unposedBodyRenderer=original;enemyImage=body;return body;
+        }
+        // 非表示の元Rendererは本体の基準boundsを保つ。予備動作でHP円・数字・名前を揺らさない。
+        private Bounds GaugeBodyBounds()
+        {
+            if(unposedBodyRenderer==null)return Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);
+            unposedBodyRenderer.sprite=enemyImage.sprite;unposedBodyRenderer.flipX=enemyImage.flipX;unposedBodyRenderer.flipY=enemyImage.flipY;
+            return Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(unposedBodyRenderer);
+        }
         public SpriteRenderer BodyRenderer => enemyImage;
         public Sprite AuthoredGruntSprite=>gruntSprite;
         public Font AuthoredHudFont=>hpText!=null?hpText.font:null;
@@ -245,7 +268,7 @@ namespace Olca.Presentation.Battle
             if(enemyNameText!=null)enemyNameText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
             ApplyAppearance();
             if(IsBossGauge&&enemyNameText!=null&&enemyImage!=null&&enemyImage.sprite!=null){
-                var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);
+                var body=GaugeBodyBounds();
                 var label=enemyNameText.GetComponent<Renderer>();float height=label==null ? .15f : Mathf.Max(.15f,label.bounds.size.y);
                 var position=enemyNameText.transform.position;position.x=body.center.x;position.y=body.max.y+body.size.y*.175f+height;enemyNameText.transform.position=position;
             }

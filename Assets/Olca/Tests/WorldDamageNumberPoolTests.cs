@@ -422,6 +422,33 @@ namespace Olca.Tests
         private static Olca.Core.Domain.Enemy Enemy(string id="grunt",bool poise=true)=>new Olca.Core.Domain.Enemy(id,"テスト",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(3,0),poiseDefinition:poise?new Olca.Core.Domain.EnemyPoiseDefinition(20,3):null);
         private static LineRenderer Line(Olca.Presentation.Battle.EnemyView view,string name)=>view.transform.Find(name).GetComponent<LineRenderer>();
         [TearDown] public void Cleanup(){foreach(var obj in objects)if(obj!=null)UnityEngine.Object.DestroyImmediate(obj);objects.Clear();}
+        [Test] public void 実Prefabの予告は足とRootとHP表示を固定し借用素材と再入を保つ()
+        {
+            var prefab=UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyViewPrerfab.prefab");Assert.IsNotNull(prefab);
+            var obj=UnityEngine.Object.Instantiate(prefab);objects.Add(obj);
+            var view=obj.GetComponent<Olca.Presentation.Battle.EnemyView>();var world=obj.GetComponent<Olca.Presentation.Field.WorldEnemyView>();
+            var enemy=Enemy();world.Initialize(enemy,0);world.OnBattleStarted(null);view.ShowHp();view.Refresh();
+            var original=view.BodyRenderer;Assert.AreSame(obj.transform,original.transform);var sprite=original.sprite;var material=original.sharedMaterial;
+            var root=obj.transform.position;var rootScale=obj.transform.localScale;var before=Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(original);
+            var labels=obj.GetComponentsInChildren<TextMesh>(true);var positions=new List<Vector3>();var fonts=new List<Font>();foreach(var label in labels){positions.Add(label.transform.position);fonts.Add(label.font);}
+            world.SetAttackWindup(false);Assert.IsNull(obj.transform.Find("EnemyAttackPoseBody"));
+            for(int frame=0;frame<30;frame++){
+                world.SetAttackWindup(true,frame,30);view.Refresh();var body=view.BodyRenderer;
+                Assert.AreNotSame(original,body);Assert.IsFalse(original.enabled);Assert.AreSame(sprite,body.sprite);Assert.AreSame(material,body.sharedMaterial);
+                Assert.That(Vector3.Distance(root,obj.transform.position),Is.LessThan(.0001f));Assert.AreEqual(rootScale,obj.transform.localScale);Assert.AreEqual(new Olca.Core.Domain.Vector2Int(3,0),enemy.GridPosition);
+                Assert.That(Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(body).min.y,Is.EqualTo(before.min.y).Within(.0001f));
+                for(int i=0;i<labels.Length;i++){Assert.That(Vector3.Distance(positions[i],labels[i].transform.position),Is.LessThan(.0001f));Assert.AreSame(fonts[i],labels[i].font);}
+            }
+            var pose=view.BodyRenderer;var endPosition=pose.transform.localPosition;var endScale=pose.transform.localScale;
+            for(int i=0;i<100;i++)world.SetAttackWindup(true,29,30);Assert.AreEqual(endPosition,pose.transform.localPosition);Assert.AreEqual(endScale,pose.transform.localScale);
+            world.SetAttackWindup(false);Assert.AreEqual(Vector3.zero,pose.transform.localPosition);Assert.AreEqual(Vector3.one,pose.transform.localScale);
+            world.SetAttackWindup(true,29,30);obj.SetActive(false);
+            // EditModeではMonoBehaviourのOnDisableは自動配送されないので、実callbackを明示して検証する。
+            typeof(Olca.Presentation.Field.WorldEnemyView).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(world,null);
+            Assert.AreEqual(Vector3.one,pose.transform.localScale);obj.SetActive(true);
+            world.Initialize(Enemy(),0);world.OnBattleStarted(null);world.SetAttackWindup(true,20,30);Assert.AreSame(pose,view.BodyRenderer);Assert.AreEqual(1,System.Array.FindAll(obj.GetComponentsInChildren<SpriteRenderer>(true),r=>r.name=="EnemyAttackPoseBody").Length);
+            world.SetAttackWindup(false);Assert.AreEqual(Vector3.one,pose.transform.localScale);Assert.IsNotNull(sprite);Assert.IsNotNull(material);
+        }
         [Test] public void 通常敵の被弾回復と強靭度成立リセットを別々の残量へ反映する()
         {
             var enemy=Enemy();var view=View(enemy);Assert.IsFalse(view.GaugeVisible);view.ShowHp();

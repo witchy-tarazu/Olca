@@ -982,6 +982,13 @@ namespace Olca.Application.Dungeon
             if(manager!=null)throw new System.InvalidOperationException("起動後は敵定義元を変更できません");
             enemyAIProvider=provider;
         }
+        // 標準Rootだけへ試用近接を登録する。明示AI/マップ/編成/floorは外部の設定を維持する。
+        private void ConfigureDefaultTrialEnemyAI()
+        {
+            if(enemyAIProvider==null&&dungeonChoices==null&&configuredDungeon==null&&floorDefinitions==null&&configuredDepartureDeck==null)
+                enemyAIProvider=new Olca.Application.Management.TrialTelegraphFallbackEnemyAI(Olca.Application.Management.DungeonCoreFactory.CreateTrialCardEnemyAI());
+        }
+
         private int? simulationSeed;
         public void ConfigureSimulationSeed(int seed)
         {
@@ -2327,8 +2334,7 @@ namespace Olca.Application.Dungeon
                 if (found >= 0) { selectedDungeon = found; floorDefinitions = dungeonChoices[found].Floors; }
             }
             var dungeonConfig = floorDefinitions?.CreateInitialMap(0) ?? configuredDungeon ?? CreateDefaultDungeon();
-            if(enemyAIProvider==null&&dungeonChoices==null&&configuredDungeon==null&&floorDefinitions==null&&configuredDepartureDeck==null)
-                enemyAIProvider=Olca.Application.Management.DungeonCoreFactory.CreateTrialCardEnemyAI();
+            ConfigureDefaultTrialEnemyAI();
             var coreFactory = CreateCoreFactory();
             var playerCharacter = coreFactory.CreatePlayer(ReturnSettings(),persistentLevel,battleStaggerFrames,playerPoiseRecoveryFrames);
             var processing = coreFactory.CreateProcessing();

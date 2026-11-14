@@ -230,3 +230,78 @@ namespace Olca.Core.Logic.Battle
     }
 
 }
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>予告中の読取専用状態。経過はBattle論理時計から計算し、描画から進行しない。</summary>
+    public readonly struct EnemyAttackPreview
+    {
+        public readonly Olca.Core.Domain.Vector2Int Target;
+        public readonly int ElapsedFrames, TotalFrames;
+        public EnemyAttackPreview(Olca.Core.Domain.Vector2Int target,int elapsed,int total)
+        {Target=target;ElapsedFrames=elapsed;TotalFrames=total;}
+    }
+    public interface IEnemyAttackPreviewSource
+    {bool TryGetAttackPreview(out EnemyAttackPreview preview);}
+
+    /// <summary>即時Basicは互換保持。前隙/威力/待ちは登録元が明示する試用近接。</summary>
+    public sealed class TelegraphedBasicAttackAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource
+    {
+        private readonly int startupFrames,damage,cooldownMs;
+        private System.Threading.CancellationTokenSource cancellation;
+        private FrameTask task;
+        private AIContext active;
+        private long started;
+        private object previewOwner;
+        private Olca.Core.Domain.Vector2Int target;
+        public TelegraphedBasicAttackAction(int startupFrames,int damage,int cooldownMs)
+        {
+            if(startupFrames<1)throw new System.ArgumentOutOfRangeException(nameof(startupFrames));
+            if(damage<0)throw new System.ArgumentOutOfRangeException(nameof(damage));
+            if(cooldownMs<0)throw new System.ArgumentOutOfRangeException(nameof(cooldownMs));
+            this.startupFrames=startupFrames;this.damage=damage;this.cooldownMs=cooldownMs;
+        }
+        public bool IsRunning {get{Observe();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        public bool CanExecute(AIContext c)=>c.Battle!=null&&!c.Battle.IsGameOver&&!IsRunning&&c.Self!=null&&!c.Self.IsDead&&!c.Self.IsInTemporaryMove&&c.HasVisiblePlayer&&c.GetDistanceToPlayer()==1;
+        public void Execute(AIContext c)
+        {
+            if(!CanExecute(c))return;
+            active=c;started=c.Battle.ActionPresentationTimeUnits;
+            var d=new Olca.Core.Domain.Vector2Int(c.Player.GridPosition.X-c.Self.GridPosition.X,c.Player.GridPosition.Y-c.Self.GridPosition.Y);
+            var resolved=c.ResolveDirectionalInput(d); // 開始時に一度だけ決定。発動時に追尾/再反転しない。
+            target=new Olca.Core.Domain.Vector2Int(c.Self.GridPosition.X+resolved.X,c.Self.GridPosition.Y+resolved.Y);
+            cancellation=new System.Threading.CancellationTokenSource();
+            var owner=new object();previewOwner=owner;
+            c.Battle.SetEnemyAttackTelegraph(owner,new[]{target});
+            task=Resolve(c,target,owner,cancellation.Token);Observe();
+        }
+        private async FrameTask Resolve(AIContext c,Olca.Core.Domain.Vector2Int lockedTarget,object owner,System.Threading.CancellationToken ct)
+        {
+            try{
+                await c.Battle.WaitForActionFramesAsync(startupFrames,ct);ct.ThrowIfCancellationRequested();
+                if(c.Battle.IsGameOver||c.Self.IsDead||c.Player.IsDead||!c.Player.GridPosition.Equals(lockedTarget)||c.GetDistanceToPlayer()!=1)return;
+                if(c.Player.TryTakeDamage(damage)&&!c.Player.IsDead)c.Player.SetInvincible(c.Battle.DefaultHitInvincibilityMs);
+            }finally{c.Battle.ClearEnemyAttackTelegraph(owner);if(ReferenceEquals(previewOwner,owner))previewOwner=null;}
+        }
+        private void Observe()
+        {
+            if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;
+            if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();
+            cancellation.Dispose();cancellation=null;
+        }
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview)
+        {
+            preview=default;if(cancellation==null||cancellation.IsCancellationRequested||task.Status!=FrameTaskStatus.Pending)return false;
+            preview=new EnemyAttackPreview(target,(int)System.Math.Min(startupFrames,System.Math.Max(0,(active.Battle.ActionPresentationTimeUnits-started)/50)),startupFrames);return true;
+        }
+        public void Tick(int milliseconds,AIContext context,bool logicalFrame)=>Observe();
+        public void Cancel(AIContext context)
+        {
+            var source=cancellation;var owner=previewOwner;var battle=active.Battle;cancellation=null;previewOwner=null;if(source==null)return;
+            try{source.Cancel();}finally{source.Dispose();battle?.ClearEnemyAttackTelegraph(owner);}
+            if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();
+        }
+        public int GetCooldownMs()=>cooldownMs;
+        public float GetCooldown()=>cooldownMs/1000f;
+    }
+}

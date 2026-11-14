@@ -80,6 +80,11 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview)
+        {
+            preview=default;return !disposed&&runningAction is IEnemyAttackPreviewSource source&&source.TryGetAttackPreview(out preview);
+        }
+
 
         /// <summary>行動可能か（クールダウン終了・生存中・麻痺していない）</summary>
         public bool CanAct => !disposed && !IsPatternStopped && runningAction==null && !cooldown.IsActive && !enemy.IsDead && !enemy.IsParalyzed && !enemy.IsStunned;
