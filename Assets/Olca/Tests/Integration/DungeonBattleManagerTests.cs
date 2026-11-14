@@ -4755,6 +4755,43 @@ namespace Olca.Tests.Integration
     [TestFixture]
     public class ClearReturnPersistenceTests
     {
+        [TestCase(101,1,2500,26)][TestCase(101,90,2500,101)][TestCase(101,101,2500,101)][TestCase(100,1,3333,34)]
+        [TestCase(3,1,2500,1)][TestCase(4,1,2500,2)][TestCase(int.MaxValue,1,2500,536870912)]
+        [TestCase(int.MaxValue,1,int.MaxValue,int.MaxValue)]
+        public void 割合回復は最大HP基準で切捨て上限を守り零効果なら無消費(int maximum,int hp,int basis,int expected)
+        {
+            var definition=new OutsideRecoveryItemDefinition("percent-test",0,180,OutsideRecoveryEffect.Hp,basis);var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2}}}}));var save=new ClearReturnSession(store);
+            using(var world=new OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(maximum));world.Player.SetHp(hp);using(var shown=world.AttachPresentation()){
+                var before=System.IO.File.ReadAllBytes(store.ActivePath);bool changes=expected>hp;Assert.AreEqual(changes,world.TryUseRecoveryItem(save,definition,null,out var error),error);Assert.AreEqual(expected,world.Player.CurrentHp);Assert.AreEqual(changes?1:2,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(changes?180:0,world.ItemCooldownRemaining(definition.Id));if(!changes)CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(store.ActivePath));else Assert.AreEqual(expected,save.Snapshot.OutsidePlayerSave.Player.Hp);
+            }}
+        }
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)]
+        public void 割合回復の保存失敗は無効果で押し直し可能かつcoldで消費を重複しない(bool beforeFailure,bool afterWrite)
+        {
+            var definition=OutsideRecoveryItemDefinition.PercentProvisional;var io=new FaultIo();var store=Store(io);System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2}},Shortcuts=new[]{definition.Id,null,null,null}}}));var save=new ClearReturnSession(store);
+            using(var world=new OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(101));world.Player.SetHp(1);using(var shown=world.AttachPresentation()){
+                var bytes=System.IO.File.ReadAllBytes(store.ActivePath);long frame=world.Core.Frame;io.Before=beforeFailure;io.After=afterWrite;Assert.AreEqual(!beforeFailure,world.TryUseRecoveryItem(save,definition,null,out _));
+                if(beforeFailure){Assert.AreEqual(1,world.Player.CurrentHp);Assert.AreEqual(2,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(0,world.ItemCooldownRemaining(definition.Id));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));Assert.IsFalse(save.HasPendingSave);io.Before=false;Assert.IsTrue(world.TryUseRecoveryItem(save,definition,null,out _));}
+                Assert.AreEqual(26,world.Player.CurrentHp);Assert.AreEqual(frame,world.Core.Frame);Assert.IsFalse(world.TryUseRecoveryItem(save,definition,null,out _));Assert.AreEqual(1,save.OutsideInventorySnapshot.Items[0].Count);
+                var coldSave=new ClearReturnSession(Store());using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(coldSave.Snapshot.OutsidePlayerSave,coldSave.Snapshot.OutsideRuntimeSave,null));cold.RestoreItemCooldowns(coldSave.Snapshot.OutsideItemState,coldSave.Snapshot.OutsidePlayerSave,coldSave.Snapshot.OutsideRuntimeSave);Assert.AreEqual(26,cold.Player.CurrentHp);Assert.AreEqual(180,cold.ItemCooldownRemaining(definition.Id));using(var presented=cold.AttachPresentation()){Assert.IsFalse(cold.TryUseRecoveryItem(coldSave,definition,null,out _));Assert.AreEqual(1,coldSave.OutsideInventorySnapshot.Items[0].Count);}}
+            }}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 割合回復の複合品は切捨て零でも毒に有効なら一括解除し満タン無毒は保存しない(bool poisoned)
+        {
+            var definition=new OutsideRecoveryItemDefinition("percent-combined-test",0,180,OutsideRecoveryEffect.HpAndPoison,2500);var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=definition.Id,Count=2}}}}));var save=new ClearReturnSession(store);
+            using(var world=new OutsideExplorationSession()){world.TryInitializePlayer(()=>new PlayerCharacter(3));world.Player.SetHp(1);if(poisoned){world.Player.ApplyPoison("a",new StatusEffect(StatusEffectType.Poison,1000,1),60);world.Player.ApplyPoison("b",new StatusEffect(StatusEffectType.Poison,1000,2),60);}using(var shown=world.AttachPresentation()){var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.AreEqual(poisoned,world.TryUseRecoveryItem(save,definition,null,out _));Assert.AreEqual(1,world.Player.CurrentHp);Assert.IsEmpty(world.Player.CapturePoisons());Assert.AreEqual(poisoned?1:2,save.OutsideInventorySnapshot.Items[0].Count);if(!poisoned)CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));}}
+        }
+        [Test] public void 割合回復は既存固定品を変更せず定義の不正と二重方式を拒否する()
+        {
+            var old=OutsideRecoveryItemDefinition.Provisional;Assert.AreEqual(25,old.HealHp);Assert.AreEqual(0,old.MaxHpBasisPoints);Assert.AreEqual(25,old.ResolveHealHp(101));Assert.AreEqual(120,OutsideRecoveryItemDefinition.PoisonProvisional.CooldownFrames);Assert.AreEqual(25,OutsideRecoveryItemDefinition.CombinedProvisional.HealHp);
+            Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",0,180,OutsideRecoveryEffect.Hp,0));Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",25,180,OutsideRecoveryEffect.Hp,2500));Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",0,180,OutsideRecoveryEffect.Poison,2500));Assert.Throws<System.ArgumentException>(()=>new OutsideRecoveryItemDefinition("bad",0,180,OutsideRecoveryEffect.Hp,-1));Assert.Throws<System.ArgumentOutOfRangeException>(()=>old.ResolveHealHp(0));
+        }
+        [Test] public void 割合回復はショップ新IDのみから取得でき旧購入履歴と再起動の所持を保つ()
+        {
+            var catalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();var shop=Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(catalog,Olca.Application.Management.TrialCustomizationDefinitions.Abilities(),new Olca.Application.Battle.SimpleCardFactory().CollectionCards,new ClearReturnSettings());var offer=shop.Offers.Single(v=>v.ItemId==OutsideRecoveryItemDefinition.PercentProvisional.Id);Assert.AreEqual(7,shop.Offers.Count);Assert.AreEqual(3,offer.Price);Assert.AreEqual(10,offer.Maximum);Assert.AreEqual(0,offer.PurchaseLimit);
+            var store=Store();System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Currency=10,Items=new[]{new OutsideItemCount{Id=OutsideRecoveryItemDefinition.Provisional.Id,Count=2}}}}));var save=new ClearReturnSession(store);Assert.IsTrue(save.TryPurchaseOutsideShop(shop,offer.Id,out var error),error);Assert.AreEqual(7,save.OutsideInventorySnapshot.Currency);Assert.AreEqual(1,save.OutsideInventorySnapshot.Items.Single(v=>v.Id==offer.ItemId).Count);Assert.AreEqual(2,save.OutsideInventorySnapshot.Items.Single(v=>v.Id==OutsideRecoveryItemDefinition.Provisional.Id).Count);var cold=new ClearReturnSession(Store());Assert.AreEqual(7,cold.OutsideInventorySnapshot.Currency);Assert.AreEqual(1,cold.OutsideInventorySnapshot.Items.Single(v=>v.Id==offer.ItemId).Count);
+        }
         [TestCase(false,false)] [TestCase(false,true)] [TestCase(true,false)] [TestCase(true,true)]
         public void 複合回復は一方でも有効なら一個消費し両方無効なら書込もCDも発生しない(bool hurt,bool poisoned)
         {

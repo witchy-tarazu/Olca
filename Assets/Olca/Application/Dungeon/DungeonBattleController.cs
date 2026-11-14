@@ -1369,8 +1369,8 @@ namespace Olca.Application.Dungeon
 
         private const string ManagedOutsideItems="outside-item-registration";
         private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
-        private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample,OutsideItemDisplayDefinition.PoisonSample,OutsideItemDisplayDefinition.CombinedSample};
-        private static readonly OutsideRecoveryItemDefinition[] outsideUseDefinitions={OutsideRecoveryItemDefinition.Provisional,OutsideRecoveryItemDefinition.PoisonProvisional,OutsideRecoveryItemDefinition.CombinedProvisional};
+        private static readonly OutsideItemDisplayDefinition[] outsideItemDefinitions={OutsideItemDisplayDefinition.RecoverySample,OutsideItemDisplayDefinition.PoisonSample,OutsideItemDisplayDefinition.CombinedSample,OutsideItemDisplayDefinition.PercentSample};
+        private static readonly OutsideRecoveryItemDefinition[] outsideUseDefinitions={OutsideRecoveryItemDefinition.Provisional,OutsideRecoveryItemDefinition.PoisonProvisional,OutsideRecoveryItemDefinition.CombinedProvisional,OutsideRecoveryItemDefinition.PercentProvisional};
         private static OutsideRecoveryItemDefinition OutsideUseDefinition(string id)=>outsideUseDefinitions.FirstOrDefault(value=>value.Id==id);
         private string ApplyOutsideRecoveryItem(string id){var definition=OutsideUseDefinition(id);if(definition==null)return "使用定義が未登録です";return gameSystem.OutsideExploration.TryUseRecoveryItem(clearReturnSession,definition,memoryCheckpoints?.Definitions,out var error)?definition.Effect==OutsideRecoveryEffect.Poison?"ドクをカイジョしました":definition.Effect==OutsideRecoveryEffect.HpAndPoison?"HP・ドクの カイフクをしました":"HPをカイフクしました":error;}
         private string OutsideItemKeyLabel(int slot)

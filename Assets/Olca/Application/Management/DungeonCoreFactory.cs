@@ -187,6 +187,7 @@ namespace Olca.Application.Management
             var fire=cards?.Where(c=>c!=null&&c.Id=="fire_sword"&&c.ExceedLevel==ExceedLevel.Normal).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
             if(fire?.Length==1&&settings!=null){settings.Validate();offers.Add(OutsideShopOffer.ForCard("fire-sword-v1",fire[0],3,settings.Tokens(fire[0].Rarity,fire[0].ExceedLevel),4));}
             offers.Add(new OutsideShopOffer("combined-recovery-v1",OutsideRecoveryItemDefinition.CombinedProvisional.Id,"HP+ドクケシ（カリ）",3,99));
+            offers.Add(new OutsideShopOffer("percent-recovery-v1",OutsideRecoveryItemDefinition.PercentProvisional.Id,"HP25%カイフク（カリ）",3,10));
             return new OutsideShopDefinition(OutsideShopDefinition.TrialInitial.Id,offers,catalog);
         }
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();

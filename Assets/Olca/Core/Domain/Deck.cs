@@ -1490,11 +1490,16 @@ namespace Olca.Core.Domain
     public enum OutsideRecoveryEffect { Hp=0, Poison=1, HpAndPoison=2 }
     public sealed class OutsideRecoveryItemDefinition
     {
-        public string Id{get;} public int HealHp{get;} public int CooldownFrames{get;} public OutsideRecoveryEffect Effect{get;}
+        public string Id{get;} public int HealHp{get;} public int CooldownFrames{get;} public OutsideRecoveryEffect Effect{get;} public int MaxHpBasisPoints{get;}
         public bool RestoresHp=>Effect!=OutsideRecoveryEffect.Poison;
         public bool ClearsPoison=>Effect!=OutsideRecoveryEffect.Hp;
         public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames):this(id,healHp,cooldownFrames,OutsideRecoveryEffect.Hp){}
-        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames,OutsideRecoveryEffect effect){if(string.IsNullOrWhiteSpace(id)||cooldownFrames<=0||!Enum.IsDefined(typeof(OutsideRecoveryEffect),effect)||(effect==OutsideRecoveryEffect.Poison?healHp!=0:healHp<=0))throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;Effect=effect;}
+        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames,OutsideRecoveryEffect effect):this(id,healHp,cooldownFrames,effect,0){}
+        public OutsideRecoveryItemDefinition(string id,int healHp,int cooldownFrames,OutsideRecoveryEffect effect,int maxHpBasisPoints)
+        {if(string.IsNullOrWhiteSpace(id)||cooldownFrames<=0||!Enum.IsDefined(typeof(OutsideRecoveryEffect),effect)||maxHpBasisPoints<0||healHp<0||(effect==OutsideRecoveryEffect.Poison?healHp!=0||maxHpBasisPoints!=0:(healHp==0)==(maxHpBasisPoints==0)))throw new ArgumentException("回復アイテム定義が不正です");Id=id;HealHp=healHp;CooldownFrames=cooldownFrames;Effect=effect;MaxHpBasisPoints=maxHpBasisPoints;}
+        // 10000=最大HP100%。最終量を整数切捨てし、int上限より大きい量はHP上限処理に十分なint最大値へ抑える。
+        public int ResolveHealHp(int maxHp){if(maxHp<=0)throw new ArgumentOutOfRangeException(nameof(maxHp));return MaxHpBasisPoints==0?HealHp:(int)Math.Min(int.MaxValue,(long)maxHp*MaxHpBasisPoints/10000);}
+        public static readonly OutsideRecoveryItemDefinition PercentProvisional=new OutsideRecoveryItemDefinition("outside-percent-recovery-sample-v1",0,180,OutsideRecoveryEffect.Hp,2500);
         public static readonly OutsideRecoveryItemDefinition Provisional=new OutsideRecoveryItemDefinition("outside-recovery-sample-v1",25,180);
         // 複合使用の試用値。既存品のID・性能・在庫履歴は変更しない。
         public static readonly OutsideRecoveryItemDefinition CombinedProvisional=new OutsideRecoveryItemDefinition("outside-combined-recovery-sample-v1",25,180,OutsideRecoveryEffect.HpAndPoison);
@@ -1516,6 +1521,7 @@ namespace Olca.Core.Domain
         // 表示候補だけ。入手・効果量・価格・CDを仮決めした実用品として登録しない。
         public static readonly OutsideItemDisplayDefinition PoisonSample=new OutsideItemDisplayDefinition("outside-poison-recovery-sample-v1","ドクケシ（カリ）","ドク");
         public static readonly OutsideItemDisplayDefinition CombinedSample=new OutsideItemDisplayDefinition("outside-combined-recovery-sample-v1","HP+ドクケシ（カリ）","HPドク");
+        public static readonly OutsideItemDisplayDefinition PercentSample=new OutsideItemDisplayDefinition("outside-percent-recovery-sample-v1","HP25%カイフク（カリ）","25%HP");
         public static readonly OutsideItemDisplayDefinition RecoverySample=new OutsideItemDisplayDefinition("outside-recovery-sample-v1","HPカイフク（カリ）","HP");
     }
     public sealed partial class ClearReturnSession
