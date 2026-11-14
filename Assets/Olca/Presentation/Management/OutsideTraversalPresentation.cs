@@ -38,6 +38,20 @@ namespace Olca.Presentation.Exploration
             }
             if(mapNameLabel==null)return;mapNameLabel.gameObject.SetActive(opacity>0);if(opacity<=0)return;mapNameLabel.text=presentation.MapName;mapNameLabel.color=new Color(.8f,.98f,1,(float)opacity);mapNameLabel.transform.SetAsLastSibling();
         }
+        private Image outsideKamui;
+        private void RenderOutsideKamui()
+        {
+            if(!Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation?.Player)||player==null||!player.isActiveAndEnabled){ClearOutsideKamui();return;}
+            var sprite=outsideKamui!=null?outsideKamui.sprite:Olca.Presentation.Effects.TrialFireKamuiVisual.LoadSprite();if(sprite==null){ClearOutsideKamui();return;}
+            if(outsideKamui==null){var go=new GameObject("OutsideTrialFireKamui",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);outsideKamui=go.GetComponent<Image>();outsideKamui.raycastTarget=false;}
+            var r=outsideKamui.rectTransform;r.anchorMin=player.rectTransform.anchorMin;r.anchorMax=player.rectTransform.anchorMax;r.pivot=sprite.pivot/sprite.rect.size;
+            r.anchoredPosition=player.rectTransform.anchoredPosition;r.sizeDelta=Vector2.one*Olca.Presentation.Effects.TrialFireKamuiVisual.SizeWorld*pixelsPerWorldUnit;r.localScale=player.rectTransform.localScale;
+            outsideKamui.sprite=sprite;outsideKamui.color=new Color(1,1,1,Olca.Presentation.Effects.TrialFireKamuiVisual.Opacity);outsideKamui.enabled=true;
+            var target=outsideDefensiveField!=null?outsideDefensiveField.transform:player.transform;int before=target.GetSiblingIndex();
+            if(outsideKamui.transform.GetSiblingIndex()<before)before--; // 自身を除いた挿入先。連続Renderでも前後を往復させない。
+            outsideKamui.transform.SetSiblingIndex(before);
+        }
+        private void ClearOutsideKamui(){if(outsideKamui!=null)outsideKamui.enabled=false;}
         private Image outsideDefensiveField;
         private Olca.Unity.GeneratedSpriteAssets.Lease outsideDefensiveAssets;
         // バトルと同じ外周素材/校正を使う。表示だけを所有し、防御状態や寿命は変更しない。

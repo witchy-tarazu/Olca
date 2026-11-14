@@ -17,6 +17,16 @@ namespace Olca.Tests
         [SetUp] public void AcquireGeneratedScope()=>generatedScope=Olca.Unity.GeneratedSpriteAssets.Acquire();
         [TearDown] public void ReleaseGeneratedScope(){generatedScope?.Dispose();generatedScope=null;Olca.Unity.GeneratedSpriteAssets.Prune();}
 
+        [TestCase(-1f)][TestCase(1f)] public void 試用カエン識別は通常と死亡を描かず本体と能力を変えず後方だけに保持する(float facing)
+        {
+            var normal=new PlayerCharacter(100);var fire=new PlayerCharacter(100);fire.SetDepartureStyle(DepartureStyleDefinition.TrialFire);var original=body.sprite;host.transform.localScale=new Vector3(facing*2,2,1);
+            using(var view=new TrialFireKamuiVisual()){
+                view.Refresh(body,normal);Assert.IsNull(view.Renderer);view.Refresh(body,fire);var layer=view.Renderer;Assert.IsNotNull(layer);Assert.IsTrue(layer.enabled);Assert.AreEqual(new Rect(0,0,256,256),layer.sprite.rect);Assert.AreEqual(100f,layer.sprite.pixelsPerUnit,.001f);Assert.AreEqual(TrialFireKamuiVisual.SizeWorld,layer.bounds.size.x,.001f);Assert.AreEqual(TrialFireKamuiVisual.SizeWorld,layer.bounds.size.y,.001f);Assert.Less(layer.sortingOrder,body.sortingOrder);Assert.AreSame(body.transform,layer.transform.parent);Assert.AreEqual(TrialFireKamuiVisual.Opacity,layer.color.a);Assert.AreSame(original,body.sprite);Assert.AreEqual(Color.white,body.color);Assert.AreEqual(100,fire.CurrentHp);
+                view.Refresh(body,fire);Assert.AreSame(layer,view.Renderer);view.Refresh(body,normal);Assert.IsFalse(layer.enabled);view.Refresh(body,fire);Assert.IsTrue(layer.enabled);body.forceRenderingOff=true;view.Refresh(body,fire);Assert.IsFalse(layer.enabled);body.forceRenderingOff=false;fire.SetHp(0);view.Refresh(body,fire);Assert.IsFalse(layer.enabled);
+            }
+            Assert.IsFalse(host.GetComponentsInChildren<SpriteRenderer>(true).Any(r=>r!=body));Assert.AreSame(original,body.sprite);
+        }
+
         private const BindingFlags Hidden=BindingFlags.Instance|BindingFlags.NonPublic;
         private static void Set(object target,string name,object value)=>target.GetType().GetField(name,Hidden).SetValue(target,value);
         private static void Call(object target,string name)=>target.GetType().GetMethod(name,Hidden).Invoke(target,null);

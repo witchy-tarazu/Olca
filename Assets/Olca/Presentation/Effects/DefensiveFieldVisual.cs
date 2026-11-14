@@ -78,3 +78,31 @@ namespace Olca.Presentation.Effects
         private static void DestroyOwned(Object value) { if (Application.isPlaying) Object.Destroy(value); else Object.DestroyImmediate(value); }
     }
 }
+
+namespace Olca.Presentation.Effects
+{
+    /// <summary>試用カエンの識別レイヤー。衣装・能力・時計は変更せず本体後方だけに描く。</summary>
+    public sealed class TrialFireKamuiVisual : System.IDisposable
+    {
+        public const float SizeWorld=2.6f,Opacity=.4f;
+        public static bool IsActive(Olca.Core.Domain.PlayerCharacter player)=>player!=null&&!player.IsDead&&player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id;
+        public static Sprite LoadSprite()=>Resources.Load<Sprite>("OlcaCharacterMotion/trial_fire_aura");
+        private SpriteRenderer field;private bool disposed;
+        public SpriteRenderer Renderer=>field;
+        public void Refresh(SpriteRenderer body,Olca.Core.Domain.PlayerCharacter player)
+        {
+            if(disposed||!IsActive(player)||body==null||body.sprite==null||!body.enabled||body.forceRenderingOff||!body.gameObject.activeInHierarchy){Clear();return;}
+            var sprite=field!=null?field.sprite:LoadSprite();if(sprite==null){Clear();return;}
+            var scale=body.transform.lossyScale;if(Mathf.Abs(scale.x)<.00001f||Mathf.Abs(scale.y)<.00001f){Clear();return;}
+            if(field==null){var go=new GameObject("TrialFireKamuiVisual",typeof(SpriteRenderer));field=go.GetComponent<SpriteRenderer>();}
+            if(field.transform.parent!=body.transform)field.transform.SetParent(body.transform,false);
+            field.sprite=sprite;field.color=new Color(1,1,1,Opacity);field.sortingLayerID=body.sortingLayerID;
+            field.sortingOrder=body.sortingOrder>int.MinValue+1?body.sortingOrder-2:int.MinValue;
+            field.transform.localPosition=Vector3.zero;field.transform.localRotation=Quaternion.identity;
+            field.transform.localScale=new Vector3(SizeWorld/(sprite.bounds.size.x*Mathf.Abs(scale.x)),SizeWorld/(sprite.bounds.size.y*Mathf.Abs(scale.y)),1);
+            field.enabled=true;
+        }
+        public void Clear(){if(field!=null)field.enabled=false;}
+        public void Dispose(){if(disposed)return;disposed=true;if(field==null)return;field.sprite=null;if(Application.isPlaying)Object.Destroy(field.gameObject);else Object.DestroyImmediate(field.gameObject);field=null;}
+    }
+}

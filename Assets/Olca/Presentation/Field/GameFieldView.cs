@@ -217,6 +217,7 @@ namespace Olca.Presentation.Field
         public Transform PlayerTransform => playerTransform;
         public SpriteRenderer PlayerSprite => playerSprite;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private Olca.Presentation.Effects.TrialFireKamuiVisual trialKamuiVisual;
         private Olca.Presentation.Effects.ActorConditionVisual guardVisual, paralysisVisual;
         private void RefreshConditionVisuals()
         {
@@ -231,9 +232,11 @@ namespace Olca.Presentation.Field
         {
             var player = currentBattle?.Player ?? dungeonSystem?.Player;
             if (!isActiveAndEnabled || player == null || player.IsDead || currentBattle?.IsGameOver == true ||
-                dungeonSystem == null || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.IsInBattle && currentBattle == null) { defensiveField?.Clear(); return; }
+                dungeonSystem == null || dungeonSystem.IsDungeonCleared || dungeonSystem.IsFloorCompleted || dungeonSystem.IsInBattle && currentBattle == null) { defensiveField?.Clear(); trialKamuiVisual?.Clear(); return; }
             if (defensiveField == null && (player.HasBarrier || player.HasAura)) defensiveField = new Olca.Presentation.Effects.DefensiveFieldVisual();
             defensiveField?.Refresh(playerSprite, player.HasBarrier, player.HasAura);
+            if(trialKamuiVisual==null&&Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(player))trialKamuiVisual=new Olca.Presentation.Effects.TrialFireKamuiVisual();
+            trialKamuiVisual?.Refresh(playerSprite,player);
         }
         public WorldBattleGridView BattleGrid => battleGridView;
 
@@ -704,11 +707,11 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
+        private void OnDisable() { worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); }
         private void OnDestroy()
         {
             ReleasePresentation();
-            guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose();
+            guardVisual?.Dispose(); paralysisVisual?.Dispose(); defensiveField?.Dispose(); trialKamuiVisual?.Dispose();
             actionPoseRenderer?.Dispose();
             projectilePoseRenderer?.Dispose();
             if (generatedSomersaultSprites != null) foreach (var frame in generatedSomersaultSprites) {
