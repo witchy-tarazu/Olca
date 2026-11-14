@@ -70,6 +70,7 @@ namespace Olca.Presentation.Exploration
             var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);var title=factory.Label("OutsideExplorationTitle",transform,new Vector2(0,1),new Vector2(630,-62),new Vector2(1180,70));title.text="ガイカイ タンサク  /  ケンショウ チケイ";title.alignment=TextAnchor.MiddleLeft;title.fontSize=28;title.color=Olca.Presentation.Dungeon.UiLook.Ink;title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.offsetMin=new Vector2(40,-97);title.rectTransform.offsetMax=new Vector2(-580,-27);
             InitializeItemHud(factory);
             recoveryPoint=factory.Button("OutsideRecoveryPoint","ケンショウ カイフク（カリ）",transform,new Vector2(0,.21f),Vector2.zero);recoveryPoint.GetComponent<RectTransform>().sizeDelta=new Vector2(350,104);Olca.Presentation.Dungeon.UiLook.Button(recoveryPoint);recoveryPoint.gameObject.SetActive(false);
+            recoveryMarker=Picture("OutsideRecoveryMarker",resources.GetShared<Sprite>("OlcaUI/window"),new Vector2(0,.21f),new Vector2(0,.21f));recoveryMarker.type=Image.Type.Sliced;recoveryMarker.color=new Color(.25f,.85f,.95f,.75f);recoveryMarker.rectTransform.pivot=new Vector2(.5f,0);recoveryMarker.rectTransform.sizeDelta=new Vector2(96,10);recoveryMarker.transform.SetSiblingIndex(player.transform.GetSiblingIndex());recoveryMarker.gameObject.SetActive(false);
             outsideHp=factory.Label("OutsidePlayerHp",transform,new Vector2(1,1),new Vector2(-255,-320),new Vector2(470,42));outsideHp.fontSize=24;outsideHp.color=Color.white;outsideHp.resizeTextForBestFit=true;outsideHp.resizeTextMinSize=18;outsideHp.resizeTextMaxSize=24;outsideHp.raycastTarget=false;
             outsidePoise=factory.Label("OutsidePlayerPoise",transform,Vector2.one,new Vector2(-255,-278),new Vector2(470,32));outsidePoise.fontSize=18;outsidePoise.color=Color.white;outsidePoise.raycastTarget=false;
             var poiseTrack=new GameObject("OutsidePlayerPoiseTrack",typeof(RectTransform),typeof(Image));poiseTrack.transform.SetParent(transform,false);var poiseRect=(RectTransform)poiseTrack.transform;poiseRect.anchorMin=poiseRect.anchorMax=Vector2.one;poiseRect.pivot=new Vector2(0,.5f);poiseRect.anchoredPosition=new Vector2(-470,-300);poiseRect.sizeDelta=new Vector2(430,6);var poiseBack=poiseTrack.GetComponent<Image>();poiseBack.color=new Color(.12f,.13f,.08f,1);poiseBack.raycastTarget=false;
@@ -136,6 +137,16 @@ namespace Olca.Presentation.Exploration
             entranceTitle.rectTransform.anchoredPosition+=new Vector2(shift,0);
             if(shift!=0)entranceTitle.text=shift>0?"< ダンジョン イリグチ":"ダンジョン イリグチ >";
         }
+        // 操作できない空中で本体と重なる詳細だけを隠す。地点の目印と操作判定は固定。
+        private void PlaceRecoveryPanel(bool grounded)
+        {
+            if(recoveryMarker==null||recoveryPoint==null)return;
+            bool visible=recoveryPoint.gameObject.activeSelf;
+            recoveryMarker.gameObject.SetActive(visible);
+            var p=recoveryPoint.GetComponent<RectTransform>().anchoredPosition;
+            recoveryMarker.rectTransform.anchoredPosition=new Vector2(p.x,p.y-340);
+            if(visible&&!grounded&&BoundsInView((RectTransform)recoveryPoint.transform).Overlaps(BoundsInView(player.rectTransform)))recoveryPoint.gameObject.SetActive(false);
+        }
         // ワールド追従の案内だけを避け、固定HUDやゲーム座標は動かさない。
         private void PlaceReloadBelowVitals()
         {
@@ -171,13 +182,13 @@ namespace Olca.Presentation.Exploration
             decimal shown=(gauge.CurrentUnits*10/Olca.Core.Logic.Integration.OutsideCardGauge.UnitsPerPoint)/10m;
             return "カードゲージ  "+shown.ToString("0.0",System.Globalization.CultureInfo.InvariantCulture)+" / "+gauge.Maximum.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
-        private Button recoveryPoint;private Action recover;private Func<bool> canRecover;private Func<string> recoveryMessage;private long shownHandRevision=-1;
+        private Button recoveryPoint;private Image recoveryMarker;private Action recover;private Func<bool> canRecover;private Func<string> recoveryMessage;private long shownHandRevision=-1;
         public void ConfigureRecovery(Action action,Func<bool> canUse,Func<string> message)
         {
             recover=action;canRecover=canUse;recoveryMessage=message;var captured=context;var lease=presentation;
             recoveryPoint.onClick=new Button.ButtonClickedEvent();recoveryPoint.onClick.AddListener(()=>{if(this!=null&&captured!=null&&ReferenceEquals(context,captured)&&captured.IsCurrent&&lease!=null&&lease.IsCurrent&&!covered&&!captured.DialogBlocksInput&&canRecover?.Invoke()==true)recover?.Invoke();});
         }
-        private void ClearRecovery(){recover=null;canRecover=null;recoveryMessage=null;if(recoveryPoint!=null)recoveryPoint.gameObject.SetActive(false);}
+        private void ClearRecovery(){recover=null;canRecover=null;recoveryMessage=null;if(recoveryPoint!=null)recoveryPoint.gameObject.SetActive(false);if(recoveryMarker!=null)recoveryMarker.gameObject.SetActive(false);}
         private sealed class SupplySlot{public Button Button;public int Index;public long X;public bool? Expanded;public string RenderedMessage;public Action Claim;public Func<bool> CanUse;public Func<string> Message;}
         private readonly SupplySlot[] supplySlots=new SupplySlot[5];
         // 遠方は名称/概要の2行だけ。操作範囲や入力可否は既存Core/呼出側に従う。
@@ -277,7 +288,7 @@ namespace Olca.Presentation.Exploration
             }
             if(sprite==null)sprite=idleSprite;
             player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3(-core.Facing,1,1);PlaceEntranceTitle(core.IsGrounded);PlaceRecoveryPanel(core.IsGrounded);
             RenderOutsideDefensiveField(presentation.Player?.HasBarrier==true,presentation.Player?.HasAura==true);RenderOutsideKamui();RenderMapDoor(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorPosition(core)/unit)),verticalOffset);RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderMapName();
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)

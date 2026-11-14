@@ -129,6 +129,24 @@ namespace Olca.Tests.Application
                 Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(2,calls);
             }
         }
+        [TestCase(1920f,1080f)][TestCase(3840f,2160f)][TestCase(1280f,960f)]
+        public async Task 外界回復地点は空中の重なる詳細だけ隠し目印と着地後の操作を保つ(float width,float height)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var state=model.Core.CaptureState();state.Position=6*60000;typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(model.Core,new object[]{state});int calls=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;void Configure(){view.ConfigureRecovery(()=>calls++,()=>model.Core.IsGrounded,()=>"ケンショウ カイフク（カリ）");view.Render();}Configure();var button=view.transform.Find("OutsideRecoveryPoint").GetComponent<Button>();var marker=view.transform.Find("OutsideRecoveryMarker").GetComponent<Image>();var actor=view.transform.Find("OutsideEntryPlayer").GetComponent<RectTransform>();Assert.IsFalse(marker.raycastTarget);Assert.IsTrue(marker.gameObject.activeSelf);Assert.IsTrue(button.gameObject.activeSelf);var old=button.onClick;old.Invoke();Assert.AreEqual(1,calls);
+                Rect Area(RectTransform r){var c=new Vector3[4];r.GetWorldCorners(c);return Rect.MinMaxRect(c.Min(x=>x.x),c.Min(x=>x.y),c.Max(x=>x.x),c.Max(x=>x.y));}
+                int hidden=0;model.Core.TickFrame(0,true,true);
+                for(int n=0;n<100&&!model.Core.IsGrounded;n++){
+                    long frame=model.Core.Frame,x=model.Core.Position,y=model.Core.Height;view.Render();bool overlap=Area((RectTransform)button.transform).Overlaps(Area(actor));Assert.AreEqual(!overlap,button.gameObject.activeSelf);if(overlap)hidden++;Assert.IsTrue(marker.gameObject.activeSelf);Assert.IsFalse(button.interactable);old.Invoke();Assert.AreEqual(1,calls);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(x,model.Core.Position);Assert.AreEqual(y,model.Core.Height);model.Core.TickFrame(0,false,n<10);
+                }
+                Assert.Greater(hidden,0);Assert.IsTrue(model.Core.IsGrounded);view.Render();Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(button.interactable);button.onClick.Invoke();Assert.AreEqual(2,calls);Assert.AreEqual(100,model.Player.CurrentHp);
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsFalse(marker.gameObject.activeSelf);Assert.IsTrue((await binding.OpenAsync()).Succeeded);view=binding.View;Configure();old.Invoke();Assert.AreEqual(2,calls);view.transform.Find("OutsideRecoveryPoint").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(3,calls);
+            }
+        }
+
         [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
         {
             var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
