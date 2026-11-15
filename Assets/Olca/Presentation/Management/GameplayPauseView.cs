@@ -442,7 +442,7 @@ namespace Olca.Presentation.Management
         private IProgressActionOperations operations;
         private long revision;
         private bool pending,newGameSucceeded,showConfirm,canClose;
-        private string body,confirmText;private bool titlePresentation;private Text titleGuide;private GameObject titleConfirmFocus,titleCancelFocus;
+        private string body,confirmText;private bool progressPresentation;private Text progressHeading;private bool titlePresentation;private Text titleGuide;private GameObject titleConfirmFocus,titleCancelFocus;
         public Text Message {get;private set;}
         public Button ConfirmButton=>confirm;public Button CancelButton=>cancel;
         public event Action<ProgressActionResult> Completed;
@@ -455,6 +455,20 @@ namespace Olca.Presentation.Management
             cancel=factory.Button("CancelProgressAction","取消して戻る",transform,new Vector2(.5f,.5f),new Vector2(300,-180));
             foreach(var b in new[]{confirm,cancel})((RectTransform)b.transform).sizeDelta=new Vector2(500,80);CaptureFeedback();
         }
+        // 攻略再開/拠点の進行確認だけに適用し、タイトル専用の文面分岐とは分ける。
+        public void ConfigureProgressPresentation(GameplayPanelFactory factory)
+        {
+            if(progressPresentation||titlePresentation)return;progressPresentation=true;
+            GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
+            var backing=new GameObject("ProgressReadingBacking",typeof(RectTransform),typeof(Image));backing.transform.SetParent(transform,false);backing.transform.SetAsFirstSibling();
+            ((RectTransform)backing.transform).sizeDelta=new Vector2(1456,826);var fill=backing.GetComponent<Image>();fill.color=new Color(.025f,.075f,.105f,1f);fill.raycastTarget=false;
+            var surface=new GameObject("ProgressReadingSurface",typeof(RectTransform),typeof(Image));surface.transform.SetParent(transform,false);surface.transform.SetSiblingIndex(1);
+            ((RectTransform)surface.transform).sizeDelta=new Vector2(1480,850);var face=surface.GetComponent<Image>();face.sprite=Resources.Load<Sprite>("OlcaUI/description");face.type=Image.Type.Sliced;face.color=face.sprite!=null?Color.white:fill.color;face.raycastTarget=false;
+            progressHeading=factory.Label("ProgressHeading",transform,new Vector2(.5f,.5f),new Vector2(0,345),new Vector2(1300,80));progressHeading.fontSize=42;progressHeading.color=Color.white;
+            Message.color=Color.white;Message.fontSize=32;Message.alignment=TextAnchor.MiddleLeft;Message.rectTransform.sizeDelta=new Vector2(1300,430);Message.rectTransform.anchoredPosition=new Vector2(0,90);
+            titleGuide=factory.Label("ProgressInputGuide",transform,new Vector2(.5f,.5f),new Vector2(0,-335),new Vector2(1300,100));titleGuide.fontSize=24;titleGuide.color=new Color(.8f,.97f,1f);
+            titleConfirmFocus=BootstrapTitleView.AddFocusFrame(confirm);titleCancelFocus=BootstrapTitleView.AddFocusFrame(cancel);
+        }
         // タイトルから開く新規開始確認だけに適用。他の進行/保存Dialogは従来表示を保つ。
         public void ConfigureTitlePresentation(GameplayPanelFactory factory)
         {
@@ -466,7 +480,7 @@ namespace Olca.Presentation.Management
         }
         private void LateUpdate()
         {
-            if(!titlePresentation)return;bool live=CanOperatePopup;var selected=EventSystem.current?.currentSelectedGameObject;
+            if(!titlePresentation&&!progressPresentation)return;bool live=CanOperatePopup;var selected=EventSystem.current?.currentSelectedGameObject;
             titleConfirmFocus.SetActive(live&&selected==confirm.gameObject&&confirm.IsInteractable());titleCancelFocus.SetActive(live&&selected==cancel.gameObject&&cancel.IsInteractable());
             titleGuide.text=BootstrapTitleView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad,true,canClose);
         }
@@ -486,8 +500,8 @@ namespace Olca.Presentation.Management
             if(!Begin(manager,parent,live)){operations=null;return;}
             if(pending){ShowPending();return;}
             bool dual=service is IInitialDeckLoadoutPresentation info&&info.HasDualStarter;
-            string starter=titlePresentation?(dual?"キョウユウショジ30マイ / タンサク30・コウリャク20マイの\nショキヘンセイで アタラしい シンコウを カイシします。":"スターター20マイで アタラしい シンコウを カイシします。"):(dual?"共有所持30枚、探索30枚・攻略20枚の初期編成で新しい進行を開始します。":"スターター20枚で新しい進行を開始します。");
-            Set(titlePresentation?$"スロット1の シンコウを ショキカします。\n\nショジカード・ホゾンデッキ・セイチョウ・ツウカ・ズカン、\nカイホウリレキ・コウリャクシンコウが タイショウです。\n{starter}\n\nソウサ・エンシュツ・オンリョウの セッテイは ホジします。\nジッコウマエの シンコウブンショ・キュウコウリャクデータは\nフッキュウヨウに ホゼンします。":$"スロット1を「はじめから」にしますか？\n所持カード・保存デッキ・成長・通貨・図鑑・解放履歴・攻略進行を初期化し、\n{starter}\n操作設定・演出設定・音量設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
+            string starter=titlePresentation?(dual?"キョウユウショジ30マイ / タンサク30・コウリャク20マイの\nショキヘンセイで アタラしい シンコウを カイシします。":"スターター20マイで アタラしい シンコウを カイシします。"):(dual?"共有所持30枚、探索30枚・攻略20枚の初期編成で\n新しい進行を開始します。":"スターター20枚で新しい進行を開始します。");
+            Set(titlePresentation?$"スロット1の シンコウを ショキカします。\n\nショジカード・ホゾンデッキ・セイチョウ・ツウカ・ズカン、\nカイホウリレキ・コウリャクシンコウが タイショウです。\n{starter}\n\nソウサ・エンシュツ・オンリョウの セッテイは ホジします。\nジッコウマエの シンコウブンショ・キュウコウリャクデータは\nフッキュウヨウに ホゼンします。":$"スロット1の進行を初期化します。\n所持カード・保存デッキ・成長・通貨・図鑑、\n解放履歴・攻略進行が対象です。\n\n{starter}\n\n操作・演出・音量の設定は保持します。\n実行前の進行文書と旧攻略データは復旧用に保全します。",true,true,"進行を初期化して開始");
         }
         public void OpenNotice(string message,bool accept,bool close,DialogManager manager,IDialogOwner parent,Func<bool> live)
         {
@@ -504,6 +518,7 @@ namespace Olca.Presentation.Management
         protected override void Redraw()
         {
             if(newGameSucceeded){CompleteAccepted();return;}
+            if(progressPresentation){progressHeading.text=purpose==Purpose.NewGame?"はじめからの確認":purpose==Purpose.ManualSave?"進行の保存":"お知らせ";titleGuide.gameObject.SetActive(purpose==Purpose.NewGame);}
             Message.text=body;confirm.gameObject.SetActive(showConfirm);confirm.interactable=true;cancel.interactable=canClose;
             confirm.GetComponentInChildren<Text>().text=confirmText;cancel.GetComponentInChildren<Text>().text=purpose==Purpose.NewGame?"取消して戻る":"閉じる";
             cancel.navigation=showConfirm?new Navigation{mode=Navigation.Mode.Explicit,selectOnLeft=confirm,selectOnRight=confirm}:new Navigation{mode=Navigation.Mode.None};

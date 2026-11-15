@@ -1497,7 +1497,7 @@ namespace Olca.Application.Dungeon
         {
             if(progressActionDialog!=null)return;
             hostPanels.Popup("progress",()=>{
-                var panel=panelFactory.Panel("ProgressActionOverlay",true);progressActionDialog=panel.AddComponent<Olca.Presentation.Management.ProgressActionDialog>();progressActionDialog.Initialize(panelFactory);
+                var panel=panelFactory.Panel("ProgressActionOverlay",true);progressActionDialog=panel.AddComponent<Olca.Presentation.Management.ProgressActionDialog>();progressActionDialog.Initialize(panelFactory);progressActionDialog.ConfigureProgressPresentation(panelFactory);
                 progressActionDialog.VisibilityChanged+=()=>{if(this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing)RefreshProgressActions();};
                 progressActionDialog.Completed+=OnProgressActionCompleted;return panel;
             });

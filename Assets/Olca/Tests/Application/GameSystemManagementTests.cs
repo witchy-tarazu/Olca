@@ -844,7 +844,21 @@ namespace Olca.Tests.Application
         }
         private ProgressActionDialog ProgressPopup(string name="progress-owned")
         {
-            var popup=Panel(name);var value=popup.AddComponent<ProgressActionDialog>();value.Initialize(new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{}));return value;
+            var factory=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{});var popup=factory.Panel(name,true);var value=popup.AddComponent<ProgressActionDialog>();value.Initialize(factory);value.ConfigureProgressPresentation(factory);return value;
+        }
+        [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)]
+        public void 進行確認は背面を遮り取消だけでは保存せず本文と操作が重ならない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            var popup=ProgressPopup();var service=new ProgressOperationsProbe();popup.OpenNewGame(service,dialogs,null,()=>true);Canvas.ForceUpdateCanvases();
+            var backing=popup.transform.Find("ProgressReadingBacking").GetComponent<Image>();var surface=popup.transform.Find("ProgressReadingSurface").GetComponent<Image>();
+            Assert.AreEqual(1f,backing.color.a);Assert.IsFalse(backing.raycastTarget);Assert.IsFalse(surface.raycastTarget);Assert.IsNotNull(surface.sprite);Assert.Less(surface.transform.GetSiblingIndex(),popup.Message.transform.GetSiblingIndex());Assert.AreEqual(Color.white,popup.Message.color);
+            Rect Area(RectTransform t){var c=new Vector3[4];t.GetWorldCorners(c);return Rect.MinMaxRect(c[0].x,c[0].y,c[2].x,c[2].y);}
+            var bounds=Area((RectTransform)popup.transform);var message=Area(popup.Message.rectTransform);var confirm=Area((RectTransform)popup.ConfirmButton.transform);var cancel=Area((RectTransform)popup.CancelButton.transform);var heading=Area((RectTransform)popup.transform.Find("ProgressHeading"));var guide=Area((RectTransform)popup.transform.Find("ProgressInputGuide"));
+            foreach(var area in new[]{message,confirm,cancel,heading,guide}){Assert.GreaterOrEqual(area.xMin,bounds.xMin);Assert.LessOrEqual(area.xMax,bounds.xMax);Assert.GreaterOrEqual(area.yMin,bounds.yMin);Assert.LessOrEqual(area.yMax,bounds.yMax);}
+            foreach(var area in new[]{confirm,cancel,heading,guide})Assert.IsFalse(message.Overlaps(area));Assert.IsFalse(confirm.Overlaps(cancel));
+            Assert.IsTrue(popup.transform.Find("ProgressInputGuide").gameObject.activeSelf);Assert.AreSame(popup.CancelButton.gameObject,EventSystem.current.currentSelectedGameObject);popup.CancelButton.onClick.Invoke();Assert.IsFalse(popup.IsOpen);Assert.AreEqual(0,service.Starts);Assert.AreEqual(0,service.Saves);Assert.AreEqual(0,service.Retries);
+            frame++;popup.OpenNotice("閉じるだけの通知",false,true,dialogs,null,()=>true);Assert.IsFalse(popup.transform.Find("ProgressInputGuide").gameObject.activeSelf);popup.CancelButton.onClick.Invoke();Assert.IsFalse(popup.IsOpen);
         }
         [TestCase(false)][TestCase(true)]
         public void 個別進行Dialogは失敗と同計画再試行を所有し同frame二重実行を拒否する(bool newGame)
@@ -854,7 +868,7 @@ namespace Olca.Tests.Application
                 var popup=ProgressPopup();var service=new ProgressOperationsProbe();int results=0;ProgressActionOutcome outcome=ProgressActionOutcome.Closed;popup.Completed+=r=>{results++;outcome=r.Outcome;};
                 if(newGame){popup.OpenNewGame(service,dialogs,scope,()=>true);Assert.AreEqual(0,service.Starts);popup.ConfirmButton.onClick.Invoke();Assert.AreEqual(47,service.ConfirmedRevision);}
                 else popup.OpenManualSave(service,dialogs,scope,()=>true);
-                Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(popup.CancelButton.interactable);popup.CancelButton.onClick.Invoke();Assert.IsTrue(popup.IsOpen);
+                Assert.AreEqual(newGame,popup.transform.Find("ProgressInputGuide").gameObject.activeSelf);Assert.AreEqual(1,dialogs.ActiveCount);Assert.IsFalse(popup.CancelButton.interactable);popup.CancelButton.onClick.Invoke();Assert.IsTrue(popup.IsOpen);
                 var old=popup.ConfirmButton.onClick;frame++;old.Invoke();old.Invoke();Assert.AreEqual(1,service.Retries);Assert.AreEqual(1,dialogs.ActiveCount);
                 service.RetrySucceeds=true;frame++;old.Invoke();Assert.AreEqual(2,service.Retries);Assert.AreEqual(newGame?1:0,service.Starts);Assert.AreEqual(newGame?0:1,service.Saves);
                 if(newGame){Assert.IsFalse(popup.IsOpen);Assert.AreEqual(ProgressActionOutcome.NewGameStarted,outcome);}
