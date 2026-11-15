@@ -488,3 +488,40 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class OutsideChargeHoldTests
+    {
+        [NUnit.Framework.TestCase(1,false)] [NUnit.Framework.TestCase(59,false)] [NUnit.Framework.TestCase(60,true)] [NUnit.Framework.TestCase(75,true)]
+        public void 保持だけで蓄積し解放時の閾値を判定する(int heldFrames,bool charged)
+        {
+            var h=new Olca.Core.Logic.Integration.OutsideChargeHoldInput();for(int f=0;f<heldFrames;f++)NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideBasicRelease.None,h.Advance(f,true,f==0,true,true,false,60,out _));
+            NUnit.Framework.Assert.AreEqual(System.Math.Min(60,heldFrames),h.Frames);NUnit.Framework.Assert.AreEqual(charged?Olca.Core.Logic.Integration.OutsideBasicRelease.Charged:Olca.Core.Logic.Integration.OutsideBasicRelease.Normal,h.Advance(heldFrames,false,false,true,true,false,60,out _));NUnit.Framework.Assert.AreEqual(0,h.Frames);
+        }
+        [NUnit.Framework.Test] public void 同じframeの再読取は蓄積を増やさず瞬間押下は通常になる()
+        {
+            var h=new Olca.Core.Logic.Integration.OutsideChargeHoldInput();h.Advance(0,true,true,true,true,false,60,out _);for(int n=0;n<10;n++)h.Advance(0,true,true,true,true,false,60,out _);NUnit.Framework.Assert.AreEqual(1,h.Frames);h.Reset();NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideBasicRelease.Normal,h.Advance(0,false,true,true,true,false,60,out _));
+        }
+        [NUnit.Framework.Test] public void 後隙中は6frameを超えて保持しても蓄積せず終了後から始める()
+        {
+            var h=new Olca.Core.Logic.Integration.OutsideChargeHoldInput();for(int f=0;f<90;f++){h.Advance(f,true,f==0,true,false,true,60,out bool reserve);NUnit.Framework.Assert.AreEqual(f==0,reserve);NUnit.Framework.Assert.AreEqual(0,h.Frames);}h.Advance(90,true,false,true,true,false,60,out _);NUnit.Framework.Assert.AreEqual(1,h.Frames);NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideBasicRelease.Normal,h.Advance(91,false,false,true,true,false,60,out _));
+        }
+        [NUnit.Framework.Test] public void 開始前の解放は新しい通常要求を作らず共有予約側へ任せる()
+        {
+            var h=new Olca.Core.Logic.Integration.OutsideChargeHoldInput();h.Advance(0,true,true,true,false,true,60,out bool reserve);NUnit.Framework.Assert.IsTrue(reserve);NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideBasicRelease.None,h.Advance(1,false,false,true,true,false,60,out _));
+        }
+        [NUnit.Framework.Test] public void カードや被弾の蓄積取消後は保持からゼロで再開する()
+        {
+            var h=new Olca.Core.Logic.Integration.OutsideChargeHoldInput();for(int f=0;f<60;f++)h.Advance(f,true,f==0,true,true,false,60,out _);h.ClearAccumulation();h.Advance(60,true,false,true,true,false,60,out _);NUnit.Framework.Assert.AreEqual(1,h.Frames);NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideBasicRelease.Normal,h.Advance(61,false,false,true,true,false,60,out _));
+        }
+        [NUnit.Framework.TestCase(0)] [NUnit.Framework.TestCase(1)] public void 無効化で保持を忘れ解放だけでは攻撃しない(int disabledFrame)
+        {
+            var h=new Olca.Core.Logic.Integration.OutsideChargeHoldInput();h.Advance(0,true,true,true,true,false,60,out _);h.Advance(disabledFrame,true,false,false,true,false,60,out _);NUnit.Framework.Assert.IsFalse(h.IsHeld);NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideBasicRelease.None,h.Advance(2,false,false,true,true,false,60,out _));
+        }
+        [NUnit.Framework.TestCase(true)] [NUnit.Framework.TestCase(false)] public void 発動済みタメは既存蹴り保存へ任意planを添えて復元し次段を作らない(bool grounded)
+        {
+            var p=new Olca.Core.Domain.PlayerCharacter(100);var plan=Olca.Core.Logic.Integration.OutsideChargeKickData.Create(p,grounded);var seq=new Olca.Core.Logic.Integration.OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());seq.Configure(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Timings());NUnit.Framework.Assert.IsTrue(seq.TryStartCharge(0,grounded,1,plan,true));plan.Power=999;NUnit.Framework.Assert.AreEqual(20,seq.ChargePlan.Power);var state=seq.CaptureState(0,grounded,1);var restored=new Olca.Core.Logic.Integration.OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());restored.Configure(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Timings());restored.RestoreState(state,0,grounded,1);restored.RestoreChargePlan(seq.ChargePlan);NUnit.Framework.Assert.IsTrue(restored.IsCharged);restored.Observe(6,grounded,1);NUnit.Framework.Assert.IsTrue(restored.TryMarkHit(0));NUnit.Framework.Assert.IsFalse(restored.TryMarkHit(0));restored.Observe(21,grounded,1);NUnit.Framework.Assert.IsFalse(restored.IsActive);NUnit.Framework.Assert.IsNull(restored.ChargePlan);NUnit.Framework.Assert.AreEqual(1,restored.NextGroundStage);
+        }
+    }
+}

@@ -18,6 +18,36 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void 外界タメ入力は通常と明示Pauseのみ保持を認めfocusとhost初回では解放を発動しない(int mode)
+        {
+            var model=new Olca.Core.Logic.Integration.OutsideExplorationSession();model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            var pt=typeof(GameplayPause);var stat=BindingFlags.Static|BindingFlags.NonPublic;var rel=pt.GetField("awaitRelease",stat);var res=pt.GetField("resumeFrames",stat);bool oldPause=GameplayPause.IsPaused;var oldRel=rel.GetValue(null);var oldRes=res.GetValue(null);GameplayPause.SetPaused(false);rel.SetValue(null,false);res.SetValue(null,0);
+            try{using(var input=new UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var lease=model.AttachPresentation()){
+                object driver=new object();runtime.Attach(driver,input);var flags=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",flags).GetValue(runtime);long freq=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+freq*10;typeof(UnityLogicalLoop).GetField("readTimestamp",flags).SetValue(loop,(Func<long>)(()=>now));runtime.Pump(driver,true);var samples=(List<TimestampedLogicalInput>)typeof(UnityInputProvider).GetField("events",flags).GetValue(input);
+                void Step(bool held){samples.Add(new TimestampedLogicalInput(now+1,new Olca.Core.Logic.Integration.LogicalInput{HasInputSample=true,HasChargeHoldSample=true,AnyKey=held,ChargeHoldButton=held,BasicAttackButton=held}));now+=freq/60+1;runtime.Pump(driver,true);}
+                if(mode!=4){Step(false);Step(false);}
+                if(mode==1){runtime.SetCovered(driver,true);runtime.Pump(driver,false);Assert.IsTrue(runtime.ResumeDirectionAfterExplicitPause(driver));runtime.SetCovered(driver,false);rel.SetValue(null,true);}
+                if(mode==2){runtime.ResetInputForFocus(driver,false);runtime.ResetInputForFocus(driver,true);}
+                if(mode==3){runtime.Detach(driver);driver=new object();runtime.Attach(driver,input);}
+                for(int n=0;n<65;n++)Step(true);
+                if(mode<=1)Assert.GreaterOrEqual(model.ChargeFrames,60);else Assert.AreEqual(0,model.ChargeFrames);
+                Step(false);Assert.AreEqual(mode<=1,model.NormalKick.IsCharged);if(mode>=2)Assert.IsFalse(model.IsAttacking);
+            }}finally{GameplayPause.SetPaused(oldPause);rel.SetValue(null,oldRel);res.SetValue(null,oldRes);model.Dispose();}
+        }
+        [TestCase(1920,1080)] [TestCase(1440,1080)] [TestCase(3840,2160)]
+        public async Task 探索タメ表示は蓄積完了解放を区別し表示だけでは時計とHPを進めない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var ring=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Single(v=>v.name=="OutsideProvisionalChargeRing");var caption=view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideProvisionalKickCaptionText");
+                for(int n=0;n<60;n++){model.TickTraversal(0);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);view.Render();Assert.IsTrue(ring.enabled);StringAssert.Contains(n==59?"カンリョウ":"タメチュウ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);}
+                long frame=model.Core.Frame;int hp=model.Player.CurrentHp;var sprite=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite;for(int n=0;n<30;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(hp,model.Player.CurrentHp);Assert.AreSame(sprite,view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite);
+                model.TickTraversal(0);Assert.IsTrue(model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true},false,true,true,out _));view.Render();Assert.IsFalse(ring.enabled);StringAssert.Contains("タメ",caption.text);StringAssert.Contains("ジュンビ",caption.text);Assert.IsTrue(model.NormalKick.IsCharged);
+                Assert.IsTrue(binding.ReturnToHub());Assert.IsFalse(ring.enabled);
+            }
+        }
         private GameObject host, events;
         private ResourceManager resources;
         private DialogManager dialogs;
@@ -1230,7 +1260,7 @@ namespace Olca.Tests.Application
             Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
             using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();
-                var fx=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true);Assert.AreEqual(3,fx.Length);Assert.IsTrue(fx.All(v=>!v.raycastTarget));Assert.IsTrue(fx.All(v=>v.GetComponent<CanvasRenderer>()!=null),"実描画に必要なRendererを全ピクセル演出へ付ける");
+                var fx=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true);Assert.AreEqual(4,fx.Length);Assert.IsFalse(fx.Single(v=>v.name=="OutsideProvisionalChargeRing").enabled);Assert.IsTrue(fx.All(v=>!v.raycastTarget));Assert.IsTrue(fx.All(v=>v.GetComponent<CanvasRenderer>()!=null),"実描画に必要なRendererを全ピクセル演出へ付ける");
                 var burst=fx.Where(v=>v.name.StartsWith("OutsideProvisionalTargetDeath_")).ToArray();Assert.IsTrue(burst.All(v=>!v.enabled));
                 model.TrialTarget.TakeDamage(999,Olca.Core.Domain.ElementType.None);model.SecondTrialTarget.TakeDamage(999,Olca.Core.Domain.ElementType.None);view.Render();Assert.IsTrue(burst.All(v=>v.enabled));
                 long frame=model.Core.Frame;for(int n=0;n<100;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.IsTrue(burst.All(v=>v.enabled));

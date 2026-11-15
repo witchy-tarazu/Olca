@@ -10,6 +10,117 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static OutsideExplorationSession Charge291(){var s=Sword161(175);s.EnableTrialNormalKick();return s;}
+        private static bool ChargeStep291(OutsideExplorationSession s,bool held,bool down=false,bool card=false,bool actions=true,bool permit=true)
+        {s.TickTraversal(0);return s.ProcessAttackInput(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=held,BasicAttackButton=held,BasicAttackButtonDown=down,CardUseButtonDown=card,CardUsePressedAt=card?1:0,BasicAttackPressedAt=down?2:0},false,actions,permit,out _);}
+        [TestCase(1,false)] [TestCase(59,false)] [TestCase(60,true)] [TestCase(90,true)]
+        public void 探索の押下だけは攻撃せず解放で通常またはタメが各敵へ一回命中する(int frames,bool charged)
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                long gauge=s.Core.CardGauge.CurrentUnits,revision=s.Cards.HandRevision;for(int n=0;n<frames;n++){Assert.IsFalse(ChargeStep291(s,true,n==0));Assert.IsFalse(s.IsAttacking);}Assert.AreEqual(Math.Min(frames,60),s.ChargeFrames);Assert.IsTrue(ChargeStep291(s,false));Assert.AreEqual(charged,s.NormalKick.IsCharged);
+                for(int n=0;n<8;n++)s.TickTraversal(0);Assert.AreEqual(charged?100:110,s.TrialTarget.CurrentHp);Assert.AreEqual(charged?100:110,s.SecondTrialTarget.CurrentHp);for(int n=0;n<15;n++)s.TickTraversal(0);Assert.AreEqual(charged?100:110,s.TrialTarget.CurrentHp);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(revision,s.Cards.HandRevision);if(charged)Assert.AreEqual(1,s.NormalKick.NextGroundStage);
+            }
+        }
+        [TestCase(0)] [TestCase(5)] [TestCase(6)] [TestCase(8)] [TestCase(20)]
+        public void 発動したタメは任意planと命中済みを保存しcoldで同じ効果だけ継続する(int age)
+        {
+            using(var s=Charge291())using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation()){for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);Assert.IsTrue(ChargeStep291(s,false));for(int n=0;n<age;n++)s.TickTraversal(0);}
+                var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);Assert.NotNull(data.ChargeKick);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;var round=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(data));Assert.AreEqual(data.Key(),round.Key());Assert.IsTrue(cold.RestoreSavedState(actor,round,null,defs));Assert.IsFalse(cold.RestoreSavedState(actor,round,null,defs));Assert.IsTrue(cold.NormalKick.IsCharged);Assert.AreEqual(0,cold.ChargeFrames);
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<30;n++){s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(s.TrialTarget.CurrentHp,cold.TrialTarget.CurrentHp);Assert.AreEqual(s.SecondTrialTarget.CurrentHp,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(s.NormalKick.IsCharged,cold.NormalKick.IsCharged);}Assert.AreEqual(100,cold.TrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void 保持中は通常移動でき離地後の解放は空中タメとして落下を続け着地で中断する()
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);long x=s.Core.Position;s.TickTraversal(.5f);s.ProcessAttackInput(new LogicalInput{BasicAttackButton=true},false,true,true,out _);Assert.Greater(s.Core.Position,x);BombPosition289(s,s.Core.Position,s.Core.Facing,60000);Assert.IsTrue(ChargeStep291(s,false));Assert.IsTrue(s.NormalKick.IsCharged);Assert.AreEqual(OutsideKickKind.AirForward,s.NormalKick.Kind);long height=s.Core.Height;
+                s.TickTraversal(.5f);Assert.Less(s.Core.Height,height);Assert.Greater(s.Core.Position,x);for(int n=0;n<60&&!s.Core.IsGrounded;n++)s.TickTraversal(0);Assert.IsTrue(s.Core.IsGrounded);Assert.IsFalse(s.NormalKick.IsActive);
+            }
+        }
+        [Test] public void カード入力は蓄積を解除し保持中ならカード後隙終了後にゼロから始める()
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);ChargeStep291(s,true,false,true);Assert.AreEqual(0,s.ChargeFrames);Assert.IsFalse(s.NormalKick.IsCharged);for(int n=0;n<60&&s.IsAttacking;n++){ChargeStep291(s,true);if(s.IsAttacking)Assert.AreEqual(0,s.ChargeFrames);}if(s.ChargeFrames==0)ChargeStep291(s,true);Assert.AreEqual(1,s.ChargeFrames);Assert.IsTrue(ChargeStep291(s,false));Assert.IsFalse(s.NormalKick.IsCharged);
+            }
+        }
+        [TestCase(14,false)] [TestCase(17,true)]
+        public void 後隙中の解放は元の六frame予約の有効期限だけで通常へ接続する(int pressAge,bool expected)
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);ChargeStep291(s,false);long start=s.Core.Frame;for(int n=1;n<pressAge;n++)ChargeStep291(s,false);ChargeStep291(s,true,true);ChargeStep291(s,false);while(s.Core.Frame<start+21)ChargeStep291(s,false);Assert.AreEqual(expected,s.NormalKick.IsActive);if(expected){Assert.IsFalse(s.NormalKick.IsCharged);Assert.AreEqual(OutsideKickKind.GroundFirst,s.NormalKick.Kind);}
+            }
+        }
+        [Test] public void Pause取消後の保持例外はゼロで始まりfocus無効化の解放は発動しない()
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);s.CancelChargeInput();ChargeStep291(s,true,false,false,false,true);Assert.AreEqual(1,s.ChargeFrames);Assert.IsTrue(ChargeStep291(s,false,false,false,false,true));Assert.IsFalse(s.NormalKick.IsCharged);while(s.IsAttacking)ChargeStep291(s,false);s.CancelChargeInput();ChargeStep291(s,true,false,false,false,false);Assert.IsFalse(ChargeStep291(s,false));Assert.IsFalse(s.IsAttacking);
+            }
+        }
+        [TestCase(1,false)] [TestCase(60,true)]
+        public void 明示Pause復帰の物理保持sampleだけは中立待ち中にも解放攻撃できる(int frames,bool charged)
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<frames;n++)Assert.IsFalse(ChargeStep291(s,true,false,false,false,true));
+                Assert.IsTrue(ChargeStep291(s,false,false,false,false,true));Assert.AreEqual(charged,s.NormalKick.IsCharged);
+            }
+        }
+        [TestCase(1)] [TestCase(60)]
+        public void 信頼済みsampleの欠落またはfocus初回host停止は蓄積を捨て次の解放を発動しない(int frames)
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<frames;n++)ChargeStep291(s,true,n==0);
+                s.TickTraversal(0);Assert.IsFalse(s.ProcessAttackInput(new LogicalInput(),false,false,true,out _));Assert.AreEqual(0,s.ChargeFrames);
+                Assert.IsFalse(ChargeStep291(s,false));Assert.IsFalse(s.IsAttacking);
+                for(int n=0;n<frames;n++)ChargeStep291(s,true,n==0);
+                ChargeStep291(s,true,false,false,false,false);Assert.AreEqual(0,s.ChargeFrames);
+                Assert.IsFalse(ChargeStep291(s,false));Assert.IsFalse(s.IsAttacking);
+            }
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 停止した製品入力は期限内のカードまたは通常予約も実行せず取り消す(bool card)
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);Assert.IsTrue(ChargeStep291(s,false));
+                long started=s.Core.Frame;while(s.Core.Frame<started+17)s.TickTraversal(0);
+                s.ProcessCardUseInput(card,false,!card,card?2:0,card?0:2,out _);Assert.AreNotEqual(AttackReservationKind.None,s.PendingAttack);
+                while(s.Core.Frame<started+21)s.TickTraversal(0);
+                Assert.IsFalse(s.ProcessAttackInput(new LogicalInput{HasChargeHoldSample=true},false,false,false,out _));
+                Assert.AreEqual(AttackReservationKind.None,s.PendingAttack);Assert.IsFalse(s.IsAttacking);
+            }
+        }
+        [TestCase(1)] [TestCase(-1)]
+        public void 空中タメ専用の試用範囲は腰高へ置き通常蹴りの旧境界を変えない(int facing)
+        {
+            var actor=new PlayerCharacter(100);var air=OutsideChargeKickData.Create(actor,false);OutsideChargeKickData.Bounds(false,out long low,out long high);Assert.AreEqual(30000,low);Assert.AreEqual(120000,high);
+            Assert.IsTrue(air.Contains(0,24000,facing,180000*facing));Assert.IsFalse(air.Contains(0,24001,facing,180000*facing));Assert.IsFalse(air.Contains(0,24000,facing,180001*facing));Assert.IsFalse(air.Contains(0,0,facing,-facing));
+            Assert.IsTrue(OutsideKickTrialDefinition.Contains(OutsideKickKind.AirForward,0,99000,facing,facing));Assert.IsFalse(air.Contains(0,99000,facing,facing));
+        }
+        [TestCase(30000,true)] [TestCase(240000,false)]
+        public void 空中タメは下の足元ではなく試用蹴り範囲の敵だけへ一回命中する(long height,bool hits)
+        {
+            using(var s=Charge291())using(var lease=s.AttachPresentation()){
+                for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);BombPosition289(s,s.Core.Position,1,height);Assert.IsTrue(ChargeStep291(s,false));Assert.IsTrue(s.NormalKick.IsCharged);
+                for(int n=0;n<15;n++)s.TickTraversal(0);Assert.AreEqual(hits?100:120,s.TrialTarget.CurrentHp);Assert.AreEqual(hits?100:120,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(0)] [TestCase(5)] [TestCase(8)]
+        public void 空中タメの専用範囲をcold復元して同じ落下と命中結果へ戻る(int age)
+        {
+            using(var s=Charge291())using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation()){for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);BombPosition289(s,s.Core.Position,1,240000);Assert.IsTrue(ChargeStep291(s,false));for(int n=0;n<age;n++)s.TickTraversal(0);}
+                var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);Assert.IsFalse(data.ChargeKick.Grounded);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;Assert.IsTrue(cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(data)),null,defs));
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<30;n++){s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(s.Core.Height,cold.Core.Height);Assert.AreEqual(s.TrialTarget.CurrentHp,cold.TrialTarget.CurrentHp);}Assert.AreEqual(120,cold.TrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void タメplanの破損とActor不一致はlive置換前に拒否する(int invalid)
+        {
+            using(var s=Charge291())using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation()){for(int n=0;n<60;n++)ChargeStep291(s,true,n==0);ChargeStep291(s,false);}var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;
+                switch(invalid){case 0:data.ChargeKick.Power=999;break;case 1:data.ChargeKick.DefinitionId="unknown";break;case 2:data.ChargeKick.Grounded=false;break;case 3:data.ChargeKick.RequiredFrames=7;break;case 4:data.ChargeKick.StyleId=DepartureStyleDefinition.TrialFire.Id;data.ChargeKick.Element=ElementType.Fire;break;}
+                cold.TryInitializePlayer(()=>new PlayerCharacter(100));var before=cold.CaptureRuntime();var prior=cold.Player;Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,data,null,defs));var after=cold.CaptureRuntime();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(prior,cold.Player);
+            }
+        }
         private static OutsideExplorationSession Bomb289(int side=1,int startup=0,ExceedLevel level=ExceedLevel.Normal)
         {
             var session=new OutsideExplorationSession();session.TryInitializePlayer(()=>new PlayerCharacter(100));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"bomb",new PlayerAttackTiming(startup,8)}});var cards=factory.CreateStarterDeck().GetAllCards().ToArray();

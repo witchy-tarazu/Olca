@@ -382,6 +382,10 @@ namespace Olca.Core.Logic.Integration
         public OutsideKickKind Kind {get;private set;}
         public long StartedAt {get;private set;} public long EndsAt {get;private set;}
         public int AttackFacing {get;private set;}
+        private OutsideChargeKickData chargePlan;
+        public OutsideChargeKickData ChargePlan=>chargePlan?.Copy();
+        internal OutsideChargeKickData ActiveChargePlan=>chargePlan;
+        public bool IsCharged=>active&&chargePlan!=null;
         public bool IsConfigured=>timings!=null;
         public bool IsActive=>active;
         public bool HasDashTiming=>dashTiming!=null;
@@ -418,7 +422,7 @@ namespace Olca.Core.Logic.Integration
             Reset();frame=lastRequestFrame=logicalFrame;observed=true;observedFacing=facing;observedGrounded=grounded;active=value.Active;Kind=value.Kind;StartedAt=value.StartedAt;EndsAt=value.EndsAt;AttackFacing=value.AttackFacing;nextGroundStage=value.NextGroundStage;comboUntil=value.ComboUntil;foreach(int id in value.HitTargets)hitTargets.Add(id);
         }
         private void CancelOwnReservation(){if(reservation.Kind==Olca.Core.Logic.Battle.AttackReservationKind.Basic)reservation.Cancel();}
-        public void Interrupt(){active=false;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();CancelOwnReservation();}
+        public void Interrupt(){chargePlan=null;active=false;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();CancelOwnReservation();}
         public void Reset(){Interrupt();frame=lastRequestFrame=-1;observed=false;}
         public void CardStarted()=>Interrupt();
         public float ResolveHorizontal(float horizontal)
@@ -435,7 +439,7 @@ namespace Olca.Core.Logic.Integration
             if(active&&!IsDashAttack&&(LocksGroundMotion&&!grounded||!LocksGroundMotion&&grounded)){Interrupt();return;}
             if(!grounded){nextGroundStage=1;comboUntil=-1;}
             if(active&&frame>=EndsAt){
-                bool continueGround=Kind<OutsideKickKind.GroundThird;active=false;hitTargets.Clear();
+                bool continueGround=Kind<OutsideKickKind.GroundThird;chargePlan=null;active=false;hitTargets.Clear();
                 nextGroundStage=continueGround?(int)Kind+2:1;comboUntil=continueGround?checked(EndsAt+ContinuationFrames):-1;
             }
             if(nextGroundStage!=1&&frame>=comboUntil){nextGroundStage=1;comboUntil=-1;}
@@ -455,7 +459,18 @@ namespace Olca.Core.Logic.Integration
             int stage=grounded?(active?(int)Kind+2:nextGroundStage):0;
             var kind=grounded&&dashing?OutsideKickKind.Dash:grounded?(OutsideKickKind)(stage-1):vertical>0?OutsideKickKind.AirUp:vertical<0?OutsideKickKind.AirDown:OutsideKickKind.AirForward;
             long end=checked(frame+(kind==OutsideKickKind.Dash?dashTiming:timings[(int)kind]).Duration);if(kind!=OutsideKickKind.Dash&&grounded&&stage<3)checked{_ = end+ContinuationFrames;}
-            active=true;Kind=kind;AttackFacing=facing;StartedAt=frame;EndsAt=end;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();reservation.Cancel();return true;
+            chargePlan=null;active=true;Kind=kind;AttackFacing=facing;StartedAt=frame;EndsAt=end;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();reservation.Cancel();return true;
+        }
+        public bool TryStartCharge(long logicalFrame,bool grounded,int facing,OutsideChargeKickData plan,bool bodyAllowed)
+        {
+            if(plan==null)throw new ArgumentNullException(nameof(plan));Observe(logicalFrame,grounded,facing,bodyAllowed);if(!IsConfigured||!bodyAllowed||active)return false;
+            var kind=grounded?OutsideKickKind.GroundThird:OutsideKickKind.AirForward;var timing=timings[(int)kind];
+            var state=new OutsideKickStateData{DefinitionKey=OutsideKickTrialDefinition.SaveDefinitionKey,Active=true,Kind=kind,StartedAt=frame,EndsAt=checked(frame+timing.Duration),ComboUntil=-1,AttackFacing=facing,NextGroundStage=1,HitTargets=new int[0]};plan.Validate(state);
+            active=true;Kind=kind;StartedAt=frame;EndsAt=state.EndsAt;AttackFacing=facing;nextGroundStage=1;comboUntil=-1;hitTargets.Clear();reservation.Cancel();lastRequestFrame=frame;chargePlan=plan.Copy();return true;
+        }
+        public void RestoreChargePlan(OutsideChargeKickData plan)
+        {
+            if(plan==null){chargePlan=null;return;}plan.Validate(CaptureState(frame,observedGrounded,observedFacing));chargePlan=plan.Copy();
         }
         public bool TryRequest(long logicalFrame,bool grounded,int facing,int vertical=0,bool bodyAllowed=true,bool dashing=false,bool otherAttack=false,bool knownLaterThanCard=false)
         {
@@ -477,4 +492,58 @@ namespace Olca.Core.Logic.Integration
         {if(targetId<0)throw new ArgumentOutOfRangeException(nameof(targetId));return IsHitWindow&&hitTargets.Add(targetId);}
     }
 
+}
+
+namespace Olca.Core.Logic.Integration
+{
+    public enum OutsideBasicRelease { None, Normal, Charged }
+    /// <summary>物理保持と6frame予約は別。1論理frameにつき一度だけ蓄積し、保持は保存しない。</summary>
+    public sealed class OutsideChargeHoldInput
+    {
+        private long lastFrame=-1;
+        public bool IsHeld {get;private set;} public bool IsAccumulating {get;private set;}
+        public int Frames {get;private set;}
+        public void ClearAccumulation(){IsAccumulating=false;Frames=0;}
+        public void Reset(){lastFrame=-1;IsHeld=false;ClearAccumulation();}
+        public OutsideBasicRelease Advance(long frame,bool held,bool down,bool enabled,bool canAccumulate,bool hasAction,int required,out bool reserveNormal)
+        {
+            if(frame<0||frame<lastFrame||required<1)throw new System.ArgumentOutOfRangeException();reserveNormal=false;
+            if(!enabled){lastFrame=frame;IsHeld=false;ClearAccumulation();return OutsideBasicRelease.None;}
+            if(frame==lastFrame)return OutsideBasicRelease.None;lastFrame=frame;
+            bool prior=IsHeld;IsHeld=held;
+            if(!canAccumulate){ClearAccumulation();reserveNormal=down&&hasAction;return OutsideBasicRelease.None;}
+            if(held){IsAccumulating=true;Frames=System.Math.Min(required,Frames+1);return OutsideBasicRelease.None;}
+            var result=prior&&IsAccumulating||down?(Frames>=required?OutsideBasicRelease.Charged:OutsideBasicRelease.Normal):OutsideBasicRelease.None;ClearAccumulation();return result;
+        }
+    }
+    /// <summary>地上/空中とも前方蹴りの明示試用。威力20・削り10・既存6/3/12は正式バランスではない。</summary>
+    [System.Runtime.Serialization.DataContract]
+    public sealed class OutsideChargeKickData
+    {
+        public const string TrialId="trial-outside-charged-kick-v1";
+        [System.Runtime.Serialization.DataMember] public string DefinitionId,StyleId;
+        [System.Runtime.Serialization.DataMember] public bool Grounded;
+        [System.Runtime.Serialization.DataMember] public int Power,PoiseDamage,RequiredFrames;
+        [System.Runtime.Serialization.DataMember] public Olca.Core.Domain.ElementType Element;
+        // 空中は仮想の足元ではなく、腰高へ伸ばす蹴りを含む専用試用範囲。通常蹴りの旧hashは変えない。
+        public static void Bounds(bool grounded,out long bottom,out long top){bottom=grounded?-12000:30000;top=grounded?90000:120000;}
+        public bool Contains(long x,long y,int facing,long targetX)
+        {
+            if(facing!=-1&&facing!=1)throw new System.ArgumentOutOfRangeException(nameof(facing));long dx=checked((targetX-x)*facing);
+            if(dx<0||dx>OutsideKickTrialDefinition.Range)return false;Bounds(Grounded,out long bottom,out long top);
+            return checked(y+bottom)<=OutsideKickTrialDefinition.TargetHeight&&checked(y+top)>=0;
+        }
+        public OutsideChargeKickData Copy()=>(OutsideChargeKickData)MemberwiseClone();
+        public static bool Known(Olca.Core.Domain.PlayerCharacter player)=>player!=null&&(player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.BasicId||player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
+        public static int RequiredFor(Olca.Core.Domain.PlayerCharacter player)=>player?.AttackGrowth?.ChargeFrames(60)??60;
+        public static OutsideChargeKickData Create(Olca.Core.Domain.PlayerCharacter player,bool grounded)
+        {
+            if(!Known(player))throw new System.ArgumentException("この神依の試用タメは未登録です");return new OutsideChargeKickData{DefinitionId=TrialId,StyleId=player.DepartureStyle.Id,Grounded=grounded,Power=20,PoiseDamage=10,RequiredFrames=RequiredFor(player),Element=player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id?Olca.Core.Domain.ElementType.Fire:Olca.Core.Domain.ElementType.None};
+        }
+        public void Validate(OutsideKickStateData kick)
+        {
+            if(DefinitionId!=TrialId||StyleId!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&StyleId!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id||Power!=20||PoiseDamage!=10||RequiredFrames<1||Element!=(StyleId==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id?Olca.Core.Domain.ElementType.Fire:Olca.Core.Domain.ElementType.None)||kick==null||!kick.Active||kick.Kind!=(Grounded?OutsideKickKind.GroundThird:OutsideKickKind.AirForward))throw new System.ArgumentException("試用タメ保存の定義/行動が不正です");
+        }
+        public void ValidateActor(Olca.Core.Domain.PlayerCharacter actor){if(!Known(actor)||actor.DepartureStyle.Id!=StyleId||RequiredFor(actor)!=RequiredFrames)throw new System.ArgumentException("試用タメと復元するプレイヤーが一致しません");}
+    }
 }
