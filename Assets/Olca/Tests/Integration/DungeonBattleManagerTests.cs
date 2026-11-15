@@ -3238,6 +3238,59 @@ namespace Olca.Tests.Integration
             }
             return c;
         }
+        [TestCase(ClearReturnStage.Choosing,false)][TestCase(ClearReturnStage.Choosing,true)]
+        [TestCase(ClearReturnStage.Awarded,false)][TestCase(ClearReturnStage.Awarded,true)]
+        public void 未確定帰還は新規開始の表示と旧確認を拒否し帰還済み境界では復帰する(ClearReturnStage stage,bool awaiting)
+        {
+            var c=StartStyles(true);c.gameObject.SetActive(true);Call(c,"RefreshProgressActions");var button=(UnityEngine.UI.Button)Get(c,"newGameButton");Assert.IsTrue(button.gameObject.activeSelf);var oldEntry=button.onClick;
+            oldEntry.Invoke();Assert.IsTrue((bool)Get(c,"progressDialogOpen"));var oldConfirm=((UnityEngine.UI.Button)Get(c,"progressConfirmButton")).onClick;
+            c.enabled=false;
+            var session=(ClearReturnSession)Get(c,"clearReturnSession");var profile=(ClearReturnProfile)Get(session,"current");profile.Flow=new ClearReturnData{RunId="blocked-return",Stage=stage};Set(c,"awaitingCheckpointChoice",awaiting);
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(store.ActivePath);long revision=session.Snapshot.Revision;
+            c.enabled=true;Call(c,"RefreshProgressActions");Assert.IsFalse(button.gameObject.activeSelf);Assert.IsFalse((bool)Get(c,"CanStartNewGame"));Assert.IsFalse((bool)Get(c,"CanResumeNewGame"));Assert.IsFalse((bool)Get(c,"progressDialogOpen"));
+            oldEntry.Invoke();oldConfirm.Invoke();Call(c,"ConfirmNewGame");Assert.IsFalse((bool)Get(c,"progressDialogOpen"));Assert.AreEqual(revision,session.Snapshot.Revision);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));Assert.AreEqual(awaiting,Get(c,"awaitingCheckpointChoice"));
+            profile.Flow.Stage=ClearReturnStage.Returned;Call(c,"RefreshProgressActions");Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue((bool)Get(c,"CanStartNewGame"));
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 古い新規保存再試行は現在と保存待ちの未確定帰還を拒否し正規境界へ戻れば再試行できる(bool pendingOnly)
+        {
+            var c=StartStyles(true);c.gameObject.SetActive(true);Set(c,"awaitingCheckpointChoice",true);var session=(ClearReturnSession)Get(c,"clearReturnSession");
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var io=new FaultIo{Fail=true};Set(store,"io",io);
+            var operations=(Olca.Application.Management.ProgressActionOperations)c.GetType().GetMethod("ProgressOperations",Hidden).Invoke(c,null);
+            Assert.IsFalse(operations.StartNewGame(session.Snapshot.Revision));Assert.AreEqual(Olca.Presentation.Management.ProgressPendingAction.NewGame,operations.PendingAction);
+            Call(c,"RequestNewGame");Assert.IsTrue((bool)Get(c,"progressDialogOpen"));var oldRetryConfirm=((UnityEngine.UI.Button)Get(c,"progressConfirmButton")).onClick;c.enabled=false;
+            var current=(ClearReturnProfile)Get(session,"current");var pending=(ClearReturnProfile)Get(session,"pending");var blocked=pendingOnly?pending:current;blocked.Flow=new ClearReturnData{RunId="unsettled",Stage=ClearReturnStage.Choosing};
+            var bytes=System.IO.File.ReadAllBytes(store.ActivePath);long revision=session.Snapshot.Revision;io.Fail=false;
+            c.enabled=true;Call(c,"RefreshProgressActions");Assert.IsFalse((bool)Get(c,"progressDialogOpen"));oldRetryConfirm.Invoke();Assert.IsFalse(((UnityEngine.UI.Button)Get(c,"newGameButton")).gameObject.activeSelf);Assert.IsFalse((bool)Get(c,"CanResumeNewGame"));Assert.IsFalse(operations.Retry());Assert.IsTrue(session.HasPendingSave);Assert.AreEqual(revision,session.Snapshot.Revision);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+            blocked.Flow=null;Call(c,"RefreshProgressActions");Assert.IsTrue((bool)Get(c,"CanResumeNewGame"));Assert.IsTrue(operations.Retry(),session.Error);Assert.IsFalse(session.HasPendingSave);Assert.IsTrue((bool)Get(c,"awaitingCheckpointChoice"));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 正規拠点とcheckpointでは新規確認を無効化再有効化しても保持し取消は保存しない(bool checkpoint)
+        {
+            var c=StartStyles(true);c.gameObject.SetActive(true);
+            if(checkpoint){Set(c,"initialHub",false);Set(c,"clearReturnVisible",false);Set(c,"awaitingCheckpointChoice",true);Call(c,"ShowCheckpointStatus",new object[]{null});}
+            Call(c,"RefreshProgressActions");Call(c,"RequestNewGame");Assert.IsTrue((bool)Get(c,"progressDialogOpen"));
+            var store=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(store.ActivePath);long revision=c.PersistentProgress.Revision;
+            c.enabled=false;c.enabled=true;Assert.IsTrue((bool)Get(c,"progressDialogOpen"));Assert.IsTrue(((UnityEngine.UI.Button)Get(c,"progressConfirmButton")).gameObject.activeInHierarchy);
+            ((UnityEngine.UI.Button)Get(c,"progressCancelButton")).onClick.Invoke();Assert.IsFalse((bool)Get(c,"progressDialogOpen"));Assert.AreEqual(revision,c.PersistentProgress.Revision);CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));
+        }
+
+        [TestCase(false)][TestCase(true)]
+        public void 帰還済み拠点の新規開始成功は保存世代と実完了通知を更新し旧遷移を返却する(bool managed)
+        {
+            var c=StartStyles(true);c.gameObject.SetActive(true);var session=(ClearReturnSession)Get(c,"clearReturnSession");var current=(ClearReturnProfile)Get(session,"current");current.Flow=new ClearReturnData{RunId="returned-new-game",Stage=ClearReturnStage.Returned};Set(c,"initialHub",false);Set(c,"awaitingCheckpointChoice",false);Set(c,"clearReturnVisible",true);
+            string priorGeneration=session.Snapshot.CheckpointGeneration;long revision=session.Snapshot.Revision;var oldTransition=new System.Threading.CancellationTokenSource();Set(c,"transitionCts",oldTransition);
+            Olca.Presentation.Management.DialogManager dialogs=null;
+            try {
+                Call(c,"EnsureProgressPanel");var dialog=(Olca.Presentation.Management.ProgressActionDialog)Get(c,"progressActionDialog");int completed=0;dialog.Completed+=result=>{if(result.Outcome==Olca.Presentation.Management.ProgressActionOutcome.NewGameStarted)completed++;};
+                if(managed){dialogs=new Olca.Presentation.Management.DialogManager(()=>0);var operations=(Olca.Application.Management.ProgressActionOperations)c.GetType().GetMethod("ProgressOperations",Hidden).Invoke(c,null);var lifetime=(System.Func<bool>)c.GetType().GetMethod("NewGameLifetime",Hidden).Invoke(c,null);dialog.OpenNewGame(operations,dialogs,null,lifetime);}else Call(c,"RequestNewGame");
+                Assert.IsTrue(dialog.IsOpen);dialog.ConfirmFromCompatibilityApi();
+                Assert.Greater(session.Snapshot.Revision,revision);Assert.AreNotEqual(priorGeneration,session.Snapshot.CheckpointGeneration);Assert.IsNull(session.Snapshot.Flow);
+                Assert.AreEqual(1,completed,"保存成功は実ダイアログ完了からControllerへ通知する");Assert.IsTrue((bool)Get(c,"initialHub"));Assert.IsFalse((bool)Get(c,"awaitingCheckpointChoice"));Assert.IsTrue(oldTransition.IsCancellationRequested);Assert.IsFalse(dialog.IsOpen);
+            }finally{dialogs?.Dispose();if(ReferenceEquals(Get(c,"transitionCts"),oldTransition))Set(c,"transitionCts",null);oldTransition.Dispose();}
+        }
+
         [Test]
         public void スタイル表示中は残るcheckpointフラグで共通補助操作を出さず旧操作も拒否して戻れば復帰する()
         {

@@ -790,7 +790,7 @@ namespace Olca.Application.Dungeon
             if(pauseViewRegistered&&IsUserPaused&&outsideEquipmentDraft==null)SetPausePanelVisible(true);
             if(outsideEquipmentInterrupted&&OutsideEquipmentOwnerLive){outsideEquipmentInterrupted=false;ShowOutsideEquipmentAsync().Forget();}
             if(hostPanels?.IsAlive==true)ShowCheckpointStatus(checkpointStatusOverride);
-            if(progressActionDialog!=null)progressActionDialog.Resume(gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
+            if(progressActionDialog!=null)progressActionDialog.Resume(gameSystem?.Dialogs,ProgressOwner,progressActionDialog.IsNewGame?NewGameLifetime():ProgressLifetime());
             if(manager!=null&&!manager.IsSuspended)BindBattleFeedback(manager.CurrentBattle);
             if(!customizationEditorInterrupted||clearReturnSession?.Ready!=true)return;
             customizationEditorInterrupted=false;
@@ -1554,8 +1554,19 @@ namespace Olca.Application.Dungeon
             !exchangeOpen && !styleSelectionOpen && !cardCollectionOpen && !departureWriting && !progressStartupBlocked &&
             clearReturnSession!=null&&clearReturnSession.Ready&&(initialHub||clearReturnSession.Snapshot.Flow?.Stage==ClearReturnStage.Returned)&&
             clearReturnSession.Snapshot.NextDeparture?.ParentRunId!=(clearReturnSession.Snapshot.Flow?.RunId??NextDepartureData.InitialParent);
+        // checkpoint選択待ちの旗は帰還中も残る。保存前の表示候補も含め、新規開始は正規境界だけに限定する。
+        private bool HasSafeNewGameFlow
+        {
+            get { var display=clearReturnSession?.DisplayFlow;return !HasIncompleteReturn&&(display==null||display.Stage==ClearReturnStage.Returned); }
+        }
+        private bool IsNewGameBoundary => HasSafeNewGameFlow&&(IsProgressHub||awaitingCheckpointChoice);
+        private System.Func<bool> NewGameLifetime()
+        {
+            // 保存成功直後はFlowが空になる。完了通知までは開始地点の消失で寿命を切らない。
+            var live=ProgressLifetime();return ()=>live()&&HasSafeNewGameFlow;
+        }
         private bool CanStartNewGame => !exchangeOpen&&!styleSelectionOpen&&!progressStartupBlocked&&clearReturnSession!=null&&clearReturnSession.Ready&&
-            (IsProgressHub||awaitingCheckpointChoice)&&!clearReturnSession.HasPendingSave;
+            IsNewGameBoundary&&!clearReturnSession.HasPendingSave;
         private void RefreshProgressActions()
         {
             if(progressActionDialog!=null)progressActionDialog.RefreshLifetime();
@@ -1564,7 +1575,7 @@ namespace Olca.Application.Dungeon
             bool allowProgressActions=!exchangeOpen&&!styleSelectionOpen&&!OutsideRouteBusy&&!CustomizationAcquisitionOpen&&!CustomizationEditorOpen&&!CustomizationUnlockOpen&&!progressDialogOpen&&!cardCollectionOpen&&!(clearReturnView?.HasMenuModal??false);
             manualSaveButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
             manualSaveButton.interactable=IsProgressHub&&(!clearReturnSession.HasPendingSave||CanResumeProgressAction);
-            newGameButton.gameObject.SetActive(explorationDeckLibrary?.IsOpen!=true&&!outsideDepartureDeckMenuOpen&&allowProgressActions&&(IsProgressHub||awaitingCheckpointChoice));newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
+            newGameButton.gameObject.SetActive(explorationDeckLibrary?.IsOpen!=true&&!outsideDepartureDeckMenuOpen&&allowProgressActions&&IsNewGameBoundary);newGameButton.interactable=CanStartNewGame||CanResumeNewGame;
             manualSaveButton.transform.SetAsLastSibling();newGameButton.transform.SetAsLastSibling();
             if(customizationEditorButton!=null){
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
@@ -1587,12 +1598,15 @@ namespace Olca.Application.Dungeon
             EnsureProgressPanel();progressActionDialog.OpenNotice(message,confirm,canClose,gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
         }
         private bool CanResumeProgressAction=>!exchangeOpen&&!styleSelectionOpen&&progressOperations!=null&&progressOperations.PendingAction!=Olca.Presentation.Management.ProgressPendingAction.None&&(IsProgressHub||awaitingCheckpointChoice);
-        private bool CanResumeNewGame=>CanResumeProgressAction&&progressOperations.PendingAction==Olca.Presentation.Management.ProgressPendingAction.NewGame;
+        private bool CanResumeNewGame=>IsNewGameBoundary&&CanResumeProgressAction&&progressOperations.PendingAction==Olca.Presentation.Management.ProgressPendingAction.NewGame;
         private Olca.Application.Management.ProgressActionOperations ProgressOperations()
         {
             if(progressOperations!=null)return progressOperations;
             var binding=hostPanels;var session=clearReturnSession;
-            return progressOperations=new Olca.Application.Management.ProgressActionOperations(session,()=>CanStartNewGame,()=>CreateCardFactory().CreateStarterDeck().GetAllCards(),()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&binding.IsAlive&&ReferenceEquals(clearReturnSession,session),clearReturnStore is ClearReturnFileStore progressFile?(System.Func<long,bool>)(revision=>session.StartNewGameWithLoadout(revision,CreateNewGameLoadout(),new InitialExplorationDeckWriter(progressFile.DirectoryPath))):null);
+            Olca.Application.Management.ProgressActionOperations operations=null;
+            // 新規保存の古い再試行は表示入口を通らないため、捕捉した操作自身の寿命でも帰還境界を検証する。
+            operations=new Olca.Application.Management.ProgressActionOperations(session,()=>CanStartNewGame,()=>CreateCardFactory().CreateStarterDeck().GetAllCards(),()=>this!=null&&isActiveAndEnabled&&!runtimeReleased&&!runtimeReleasing&&binding.IsAlive&&ReferenceEquals(clearReturnSession,session)&&(operations.PendingAction!=Olca.Presentation.Management.ProgressPendingAction.NewGame||IsNewGameBoundary),clearReturnStore is ClearReturnFileStore progressFile?(System.Func<long,bool>)(revision=>session.StartNewGameWithLoadout(revision,CreateNewGameLoadout(),new InitialExplorationDeckWriter(progressFile.DirectoryPath))):null);
+            return progressOperations=operations;
         }
         private void SaveProgressFromUi()
         {
@@ -1604,7 +1618,7 @@ namespace Olca.Application.Dungeon
         {
             if(this==null||!isActiveAndEnabled||runtimeReleased||runtimeReleasing)return;
             if(progressDialogOpen||gameSystem?.Dialogs.ActiveCount>0||clearReturnView?.ManagementContext?.DialogBlocksInput==true||!(CanStartNewGame||CanResumeNewGame))return;
-            EnsureProgressPanel();progressActionDialog.OpenNewGame(ProgressOperations(),gameSystem?.Dialogs,ProgressOwner,ProgressLifetime());
+            EnsureProgressPanel();progressActionDialog.OpenNewGame(ProgressOperations(),gameSystem?.Dialogs,ProgressOwner,NewGameLifetime());
         }
         private void ConfirmNewGame(){if(progressActionDialog!=null)progressActionDialog.ConfirmFromCompatibilityApi();}
         private void ApplyNewGameResult()

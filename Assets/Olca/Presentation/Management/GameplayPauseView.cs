@@ -438,6 +438,7 @@ namespace Olca.Presentation.Management
     {
         private enum Purpose { Notice,ManualSave,NewGame }
         private Purpose purpose;
+        public bool IsNewGame => purpose==Purpose.NewGame;
         private IProgressActionOperations operations;
         private long revision;
         private bool pending,newGameSucceeded,showConfirm,canClose;
