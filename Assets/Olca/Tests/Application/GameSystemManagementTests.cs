@@ -42,10 +42,23 @@ namespace Olca.Tests.Application
             Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
             using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var ring=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Single(v=>v.name=="OutsideProvisionalChargeRing");var caption=view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideProvisionalKickCaptionText");
-                for(int n=0;n<60;n++){model.TickTraversal(0);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);view.Render();Assert.IsTrue(ring.enabled);StringAssert.Contains(n==59?"カンリョウ":"タメチュウ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);}
+                for(int n=0;n<60;n++){model.TickTraversal(0);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);view.Render();Assert.IsTrue(ring.enabled);Assert.AreEqual("trial_charge_ground_"+(n==59?1:0),view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);StringAssert.Contains(n==59?"カンリョウ":"タメチュウ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);}
                 long frame=model.Core.Frame;int hp=model.Player.CurrentHp;var sprite=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite;for(int n=0;n<30;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(hp,model.Player.CurrentHp);Assert.AreSame(sprite,view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite);
-                model.TickTraversal(0);Assert.IsTrue(model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true},false,true,true,out _));view.Render();Assert.IsFalse(ring.enabled);StringAssert.Contains("タメ",caption.text);StringAssert.Contains("ジュンビ",caption.text);Assert.IsTrue(model.NormalKick.IsCharged);
+                model.TickTraversal(0);Assert.IsTrue(model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true},false,true,true,out _));view.Render();Assert.IsFalse(ring.enabled);StringAssert.Contains("タメ",caption.text);StringAssert.Contains("ジュンビ",caption.text);Assert.AreEqual("trial_charge_ground_1",view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);Assert.IsTrue(model.NormalKick.IsCharged);
                 Assert.IsTrue(binding.ReturnToHub());Assert.IsFalse(ring.enabled);
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)]
+        public async Task 探索タメ解放直後でも死亡麻痺のけぞりは専用攻撃表示を中断する(int state)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100,staggerDurationFrames:3));model.EnableTrialNormalKick();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);for(int n=0;n<60;n++){model.TickTraversal(0);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);}
+                model.TickTraversal(0);Assert.IsTrue(model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true},false,true,true,out _));binding.View.Render();StringAssert.StartsWith("trial_charge_",binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);
+                if(state==0)model.Player.TakeDamage(1000);else if(state==1)model.Player.RestoreTimedAilments(new Olca.Core.Domain.PlayerTimedAilmentsDto{Paralysis=new Olca.Core.Domain.PlayerTimedAilmentDto{RemainingUnits=3000,DisplayFrames=60},Confusion=new Olca.Core.Domain.PlayerTimedAilmentDto(),Blindness=new Olca.Core.Domain.PlayerTimedAilmentDto()});else model.Player.TakeDamage(1,forceStagger:true);
+                Assert.IsTrue(state==0?model.Player.IsDead:state==1?model.Player.IsParalyzed:model.Player.IsStaggered,"有効な状態が確定していることを先に確認する");
+                long frame=model.Core.Frame;binding.View.Render();StringAssert.DoesNotStartWith("trial_charge_",binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);Assert.AreEqual(frame,model.Core.Frame);
             }
         }
         private GameObject host, events;

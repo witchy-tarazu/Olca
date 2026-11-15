@@ -287,3 +287,27 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests {
+ public class TrialChargeMotionTests {
+  [NUnit.Framework.TestCase(true,false,0,0)] [NUnit.Framework.TestCase(true,true,60,1)]
+  [NUnit.Framework.TestCase(false,false,-1,-1)] [NUnit.Framework.TestCase(false,false,0,1)]
+  [NUnit.Framework.TestCase(false,false,5,1)] [NUnit.Framework.TestCase(false,false,6,2)]
+  [NUnit.Framework.TestCase(false,false,8,2)] [NUnit.Framework.TestCase(false,false,9,3)]
+  [NUnit.Framework.TestCase(false,false,20,3)] [NUnit.Framework.TestCase(false,false,21,-1)]
+  public void タメ専用姿勢は蓄積完了解放復帰の境界だけを読み取る(bool charging,bool full,int elapsed,int expected){
+   var t=new Olca.Core.Logic.Integration.OutsideKickTiming(6,3,12);for(int n=0;n<3;n++)NUnit.Framework.Assert.AreEqual(expected,Olca.Presentation.Exploration.TrialChargeMotion.FrameIndex(charging,full,elapsed,t));
+  }
+  [NUnit.Framework.TestCase(false)] [NUnit.Framework.TestCase(true)]
+  public void 地上空中は専用八姿勢を保持し共有画像を破棄しない(bool fire){
+   var t=new Olca.Core.Logic.Integration.OutsideKickTiming(6,3,12);var seen=new System.Collections.Generic.HashSet<UnityEngine.Sprite>();using(var m=new Olca.Presentation.Exploration.TrialChargeMotion()){
+    foreach(bool grounded in new[]{true,false})foreach(int phase in new[]{0,1,2,3}){
+     var pose=m.Resolve(grounded,phase<2,phase==1,phase==2?6:9,t,fire);NUnit.Framework.Assert.IsNotNull(pose);NUnit.Framework.Assert.IsTrue(seen.Add(pose));NUnit.Framework.Assert.IsTrue(m.Contains(pose));NUnit.Framework.Assert.AreEqual(256,pose.rect.width,.001f);NUnit.Framework.Assert.AreEqual(256,pose.rect.height,.001f);NUnit.Framework.Assert.That(pose.pivot.y,NUnit.Framework.Is.InRange(6f,12f));
+     var i=(UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(UnityEditor.AssetDatabase.GetAssetPath(pose));NUnit.Framework.Assert.IsTrue(i.alphaIsTransparency);NUnit.Framework.Assert.IsFalse(i.mipmapEnabled);NUnit.Framework.Assert.AreEqual(UnityEngine.FilterMode.Point,i.filterMode);
+    }
+    var retained=m.Resolve(true,false,false,6,t,fire);m.Dispose();NUnit.Framework.Assert.IsFalse(m.Contains(retained));NUnit.Framework.Assert.IsNull(m.Resolve(true,true,true,60,t,fire));NUnit.Framework.Assert.IsTrue(retained!=null);
+   }
+  }
+  [NUnit.Framework.Test]public void 不完全なタメ連番を部分採用せず毎描画で再読込しない(){int loads=0;using(var m=new Olca.Presentation.Exploration.TrialChargeMotion(k=>{loads++;return new UnityEngine.Sprite[7];})){for(int n=0;n<10;n++)NUnit.Framework.Assert.IsNull(m.Resolve(true,true,false,n,null,false));NUnit.Framework.Assert.AreEqual(1,loads);}}
+ }
+}

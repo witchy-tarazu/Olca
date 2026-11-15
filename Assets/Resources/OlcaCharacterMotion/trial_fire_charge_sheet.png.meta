@@ -1,0 +1,485 @@
+fileFormatVersion: 2
+guid: bdfe75907f93d13eb837640284ba4676
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 7421893211682416616
+    second: trial_fire_charge_sheet_0
+  - first:
+      213: 78436616202978155
+    second: trial_fire_charge_sheet_1
+  - first:
+      213: 991955610008535092
+    second: trial_fire_charge_sheet_2
+  - first:
+      213: 7195761831524530831
+    second: trial_fire_charge_sheet_3
+  - first:
+      213: 4570749425779561974
+    second: trial_fire_charge_sheet_4
+  - first:
+      213: -3499898480682724132
+    second: trial_fire_charge_sheet_5
+  - first:
+      213: 4612258946826487344
+    second: trial_fire_charge_sheet_6
+  - first:
+      213: 6756011299960525263
+    second: trial_fire_charge_sheet_7
+  - first:
+      213: -5570636287246516370
+    second: trial_fire_charge_sheet_8
+  - first:
+      213: 5115953478947563986
+    second: trial_fire_charge_sheet_9
+  - first:
+      213: -6417002406429530090
+    second: trial_fire_charge_sheet_10
+  - first:
+      213: 8128485066782505976
+    second: trial_fire_charge_sheet_11
+  - first:
+      213: 2592652471979807465
+    second: trial_fire_charge_sheet_12
+  - first:
+      213: -4219856806220938774
+    second: trial_fire_charge_sheet_13
+  - first:
+      213: 5528469387632958845
+    second: trial_fire_charge_sheet_14
+  - first:
+      213: 329099852971098161
+    second: trial_fire_charge_sheet_15
+  - first:
+      213: 2804405923249588668
+    second: trial_fire_charge_sheet_16
+  - first:
+      213: -5204598350870502
+    second: trial_fire_charge_sheet_17
+  - first:
+      213: 3302838779737316803
+    second: trial_fire_charge_sheet_18
+  - first:
+      213: 7951241631476922143
+    second: trial_fire_charge_sheet_19
+  - first:
+      213: -3083292742931862486
+    second: trial_fire_charge_sheet_20
+  - first:
+      213: -3476825806260203289
+    second: trial_fire_charge_sheet_21
+  - first:
+      213: 2721605461219506986
+    second: trial_fire_charge_sheet_22
+  - first:
+      213: 1120902411140933443
+    second: trial_fire_charge_sheet_23
+  - first:
+      213: 8178927338094394798
+    second: trial_fire_charge_sheet_24
+  - first:
+      213: 5992908186929322055
+    second: trial_fire_charge_sheet_25
+  - first:
+      213: -9034082581927486362
+    second: trial_fire_charge_sheet_26
+  - first:
+      213: 748770340964210469
+    second: trial_fire_charge_sheet_27
+  - first:
+      213: 2482450850701949993
+    second: trial_fire_charge_sheet_28
+  - first:
+      213: -4565823494057021624
+    second: trial_fire_charge_sheet_29
+  - first:
+      213: 4698638048165538983
+    second: trial_fire_charge_sheet_30
+  - first:
+      213: -8767651367703611397
+    second: trial_fire_charge_sheet_31
+  - first:
+      213: -6399723902815780023
+    second: trial_fire_charge_sheet_32
+  - first:
+      213: 6413681627566698192
+    second: trial_fire_charge_sheet_33
+  - first:
+      213: -1875319882003059590
+    second: trial_fire_charge_sheet_34
+  - first:
+      213: 3652667075576491360
+    second: trial_fire_charge_sheet_35
+  - first:
+      213: -2033244836707787932
+    second: trial_fire_charge_sheet_36
+  - first:
+      213: 4622654344419802604
+    second: trial_fire_charge_sheet_37
+  - first:
+      213: -5163246037809602990
+    second: trial_fire_charge_sheet_38
+  - first:
+      213: -2719960971690046522
+    second: trial_fire_charge_sheet_39
+  - first:
+      213: -8916175714197547493
+    second: trial_fire_charge_ground_0
+  - first:
+      213: -2347483725350037470
+    second: trial_fire_charge_ground_1
+  - first:
+      213: 8380319199590771870
+    second: trial_fire_charge_ground_2
+  - first:
+      213: -2898590781928803323
+    second: trial_fire_charge_ground_3
+  - first:
+      213: -3899949622256473161
+    second: trial_fire_charge_air_0
+  - first:
+      213: 5678292335052027950
+    second: trial_fire_charge_air_1
+  - first:
+      213: 5362152240682862520
+    second: trial_fire_charge_air_2
+  - first:
+      213: 1268130481133927615
+    second: trial_fire_charge_air_3
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 173.24219
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_fire_charge_ground_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b165a488d61634480800000000000000
+      internalID: -8916175714197547493
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_ground_1
+      rect:
+        serializedVersion: 2
+        x: 443.5
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22810824dff0c6fd0800000000000000
+      internalID: -2347483725350037470
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_ground_2
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e9c6ef349efdc4470800000000000000
+      internalID: 8380319199590771870
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_ground_3
+      rect:
+        serializedVersion: 2
+        x: 1330.5
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 50479ed8a0326c7d0800000000000000
+      internalID: -2898590781928803323
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_air_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7bbeb7b3b7890e9c0800000000000000
+      internalID: -3899949622256473161
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_air_1
+      rect:
+        serializedVersion: 2
+        x: 443.5
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2879993bc85dce40800000000000000
+      internalID: 5678292335052027950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_air_2
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b787719d013a6a40800000000000000
+      internalID: 5362152240682862520
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_charge_air_3
+      rect:
+        serializedVersion: 2
+        x: 1330.5
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.025930101}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbc35d824fd499110800000000000000
+      internalID: 1268130481133927615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_fire_charge_air_0: -3899949622256473161
+      trial_fire_charge_air_1: 5678292335052027950
+      trial_fire_charge_air_2: 5362152240682862520
+      trial_fire_charge_air_3: 1268130481133927615
+      trial_fire_charge_ground_0: -8916175714197547493
+      trial_fire_charge_ground_1: -2347483725350037470
+      trial_fire_charge_ground_2: 8380319199590771870
+      trial_fire_charge_ground_3: -2898590781928803323
+      trial_fire_charge_sheet_0: 7421893211682416616
+      trial_fire_charge_sheet_1: 78436616202978155
+      trial_fire_charge_sheet_10: -6417002406429530090
+      trial_fire_charge_sheet_11: 8128485066782505976
+      trial_fire_charge_sheet_12: 2592652471979807465
+      trial_fire_charge_sheet_13: -4219856806220938774
+      trial_fire_charge_sheet_14: 5528469387632958845
+      trial_fire_charge_sheet_15: 329099852971098161
+      trial_fire_charge_sheet_16: 2804405923249588668
+      trial_fire_charge_sheet_17: -5204598350870502
+      trial_fire_charge_sheet_18: 3302838779737316803
+      trial_fire_charge_sheet_19: 7951241631476922143
+      trial_fire_charge_sheet_2: 991955610008535092
+      trial_fire_charge_sheet_20: -3083292742931862486
+      trial_fire_charge_sheet_21: -3476825806260203289
+      trial_fire_charge_sheet_22: 2721605461219506986
+      trial_fire_charge_sheet_23: 1120902411140933443
+      trial_fire_charge_sheet_24: 8178927338094394798
+      trial_fire_charge_sheet_25: 5992908186929322055
+      trial_fire_charge_sheet_26: -9034082581927486362
+      trial_fire_charge_sheet_27: 748770340964210469
+      trial_fire_charge_sheet_28: 2482450850701949993
+      trial_fire_charge_sheet_29: -4565823494057021624
+      trial_fire_charge_sheet_3: 7195761831524530831
+      trial_fire_charge_sheet_30: 4698638048165538983
+      trial_fire_charge_sheet_31: -8767651367703611397
+      trial_fire_charge_sheet_32: -6399723902815780023
+      trial_fire_charge_sheet_33: 6413681627566698192
+      trial_fire_charge_sheet_34: -1875319882003059590
+      trial_fire_charge_sheet_35: 3652667075576491360
+      trial_fire_charge_sheet_36: -2033244836707787932
+      trial_fire_charge_sheet_37: 4622654344419802604
+      trial_fire_charge_sheet_38: -5163246037809602990
+      trial_fire_charge_sheet_39: -2719960971690046522
+      trial_fire_charge_sheet_4: 4570749425779561974
+      trial_fire_charge_sheet_5: -3499898480682724132
+      trial_fire_charge_sheet_6: 4612258946826487344
+      trial_fire_charge_sheet_7: 6756011299960525263
+      trial_fire_charge_sheet_8: -5570636287246516370
+      trial_fire_charge_sheet_9: 5115953478947563986
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

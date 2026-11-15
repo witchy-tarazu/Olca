@@ -71,14 +71,20 @@ namespace Olca.Presentation.Exploration
         private Sprite ResolveBodyCostume(Sprite sprite)=>(trialFireBody??(trialFireBody=new Olca.Presentation.Effects.TrialFireBodyMotion())).Resolve(sprite,presentation?.Player);
         private Sprite[] trialComboSprites,trialAirDownSprites;
         private TrialGroundComboMotion trialGroundCombo;
-        private readonly OutsideKickTiming chargePoseTiming=new OutsideKickTiming(6,3,12,6);
+        private TrialChargeMotion trialChargeMotion;
         private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
         private Sprite TrialKickSprite()
         {
-            // 新規原画は候補のまま。試用タメは承認済み立ち/踏込/復帰を借用し、専用連番完成とはしない。
-            if(presentation?.IsCharging==true&&presentation.Core.IsGrounded&&!presentation.Core.IsMoving){
-                int frame=presentation.ChargeFrames>=presentation.ChargeRequiredFrames?3:0;
-                return (trialGroundCombo??(trialGroundCombo=new TrialGroundComboMotion())).Resolve(OutsideKickKind.GroundThird,frame,chargePoseTiming,Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation.Player));
+            // 専用の試用4姿勢。Sessionの論理phaseだけを読み、表示から時刻・位置を変更しない。
+            if(presentation?.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
+            bool charging=presentation.IsCharging;
+            if(presentation!=null&&(presentation.IsChargedKick||charging&&
+                (!presentation.Core.IsGrounded||!presentation.Core.IsMoving)&&!presentation.Core.IsWallSliding&&!presentation.Core.IsWallKicking)){
+                bool ground=presentation.IsChargedKick?presentation.NormalKickKind<=OutsideKickKind.GroundThird:presentation.Core.IsGrounded;
+                var pose=(trialChargeMotion??(trialChargeMotion=new TrialChargeMotion())).Resolve(ground,charging,
+                    presentation.ChargeFrames>=presentation.ChargeRequiredFrames,presentation.KickElapsedFrames,presentation.KickTiming,
+                    Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation.Player));
+                if(pose!=null)return pose;
             }
             var kind=presentation?.NormalKickKind;
             if(!kind.HasValue||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
@@ -226,7 +232,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -866,6 +872,37 @@ namespace Olca.Presentation.Exploration
 namespace Olca.Presentation.Exploration
 {
     /// <summary>地上三段の試用連番。Sessionの論理時刻を読み、判定・移動・保存は変更しない。</summary>
+    /// <summary>探索タメ専用の試用本体。共有Spriteを借り、破棄・ゲーム更新は行わない。</summary>
+    public sealed class TrialChargeMotion : System.IDisposable
+    {
+        private readonly System.Func<string,Sprite[]> load;
+        private Sprite[] basic,fire;private bool attemptedBasic,attemptedFire,disposed;
+        public TrialChargeMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(bool charging,bool full,int elapsed,OutsideKickTiming timing)
+        {
+            if(charging)return full?1:0;
+            if(timing==null||elapsed<0||elapsed>=timing.StartupFrames+(long)timing.ActiveFrames+timing.RecoveryFrames)return -1;
+            return elapsed<timing.StartupFrames?1:elapsed<timing.StartupFrames+timing.ActiveFrames?2:3;
+        }
+        public Sprite Resolve(bool grounded,bool charging,bool full,int elapsed,OutsideKickTiming timing,bool isFire)
+        {
+            if(disposed)return null;int index=FrameIndex(charging,full,elapsed,timing);if(index<0)return null;
+            if(isFire&&!attemptedFire){attemptedFire=true;fire=Load(true);}else if(!isFire&&!attemptedBasic){attemptedBasic=true;basic=Load(false);}
+            var sprites=isFire?fire:basic;return sprites==null?null:sprites[(grounded?0:4)+index];
+        }
+        private Sprite[] Load(bool isFire)
+        {
+            string prefix=isFire?"trial_fire_charge_":"trial_charge_";
+            var all=load("OlcaCharacterMotion/"+(isFire?"trial_fire_charge_sheet":"trial_charge_sheet"));if(all==null||all.Length!=8)return null;
+            var frames=new Sprite[8];for(int row=0;row<2;row++)for(int frame=0;frame<4;frame++){
+                string name=prefix+(row==0?"ground_":"air_")+frame;var found=System.Array.FindAll(all,s=>s!=null&&s.name==name);
+                if(found.Length!=1||Mathf.Abs(found[0].rect.width-256)>.01f||Mathf.Abs(found[0].rect.height-256)>.01f||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f)return null;
+                frames[row*4+frame]=found[0];
+            }return frames;
+        }
+        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&(basic!=null&&System.Array.IndexOf(basic,sprite)>=0||fire!=null&&System.Array.IndexOf(fire,sprite)>=0);
+        public void Dispose(){disposed=true;basic=fire=null;}
+    }
     public sealed class TrialGroundComboMotion : System.IDisposable
     {
         private readonly System.Func<string,UnityEngine.Sprite[]> load;

@@ -1,0 +1,597 @@
+fileFormatVersion: 2
+guid: b6da7aba18c06266790daa828d5b4cc1
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3460383789845209759
+    second: trial_charge_sheet_0
+  - first:
+      213: 3531352061034562284
+    second: trial_charge_sheet_1
+  - first:
+      213: 6487221910189279955
+    second: trial_charge_sheet_2
+  - first:
+      213: -6382033622160895689
+    second: trial_charge_sheet_3
+  - first:
+      213: 4874399075377043740
+    second: trial_charge_sheet_4
+  - first:
+      213: 3270902538892622646
+    second: trial_charge_sheet_5
+  - first:
+      213: 1139520102403386567
+    second: trial_charge_sheet_6
+  - first:
+      213: -4232096890408668051
+    second: trial_charge_sheet_7
+  - first:
+      213: -8155257262939660803
+    second: trial_charge_sheet_8
+  - first:
+      213: -1408737995256908821
+    second: trial_charge_sheet_9
+  - first:
+      213: 7315151845065545244
+    second: trial_charge_sheet_10
+  - first:
+      213: 807597420043550471
+    second: trial_charge_sheet_11
+  - first:
+      213: 3197034645466418455
+    second: trial_charge_sheet_12
+  - first:
+      213: 1347049925181269725
+    second: trial_charge_sheet_13
+  - first:
+      213: -1134386364016924540
+    second: trial_charge_sheet_14
+  - first:
+      213: -1727907784068332162
+    second: trial_charge_sheet_15
+  - first:
+      213: 1847279323371833143
+    second: trial_charge_sheet_16
+  - first:
+      213: -2120400583540179818
+    second: trial_charge_sheet_17
+  - first:
+      213: 8416612026212857173
+    second: trial_charge_sheet_18
+  - first:
+      213: -8414677356331980715
+    second: trial_charge_sheet_19
+  - first:
+      213: -9077510592909081453
+    second: trial_charge_sheet_20
+  - first:
+      213: 4134673755720937336
+    second: trial_charge_sheet_21
+  - first:
+      213: -8431659288544285663
+    second: trial_charge_sheet_22
+  - first:
+      213: 7589286092843893856
+    second: trial_charge_sheet_23
+  - first:
+      213: -2339368851069727710
+    second: trial_charge_sheet_24
+  - first:
+      213: -7299013959572327958
+    second: trial_charge_sheet_25
+  - first:
+      213: -1961452756927520440
+    second: trial_charge_sheet_26
+  - first:
+      213: 4102167716502801155
+    second: trial_charge_sheet_27
+  - first:
+      213: 8087262923444870533
+    second: trial_charge_sheet_28
+  - first:
+      213: 1247288694335287715
+    second: trial_charge_sheet_29
+  - first:
+      213: -7059911311862694407
+    second: trial_charge_sheet_30
+  - first:
+      213: 6077562656796423100
+    second: trial_charge_sheet_31
+  - first:
+      213: -2061617783467374868
+    second: trial_charge_sheet_32
+  - first:
+      213: 5746319219245015096
+    second: trial_charge_sheet_33
+  - first:
+      213: -4764706294963314890
+    second: trial_charge_sheet_34
+  - first:
+      213: 4235172509119914922
+    second: trial_charge_sheet_35
+  - first:
+      213: -7677973630148771905
+    second: trial_charge_sheet_36
+  - first:
+      213: -4478949030265039632
+    second: trial_charge_sheet_37
+  - first:
+      213: -4802819436608284983
+    second: trial_charge_sheet_38
+  - first:
+      213: -5886680179478127288
+    second: trial_charge_sheet_39
+  - first:
+      213: 849368680023231432
+    second: trial_charge_sheet_40
+  - first:
+      213: 5155903891045070975
+    second: trial_charge_sheet_41
+  - first:
+      213: -6264241219512141299
+    second: trial_charge_sheet_42
+  - first:
+      213: -1118529116341816929
+    second: trial_charge_sheet_43
+  - first:
+      213: 2532506847153033529
+    second: trial_charge_sheet_44
+  - first:
+      213: 2990305124409146614
+    second: trial_charge_sheet_45
+  - first:
+      213: -1614569559271701173
+    second: trial_charge_sheet_46
+  - first:
+      213: 8676938103590438043
+    second: trial_charge_sheet_47
+  - first:
+      213: 3562650998066965283
+    second: trial_charge_sheet_48
+  - first:
+      213: -2329395563287257457
+    second: trial_charge_sheet_49
+  - first:
+      213: -2586318758769832090
+    second: trial_charge_sheet_50
+  - first:
+      213: -4928907865822396197
+    second: trial_charge_sheet_51
+  - first:
+      213: 4969547072538754071
+    second: trial_charge_sheet_52
+  - first:
+      213: -4296705938596094348
+    second: trial_charge_sheet_53
+  - first:
+      213: -899903355293092249
+    second: trial_charge_sheet_54
+  - first:
+      213: 5082110538111134449
+    second: trial_charge_sheet_55
+  - first:
+      213: 1183123145800830151
+    second: trial_charge_sheet_56
+  - first:
+      213: -8614000386013604185
+    second: trial_charge_sheet_57
+  - first:
+      213: -7545143094352278007
+    second: trial_charge_sheet_58
+  - first:
+      213: 1977829142544067363
+    second: trial_charge_sheet_59
+  - first:
+      213: 6098902035242096583
+    second: trial_charge_sheet_60
+  - first:
+      213: -6668597727682561784
+    second: trial_charge_sheet_61
+  - first:
+      213: 149657398259781166
+    second: trial_charge_sheet_62
+  - first:
+      213: -5035516348434202966
+    second: trial_charge_sheet_63
+  - first:
+      213: -4379888598570931774
+    second: trial_charge_sheet_64
+  - first:
+      213: -634763352318217275
+    second: trial_charge_sheet_65
+  - first:
+      213: 8218212879250005203
+    second: trial_charge_sheet_66
+  - first:
+      213: -5908160352456967246
+    second: trial_charge_sheet_67
+  - first:
+      213: -8437771008998618821
+    second: trial_charge_ground_0
+  - first:
+      213: -4648803851114597717
+    second: trial_charge_ground_1
+  - first:
+      213: -6791780424147200228
+    second: trial_charge_ground_2
+  - first:
+      213: -6008617905898402741
+    second: trial_charge_ground_3
+  - first:
+      213: -5171610145747911385
+    second: trial_charge_air_0
+  - first:
+      213: -3144937778791991170
+    second: trial_charge_air_1
+  - first:
+      213: 5205400847333689194
+    second: trial_charge_air_2
+  - first:
+      213: -3962774156785843716
+    second: trial_charge_air_3
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 173.24219
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_charge_ground_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b394c88f8f307ea80800000000000000
+      internalID: -8437771008998618821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_ground_1
+      rect:
+        serializedVersion: 2
+        x: 443.5
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba2b8df17812c7fb0800000000000000
+      internalID: -4648803851114597717
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_ground_2
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c17114a40bfbeb1a0800000000000000
+      internalID: -6791780424147200228
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_ground_3
+      rect:
+        serializedVersion: 2
+        x: 1330.5
+        y: 443.5
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b4ccfdf79d91d9ca0800000000000000
+      internalID: -6008617905898402741
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_air_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72db3e909ffba38b0800000000000000
+      internalID: -5171610145747911385
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_air_1
+      rect:
+        serializedVersion: 2
+        x: 443.5
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e78b566b0cfea54d0800000000000000
+      internalID: -3144937778791991170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_air_2
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6787d2cd7c4d3840800000000000000
+      internalID: 5205400847333689194
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_charge_air_3
+      rect:
+        serializedVersion: 2
+        x: 1330.5
+        y: 0
+        width: 443.5
+        height: 443.5
+      alignment: 9
+      pivot: {x: 0.5, y: 0.034949265}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cf18eab66e56109c0800000000000000
+      internalID: -3962774156785843716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_charge_air_0: -5171610145747911385
+      trial_charge_air_1: -3144937778791991170
+      trial_charge_air_2: 5205400847333689194
+      trial_charge_air_3: -3962774156785843716
+      trial_charge_ground_0: -8437771008998618821
+      trial_charge_ground_1: -4648803851114597717
+      trial_charge_ground_2: -6791780424147200228
+      trial_charge_ground_3: -6008617905898402741
+      trial_charge_sheet_0: 3460383789845209759
+      trial_charge_sheet_1: 3531352061034562284
+      trial_charge_sheet_10: 7315151845065545244
+      trial_charge_sheet_11: 807597420043550471
+      trial_charge_sheet_12: 3197034645466418455
+      trial_charge_sheet_13: 1347049925181269725
+      trial_charge_sheet_14: -1134386364016924540
+      trial_charge_sheet_15: -1727907784068332162
+      trial_charge_sheet_16: 1847279323371833143
+      trial_charge_sheet_17: -2120400583540179818
+      trial_charge_sheet_18: 8416612026212857173
+      trial_charge_sheet_19: -8414677356331980715
+      trial_charge_sheet_2: 6487221910189279955
+      trial_charge_sheet_20: -9077510592909081453
+      trial_charge_sheet_21: 4134673755720937336
+      trial_charge_sheet_22: -8431659288544285663
+      trial_charge_sheet_23: 7589286092843893856
+      trial_charge_sheet_24: -2339368851069727710
+      trial_charge_sheet_25: -7299013959572327958
+      trial_charge_sheet_26: -1961452756927520440
+      trial_charge_sheet_27: 4102167716502801155
+      trial_charge_sheet_28: 8087262923444870533
+      trial_charge_sheet_29: 1247288694335287715
+      trial_charge_sheet_3: -6382033622160895689
+      trial_charge_sheet_30: -7059911311862694407
+      trial_charge_sheet_31: 6077562656796423100
+      trial_charge_sheet_32: -2061617783467374868
+      trial_charge_sheet_33: 5746319219245015096
+      trial_charge_sheet_34: -4764706294963314890
+      trial_charge_sheet_35: 4235172509119914922
+      trial_charge_sheet_36: -7677973630148771905
+      trial_charge_sheet_37: -4478949030265039632
+      trial_charge_sheet_38: -4802819436608284983
+      trial_charge_sheet_39: -5886680179478127288
+      trial_charge_sheet_4: 4874399075377043740
+      trial_charge_sheet_40: 849368680023231432
+      trial_charge_sheet_41: 5155903891045070975
+      trial_charge_sheet_42: -6264241219512141299
+      trial_charge_sheet_43: -1118529116341816929
+      trial_charge_sheet_44: 2532506847153033529
+      trial_charge_sheet_45: 2990305124409146614
+      trial_charge_sheet_46: -1614569559271701173
+      trial_charge_sheet_47: 8676938103590438043
+      trial_charge_sheet_48: 3562650998066965283
+      trial_charge_sheet_49: -2329395563287257457
+      trial_charge_sheet_5: 3270902538892622646
+      trial_charge_sheet_50: -2586318758769832090
+      trial_charge_sheet_51: -4928907865822396197
+      trial_charge_sheet_52: 4969547072538754071
+      trial_charge_sheet_53: -4296705938596094348
+      trial_charge_sheet_54: -899903355293092249
+      trial_charge_sheet_55: 5082110538111134449
+      trial_charge_sheet_56: 1183123145800830151
+      trial_charge_sheet_57: -8614000386013604185
+      trial_charge_sheet_58: -7545143094352278007
+      trial_charge_sheet_59: 1977829142544067363
+      trial_charge_sheet_6: 1139520102403386567
+      trial_charge_sheet_60: 6098902035242096583
+      trial_charge_sheet_61: -6668597727682561784
+      trial_charge_sheet_62: 149657398259781166
+      trial_charge_sheet_63: -5035516348434202966
+      trial_charge_sheet_64: -4379888598570931774
+      trial_charge_sheet_65: -634763352318217275
+      trial_charge_sheet_66: 8218212879250005203
+      trial_charge_sheet_67: -5908160352456967246
+      trial_charge_sheet_7: -4232096890408668051
+      trial_charge_sheet_8: -8155257262939660803
+      trial_charge_sheet_9: -1408737995256908821
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
