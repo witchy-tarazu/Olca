@@ -349,7 +349,7 @@ namespace Olca.Core.Logic.Dungeon
                 if(removalTargets==null||removalTargets.Count!=VisitRemovalCount(slot)||!GetCurrentDeck().TryRemoveCards(removalTargets))return false;
             } else if(removalTargets!=null&&removalTargets.Count>0)return false;
             Currency-=option.Price;activeVisit.Purchased[slot]=true;
-            if(option.Card!=null)cardRewardSystem.SelectCard(option.Card);else if(option.Heal>0)playerCharacter.Heal(option.Heal);
+            if(option.Card!=null)cardRewardSystem.SelectCard(option.Card);else if(option.Heal>0)playerCharacter.Heal(option.Heal);else option.StatusTrial?.Apply(playerCharacter);
             return true;
         }
         public bool ExitVisit()

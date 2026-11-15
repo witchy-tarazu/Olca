@@ -113,11 +113,13 @@ namespace Olca.Core.Logic.Dungeon
                 return new MapCell(Cell,Penalty==(int)ObstaclePenaltyType.CardDiscard?Obstacle.CreateCardDiscardObstacle(ObstacleId,ObstacleName,Value,c):new Obstacle(ObstacleId,ObstacleName,Value,c));}
             return new MapCell(Cell);}
     }
+    [DataContract]
     public sealed class PortableVisitOption
     {
-        public string Id;public long Price;public int Heal,Remove;public PortableCardDefinition Card;
-        public static PortableVisitOption Capture(DungeonVisitOption o)=>new PortableVisitOption{Id=o.Id,Price=o.Price,Heal=o.Heal,Remove=o.RemoveCount,Card=o.Card==null?null:PortableCardDefinition.Capture("visit",o.Card)};
-        public DungeonVisitOption Restore()=>new DungeonVisitOption(Id,Price,Card?.Restore(),Heal,Remove);
+        [DataMember] public string Id;[DataMember] public long Price;[DataMember] public int Heal,Remove;[DataMember] public PortableCardDefinition Card;
+        [DataMember(EmitDefaultValue=false)] public int[] StatusTrial;
+        public static PortableVisitOption Capture(DungeonVisitOption o)=>new PortableVisitOption{Id=o.Id,Price=o.Price,Heal=o.Heal,Remove=o.RemoveCount,Card=o.Card==null?null:PortableCardDefinition.Capture("visit",o.Card),StatusTrial=o.StatusTrial==null?null:new[]{1,o.StatusTrial.Clear?1:0,o.StatusTrial.ParalysisFrames,o.StatusTrial.ConfusionFrames,o.StatusTrial.BlindnessFrames}};
+        public DungeonVisitOption Restore(){if(StatusTrial==null)return new DungeonVisitOption(Id,Price,Card?.Restore(),Heal,Remove);if(Price!=0||Card!=null||Heal!=0||Remove!=0||StatusTrial.Length!=5||StatusTrial[0]!=1||StatusTrial[1]<0||StatusTrial[1]>1)throw new ArgumentException("試用状態の輸送定義が不正です");return new DungeonVisitOption(Id,new DungeonVisitStatusTrial(StatusTrial[2],StatusTrial[3],StatusTrial[4],StatusTrial[1]==1));}
     }
     public sealed class PortableVisitDefinition
     {

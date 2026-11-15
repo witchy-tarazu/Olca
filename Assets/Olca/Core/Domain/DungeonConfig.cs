@@ -273,6 +273,17 @@ namespace Olca.Core.Domain
             FloorIndex = FloorIndex, State = State?.Copy() };
     }
     /// <summary>既存カード・回復・攻略中カード削除を登録する探索停止地点。イベント内容は製品データで指定する。</summary>
+    /// <summary>状態異常の任意試用専用。正式な敵効果や持込み規則には使わない。</summary>
+    public sealed class DungeonVisitStatusTrial
+    {
+        public int ParalysisFrames {get;}public int ConfusionFrames {get;}public int BlindnessFrames {get;}public bool Clear {get;}
+        public DungeonVisitStatusTrial(int paralysisFrames=0,int confusionFrames=0,int blindnessFrames=0,bool clear=false){
+            if(paralysisFrames<0||confusionFrames<0||blindnessFrames<0||clear&&(paralysisFrames!=0||confusionFrames!=0||blindnessFrames!=0)||!clear&&paralysisFrames==0&&confusionFrames==0&&blindnessFrames==0)throw new System.ArgumentException("試用状態の付与時間または解除だけが必要です");
+            ParalysisFrames=paralysisFrames;ConfusionFrames=confusionFrames;BlindnessFrames=blindnessFrames;Clear=clear;
+        }
+        public string Label=>Clear?"3ジョウタイをカイジョ（カリ）":$"マヒ{ParalysisFrames}f・コンラン{ConfusionFrames}f・クラヤミ{BlindnessFrames}f（カリ）";
+        internal void Apply(PlayerCharacter player){if(Clear){player.ClearParalysis();player.ClearConfusion();player.ClearBlindness();}else{if(ParalysisFrames>0)player.ApplyParalysis(ParalysisFrames);if(ConfusionFrames>0)player.ApplyConfusion(ConfusionFrames);if(BlindnessFrames>0)player.ApplyBlindness(BlindnessFrames);}}
+    }
     public sealed class DungeonVisitOption
     {
         public string Id { get; }
@@ -281,7 +292,9 @@ namespace Olca.Core.Domain
         public int RemoveCount { get; }
         private readonly Card card;
         public Card Card => card?.Clone();
-        public string Label => card?.Name ?? (RemoveCount > 0 ? "カード削除 " + RemoveCount + "枚（現在枚数まで）" : "HP回復 " + Heal);
+        public DungeonVisitStatusTrial StatusTrial {get;}
+        public string Label => StatusTrial?.Label ?? card?.Name ?? (RemoveCount > 0 ? "カード削除 " + RemoveCount + "枚（現在枚数まで）" : "HP回復 " + Heal);
+        public DungeonVisitOption(string id,DungeonVisitStatusTrial statusTrial){if(string.IsNullOrWhiteSpace(id)||statusTrial==null)throw new System.ArgumentException("明示試用の状態定義が必要です");Id=id;StatusTrial=statusTrial;}
         public DungeonVisitOption(string id,long price,Card card=null,int heal=0,int removeCount=0) {
             if(string.IsNullOrWhiteSpace(id)||price<0||heal<0||removeCount<0||((card!=null?1:0)+(heal>0?1:0)+(removeCount>0?1:0)!=1))throw new System.ArgumentException("カード・回復・削除のいずれか一つが必要です");
             Id=id;Price=price;this.card=card?.Clone();Heal=heal;RemoveCount=removeCount;
@@ -300,7 +313,7 @@ namespace Olca.Core.Domain
                 (shop&&System.Linq.Enumerable.Any(options,o=>o.Price<=0))||(!shop&&slots!=options.Count))throw new System.ArgumentException("停止地点の候補/枠が不正です");
             Cell=cell;IsShop=shop;Slots=slots;AllowDecline=allowDecline;Options=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(options));
         }
-        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));if(o.RemoveCount>0){w.Write("visit-remove-v1");w.Write(o.RemoveCount);}}if(!AllowDecline)w.Write("visit-required-v1");});
+        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));if(o.RemoveCount>0){w.Write("visit-remove-v1");w.Write(o.RemoveCount);}if(o.StatusTrial!=null){w.Write("visit-status-trial-v1");w.Write(o.StatusTrial.Clear);w.Write(o.StatusTrial.ParalysisFrames);w.Write(o.StatusTrial.ConfusionFrames);w.Write(o.StatusTrial.BlindnessFrames);}}if(!AllowDecline)w.Write("visit-required-v1");});
     }
     public enum DungeonVisitDisplayState { Ready, Active, Used, Closed }
     public sealed class DungeonVisitDto

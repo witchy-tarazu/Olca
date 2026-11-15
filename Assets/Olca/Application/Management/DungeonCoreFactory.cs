@@ -124,6 +124,16 @@ namespace Olca.Application.Management
             var map=new DungeonConfig("trial-shop-floor-v1","シヨウ ショップ（カリ）",source.TotalCellCount,source.MapCells,visits:new[]{shop});
             return FloorSequenceDefinitions.WithSharedCardCatalog("trial-shop-v1","trial-shop-v1",new[]{map},catalog);
         }
+        public const string TrialStatusRouteId="trial-status-v1";
+        /// <summary>付与/解除を任意に選ぶ専用試用ルート。旧ルートと解放順を変更しない。</summary>
+        public static FloorSequenceDefinitions CreateTrialStatusRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            var source=CreateTrialCardRoute(catalog,cards,normal,boss).CreateInitialMap(0);
+            var cells=source.MapCells.Select(c=>c.Index==3?new MapCell(3):c).ToList();
+            var visits=new[]{new DungeonVisitDefinition(2,false,new[]{new DungeonVisitOption("trial-three-status",new DungeonVisitStatusTrial(180,900,1200))},1),new DungeonVisitDefinition(6,false,new[]{new DungeonVisitOption("trial-clear-three-status",new DungeonVisitStatusTrial(clear:true))},1)};
+            var map=new DungeonConfig("trial-status-floor-v1","シヨウ ジョウタイイジョウ（カリ）",source.TotalCellCount,cells,visits:visits);
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialStatusRouteId,"trial-status-v1",new[]{map},catalog);
+        }
         public static IEvaluationRewardProvider CreateTrialRewardProvider(SimpleCardFactory cards)=>new TrialRewardProvider(cards);
         private sealed class TrialRewardProvider:IEvaluationRewardProvider
         {
