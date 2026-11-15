@@ -42,11 +42,12 @@ namespace Olca.Tests.Application
                 configure.Invoke(controller,null);Assert.AreSame(value,field.GetValue(controller));
             }finally{UnityEngine.Object.DestroyImmediate(go);}
         }
-        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)] public void 外界持込みの未対応予約と未確定HPframeは無変更で拒否する(int kind)
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)] public void 外界持込みは状態予約を捕捉し未確定frameは無変更で拒否する(int kind)
         {
             var actor=new PlayerCharacter(100);actor.SetHp(37);if(kind==0)actor.ApplyParalysis(30);if(kind==1)actor.ApplyConfusion(30);if(kind==2)actor.ApplyBlindness(30);var flags=BindingFlags.Instance|BindingFlags.NonPublic;if(kind==3)typeof(PlayerCharacter).GetMethod("BeginHpFrame",flags).Invoke(actor,null);if(kind>=4)typeof(PlayerCharacter).GetMethod("Begin"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});
-            try{Assert.Throws<ArgumentException>(()=>OutsideDepartureVitals.Capture(actor,false));Assert.AreEqual(37,actor.CurrentHp);Assert.AreEqual(100,actor.MaxHp);}finally{if(kind==3){typeof(PlayerCharacter).GetMethod("CommitHpFrame",flags).Invoke(actor,null);typeof(PlayerCharacter).GetMethod("PublishHpFrame",flags).Invoke(actor,null);}if(kind>=4)typeof(PlayerCharacter).GetMethod("End"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});}
+            try{if(kind<3){var before=actor.CaptureTimedAilments();var captured=OutsideDepartureVitals.Capture(actor,false);Assert.IsTrue(PlayerTimedAilmentsDto.Same(before,captured.TimedAilments));Assert.IsTrue(PlayerTimedAilmentsDto.Same(before,actor.CaptureTimedAilments()));}else Assert.Throws<ArgumentException>(()=>OutsideDepartureVitals.Capture(actor,false));Assert.AreEqual(37,actor.CurrentHp);Assert.AreEqual(100,actor.MaxHp);}finally{if(kind==3){typeof(PlayerCharacter).GetMethod("CommitHpFrame",flags).Invoke(actor,null);typeof(PlayerCharacter).GetMethod("PublishHpFrame",flags).Invoke(actor,null);}if(kind>=4)typeof(PlayerCharacter).GetMethod("End"+new[]{"Paralysis","Confusion","Blindness"}[kind-4]+"Frame",flags).Invoke(actor,new object[]{false});}
         }
+        [Test] public void 外界持込みは死亡個体とnullを初回再挑戦とも拒否する(){var p=new PlayerCharacter(100);p.TakeDamage(99999);foreach(bool retry in new[]{false,true}){Assert.Throws<ArgumentException>(()=>OutsideDepartureVitals.Capture(p,retry));Assert.Throws<ArgumentException>(()=>OutsideDepartureVitals.Capture(null,retry));}}
         private static PlayerTimedAilmentsDto Ailments136()=>new PlayerTimedAilmentsDto{Paralysis=new PlayerTimedAilmentDto{RemainingUnits=1475,DisplayFrames=30},Confusion=new PlayerTimedAilmentDto{RemainingUnits=1425,DisplayFrames=29},Blindness=new PlayerTimedAilmentDto{RemainingUnits=1375,DisplayFrames=28}};
         [Test] public void 時間状態は端数と耐性適用済み値とコピー分離をcheckpointへ保持する()
         {

@@ -396,7 +396,8 @@ namespace Olca.Core.Domain
             if(IsDead||clearBlindnessPending||!(pendingBlindnessFrames.HasValue?pendingBlindnessCarryAcrossBattles:blindnessCarryAcrossBattles))ResetBlindness();
             paralysisFrameOpen=frameParalyzed=confusionFrameOpen=frameConfused=blindnessFrameOpen=frameBlind=false;
         }
-        internal bool CanCaptureOutsideDeparture=>CanCaptureTimedAilments&&!HasParalysisState&&!HasConfusionState&&!HasBlindnessState;
+        /// <summary>初回も確定済みraw時計を捕捉する。未確定frameと死亡の拒否は捕捉側で維持する。</summary>
+        internal bool CanCaptureOutsideDeparture=>CanCaptureTimedAilments;
         /// <summary>フレーム中を拒否し、付与/解除予約を消費せず捕捉する。</summary>
         public PlayerTimedAilmentsDto CaptureTimedAilments()
         {

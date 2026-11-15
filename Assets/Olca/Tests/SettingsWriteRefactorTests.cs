@@ -160,8 +160,8 @@ namespace Olca.Tests
                 using(var outside=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
                     outside.TryInitializePlayer(()=>actor);if(active)using(var lease=outside.AttachPresentation()){outside.Core.TickFrame(0);outside.AdvancePlayerFrame();}
                     var raw=actor.CaptureTimedAilments();var actorBefore=OutsidePlayerSaveData.Capture(actor);actorBefore.Id="11111111111111111111111111111111";
-                    // gateを解除する前に、既存の保存APIへ明示DTOを渡して境界を検証する。
-                    var entry=OutsideDepartureVitals.Capture(actor,true);entry.Retry=retry;var target=new PlayerCharacter(100,statusResistances:resist);entry.ApplyToStart(target);var start=Entry135Start(target,out var defs);entry.Runtime=outside.CaptureRuntime(defs);var frozen=entry.Copy();string run=start.RunId;
+                    // 通常入口と同じ初回/再挑戦の捕捉を使う。
+                    var entry=OutsideDepartureVitals.Capture(actor,retry);var target=new PlayerCharacter(100,statusResistances:resist);entry.ApplyToStart(target);var start=Entry135Start(target,out var defs);entry.Runtime=outside.CaptureRuntime(defs);var frozen=entry.Copy();string run=start.RunId;
                     io.Fail=true;io.After=after;Assert.AreEqual(after,progress.PrepareNextDeparture(start,defs.MapHash,entry,"entry135"),progress.Error);
                     if(!after){CollectionAssert.AreEqual(before,File.ReadAllBytes(file.ActivePath));Assert.IsNull(progress.Snapshot.NextDeparture);Assert.IsTrue(progress.HasPendingSave);}
                     var coldBeforeRetry=new ClearReturnSession(new ClearReturnFileStore(dir));Assert.IsTrue(coldBeforeRetry.Ready,coldBeforeRetry.Error);Assert.AreEqual(after,coldBeforeRetry.Snapshot.NextDeparture!=null);
