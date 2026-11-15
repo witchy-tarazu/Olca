@@ -209,6 +209,7 @@ namespace Olca.Application.Management
             if(fire?.Length==1&&settings!=null){settings.Validate();offers.Add(OutsideShopOffer.ForCard("fire-sword-v1",fire[0],3,settings.Tokens(fire[0].Rarity,fire[0].ExceedLevel),4));}
             offers.Add(new OutsideShopOffer("combined-recovery-v1",OutsideRecoveryItemDefinition.CombinedProvisional.Id,"HP+ドクケシ（カリ）",3,99));
             offers.Add(new OutsideShopOffer("percent-recovery-v1",OutsideRecoveryItemDefinition.PercentProvisional.Id,"HP25%カイフク（カリ）",3,10));
+            if(catalog.BoardId==BoardV2Id)for(int i=0;i<EdgeV2Ids.Count;i++)offers.Add(OutsideShopOffer.ForUnlock("board-edge-v2-"+i,EdgeV2Ids[i],new[]{"ウエ5マス","シタ5マス","ヒダリ3マス","ミギ3マス"}[i]+" カイホウ（カリ）",100));
             return new OutsideShopDefinition(OutsideShopDefinition.TrialInitial.Id,offers,catalog);
         }
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();

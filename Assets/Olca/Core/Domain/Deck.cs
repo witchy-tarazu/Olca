@@ -1637,11 +1637,13 @@ namespace Olca.Core.Domain
     /// <summary>外界店の明示商品。消耗品・パーツ・重複所持しない装飾品を扱う。</summary>
     public sealed class OutsideShopOffer
     {
-        public string Id{get;}public string ItemId{get;}public string Name{get;}public long Price{get;}public int Maximum{get;}public int PurchaseLimit{get;}public string PartId{get;}public string AccessoryId{get;}public bool IsEquipment=>PartId!=null||AccessoryId!=null;
+        public string Id{get;}public string ItemId{get;}public string Name{get;}public long Price{get;}public int Maximum{get;}public int PurchaseLimit{get;}public string PartId{get;}public string AccessoryId{get;}public string UnlockItemId{get;}public bool IsEquipment=>PartId!=null||AccessoryId!=null||UnlockItemId!=null;
         public OutsideShopOffer(string id,string itemId,string name,long price,int maximum,int purchaseLimit=0){if(string.IsNullOrWhiteSpace(id)||string.IsNullOrWhiteSpace(itemId)||string.IsNullOrWhiteSpace(name)||price<=0||maximum<=0||purchaseLimit<0)throw new ArgumentException("外界商品の定義が不正です");Id=id;ItemId=itemId;Name=name;Price=price;Maximum=maximum;PurchaseLimit=purchaseLimit;}
         private OutsideShopOffer(string id,string partId,string name,long price,int purchaseLimit,bool part):this(id,partId,name,price,int.MaxValue,purchaseLimit){if(part)PartId=partId;else{AccessoryId=partId;Maximum=1;}ItemId=null;}
         public static OutsideShopOffer ForPart(string id,string partId,string name,long price,int purchaseLimit=1)=>new OutsideShopOffer(id,partId,name,price,purchaseLimit,true);
         public static OutsideShopOffer ForAccessory(string id,string accessoryId,string name,long price,int purchaseLimit=1)=>new OutsideShopOffer(id,accessoryId,name,price,purchaseLimit,false);
+        private OutsideShopOffer(string id,string unlockId,string name,long price):this(id,unlockId,name,price,1,1){UnlockItemId=unlockId;ItemId=null;}
+        public static OutsideShopOffer ForUnlock(string id,string unlockId,string name,long price)=>new OutsideShopOffer(id,unlockId,name,price);
         private readonly Card cardDefinition;
         public Card CardDefinition=>cardDefinition?.Clone();
         public string CardDefinitionHash=>cardDefinition==null?null:CollectionDisplay.DefinitionHash(cardDefinition);
@@ -1657,7 +1659,7 @@ namespace Olca.Core.Domain
     public sealed class OutsideShopDefinition
     {
         public string Id{get;}public System.Collections.Generic.IReadOnlyList<OutsideShopOffer> Offers{get;}public Olca.Core.Logic.Customization.CustomizationCatalog EquipmentCatalog{get;}
-        public OutsideShopDefinition(string id,System.Collections.Generic.IEnumerable<OutsideShopOffer> offers,Olca.Core.Logic.Customization.CustomizationCatalog equipmentCatalog=null){var copy=offers?.ToArray();if(string.IsNullOrWhiteSpace(id)||copy==null||copy.Length==0||copy.Any(v=>v==null)||copy.Select(v=>v.Id).Distinct().Count()!=copy.Length)throw new ArgumentException("外界店の定義が不正です");if(copy.Any(v=>v.IsEquipment&&(equipmentCatalog==null||v.PartId!=null&&!equipmentCatalog.Parts.ContainsKey(v.PartId)||v.AccessoryId!=null&&!equipmentCatalog.Accessories.Contains(v.AccessoryId))))throw new ArgumentException("ショップの装備定義が未登録です");Id=id;Offers=Array.AsReadOnly(copy);EquipmentCatalog=equipmentCatalog;}
+        public OutsideShopDefinition(string id,System.Collections.Generic.IEnumerable<OutsideShopOffer> offers,Olca.Core.Logic.Customization.CustomizationCatalog equipmentCatalog=null){var copy=offers?.ToArray();if(string.IsNullOrWhiteSpace(id)||copy==null||copy.Length==0||copy.Any(v=>v==null)||copy.Select(v=>v.Id).Distinct().Count()!=copy.Length)throw new ArgumentException("外界店の定義が不正です");if(copy.Any(v=>v.IsEquipment&&(equipmentCatalog==null||v.PartId!=null&&!equipmentCatalog.Parts.ContainsKey(v.PartId)||v.AccessoryId!=null&&!equipmentCatalog.Accessories.Contains(v.AccessoryId)||v.UnlockItemId!=null&&!equipmentCatalog.UnlockItems.ContainsKey(v.UnlockItemId))))throw new ArgumentException("ショップの装備定義が未登録です");Id=id;Offers=Array.AsReadOnly(copy);EquipmentCatalog=equipmentCatalog;}
         public const string TrialFundsId="validation-shop-funds-v1";public const long TrialFunds=10;
         public static readonly OutsideShopDefinition Trial=new OutsideShopDefinition("validation-outside-shop-v1",new[]{new OutsideShopOffer("heal",OutsideRecoveryItemDefinition.Provisional.Id,"カイフクヤク（カリ）",2,99),new OutsideShopOffer("poison",OutsideRecoveryItemDefinition.PoisonProvisional.Id,"ドクケシ（カリ）",1,99)});
         // 過去の有限在庫試験を維持。通常入口は下のTrialInitialを使う。
@@ -1681,6 +1683,7 @@ namespace Olca.Core.Domain
             if(card!=null)return AcquisitionOwned(current.Copy(),card.Id,card.Name,card.Rarity,card.ExceedLevel,offer.CardDefinitionHash)?.Count??0;
             if(offer.AccessoryId!=null)return CustomizationSnapshot.OwnedAccessoryIds.Contains(offer.AccessoryId)?1:0;
             if(offer.PartId!=null)return CustomizationSnapshot.OwnedParts.SingleOrDefault(v=>v.Id==offer.PartId)?.Count??0;
+            if(offer.UnlockItemId!=null)return CustomizationSnapshot.OwnedUnlockItems.SingleOrDefault(v=>v.Id==offer.UnlockItemId)?.Count??0;
             return OutsideInventorySnapshot.Items.SingleOrDefault(v=>v.Id==offer.ItemId)?.Count??0;
         }
         public bool CanPurchaseOutsideShop(OutsideShopDefinition shop,string offerId,out string error)
@@ -1695,7 +1698,7 @@ namespace Olca.Core.Domain
                 }
                 if(OutsideShopRemaining(shop,offerId)==0){error="ウリキレ / ホジュウなし";return false;}
                 int count=OutsideShopOwnedCount(offer);
-                if(offer.CardDefinition==null&&count>=offer.Maximum){error=offer.AccessoryId!=null?"ショジズミ / ソウショクヒンは ジュウフク ショジできません":"ショジ ジョウゲン（"+offer.Maximum+"）です";return false;}
+                if(offer.CardDefinition==null&&count>=offer.Maximum){error=offer.UnlockItemId!=null?"ショジズミ / カイホウアイテムの サイコウニュウはできません":offer.AccessoryId!=null?"ショジズミ / ソウショクヒンは ジュウフク ショジできません":"ショジ ジョウゲン（"+offer.Maximum+"）です";return false;}
                 if(OutsideInventorySnapshot.Currency<offer.Price){error="エイゾク ツウカ フソク / アト "+(offer.Price-OutsideInventorySnapshot.Currency);return false;}return true;
             }catch(ArgumentException e){error=e.Message;return false;}
         }
@@ -1718,6 +1721,7 @@ namespace Olca.Core.Domain
                 }else{
                     equipment=BindCustomization(current.Copy(),shop.EquipmentCatalog);
                     if(offer.AccessoryId!=null)equipment.OwnedAccessoryIds=equipment.OwnedAccessoryIds.Concat(new[]{offer.AccessoryId}).ToArray();
+                    else if(offer.UnlockItemId!=null)equipment.OwnedUnlockItems=equipment.OwnedUnlockItems.Concat(new[]{new Olca.Core.Logic.Customization.CustomizationItemCount{Id=offer.UnlockItemId,Count=1}}).ToArray();
                     else{var parts=equipment.OwnedParts.ToList();var part=parts.SingleOrDefault(v=>v.Id==offer.PartId);if(part==null){part=new Olca.Core.Logic.Customization.CustomizationItemCount{Id=offer.PartId};parts.Add(part);}part.Count=checked(part.Count+1);equipment.OwnedParts=parts.ToArray();}
                 }
                 if(offer.PurchaseLimit>0){var claimed=inventory.ClaimedSources??Array.Empty<string>();string prefix=OutsideShopPurchasePrefix(shop,offer);int ordinal=1;while(claimed.Contains(prefix+ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture)))ordinal=checked(ordinal+1);inventory.ClaimedSources=claimed.Concat(new[]{prefix+ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture)}).ToArray();}
