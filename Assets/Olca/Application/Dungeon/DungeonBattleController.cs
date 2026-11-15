@@ -1371,7 +1371,7 @@ namespace Olca.Application.Dungeon
                 (panel,context)=>{
                     if(!OutsideEquipmentOwnerLive||outsideEquipmentDraft==null)throw new System.OperationCanceledException();
                     SetPausePanelVisible(false);var view=panel.GetComponent<CustomizationLoadoutView>();view.ShowManaged(context);
-                    view.OpenForContext(outsideEquipmentDraft,"タンサク / ホゾンゴにハンエイ / ヒタイセイ "+outsideEquipmentActor.Resistances.Fire+"%・ドクジカンタイセイ "+outsideEquipmentActor.StatusResistances.Poison+"%");
+                    view.OpenForContext(outsideEquipmentDraft,"タンサク / ホゾンゴにハンエイ / ヒタイセイ "+outsideEquipmentActor.Resistances.Fire+"%・ドクジカンタイセイ "+outsideEquipmentActor.StatusResistances.Poison+"% / フロート "+(outsideEquipmentActor.TerrainState.IsFloating?"ON":"OFF"));
                     if(outsideEquipmentPending)view.SaveFailed(true);
                 },panel=>{if(panel!=null)panel.GetComponent<CustomizationLoadoutView>().HideManaged();});
         }
@@ -2369,7 +2369,7 @@ namespace Olca.Application.Dungeon
                 var shopTrial=Olca.Application.Management.DungeonCoreFactory.CreateTrialShopRoute(preparedSingle,cardFactory,
                     new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),
                     new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames));
-                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"},new DungeonChoice{Floors=rewardTrial,DisplayName="シヨウ カードホウシュウ（カリ）",Rewards=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardProvider(cardFactory)},new DungeonChoice{Floors=shopTrial,DisplayName="シヨウ ショップ（カリ）"},new DungeonChoice{Floors=Olca.Application.Management.DungeonCoreFactory.CreateTrialStatusRoute(preparedSingle,cardFactory,new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames)),DisplayName="シヨウ ジョウタイイジョウ（カリ）"}};
+                dungeonChoices=new List<DungeonChoice>{new DungeonChoice{Single=preparedSingle},new DungeonChoice{Floors=trial,DisplayName="シヨウ 2カイソウ（カリ）"},new DungeonChoice{Floors=cardTrial,DisplayName="シヨウ テキカード（カリ）"},new DungeonChoice{Floors=rewardTrial,DisplayName="シヨウ カードホウシュウ（カリ）",Rewards=Olca.Application.Management.DungeonCoreFactory.CreateTrialRewardProvider(cardFactory)},new DungeonChoice{Floors=shopTrial,DisplayName="シヨウ ショップ（カリ）"},new DungeonChoice{Floors=Olca.Application.Management.DungeonCoreFactory.CreateTrialStatusRoute(preparedSingle,cardFactory,new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames)),DisplayName="シヨウ ジョウタイイジョウ（カリ）"},new DungeonChoice{Floors=Olca.Application.Management.DungeonCoreFactory.CreateTrialFloatRoute(preparedSingle,cardFactory,new EnemyPoiseDefinition(normalEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames),new EnemyPoiseDefinition(bossEnemyPoise,battleStaggerFrames,enemyPoiseRecoveryFrames)),DisplayName="シヨウ フロート・チケイ（カリ）"}};
                 var selected=savedPlan==null?null:dungeonChoices.FirstOrDefault(c=>c.Key==savedPlan.DefinitionKey);
                 if(selected?.Floors!=null){floorDefinitions=selected.Floors;dungeonConfig=floorDefinitions.CreateInitialMap(0);selectedDungeon=dungeonChoices.IndexOf(selected);}
 
