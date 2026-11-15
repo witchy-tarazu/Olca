@@ -1182,6 +1182,32 @@ namespace Olca.Tests
             }finally{if(root!=null)Object.DestroyImmediate(root);Object.DestroyImmediate(sprite);Object.DestroyImmediate(texture);}
         }
 
+        [TestCase(ClearReturnStage.Choosing)][TestCase(ClearReturnStage.Awarded)]
+        public void 帰還の選択と確定結果は完全一致の旧仮カードだけ共通名を使い保存値を変えない(ClearReturnStage stage)
+        {
+            var root=new GameObject("ReturnTrialNames",typeof(RectTransform));
+            try {
+                ((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);var view=root.AddComponent<ClearReturnView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),null,null,null,null);
+                var original=Olca.Core.Logic.Dungeon.CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);
+                var normal=new Card("heal","ヒール",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,25,"HPを回復");
+                void Check(Card candidateCard,Card resolved,System.Action<ReturnCardData> change,bool trial){
+                    var candidate=new ReturnCardData{Id=candidateCard.Id,Name=candidateCard.Name,Rarity=candidateCard.Rarity,Level=candidateCard.ExceedLevel,ValueHash=CollectionDisplay.DefinitionHash(candidateCard)};change?.Invoke(candidate);
+                    string saved=JsonUtility.ToJson(candidate),hash=resolved==null?null:CollectionDisplay.DefinitionHash(resolved);
+                    view.ConfigureMenuNavigation(null,_=>resolved);
+                    var flow=new ClearReturnData{RunId="trial-return",Stage=stage,Outcome=RunReturnOutcome.Cleared,Candidates=new[]{candidate},Selected=new[]{0},ReturnedMaxHp=100,ReturnedAttack=10};
+                    view.Render(new ClearReturnProfile(),flow,false,null);
+                    string expected=CustomDisplay.Katakana(trial?CustomDisplay.CardDisplayName(candidateCard):candidate.Name);
+                    var label=root.GetComponentsInChildren<Text>().Single(x=>x.name==(stage==ClearReturnStage.Choosing?"CarryCard_0Label":"AwardCards"));StringAssert.Contains(expected,label.text);if(!trial)StringAssert.DoesNotContain("シヨウソード",label.text);
+                    Assert.AreEqual(saved,JsonUtility.ToJson(candidate));if(resolved!=null)Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(resolved));
+                }
+                foreach(var card in Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions){Check(card,card,null,true);Check(normal,normal,null,false);}
+                var different=new Card("heal","heal_card",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,31,"Fallback card");
+                Check(original,different,null,false);Check(original,original,c=>c.ValueHash=null,false);Check(original,null,null,false);
+                Check(original,original,c=>c.Id="other",false);Check(original,original,c=>c.Name="元のナマエ",false);Check(original,original,c=>c.Rarity=CardRarity.Limited,false);Check(original,original,c=>c.Level=ExceedLevel.Lv1,false);
+                var tuned=original.ApplyTuning(new Card("tune","調律",0,CardRarity.Normal,CardCategory.Tuning,ElementType.None,CardSeries.None,0,""));Check(tuned,tuned,null,false);var copy=original.WithPowerMultiplier(1f);Check(copy,copy,null,false);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
         [Test]
         public void 帰還miniは候補の定義ハッシュで解決した素材だけを借用し未解決時に別絵を流用しない()
         {

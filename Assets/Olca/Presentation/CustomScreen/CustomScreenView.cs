@@ -2011,6 +2011,12 @@ namespace Olca.Presentation.CustomScreen
     /// <summary>既存のカード・カスタムUI用語を、指定フォントで読めるカナ表記へ変換する。</summary>
     public static class CustomDisplay
     {
+        // 旧試用定義との完全一致だけを識別し、同IDの正式定義や加工品には広げない。
+        private static readonly HashSet<string> fallbackDefinitionHashes = new HashSet<string>(Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions.Select(CollectionDisplay.DefinitionHash));
+        private static bool IsTrialFallbackSword(Card card) => card != null && card.Description == "Fallback card" && card.TuningCount == 0 && !card.IsEffectCopy && fallbackDefinitionHashes.Contains(CollectionDisplay.DefinitionHash(card));
+        public static string CardDisplayName(Card card) => IsTrialFallbackSword(card) ? $"試用ソード（{card.Id}）" : card?.Name;
+        public static string CardDisplayDescription(Card card) => IsTrialFallbackSword(card) ? "剣攻撃の仮カード\n回復・防御効果なし\n威力30・無属性" : card?.Description;
+
         // モデルを変更せず現在のカード補正と各調律を同じ表示へ集約する。
         public static string CardDetails(Card card)
         {

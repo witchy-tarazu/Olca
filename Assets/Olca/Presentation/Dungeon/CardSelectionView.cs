@@ -553,6 +553,14 @@ namespace Olca.Presentation.Dungeon
         {
             var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(content.transform,false);var image=obj.GetComponent<Image>();image.sprite=Resources.Load<Sprite>(dark?"OlcaUI/description":"OlcaUI/window");image.type=Image.Type.Sliced;image.color=Color.white;image.raycastTarget=false;var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(x,y);rect.sizeDelta=new Vector2(width,height);return image;
         }
+        private Card ResolveReturnCard(ReturnCardData candidate) => resolveOwned?.Invoke(new OwnedCardCount{Id=candidate.Id,Name=candidate.Name,Rarity=candidate.Rarity,Level=candidate.Level,DefinitionHash=candidate.ValueHash,Count=1});
+        private static string ReturnCardDisplayName(ReturnCardData candidate,Card resolved)
+        {
+            // 旧hash欠損は推定せず、保存済みメタデータと実体がすべて一致した場合だけ表示名を借用する。
+            if(candidate.ValueHash==null||resolved==null||candidate.Id!=resolved.Id||candidate.Name!=resolved.Name||candidate.Level!=resolved.ExceedLevel||candidate.Rarity!=resolved.Rarity||candidate.ValueHash!=CollectionDisplay.DefinitionHash(resolved))return candidate.Name;
+            return Olca.Presentation.CustomScreen.CustomDisplay.CardDisplayName(resolved);
+        }
+
         public void Render(ClearReturnProfile profile, ClearReturnData flow, bool blocked, string error, bool collectionOnly = false, string dungeonName = null)
         {
             BeginRender();
@@ -580,7 +588,7 @@ namespace Olca.Presentation.Dungeon
                     int index = page * PageSize + row; var card = flow.Candidates[index];
                     bool selected = flow.Selected.Contains(index);
                     string level = new string('★', (int)card.Level);
-                    var b = Button("CarryCard_" + index, (selected ? "［選択中］ " : "［選択］ ") + card.Name + level +
+                    var b = Button("CarryCard_" + index, (selected ? "［選択中］ " : "［選択］ ") + ReturnCardDisplayName(card,ResolveReturnCard(card)) + level +
                         (card.Level == ExceedLevel.Lv3 ? "（持ち帰り不可）" : ""), 0, 180 - row * 59, 1450, 52, () => toggle(index));
                     b.interactable = !blocked && card.Level != ExceedLevel.Lv3;
                 }
@@ -595,8 +603,9 @@ namespace Olca.Presentation.Dungeon
                 if(flow.Selected.Length==0)Text("AwardCards","0枚",0,60,1600,64,30).alignment=TextAnchor.MiddleLeft;
                 for(int row=0;row<flow.Selected.Length;row++){
                     var candidate=flow.Candidates[flow.Selected[row]];float y=60-row*80;
-                    var label=Text(row==0?"AwardCards":"AwardCard_"+row,candidate.Name+new string('★',(int)candidate.Level),50,y,1500,64,30);label.alignment=TextAnchor.MiddleLeft;label.resizeTextForBestFit=true;label.resizeTextMinSize=22;label.resizeTextMaxSize=30;
-                    var owned=new OwnedCardCount{Id=candidate.Id,Name=candidate.Name,Rarity=candidate.Rarity,Level=candidate.Level,DefinitionHash=candidate.ValueHash,Count=1};var card=resolveOwned?.Invoke(owned);var sprite=card==null?null:resolveReturnIcon?.Invoke(card);
+                    var card=ResolveReturnCard(candidate);
+                    var label=Text(row==0?"AwardCards":"AwardCard_"+row,ReturnCardDisplayName(candidate,card)+new string('★',(int)candidate.Level),50,y,1500,64,30);label.alignment=TextAnchor.MiddleLeft;label.resizeTextForBestFit=true;label.resizeTextMinSize=22;label.resizeTextMaxSize=30;
+                    var sprite=card==null?null:resolveReturnIcon?.Invoke(card);
                     if(sprite!=null)CollectionIcon("ReturnCardIcon_"+row,card,-780,y,64,_=>sprite);else Text("ReturnCardIndex_"+row,(row+1).ToString(),-780,y,64,64,24);
                 }
                 float statsY=-115-(rows-1)*80;var body=(RectTransform)content.transform.Find("ReturnBody");float bodyHeight=Mathf.Min(700,540+(rows-1)*80);body.sizeDelta=new Vector2(1760,bodyHeight);body.anchoredPosition=new Vector2(0,320-bodyHeight/2);
