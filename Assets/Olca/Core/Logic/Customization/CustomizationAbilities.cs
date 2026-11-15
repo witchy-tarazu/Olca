@@ -69,6 +69,8 @@ namespace Olca.Core.Logic.Customization
             IReadOnlyDictionary<string,CustomizationAbilityValue> Copy(IReadOnlyDictionary<string,CustomizationAbilityValue> values){var copy=(values??new Dictionary<string,CustomizationAbilityValue>()).ToDictionary(v=>v.Key,v=>v.Value,StringComparer.Ordinal);if(copy.Any(v=>string.IsNullOrWhiteSpace(v.Key)||v.Value==null))throw new ArgumentException("能力の対応が不正です");return new ReadOnlyDictionary<string,CustomizationAbilityValue>(copy);}
             accessories=Copy(accessoryValues);parts=Copy(partValues);
         }
+        public bool ContainsAccessory(string id)=>id!=null&&accessories.ContainsKey(id);
+        public bool ContainsPart(string id)=>id!=null&&parts.ContainsKey(id);
         public ResolvedCustomizationAbilities Resolve(CustomizationLoadoutSources loadout)
         {
             if(loadout==null)throw new ArgumentNullException(nameof(loadout));var values=new List<CustomizationAbilitySourceDto>();

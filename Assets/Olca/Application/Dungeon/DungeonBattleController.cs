@@ -940,7 +940,7 @@ namespace Olca.Application.Dungeon
             if(!useTrialCustomizationDefaults||clearReturnSession?.Ready!=true||customizationCatalog!=null||customizationAbilityCatalog!=null||customizationAcquisitionProvider!=null||
                 !Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(clearReturnSession.CustomizationSnapshot))return;
             customizationCatalog=Olca.Application.Management.TrialCustomizationDefinitions.CatalogFor(clearReturnSession.CustomizationSnapshot);
-            customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();
+            customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.AbilitiesFor(clearReturnSession.CustomizationSnapshot);
             customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.ProviderFor(clearReturnSession.CustomizationSnapshot);trialCustomizationRegistered=true;
         }
         // 新規開始の保存成功後だけ、自動登録した試用定義を新しい盤面へ切り替える。
@@ -950,7 +950,7 @@ namespace Olca.Application.Dungeon
             customizationViews?.CloseCurrent();customizationAcquisitionView?.Close();customizationAcquisitionPending=false;customizationAcquisitionContext=null;
             customizationUnlockView?.Close();customizationUnlockWasOpen=false;customizationEditorView?.Close();customizationDraft=null;customizationSavePending=false;
             outsideEquipmentEpoch++;outsideEquipmentView?.Close();outsideEquipmentDraft=null;outsideEquipmentCandidate=null;outsideEquipmentHost=null;outsideEquipmentActor=null;outsideEquipmentPending=outsideEquipmentInterrupted=false;
-            customizationCatalog=next;customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.ProviderFor(clearReturnSession.CustomizationSnapshot);
+            customizationCatalog=next;customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.AbilitiesFor(clearReturnSession.CustomizationSnapshot);customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.ProviderFor(clearReturnSession.CustomizationSnapshot);
         }
         private Olca.Core.Logic.Customization.CustomizationCatalog customizationCatalog;
         public void ConfigureCustomizationCatalog(Olca.Core.Logic.Customization.CustomizationCatalog catalog)
@@ -1371,7 +1371,7 @@ namespace Olca.Application.Dungeon
                 (panel,context)=>{
                     if(!OutsideEquipmentOwnerLive||outsideEquipmentDraft==null)throw new System.OperationCanceledException();
                     SetPausePanelVisible(false);var view=panel.GetComponent<CustomizationLoadoutView>();view.ShowManaged(context);
-                    view.OpenForContext(outsideEquipmentDraft,"タンサク / ホゾンゴにハンエイ / ヒタイセイ "+outsideEquipmentActor.Resistances.Fire+"%");
+                    view.OpenForContext(outsideEquipmentDraft,"タンサク / ホゾンゴにハンエイ / ヒタイセイ "+outsideEquipmentActor.Resistances.Fire+"%・ドクジカンタイセイ "+outsideEquipmentActor.StatusResistances.Poison+"%");
                     if(outsideEquipmentPending)view.SaveFailed(true);
                 },panel=>{if(panel!=null)panel.GetComponent<CustomizationLoadoutView>().HideManaged();});
         }

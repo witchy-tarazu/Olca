@@ -177,10 +177,11 @@ namespace Olca.Application.Management
         public const string QualityAccessory="カリ・ホウシュウシツ+1";
         public const string BoardV2Id="trial-equipment-board-5x5-v2";
         public static IReadOnlyList<string> EdgeV2Ids { get; }=Array.AsReadOnly(new[]{"カリ・ウエ5マス-v2","カリ・シタ5マス-v2","カリ・ヒダリ3マス-v2","カリ・ミギ3マス-v2"});
+        public const string FireAccessoryV2="カリ・ヒタイセイ20-v2",PoisonAccessoryV2="カリ・ドクジカン25-v2",FirePartV2="カリ・ヒタイセイ10パーツ-v2",PoisonPartV2="カリ・ドクジカン10パーツ-v2";
         public static bool IsTrialBoard(string id)=>id==BoardId||id==BoardV2Id;
         public static Olca.Core.Logic.Customization.CustomizationCatalog CatalogV2()=>new Olca.Core.Logic.Customization.CustomizationCatalog(BoardV2Id,
-            new Olca.Core.Logic.Customization.PartsBoardDefinition(5,5,Enumerable.Range(1,3).SelectMany(y=>Enumerable.Range(1,3).Select(x=>new Vector2Int(x,y)))),new[]{Accessory,QualityAccessory},
-            new Dictionary<string,Olca.Core.Logic.Customization.PartShape>{{Part,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0),new Vector2Int(1,0)})}},
+            new Olca.Core.Logic.Customization.PartsBoardDefinition(5,5,Enumerable.Range(1,3).SelectMany(y=>Enumerable.Range(1,3).Select(x=>new Vector2Int(x,y)))),new[]{Accessory,QualityAccessory,FireAccessoryV2,PoisonAccessoryV2},
+            new Dictionary<string,Olca.Core.Logic.Customization.PartShape>{{Part,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0),new Vector2Int(1,0)})},{FirePartV2,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0),new Vector2Int(1,0)})},{PoisonPartV2,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0)})}},
             new Dictionary<string,IEnumerable<Vector2Int>>{{EdgeV2Ids[0],Enumerable.Range(0,5).Select(x=>new Vector2Int(x,0))},{EdgeV2Ids[1],Enumerable.Range(0,5).Select(x=>new Vector2Int(x,4))},{EdgeV2Ids[2],Enumerable.Range(1,3).Select(y=>new Vector2Int(0,y))},{EdgeV2Ids[3],Enumerable.Range(1,3).Select(y=>new Vector2Int(4,y))}});
         public static Olca.Core.Logic.Customization.CustomizationProgress NewGameProgress(){var catalog=CatalogV2();return new Olca.Core.Logic.Customization.CustomizationProgress{BoardId=BoardV2Id,UnlockedCells=catalog.Board.UnlockedCells.Select(v=>new Olca.Core.Logic.Customization.CustomizationCell{X=v.X,Y=v.Y}).ToArray()};}
         public static Olca.Core.Logic.Customization.CustomizationCatalog CatalogFor(Olca.Core.Logic.Customization.CustomizationProgress state){if(!CanRegister(state))throw new ArgumentException("試用盤面と所持品が一致しません");return state?.BoardId==BoardV2Id?CatalogV2():Catalog();}
@@ -196,9 +197,14 @@ namespace Olca.Application.Management
             =>new Olca.Core.Logic.Customization.CustomizationAbilityCatalog(AbilityId,
                 new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Accessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:10))},{QualityAccessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(rewardQualityBonus:1)}},
                 new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Part,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:5))}});
+        // 同じ互換ファミリーへ新IDだけ追加。既存供給元の解決値と保存DTOは変えない。
+        public static Olca.Core.Logic.Customization.CustomizationAbilityCatalog AbilitiesV2()=>new Olca.Core.Logic.Customization.CustomizationAbilityCatalog(AbilityId,
+            new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Accessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:10))},{QualityAccessory,new Olca.Core.Logic.Customization.CustomizationAbilityValue(rewardQualityBonus:1)},{FireAccessoryV2,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:20))},{PoisonAccessoryV2,new Olca.Core.Logic.Customization.CustomizationAbilityValue(statuses:new TimedStatusResistances(poison:25))}},
+            new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Part,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:5))},{FirePartV2,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:10))},{PoisonPartV2,new Olca.Core.Logic.Customization.CustomizationAbilityValue(statuses:new TimedStatusResistances(poison:10))}});
+        public static Olca.Core.Logic.Customization.CustomizationAbilityCatalog AbilitiesFor(Olca.Core.Logic.Customization.CustomizationProgress state){if(!CanRegister(state))throw new ArgumentException("試用能力と所持品が一致しません");return state?.BoardId==BoardV2Id?AbilitiesV2():Abilities();}
         // 別の登録/将来の所持品を自動変換しない。読込も保存も行わない。
         public static bool CanRegister(Olca.Core.Logic.Customization.CustomizationProgress state)
-            =>state==null||(state.BoardId==null||IsTrialBoard(state.BoardId))&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>state.BoardId==BoardV2Id?EdgeV2Ids.Contains(x.Id):x.Id==Unlock);
+            =>state==null||(state.BoardId==null||IsTrialBoard(state.BoardId))&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory||state.BoardId==BoardV2Id&&(x==FireAccessoryV2||x==PoisonAccessoryV2))&&state.OwnedParts.All(x=>x.Id==Part||state.BoardId==BoardV2Id&&(x.Id==FirePartV2||x.Id==PoisonPartV2))&&state.OwnedUnlockItems.All(x=>state.BoardId==BoardV2Id?EdgeV2Ids.Contains(x.Id):x.Id==Unlock);
         // 既存の試用盤面/能力定義だけを明示登録。別の製品定義へ仮商品を混ぜない。
         public static OutsideShopDefinition OutsideShop(Olca.Core.Logic.Customization.CustomizationCatalog catalog,Olca.Core.Logic.Customization.CustomizationAbilityCatalog abilities,IReadOnlyList<Card> cards=null,ClearReturnSettings settings=null)
             {
@@ -210,6 +216,12 @@ namespace Olca.Application.Management
             offers.Add(new OutsideShopOffer("combined-recovery-v1",OutsideRecoveryItemDefinition.CombinedProvisional.Id,"HP+ドクケシ（カリ）",3,99));
             offers.Add(new OutsideShopOffer("percent-recovery-v1",OutsideRecoveryItemDefinition.PercentProvisional.Id,"HP25%カイフク（カリ）",3,10));
             if(catalog.BoardId==BoardV2Id)for(int i=0;i<EdgeV2Ids.Count;i++)offers.Add(OutsideShopOffer.ForUnlock("board-edge-v2-"+i,EdgeV2Ids[i],new[]{"ウエ5マス","シタ5マス","ヒダリ3マス","ミギ3マス"}[i]+" カイホウ（カリ）",100));
+            if(catalog.BoardId==BoardV2Id){
+                if(catalog.Accessories.Contains(FireAccessoryV2)&&abilities.ContainsAccessory(FireAccessoryV2))offers.Add(OutsideShopOffer.ForAccessory("fire-accessory-v2",FireAccessoryV2,"ヒタイセイ+20（カリ）",100));
+                if(catalog.Accessories.Contains(PoisonAccessoryV2)&&abilities.ContainsAccessory(PoisonAccessoryV2))offers.Add(OutsideShopOffer.ForAccessory("poison-accessory-v2",PoisonAccessoryV2,"ドクジカンタイセイ+25%（カリ）",100));
+                if(catalog.Parts.ContainsKey(FirePartV2)&&abilities.ContainsPart(FirePartV2))offers.Add(OutsideShopOffer.ForPart("fire-part-v2",FirePartV2,"ヒタイセイ+10（カリ）",60,0));
+                if(catalog.Parts.ContainsKey(PoisonPartV2)&&abilities.ContainsPart(PoisonPartV2))offers.Add(OutsideShopOffer.ForPart("poison-part-v2",PoisonPartV2,"ドクジカンタイセイ+10%（カリ）",60,0));
+            }
             return new OutsideShopDefinition(OutsideShopDefinition.TrialInitial.Id,offers,catalog);
         }
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();
