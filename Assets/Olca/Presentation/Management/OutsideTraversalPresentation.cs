@@ -693,12 +693,12 @@ namespace Olca.Presentation.Exploration
                 if(found){float aw=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleWidth;float ah=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleHeight;image.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x*visibleWidth/aw,sprite.bounds.size.y*visibleHeight/ah)*pixelsPerWorldUnit;}
                 image.rectTransform.anchoredPosition=new Vector2((x-camera+viewport*.5f)*pixelsPerWorldUnit,(y-verticalOffset)*pixelsPerWorldUnit);image.rectTransform.localRotation=Quaternion.Euler(0,0,angle);return image;
             }
-            foreach(var flight in flights){float age=frame-flight.FiredAt;float target=flight.Launch.Target/(float)OutsideMovementDefinition.UnitsPerWorldUnit;
+            foreach(var flight in flights){float age=frame-flight.FiredAt;float target=flight.Launch.ImpactX/(float)OutsideMovementDefinition.UnitsPerWorldUnit;
                 // 着弾予定だけの薄い目印。ダメージはSessionの90frame到達時に一度だけ発生する。
-                for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,.38f,.9f,.18f,.18f);
+                if(!flight.Launch.Dissipates)for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,flight.Launch.ImpactHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.18f,.18f);
                 Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,flight.Position(frame)/(float)OutsideMovementDefinition.UnitsPerWorldUnit,flight.Height(frame)/(float)OutsideMovementDefinition.UnitsPerWorldUnit,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
             }
-            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,.38f,.9f,.35f,alpha);}
+            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();

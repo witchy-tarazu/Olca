@@ -124,7 +124,7 @@ namespace Olca.Core.Logic.Integration
         {if(string.IsNullOrWhiteSpace(cardId)||!Enum.IsDefined(typeof(ExceedLevel),level))throw new ArgumentException("外界使用定義が不正です");CardId=cardId;Level=level;CanUseInAir=canUseInAir;}
         // 登録した既存6種と新近接2種・エアショットだけの暫定指定。未知ID/未登録レベルへ空中許可を自動付与しない。
         public static IReadOnlyList<OutsideCardUseDefinition> TrialDefinitions {get;}=Array.AsReadOnly(new[]{
-            new OutsideCardUseDefinition("shield",ExceedLevel.Normal,true),new OutsideCardUseDefinition("heal",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Normal,true),
+            new OutsideCardUseDefinition("bomb",ExceedLevel.Normal,true),new OutsideCardUseDefinition("bomb",ExceedLevel.Lv1,true),new OutsideCardUseDefinition("bomb",ExceedLevel.Lv2,true),new OutsideCardUseDefinition("shield",ExceedLevel.Normal,true),new OutsideCardUseDefinition("heal",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Normal,true),
             new OutsideCardUseDefinition("fire_sword",ExceedLevel.Normal,true),new OutsideCardUseDefinition("sword",ExceedLevel.Lv1,true),new OutsideCardUseDefinition("sword",ExceedLevel.Lv2,true),new OutsideCardUseDefinition(TrialInitialCardDefinitions.AirShot,ExceedLevel.Normal,true),new OutsideCardUseDefinition(TrialInitialCardDefinitions.Spear,ExceedLevel.Normal,true),new OutsideCardUseDefinition(TrialInitialCardDefinitions.WideSword,ExceedLevel.Normal,true)});
         public static bool AllowsAir(Card card)=>card!=null&&TrialDefinitions.Any(d=>d.CardId==card.Id&&d.Level==card.ExceedLevel&&d.CanUseInAir);
     }
@@ -451,7 +451,7 @@ namespace Olca.Core.Logic.Integration
             if(SwordDefinition(expected)||ShotDefinition(expected))Core.FaceAwayFromWallForAttack();
             if(normalKick?.IsActive==true)Core.RestartIdleMotion();
             chargeInput.ClearAccumulation();normalKick?.CardStarted();
-            attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected),ResolvedPower=resolvedPower,BombLaunch=bombPlan};AdvanceAttack(true);CardUseMessage=bombPlan!=null?"ボム: ヘイチ2world / 1.5ビョウ（カリ）":expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
+            attackState=new OutsideAttackStateData{CardIndex=Cards.IndexOf(expected),StartedAt=Core.Frame,StartupFrames=Startup(expected),RecoveryFrames=Recovery(expected),ResolvedPower=resolvedPower,BombLaunch=bombPlan};AdvanceAttack(true);CardUseMessage=bombPlan!=null?"ボム: チケイ トウテキ（カリ）":expected.Name+" を シヨウ";CardUseMessageFrame=Core.Frame;return true;
         }
         public bool CanPerformAttack=>!IsHitStopped&&BodyCanAttack&&!IsAttacking;
         private bool BodyCanAttack=>Core.Frame!=bodyPreventedFrame&&!IsEnded&&Player!=null&&!Player.IsDead&&!Player.IsParalyzed&&!Player.IsStaggered&&!IsLandingLocked&&!Core.HasFallenOut;
@@ -1149,8 +1149,8 @@ namespace Olca.Core.Logic.Integration
             var actor=player.Restore();actor.SetBarrier(runtime.TrialBarrierHp);var candidateCore=new OutsideExplorationCore(Core.Definition,initializationProfile??Core.TraversalProfile);candidateCore.RestoreState(runtime.Core);if(candidateCore.HasFallenOut)throw new ArgumentException("死亡済み落下を生存個体として復元できません");var camera=runtime.FixedCameraCenter.HasValue?OutsideCameraPolicy.FixedAt(runtime.FixedCameraCenter.Value):OutsideCameraPolicy.Follow;camera.ResolveHorizontalCenter(candidateCore.Position,candidateCore.Definition.Width,1);
             var cards=runtime.Cards==null?null:OutsideExplorationCards.RestoreState(runtime.Cards,definitions);var target=CreateTrialTarget(runtime.TrialTarget);var secondTarget=CreateSecondTrialTarget(runtime.SecondTrialTarget);
             ValidateAttack(runtime.Attack,cards,runtime.Core.Frame);
-            if(runtime.Attack?.BombLaunch!=null&&!OutsideBombLaunchData.HasTerrain(candidateCore,runtime.Attack.BombLaunch.X,runtime.Attack.BombLaunch.Facing))throw new ArgumentException("ボムの発射元地形が未対応です");
-            foreach(var bomb in runtime.Bombs??Array.Empty<OutsideBombFlightData>())if(actor.IsDead||!OutsideBombLaunchData.HasTerrain(candidateCore,bomb.Launch.X,bomb.Launch.Facing))throw new ArgumentException("この個体/地形のボム復元は未対応です");
+            if(runtime.Attack?.BombLaunch!=null&&!runtime.Attack.BombLaunch.MatchesTerrain(candidateCore))throw new ArgumentException("ボムの発射元地形が未対応です");
+            foreach(var bomb in runtime.Bombs??Array.Empty<OutsideBombFlightData>())if(actor.IsDead||!bomb.Launch.MatchesTerrain(candidateCore)||runtime.Core.Frame-bomb.FiredAt>=bomb.Launch.Duration)throw new ArgumentException("この個体/地形のボム復元は未対応です");
             if(runtime.InitialShots!=null&&candidateCore.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの試用弾復元は未登録です");
             foreach(var shot in runtime.InitialShots??Array.Empty<OutsideInitialShotData>())if(shot.X<0||shot.X>candidateCore.Definition.Width||shot.Height>candidateCore.MaximumReachableHeight()||candidateCore.TraversalProfile.VoidDepth>0&&shot.Height<=-candidateCore.TraversalProfile.VoidDepth)throw new ArgumentException("探索弾の開始位置がマップ外です");
             if((runtime.TrialBarrierHp>0||runtime.TrialEnemyAttack!=null)&&Core.Definition.Id!="validation-landing-32")throw new ArgumentException("このマップの試用バリアは未登録です");
@@ -1267,16 +1267,28 @@ namespace Olca.Core.Logic.Integration
 
 namespace Olca.Core.Logic.Integration
 {
-    /// <summary>平地だけの試用v1。カード定義やDungeonの3マス投擲を置換しない。</summary>
+    /// <summary>旧平地v1と暫定地形v2。カード定義やDungeonの3マス投擲を置換しない。</summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class OutsideBombLaunchData
     {
-        public const string TrialDefinition="trial-outside-flat-bomb-v1";
+        public const string TrialDefinition="trial-outside-flat-bomb-v1",TerrainDefinition="trial-outside-terrain-bomb-v2";
         public const long Distance=120000,Radius=90000;
         public const int FlightFrames=90,BlastFrames=6;
-        public string DefinitionId=TrialDefinition;public long X;public int Facing,Power,HitStopFrames;public int? PoiseDamage;public ElementType Element;public ExceedLevel Level;
-        public OutsideBombLaunchData Copy()=>(OutsideBombLaunchData)MemberwiseClone();
+        [System.Runtime.Serialization.DataMember] public string DefinitionId=TrialDefinition;
+        [System.Runtime.Serialization.DataMember] public long X;
+        [System.Runtime.Serialization.DataMember] public int Facing,Power,HitStopFrames;
+        [System.Runtime.Serialization.DataMember] public int? PoiseDamage;
+        [System.Runtime.Serialization.DataMember] public ElementType Element;
+        [System.Runtime.Serialization.DataMember] public ExceedLevel Level;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideBombTerrainData Terrain;
+        public OutsideBombLaunchData Copy(){var copy=(OutsideBombLaunchData)MemberwiseClone();copy.Terrain=Terrain?.Copy();return copy;}
+        public int Duration=>Terrain?.ImpactFrame??FlightFrames;
+        public long ImpactX=>Terrain?.ImpactX??Target;
+        public long ImpactHeight=>Terrain?.ImpactHeight??0;
+        public bool Dissipates=>Terrain?.Dissipates??false;
+        public bool MatchesTerrain(OutsideExplorationCore core){if(DefinitionId==TrialDefinition)return Terrain==null&&HasTerrain(core,X,Facing);if(core==null||core.Definition.Id!=OutsideKickTrialDefinition.MapId||core.TrialMapId!=null||Terrain==null||Terrain.OriginHeight>core.MaximumReachableHeight()||X>core.Definition.Width)return false;return Terrain.SameAs(OutsideBombTerrainData.Create(core,X,Facing,Terrain.OriginHeight));}
         public long Target=>checked(X+Facing*Distance);
-        public void Validate(){if(DefinitionId!=TrialDefinition||X<0||Facing!=1&&Facing!=-1||Power<0||PoiseDamage<0||HitStopFrames<0||HitStopFrames>60||!Enum.IsDefined(typeof(ElementType),Element)||!Enum.IsDefined(typeof(ExceedLevel),Level)||Level>ExceedLevel.Lv2)throw new ArgumentException("試用ボムの発射値が不正です");checked{_=Target+Radius;_=Target-Radius;}}
+        public void Validate(){if((DefinitionId!=TrialDefinition&&DefinitionId!=TerrainDefinition)||DefinitionId==TrialDefinition&&Terrain!=null||DefinitionId==TerrainDefinition&&Terrain==null||X<0||Facing!=1&&Facing!=-1||Power<0||PoiseDamage<0||HitStopFrames<0||HitStopFrames>60||!Enum.IsDefined(typeof(ElementType),Element)||!Enum.IsDefined(typeof(ExceedLevel),Level)||Level>ExceedLevel.Lv2)throw new ArgumentException("試用ボムの発射値が不正です");checked{_=Target+Radius;_=Target-Radius;}Terrain?.Validate();}
         public static bool HasTerrain(OutsideExplorationCore core,long x,int facing)
         {
             if(core==null||core.Definition.Id!=OutsideKickTrialDefinition.MapId||core.TrialMapId!=null||x<0||facing!=1&&facing!=-1)return false;
@@ -1287,16 +1299,43 @@ namespace Olca.Core.Logic.Integration
             }catch(OverflowException){return false;}
         }
     }
+    /// <summary>暫定v2。90論理フレームの弧を地形と交差させ、結果を消費時に固定する。</summary>
+    public sealed class OutsideBombTerrainData
+    {
+        public long OriginHeight,ImpactX,ImpactHeight;public int ImpactFrame;public bool Dissipates;
+        public OutsideBombTerrainData Copy()=>(OutsideBombTerrainData)MemberwiseClone();
+        public void Validate(){if(OriginHeight<0||ImpactX<0||ImpactHeight<0||ImpactFrame<1||ImpactFrame>OutsideBombLaunchData.FlightFrames)throw new ArgumentException("ボム地形計画が不正です");}
+        public bool SameAs(OutsideBombTerrainData v)=>v!=null&&OriginHeight==v.OriginHeight&&ImpactX==v.ImpactX&&ImpactHeight==v.ImpactHeight&&ImpactFrame==v.ImpactFrame&&Dissipates==v.Dissipates;
+        public static OutsideBombTerrainData Create(OutsideExplorationCore core,long x,int facing,long height)
+        {
+            if(core==null||x<0||x>core.Definition.Width||height<0||facing!=1&&facing!=-1)throw new ArgumentException("ボム発射元が不正です");
+            long X(int n)=>checked(x+facing*OutsideBombLaunchData.Distance*n/90);
+            long Y(int n)=>checked(height*(90-n)/90+4L*n*(90-n)*84000/8100);
+            var profile=core.TraversalProfile;
+            for(int n=1;n<=90;n++){
+                long ax=X(n-1),ay=Y(n-1),bx=X(n),by=Y(n);decimal best=2;bool vanish=false;
+                void Contact(decimal t,bool disappears){if(t>=0&&t<=1&&(t<best||t==best&&disappears)){best=t;vanish=disappears;}}
+                // 点の足元による閉矩形交差。水域・境界への接触では爆発させない。
+                if(profile!=null)foreach(var water in profile.Waters){decimal from=0,to=1;bool Clip(decimal start,decimal delta,decimal low,decimal high){if(delta==0)return start>=low&&start<=high;decimal a=(low-start)/delta,b=(high-start)/delta;if(a>b){decimal t=a;a=b;b=t;}from=Math.Max(from,a);to=Math.Min(to,b);return from<=to;}if(Clip(ax,(decimal)bx-ax,water.Left,water.Right)&&Clip(ay,(decimal)by-ay,water.Bottom,water.Top))Contact(from,true);}
+                if(bx<0||bx>core.Definition.Width)Contact(((decimal)(bx<0?0:core.Definition.Width)-ax)/(bx-ax),true);
+                if(profile!=null)foreach(var wall in profile.Walls){decimal t=((decimal)wall.X-ax)/(bx-ax);decimal y=ay+((decimal)by-ay)*t;if(y>=wall.Bottom&&y<=wall.Top)Contact(t,false);}
+                if(by<ay)foreach(var surface in core.Definition.LandingSurfaces){decimal t=((decimal)surface.Top-ay)/(by-ay);decimal hitX=ax+((decimal)bx-ax)*t;if(hitX>=surface.Left&&hitX<=surface.Right)Contact(t,false);}
+                if(n==90&&best>1){best=1;vanish=profile!=null&&profile.FloorGaps.Any(g=>g.Contains(bx));}
+                if(best<=1){var result=new OutsideBombTerrainData{OriginHeight=height,ImpactFrame=n,ImpactX=(long)(ax+((decimal)bx-ax)*best),ImpactHeight=Math.Max(0,(long)(ay+((decimal)by-ay)*best)),Dissipates=vanish};result.Validate();return result;}
+            }
+            throw new InvalidOperationException("ボム地形計画が終端に到達しません");
+        }
+    }
     /// <summary>消費時に固定した発射計画を独立寿命で運ぶ。爆発済みは保存せずHP側へ一度だけ確定。</summary>
     public sealed class OutsideBombFlightData
     {
         public OutsideBombLaunchData Launch;public long ActionStartedAt,FiredAt;
         public OutsideBombFlightData Copy()=>new OutsideBombFlightData{Launch=Launch?.Copy(),ActionStartedAt=ActionStartedAt,FiredAt=FiredAt};
-        public void Validate(long frame){if(Launch==null||ActionStartedAt<0||FiredAt<ActionStartedAt||FiredAt>frame||frame-FiredAt>=OutsideBombLaunchData.FlightFrames)throw new ArgumentException("ボム飛翔の時計が不正です");Launch.Validate();}
+        public void Validate(long frame){if(Launch==null||ActionStartedAt<0||FiredAt<ActionStartedAt||FiredAt>frame||frame-FiredAt>=Launch.Duration)throw new ArgumentException("ボム飛翔の時計が不正です");Launch.Validate();}
         public long Position(long frame){long age=Math.Max(0,Math.Min(OutsideBombLaunchData.FlightFrames,frame-FiredAt));return checked(Launch.X+Launch.Facing*OutsideBombLaunchData.Distance*age/OutsideBombLaunchData.FlightFrames);}
-        public long Height(long frame){long age=Math.Max(0,Math.Min(OutsideBombLaunchData.FlightFrames,frame-FiredAt));return 27000+4*age*(OutsideBombLaunchData.FlightFrames-age)*84000/(OutsideBombLaunchData.FlightFrames*OutsideBombLaunchData.FlightFrames);}
+        public long Height(long frame){long age=Math.Max(0,Math.Min(OutsideBombLaunchData.FlightFrames,frame-FiredAt));return (Launch.Terrain?.OriginHeight??0)*(OutsideBombLaunchData.FlightFrames-age)/OutsideBombLaunchData.FlightFrames+27000+4*age*(OutsideBombLaunchData.FlightFrames-age)*84000/(OutsideBombLaunchData.FlightFrames*OutsideBombLaunchData.FlightFrames);}
     }
-    public sealed class OutsideBombBlastData{public long X,Frame;public OutsideBombBlastData Copy()=>(OutsideBombBlastData)MemberwiseClone();}
+    public sealed class OutsideBombBlastData{public long X,Height,Frame;public OutsideBombBlastData Copy()=>(OutsideBombBlastData)MemberwiseClone();}
     public sealed partial class OutsideExplorationSession
     {
         private readonly List<OutsideBombFlightData> bombs=new List<OutsideBombFlightData>();
@@ -1304,11 +1343,11 @@ namespace Olca.Core.Logic.Integration
         public IReadOnlyList<OutsideBombFlightData> Bombs=>bombs.Select(v=>v.Copy()).ToArray();
         public IReadOnlyList<OutsideBombBlastData> BombBlasts=>bombBlasts.Select(v=>v.Copy()).ToArray();
         private static bool BombDefinition(Card c)=>c!=null&&c.Id=="bomb"&&c.Category==CardCategory.Attack&&c.Series==CardSeries.Bomb&&c.AttackPowerBasisPoints==0&&Enum.IsDefined(typeof(ExceedLevel),c.ExceedLevel)&&c.ExceedLevel<=ExceedLevel.Lv2&&c.Power>=0&&c.Properties==AttackProperty.None&&c.Modifier.AdditionalEffects.Count==0&&c.MoveMotionTime==0&&c.AttackMotionTime==0&&c.HitInvincibilityMs==0;
-        private bool CanPlanBomb()=>bombs.Count<60&&Core.IsGrounded&&Core.Height==0&&OutsideBombLaunchData.HasTerrain(Core,Core.Position,Core.Facing);
+        private bool CanPlanBomb()=>bombs.Count<60&&Core.TrialMapId==null&&Core.Definition.Id==OutsideKickTrialDefinition.MapId&&Core.Height>=0;
         private bool TryPlanBomb(Card card,out OutsideBombLaunchData plan,out string error)
         {
-            plan=null;error=null;if(!CanPlanBomb()){error="ボムは対応する平地で使用してください（カリ）";return false;}
-            try{plan=new OutsideBombLaunchData{X=Core.Position,Facing=Core.Facing,Power=card.GetFinalPower(),Element=card.GetFinalElement(),Level=card.ExceedLevel,PoiseDamage=card.PoiseDamage,HitStopFrames=hitStopSettings.CardFrames(card)};plan.Validate();return true;}
+            plan=null;error=null;if(!CanPlanBomb()){error="ボムは対応する探索マップで使用してください（カリ）";return false;}
+            try{plan=new OutsideBombLaunchData{X=Core.Position,Facing=Core.Facing,Power=card.GetFinalPower(),Element=card.GetFinalElement(),Level=card.ExceedLevel,PoiseDamage=card.PoiseDamage,HitStopFrames=hitStopSettings.CardFrames(card)};if(!Core.IsGrounded||Core.Height!=0||!OutsideBombLaunchData.HasTerrain(Core,Core.Position,Core.Facing)){plan.DefinitionId=OutsideBombLaunchData.TerrainDefinition;plan.Terrain=OutsideBombTerrainData.Create(Core,plan.X,plan.Facing,Core.Height);}plan.Validate();return true;}
             catch(Exception e)when(e is ArgumentException||e is OverflowException){plan=null;error=e.Message;return false;}
         }
         private void EmitBomb(OutsideAttackStateData action){if(action.BombLaunch==null)throw new InvalidOperationException("ボムの発射計画がありません");bombs.Add(new OutsideBombFlightData{Launch=action.BombLaunch.Copy(),ActionStartedAt=action.StartedAt,FiredAt=Core.Frame});}
@@ -1317,13 +1356,13 @@ namespace Olca.Core.Logic.Integration
         {
             bombBlasts.RemoveAll(v=>Core.Frame-v.Frame>=OutsideBombLaunchData.BlastFrames);
             if(Player.IsDead){bombs.Clear();bombBlasts.Clear();return;}
-            for(int i=bombs.Count-1;i>=0;i--){var flight=bombs[i];if(Core.Frame-flight.FiredAt<OutsideBombLaunchData.FlightFrames)continue;
-                var plan=flight.Launch;long target=plan.Target;
-                void Hit(int id,long x,Enemy enemy){if(enemy.IsDead||Math.Abs(x-target)>OutsideBombLaunchData.Radius)return;
+            for(int i=bombs.Count-1;i>=0;i--){var flight=bombs[i];if(Core.Frame-flight.FiredAt<flight.Launch.Duration)continue;
+                var plan=flight.Launch;long target=plan.ImpactX;if(plan.Dissipates){bombs.RemoveAt(i);continue;}
+                void Hit(int id,long x,Enemy enemy){if(enemy.IsDead||Math.Abs(x-target)>OutsideBombLaunchData.Radius||plan.Terrain!=null&&((decimal)(x-target)*(x-target)+(decimal)plan.ImpactHeight*plan.ImpactHeight>(decimal)OutsideBombLaunchData.Radius*OutsideBombLaunchData.Radius))return;
                     if(id==0){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}else secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
                     enemy.TakeDamage(plan.Power,plan.Element,AttackProperty.None,plan.PoiseDamage,0,hitStopFrames:plan.HitStopFrames);
                 }
-                Hit(0,TrialTargetX,TrialTarget);Hit(1,OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget);bombs.RemoveAt(i);bombBlasts.Add(new OutsideBombBlastData{X=target,Frame=Core.Frame});
+                Hit(0,TrialTargetX,TrialTarget);Hit(1,OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget);bombs.RemoveAt(i);bombBlasts.Add(new OutsideBombBlastData{X=target,Height=plan.ImpactHeight,Frame=Core.Frame});
             }
         }
     }

@@ -130,6 +130,49 @@ namespace Olca.Tests
         }
         private static void BombPosition289(OutsideExplorationSession s,long x,int side,long height=0)
         {var state=s.Core.CaptureState();state.Position=x;state.Facing=side;state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});}
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)]
+        public void ボム地形v2は壁足場穴水域境界空中の終端を固定する(int kind)
+        {
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,kind==3?OutsideTraversalProfile.ValidationWater:OutsideTraversalProfile.ValidationPit);
+            long x=kind==0?1380000:kind==1?720000:kind==2?120000:kind==3?60000:kind==4?30000:1008000;
+            int side=kind==4?-1:1;long height=kind==1?120000:kind==3?0:kind==5?240000:0;
+            var plan=OutsideBombTerrainData.Create(core,x,side,height);plan.Validate();
+            Assert.AreEqual(kind>=2&&kind<=4,plan.Dissipates);
+            if(kind==0){Assert.AreEqual(1440000,plan.ImpactX);Assert.Less(plan.ImpactFrame,90);Assert.Greater(plan.ImpactHeight,0);}
+            if(kind==1){Assert.AreEqual(60000,plan.ImpactHeight);Assert.That(plan.ImpactX,Is.InRange(720000,960000));}
+            if(kind==2){Assert.AreEqual(240000,plan.ImpactX);Assert.AreEqual(90,plan.ImpactFrame);}
+            if(kind==3)Assert.AreEqual(1,plan.ImpactFrame);
+            if(kind==4){Assert.AreEqual(0,plan.ImpactX);Assert.Less(plan.ImpactFrame,90);}
+            if(kind==5){Assert.AreEqual(1128000,plan.ImpactX);Assert.AreEqual(0,plan.ImpactHeight);}
+            Assert.IsTrue(plan.SameAs(OutsideBombTerrainData.Create(core,x,side,height)));
+        }
+        [TestCase(1)] [TestCase(20)] [TestCase(80)]
+        public void ボム地形v2は空中消費後の失敗再試行とcoldで同じ一回の爆発になる(int age)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"bomb294-"+Guid.NewGuid().ToString("N"));
+            try{using(var s=Bomb289())using(var cold=new OutsideExplorationSession()){
+                s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWater);BombPosition289(s,1008000,1,120000);
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<age;n++)Tick160(s);}
+                var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);Assert.AreEqual(OutsideBombLaunchData.TerrainDefinition,data.Bombs[0].Launch.DefinitionId);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;
+                var profile=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=actor,OutsideRuntimeSave=data,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=data.Key()}};
+                var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,profile,out _));Assert.AreEqual(1,s.Bombs.Count);io.Fail=false;Assert.IsTrue(store.TryWrite(0,profile,out _));var saved=store.Read(out _);Assert.IsTrue(cold.RestoreSavedState(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,null,defs,OutsideTraversalProfile.ValidationWater));
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){long revision=cold.Cards.HandRevision;for(int n=age;n<100;n++){Tick160(s);Tick160(cold);Assert.AreEqual(s.TrialTarget.CurrentHp,cold.TrialTarget.CurrentHp);Assert.AreEqual(s.Bombs.Count,cold.Bombs.Count);}Assert.AreEqual(revision,cold.Cards.HandRevision);Assert.AreEqual(80,cold.TrialTarget.CurrentHp);Assert.AreEqual(80,cold.SecondTrialTarget.CurrentHp);}
+            }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+        public void ボム地形v2の終端改変はlive置換前に拒否する(int kind)
+        {
+            using(var s=Bomb289())using(var cold=new OutsideExplorationSession()){
+                BombPosition289(s,1008000,1,120000);using(var lease=s.AttachPresentation())Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;var terrain=data.Bombs[0].Launch.Terrain;
+                if(kind==0)terrain.ImpactFrame--;if(kind==1)terrain.ImpactX++;if(kind==2)terrain.Dissipates=true;if(kind==3)data.Bombs[0].Launch.Terrain=null;if(kind==4)data.Bombs[0].Launch.Terrain=OutsideBombTerrainData.Create(s.Core,1008000,1,100000000);
+                var before=cold.CaptureRuntime();Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,data,null,defs));var after=cold.CaptureRuntime();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());
+            }
+        }
+        [Test] public void ボム平地v1の発射保存bytesは地形追加でも変わらない()
+        {
+            const string bytes="{\"DefinitionId\":\"trial-outside-flat-bomb-v1\",\"Element\":0,\"Facing\":1,\"HitStopFrames\":0,\"Level\":0,\"PoiseDamage\":null,\"Power\":40,\"X\":1008000}";
+            var plan=PortableCheckpointJson.Deserialize<OutsideBombLaunchData>(System.Text.Encoding.UTF8.GetBytes(bytes));plan.Validate();Assert.IsNull(plan.Terrain);Assert.AreEqual(bytes,System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(plan)));
+        }
         [TestCase(1,ExceedLevel.Normal)] [TestCase(-1,ExceedLevel.Normal)] [TestCase(1,ExceedLevel.Lv1)] [TestCase(-1,ExceedLevel.Lv1)] [TestCase(1,ExceedLevel.Lv2)] [TestCase(-1,ExceedLevel.Lv2)]
         public void 探索ボムは一度消費し90frameで二体へ各一回だけ既存威力を渡す(int side,ExceedLevel level)
         {
@@ -139,8 +182,8 @@ namespace Olca.Tests
                 for(int n=1;n<90;n++)Tick160(s);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Tick160(s);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(Math.Max(0,120-power),s.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,s.Bombs.Count);Assert.AreEqual(1,s.BombBlasts.Count);for(int n=0;n<20;n++)Tick160(s);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(0,s.BombBlasts.Count);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(c));lease.Dispose();var saved=s.CaptureRuntime(Kick214Definitions(s));Assert.AreEqual(1,saved.TrialTarget.Hits);Assert.AreEqual(1,saved.SecondTrialTarget.Hits);
             }
         }
-        [TestCase(480000,1,0L,true)] [TestCase(600000,1,0L,false)] [TestCase(1320000,1,0L,false)] [TestCase(120000,1,0L,false)] [TestCase(30000,-1,0L,false)] [TestCase(1008000,1,60000L,false)]
-        public void 探索ボムは爆風までの未対応地形と空中を消費前に拒否する(long x,int side,long height,bool allowed)
+        [TestCase(480000,1,0L,true)] [TestCase(600000,1,0L,true)] [TestCase(1320000,1,0L,true)] [TestCase(120000,1,0L,true)] [TestCase(30000,-1,0L,true)] [TestCase(1008000,1,60000L,true)]
+        public void 探索ボムは対応マップの地形と空中で一回消費して開始する(long x,int side,long height,bool allowed)
         {
             using(var s=Bomb289()){
                 Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationPit));BombPosition289(s,x,side,height);using(var lease=s.AttachPresentation()){
@@ -1107,7 +1150,7 @@ namespace Olca.Tests
         {
             Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().First(c=>c.Id=="heal")));
             using(var s=Sword161(level:ExceedLevel.Lv1)){Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(s.Cards.SelectedCard));}
-            Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(6,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir&&!TrialInitialCardDefinitions.IsId(d.CardId)));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb")));
+            Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(9,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir&&!TrialInitialCardDefinitions.IsId(d.CardId)));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb")));
         }
         [TestCase(0,OutsideCardUseRestriction.None)][TestCase(1,OutsideCardUseRestriction.InsufficientGauge)][TestCase(2,OutsideCardUseRestriction.UnsupportedCard)][TestCase(3,OutsideCardUseRestriction.UnsupportedLocation)]
         public void 選択カードの制限案内は既存登録と場所とコストを読み消費や予約を作らない(int mode,OutsideCardUseRestriction expected)
