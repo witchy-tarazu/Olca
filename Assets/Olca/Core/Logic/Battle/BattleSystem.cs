@@ -919,9 +919,7 @@ namespace Olca.Core.Logic.Battle
             player.ClearBattleStatusResistances();
             player.ClearInvincibility();
             player.ClearStagger();
-            player.ResetParalysis();
-            player.ResetConfusion();
-            player.ResetBlindness();
+            player.ReleaseBattleTimedAilments();
             InterruptBasicAction();
             player.ClearPoiseRecovery();
             player.SetAura(0);

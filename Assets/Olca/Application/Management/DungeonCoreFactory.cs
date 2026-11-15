@@ -143,6 +143,14 @@ namespace Olca.Application.Management
             var map=new DungeonConfig("trial-float-floor-v1","シヨウ フロート・チケイ（カリ）",source.TotalCellCount,cells,visits:source.Visits,explorationTerrain:terrain);
             return FloorSequenceDefinitions.WithSharedCardCatalog("trial-float-v1","trial-float-v1",new[]{map},catalog);
         }
+        /// <summary>効果ごとの持越しを試す別ID。初回外界持込みの安全停止は解除しない。</summary>
+        public static FloorSequenceDefinitions CreateTrialCarryStatusRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            var source=CreateTrialStatusRoute(catalog,cards,normal,boss).CreateInitialMap(0);
+            var visits=new[]{new DungeonVisitDefinition(2,false,new[]{new DungeonVisitOption("trial-carry-three-status",new DungeonVisitStatusTrial(60,3600,3600,carryAcrossBattles:true))},1),source.Visits[1]};
+            var map=new DungeonConfig("trial-carry-status-floor-v1","シヨウ ジョウタイモチコシ（カリ）",source.TotalCellCount,source.MapCells,visits:visits);
+            return FloorSequenceDefinitions.WithSharedCardCatalog("trial-carry-status-v1","trial-carry-status-v1",new[]{map},catalog);
+        }
         public static IEvaluationRewardProvider CreateTrialRewardProvider(SimpleCardFactory cards)=>new TrialRewardProvider(cards);
         private sealed class TrialRewardProvider:IEvaluationRewardProvider
         {

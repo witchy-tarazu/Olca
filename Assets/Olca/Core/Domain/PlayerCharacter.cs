@@ -177,6 +177,7 @@ namespace Olca.Core.Domain
         private FrameCountdown paralysisTimer;
         private int paralysisDisplayFrames;
         private int? pendingParalysisFrames;
+        private bool paralysisCarryAcrossBattles,pendingParalysisCarryAcrossBattles;
         private bool paralysisFrameOpen, frameParalyzed, clearParalysisPending, paralysisInterruptPending;
         public int ParalysisRemainingFrames => paralysisTimer.Frames;
         public bool IsParalyzed => !IsDead && (paralysisFrameOpen ? frameParalyzed : paralysisTimer.IsActive);
@@ -186,20 +187,20 @@ namespace Olca.Core.Domain
         internal bool IsParalysisActionPrevented => paralysisFrameOpen?IsParalyzed:!IsDead&&!clearParalysisPending&&(pendingParalysisFrames.HasValue?pendingParalysisFrames.Value>0:paralysisTimer.IsActive);
         internal bool HasParalysisState => paralysisTimer.IsActive || pendingParalysisFrames.HasValue || clearParalysisPending || frameParalyzed;
         /// <summary>外部で確定した有効期間を予約する。付与フレームには行動を中断しない。</summary>
-        public void ApplyParalysis(int durationFrames)
+        public void ApplyParalysis(int durationFrames,bool carryAcrossBattles=false)
         {
             int frames=ResistStatusFrames(StatusEffectType.Paralyze,durationFrames);
             if (IsDead || frames==0) return;
-            pendingParalysisFrames = frames;
+            pendingParalysisFrames = frames; pendingParalysisCarryAcrossBattles=carryAcrossBattles;
             // 既存の敵状態処理と同じく、フレーム内の解除予約を再付与で打ち消さない。
             if (!paralysisFrameOpen) clearParalysisPending = false;
         }
-        public void ClearParalysis() { if (!HasParalysisState && !paralysisFrameOpen) return; pendingParalysisFrames = null; clearParalysisPending = true; }
+        public void ClearParalysis() { if (!HasParalysisState && !paralysisFrameOpen) return; pendingParalysisFrames = null; pendingParalysisCarryAcrossBattles=false; clearParalysisPending = true; }
         private void CommitParalysisChanges()
         {
-            if (clearParalysisPending) { paralysisTimer.SetFrames(0); paralysisInterruptPending = false; }
-            else if (pendingParalysisFrames.HasValue) { paralysisTimer.SetFrames(pendingParalysisFrames.Value); paralysisDisplayFrames=pendingParalysisFrames.Value; paralysisInterruptPending = true; }
-            pendingParalysisFrames = null; clearParalysisPending = false;
+            if (clearParalysisPending) { paralysisTimer.SetFrames(0); paralysisCarryAcrossBattles=false; paralysisInterruptPending = false; }
+            else if (pendingParalysisFrames.HasValue) { paralysisTimer.SetFrames(pendingParalysisFrames.Value); paralysisCarryAcrossBattles=pendingParalysisCarryAcrossBattles; paralysisDisplayFrames=pendingParalysisFrames.Value; paralysisInterruptPending = true; }
+            pendingParalysisFrames = null; pendingParalysisCarryAcrossBattles=false; clearParalysisPending = false;
         }
         internal bool BeginParalysisFrame(bool advance)
         {
@@ -222,30 +223,31 @@ namespace Olca.Core.Domain
         }
         internal void ResetParalysis()
         {
-            paralysisTimer.SetFrames(0); pendingParalysisFrames = null;
+            paralysisTimer.SetFrames(0); paralysisCarryAcrossBattles=false; pendingParalysisFrames = null; pendingParalysisCarryAcrossBattles=false;
             paralysisFrameOpen = frameParalyzed = clearParalysisPending = paralysisInterruptPending = false;
         }
         private FrameCountdown confusionTimer;
         private int confusionDisplayFrames;
         private int? pendingConfusionFrames;
+        private bool confusionCarryAcrossBattles,pendingConfusionCarryAcrossBattles;
         private bool confusionFrameOpen, frameConfused, clearConfusionPending;
         public int ConfusionRemainingFrames => confusionTimer.Frames;
         public bool IsConfused => !IsDead && (confusionFrameOpen ? frameConfused : confusionTimer.IsActive);
         internal bool HasConfusionState => confusionTimer.IsActive || pendingConfusionFrames.HasValue || clearConfusionPending || frameConfused;
         /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
-        public void ApplyConfusion(int durationFrames, int durationResistancePercent = 0)
+        public void ApplyConfusion(int durationFrames, int durationResistancePercent = 0,bool carryAcrossBattles=false)
         {
             int frames=ResistStatusFrames(StatusEffectType.Confusion,durationFrames,durationResistancePercent);
             if(IsDead || frames==0)return;
-            pendingConfusionFrames=frames;
+            pendingConfusionFrames=frames; pendingConfusionCarryAcrossBattles=carryAcrossBattles;
             if(!confusionFrameOpen)clearConfusionPending=false;
         }
-        public void ClearConfusion(){pendingConfusionFrames=null;clearConfusionPending=true;}
+        public void ClearConfusion(){pendingConfusionFrames=null;pendingConfusionCarryAcrossBattles=false;clearConfusionPending=true;}
         private void CommitConfusionChanges()
         {
-            if(clearConfusionPending)confusionTimer.SetFrames(0);
-            else if(pendingConfusionFrames.HasValue){confusionTimer.SetFrames(pendingConfusionFrames.Value); confusionDisplayFrames=pendingConfusionFrames.Value;}
-            pendingConfusionFrames=null;clearConfusionPending=false;
+            if(clearConfusionPending){confusionTimer.SetFrames(0); confusionCarryAcrossBattles=false;}
+            else if(pendingConfusionFrames.HasValue){confusionTimer.SetFrames(pendingConfusionFrames.Value); confusionCarryAcrossBattles=pendingConfusionCarryAcrossBattles; confusionDisplayFrames=pendingConfusionFrames.Value;}
+            pendingConfusionFrames=null;pendingConfusionCarryAcrossBattles=false;clearConfusionPending=false;
         }
         internal void BeginConfusionFrame(bool advance)
         {if(advance)CommitConfusionChanges();confusionFrameOpen=true;frameConfused=confusionTimer.IsActive;}
@@ -257,29 +259,30 @@ namespace Olca.Core.Domain
             if(advance)CommitConfusionChanges();confusionFrameOpen=frameConfused=false;
         }
         internal void ResetConfusion()
-        {confusionTimer.SetFrames(0);pendingConfusionFrames=null;confusionFrameOpen=frameConfused=clearConfusionPending=false;}
+        {confusionTimer.SetFrames(0); confusionCarryAcrossBattles=false;pendingConfusionFrames=null;pendingConfusionCarryAcrossBattles=false;confusionFrameOpen=frameConfused=clearConfusionPending=false;}
 
         private FrameCountdown blindnessTimer;
         private int blindnessDisplayFrames;
         private int? pendingBlindnessFrames;
+        private bool blindnessCarryAcrossBattles,pendingBlindnessCarryAcrossBattles;
         private bool blindnessFrameOpen, frameBlind, clearBlindnessPending;
         public int BlindRemainingFrames => blindnessTimer.Frames;
         public bool IsBlind => !IsDead && (blindnessFrameOpen ? frameBlind : blindnessTimer.IsActive);
         internal bool HasBlindnessState => blindnessTimer.IsActive || pendingBlindnessFrames.HasValue || clearBlindnessPending || frameBlind;
         /// <summary>有効期間と付与時の合算済み耐性を受け取る。製品付与元や探索持越しは追加しない。</summary>
-        public void ApplyBlindness(int durationFrames, int durationResistancePercent = 0)
+        public void ApplyBlindness(int durationFrames, int durationResistancePercent = 0,bool carryAcrossBattles=false)
         {
             int frames=ResistStatusFrames(StatusEffectType.Blind,durationFrames,durationResistancePercent);
             if(IsDead || frames==0)return;
-            pendingBlindnessFrames=frames;
+            pendingBlindnessFrames=frames; pendingBlindnessCarryAcrossBattles=carryAcrossBattles;
             if(!blindnessFrameOpen)clearBlindnessPending=false;
         }
-        public void ClearBlindness(){pendingBlindnessFrames=null;clearBlindnessPending=true;}
+        public void ClearBlindness(){pendingBlindnessFrames=null;pendingBlindnessCarryAcrossBattles=false;clearBlindnessPending=true;}
         private void CommitBlindnessChanges()
         {
-            if(clearBlindnessPending)blindnessTimer.SetFrames(0);
-            else if(pendingBlindnessFrames.HasValue){blindnessTimer.SetFrames(pendingBlindnessFrames.Value); blindnessDisplayFrames=pendingBlindnessFrames.Value;}
-            pendingBlindnessFrames=null;clearBlindnessPending=false;
+            if(clearBlindnessPending){blindnessTimer.SetFrames(0); blindnessCarryAcrossBattles=false;}
+            else if(pendingBlindnessFrames.HasValue){blindnessTimer.SetFrames(pendingBlindnessFrames.Value); blindnessCarryAcrossBattles=pendingBlindnessCarryAcrossBattles; blindnessDisplayFrames=pendingBlindnessFrames.Value;}
+            pendingBlindnessFrames=null;pendingBlindnessCarryAcrossBattles=false;clearBlindnessPending=false;
         }
         internal void BeginBlindnessFrame(bool advance)
         {if(advance)CommitBlindnessChanges();blindnessFrameOpen=true;frameBlind=blindnessTimer.IsActive;}
@@ -291,7 +294,7 @@ namespace Olca.Core.Domain
             if(advance)CommitBlindnessChanges();blindnessFrameOpen=frameBlind=false;
         }
         internal void ResetBlindness()
-        {blindnessTimer.SetFrames(0);pendingBlindnessFrames=null;blindnessFrameOpen=frameBlind=clearBlindnessPending=false;}
+        {blindnessTimer.SetFrames(0); blindnessCarryAcrossBattles=false;pendingBlindnessFrames=null;pendingBlindnessCarryAcrossBattles=false;blindnessFrameOpen=frameBlind=clearBlindnessPending=false;}
 
         private int pendingInvincibilityMs;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
@@ -385,15 +388,23 @@ namespace Olca.Core.Domain
 
         /// <summary>現在HP</summary>
         internal bool CanCaptureTimedAilments=>!frameHp.Active&&!paralysisFrameOpen&&!confusionFrameOpen&&!blindnessFrameOpen;
+        /// <summary>明示した効果だけ持ち越す。同種の再付与は最新予約の方針、解除予約と死亡は優先する。</summary>
+        internal void ReleaseBattleTimedAilments()
+        {
+            if(IsDead||clearParalysisPending||!(pendingParalysisFrames.HasValue?pendingParalysisCarryAcrossBattles:paralysisCarryAcrossBattles))ResetParalysis();
+            if(IsDead||clearConfusionPending||!(pendingConfusionFrames.HasValue?pendingConfusionCarryAcrossBattles:confusionCarryAcrossBattles))ResetConfusion();
+            if(IsDead||clearBlindnessPending||!(pendingBlindnessFrames.HasValue?pendingBlindnessCarryAcrossBattles:blindnessCarryAcrossBattles))ResetBlindness();
+            paralysisFrameOpen=frameParalyzed=confusionFrameOpen=frameConfused=blindnessFrameOpen=frameBlind=false;
+        }
         internal bool CanCaptureOutsideDeparture=>CanCaptureTimedAilments&&!HasParalysisState&&!HasConfusionState&&!HasBlindnessState;
         /// <summary>フレーム中を拒否し、付与/解除予約を消費せず捕捉する。</summary>
         public PlayerTimedAilmentsDto CaptureTimedAilments()
         {
             if(!CanCaptureTimedAilments)throw new ArgumentException("未確定フレームの時間状態は捕捉できません");
             var v=new PlayerTimedAilmentsDto{
-                Paralysis=new PlayerTimedAilmentDto{RemainingUnits=paralysisTimer.RemainingUnits,DisplayFrames=paralysisDisplayFrames,PendingFrames=pendingParalysisFrames,ClearPending=clearParalysisPending,InterruptPending=paralysisInterruptPending},
-                Confusion=new PlayerTimedAilmentDto{RemainingUnits=confusionTimer.RemainingUnits,DisplayFrames=confusionDisplayFrames,PendingFrames=pendingConfusionFrames,ClearPending=clearConfusionPending},
-                Blindness=new PlayerTimedAilmentDto{RemainingUnits=blindnessTimer.RemainingUnits,DisplayFrames=blindnessDisplayFrames,PendingFrames=pendingBlindnessFrames,ClearPending=clearBlindnessPending}};
+                Paralysis=new PlayerTimedAilmentDto{RemainingUnits=paralysisTimer.RemainingUnits,DisplayFrames=paralysisDisplayFrames,PendingFrames=pendingParalysisFrames,CarryAcrossBattles=paralysisTimer.IsActive&&paralysisCarryAcrossBattles,PendingCarryAcrossBattles=pendingParalysisFrames.HasValue&&pendingParalysisCarryAcrossBattles,ClearPending=clearParalysisPending,InterruptPending=paralysisInterruptPending},
+                Confusion=new PlayerTimedAilmentDto{RemainingUnits=confusionTimer.RemainingUnits,DisplayFrames=confusionDisplayFrames,PendingFrames=pendingConfusionFrames,CarryAcrossBattles=confusionTimer.IsActive&&confusionCarryAcrossBattles,PendingCarryAcrossBattles=pendingConfusionFrames.HasValue&&pendingConfusionCarryAcrossBattles,ClearPending=clearConfusionPending},
+                Blindness=new PlayerTimedAilmentDto{RemainingUnits=blindnessTimer.RemainingUnits,DisplayFrames=blindnessDisplayFrames,PendingFrames=pendingBlindnessFrames,CarryAcrossBattles=blindnessTimer.IsActive&&blindnessCarryAcrossBattles,PendingCarryAcrossBattles=pendingBlindnessFrames.HasValue&&pendingBlindnessCarryAcrossBattles,ClearPending=clearBlindnessPending}};
             v.Validate();return v.IsEmpty?null:v;
         }
         /// <summary>保存済みの耐性適用後の値を戻す。再付与・時計進行・中断は行わない。</summary>
@@ -403,9 +414,9 @@ namespace Olca.Core.Domain
             value?.Validate();if(IsDead&&value!=null&&!value.IsEmpty)throw new ArgumentException("死亡個体へ時間状態を復元できません");
             ResetParalysis();ResetConfusion();ResetBlindness();paralysisDisplayFrames=confusionDisplayFrames=blindnessDisplayFrames=0;
             if(value==null)return;
-            var p=value.Paralysis;paralysisTimer.RestoreUnits(p.RemainingUnits);paralysisDisplayFrames=p.DisplayFrames;pendingParalysisFrames=p.PendingFrames;clearParalysisPending=p.ClearPending;paralysisInterruptPending=p.InterruptPending;
-            p=value.Confusion;confusionTimer.RestoreUnits(p.RemainingUnits);confusionDisplayFrames=p.DisplayFrames;pendingConfusionFrames=p.PendingFrames;clearConfusionPending=p.ClearPending;
-            p=value.Blindness;blindnessTimer.RestoreUnits(p.RemainingUnits);blindnessDisplayFrames=p.DisplayFrames;pendingBlindnessFrames=p.PendingFrames;clearBlindnessPending=p.ClearPending;
+            var p=value.Paralysis;paralysisTimer.RestoreUnits(p.RemainingUnits);paralysisDisplayFrames=p.DisplayFrames;pendingParalysisFrames=p.PendingFrames;paralysisCarryAcrossBattles=p.CarryAcrossBattles;pendingParalysisCarryAcrossBattles=p.PendingCarryAcrossBattles;clearParalysisPending=p.ClearPending;paralysisInterruptPending=p.InterruptPending;
+            p=value.Confusion;confusionTimer.RestoreUnits(p.RemainingUnits);confusionDisplayFrames=p.DisplayFrames;pendingConfusionFrames=p.PendingFrames;confusionCarryAcrossBattles=p.CarryAcrossBattles;pendingConfusionCarryAcrossBattles=p.PendingCarryAcrossBattles;clearConfusionPending=p.ClearPending;
+            p=value.Blindness;blindnessTimer.RestoreUnits(p.RemainingUnits);blindnessDisplayFrames=p.DisplayFrames;pendingBlindnessFrames=p.PendingFrames;blindnessCarryAcrossBattles=p.CarryAcrossBattles;pendingBlindnessCarryAcrossBattles=p.PendingCarryAcrossBattles;clearBlindnessPending=p.ClearPending;
         }
 
         public int CurrentHp => currentHp;

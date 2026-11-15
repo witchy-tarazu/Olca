@@ -168,13 +168,21 @@ namespace Olca.Core.Domain
     }
 
     /// <summary>耐性適用後の時計と、次フレームへ送る付与/解除。復元では進めない。</summary>
+    [System.Runtime.Serialization.DataContract]
     public sealed class PlayerTimedAilmentDto
     {
-        public long RemainingUnits;public int DisplayFrames;public int? PendingFrames;public bool ClearPending,InterruptPending;
+        [System.Runtime.Serialization.DataMember] public long RemainingUnits;
+        [System.Runtime.Serialization.DataMember] public int DisplayFrames;
+        [System.Runtime.Serialization.DataMember] public int? PendingFrames;
+        [System.Runtime.Serialization.DataMember] public bool ClearPending;
+        [System.Runtime.Serialization.DataMember] public bool InterruptPending;
+        // 旧未指定は従来の戦闘終了解除。省略により旧保存バイトを保持する。
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public bool CarryAcrossBattles;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public bool PendingCarryAcrossBattles;
         public PlayerTimedAilmentDto Copy()=>(PlayerTimedAilmentDto)MemberwiseClone();
         public bool IsEmpty=>RemainingUnits==0&&!PendingFrames.HasValue&&!ClearPending&&!InterruptPending;
-        public void Validate(){if(RemainingUnits<0||RemainingUnits>int.MaxValue*50L||DisplayFrames<0||RemainingUnits>DisplayFrames*50L||PendingFrames.HasValue&&PendingFrames.Value<=0)throw new System.ArgumentException("時間状態の時計/予約が不正です");}
-        internal bool Same(PlayerTimedAilmentDto v)=>v!=null&&RemainingUnits==v.RemainingUnits&&DisplayFrames==v.DisplayFrames&&PendingFrames==v.PendingFrames&&ClearPending==v.ClearPending&&InterruptPending==v.InterruptPending;
+        public void Validate(){if(RemainingUnits<0||RemainingUnits>int.MaxValue*50L||DisplayFrames<0||RemainingUnits>DisplayFrames*50L||PendingFrames.HasValue&&PendingFrames.Value<=0||CarryAcrossBattles&&RemainingUnits==0||PendingCarryAcrossBattles&&!PendingFrames.HasValue)throw new System.ArgumentException("時間状態の時計/予約が不正です");}
+        internal bool Same(PlayerTimedAilmentDto v)=>v!=null&&RemainingUnits==v.RemainingUnits&&DisplayFrames==v.DisplayFrames&&PendingFrames==v.PendingFrames&&ClearPending==v.ClearPending&&InterruptPending==v.InterruptPending&&CarryAcrossBattles==v.CarryAcrossBattles&&PendingCarryAcrossBattles==v.PendingCarryAcrossBattles;
     }
     public sealed class PlayerTimedAilmentsDto
     {
@@ -276,13 +284,13 @@ namespace Olca.Core.Domain
     /// <summary>状態異常の任意試用専用。正式な敵効果や持込み規則には使わない。</summary>
     public sealed class DungeonVisitStatusTrial
     {
-        public int ParalysisFrames {get;}public int ConfusionFrames {get;}public int BlindnessFrames {get;}public bool Clear {get;}
-        public DungeonVisitStatusTrial(int paralysisFrames=0,int confusionFrames=0,int blindnessFrames=0,bool clear=false){
+        public int ParalysisFrames {get;}public int ConfusionFrames {get;}public int BlindnessFrames {get;}public bool Clear {get;}public bool CarryAcrossBattles {get;}
+        public DungeonVisitStatusTrial(int paralysisFrames=0,int confusionFrames=0,int blindnessFrames=0,bool clear=false,bool carryAcrossBattles=false){
             if(paralysisFrames<0||confusionFrames<0||blindnessFrames<0||clear&&(paralysisFrames!=0||confusionFrames!=0||blindnessFrames!=0)||!clear&&paralysisFrames==0&&confusionFrames==0&&blindnessFrames==0)throw new System.ArgumentException("試用状態の付与時間または解除だけが必要です");
-            ParalysisFrames=paralysisFrames;ConfusionFrames=confusionFrames;BlindnessFrames=blindnessFrames;Clear=clear;
+            ParalysisFrames=paralysisFrames;ConfusionFrames=confusionFrames;BlindnessFrames=blindnessFrames;Clear=clear;CarryAcrossBattles=carryAcrossBattles;if(clear&&carryAcrossBattles)throw new System.ArgumentException("解除に持越し指定は不要です");
         }
         public string Label=>Clear?"3ジョウタイをカイジョ（カリ）":$"マヒ{ParalysisFrames}f・コンラン{ConfusionFrames}f・クラヤミ{BlindnessFrames}f（カリ）";
-        internal void Apply(PlayerCharacter player){if(Clear){player.ClearParalysis();player.ClearConfusion();player.ClearBlindness();}else{if(ParalysisFrames>0)player.ApplyParalysis(ParalysisFrames);if(ConfusionFrames>0)player.ApplyConfusion(ConfusionFrames);if(BlindnessFrames>0)player.ApplyBlindness(BlindnessFrames);}}
+        internal void Apply(PlayerCharacter player){if(Clear){player.ClearParalysis();player.ClearConfusion();player.ClearBlindness();}else{if(ParalysisFrames>0)player.ApplyParalysis(ParalysisFrames,CarryAcrossBattles);if(ConfusionFrames>0)player.ApplyConfusion(ConfusionFrames,carryAcrossBattles:CarryAcrossBattles);if(BlindnessFrames>0)player.ApplyBlindness(BlindnessFrames,carryAcrossBattles:CarryAcrossBattles);}}
     }
     public sealed class DungeonVisitOption
     {
@@ -313,7 +321,7 @@ namespace Olca.Core.Domain
                 (shop&&System.Linq.Enumerable.Any(options,o=>o.Price<=0))||(!shop&&slots!=options.Count))throw new System.ArgumentException("停止地点の候補/枠が不正です");
             Cell=cell;IsShop=shop;Slots=slots;AllowDecline=allowDecline;Options=System.Array.AsReadOnly(System.Linq.Enumerable.ToArray(options));
         }
-        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));if(o.RemoveCount>0){w.Write("visit-remove-v1");w.Write(o.RemoveCount);}if(o.StatusTrial!=null){w.Write("visit-status-trial-v1");w.Write(o.StatusTrial.Clear);w.Write(o.StatusTrial.ParalysisFrames);w.Write(o.StatusTrial.ConfusionFrames);w.Write(o.StatusTrial.BlindnessFrames);}}if(!AllowDecline)w.Write("visit-required-v1");});
+        internal string Hash => Olca.Core.Logic.Dungeon.CheckpointValues.Hash(w=>{w.Write(Cell);w.Write(IsShop);w.Write(Slots);foreach(var o in Options){w.Write(o.Id);w.Write(o.Price);w.Write(o.Heal);w.Write(o.Card==null?"":Olca.Core.Logic.Dungeon.CheckpointValues.CardHash(o.Card));if(o.RemoveCount>0){w.Write("visit-remove-v1");w.Write(o.RemoveCount);}if(o.StatusTrial!=null){w.Write("visit-status-trial-v1");w.Write(o.StatusTrial.Clear);w.Write(o.StatusTrial.ParalysisFrames);w.Write(o.StatusTrial.ConfusionFrames);w.Write(o.StatusTrial.BlindnessFrames);if(o.StatusTrial.CarryAcrossBattles)w.Write("carry-status-trial-v1");}}if(!AllowDecline)w.Write("visit-required-v1");});
     }
     public enum DungeonVisitDisplayState { Ready, Active, Used, Closed }
     public sealed class DungeonVisitDto
