@@ -662,6 +662,28 @@ namespace Olca.Presentation.Exploration
         }
         private float TrialTargetTop()=>Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(trialTargetImage.sprite).size.y*pixelsPerWorldUnit*.8f;
         private void BindTrialTargetFeedback(){if(trialTargetFeedback==null||trialNumberStyle==null||presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null)return;var lease=presentation;var target=lease.TrialTarget;if(ReferenceEquals(feedbackTarget,target)&&ReferenceEquals(secondFeedbackTarget,lease.SecondTrialTarget)&&ReferenceEquals(feedbackLease,lease))return;feedbackTarget=target;feedbackLease=lease;trialEnemyAttackButton.onClick=new Button.ButtonClickedEvent();trialEnemyAttackButton.onClick.AddListener(()=>{if(this!=null&&IsOpen&&CanPlay&&ReferenceEquals(presentation,lease)&&lease.IsCurrent){lease.ToggleTrialEnemyAttack();var es=UnityEngine.EventSystems.EventSystem.current;if(es!=null&&es.currentSelectedGameObject==trialEnemyAttackButton.gameObject)es.SetSelectedGameObject(null);}});secondFeedbackTarget=lease.SecondTrialTarget;secondTrialFeedback.BindEnemy(secondFeedbackTarget,trialNumberStyle,()=>this!=null&&IsOpen&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)OutsideKickTrialDefinition.SecondTargetX/OutsideMovementDefinition.UnitsPerWorldUnit,TrialTargetTop()/pixelsPerWorldUnit+.5f),pixelsPerWorldUnit);trialTargetFeedback.BindEnemy(target,trialNumberStyle,()=>this!=null&&IsOpen&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)OutsideExplorationSession.TrialTargetX/OutsideMovementDefinition.UnitsPerWorldUnit,TrialTargetTop()/pixelsPerWorldUnit+.5f),pixelsPerWorldUnit);}
+        private readonly List<Image> bombImages=new List<Image>();
+        private Olca.Unity.GeneratedSpriteAssets.Lease bombAssets;
+        private void ClearBombVisuals(){foreach(var image in bombImages)if(image!=null){image.enabled=false;image.sprite=null;}bombAssets?.Dispose();bombAssets=null;}
+        private void RenderBombs(float camera,float viewport,float verticalOffset)
+        {
+            if(presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null){ClearBombVisuals();return;}
+            var flights=presentation.Bombs;var blasts=presentation.BombBlasts;int used=0;long frame=presentation.Core.Frame;
+            Image Part(string key,float x,float y,float visibleWidth,float visibleHeight,float alpha,float angle=0)
+            {
+                if(used==bombImages.Count){var go=new GameObject("TrialOutsideBombVisual",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(0,.21f);bombImages.Add(created);}
+                var image=bombImages[used++];Sprite sprite;bool found=Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(key,out sprite,bombAssets??(bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));image.sprite=found?sprite:null;image.enabled=found;image.color=new Color(1,1,1,alpha);
+                if(found){float aw=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleWidth;float ah=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleHeight;image.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x*visibleWidth/aw,sprite.bounds.size.y*visibleHeight/ah)*pixelsPerWorldUnit;}
+                image.rectTransform.anchoredPosition=new Vector2((x-camera+viewport*.5f)*pixelsPerWorldUnit,(y-verticalOffset)*pixelsPerWorldUnit);image.rectTransform.localRotation=Quaternion.Euler(0,0,angle);return image;
+            }
+            foreach(var flight in flights){float age=frame-flight.FiredAt;float target=flight.Launch.Target/(float)OutsideMovementDefinition.UnitsPerWorldUnit;
+                // 着弾予定だけの薄い目印。ダメージはSessionの90frame到達時に一度だけ発生する。
+                for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,.38f,.9f,.18f,.18f);
+                Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,flight.Position(frame)/(float)OutsideMovementDefinition.UnitsPerWorldUnit,flight.Height(frame)/(float)OutsideMovementDefinition.UnitsPerWorldUnit,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
+            }
+            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,.38f,.9f,.35f,alpha);}
+            for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
+        }
         private readonly List<Image> initialShotImages=new List<Image>();
         private void RenderInitialShots(float camera,float viewport,float verticalOffset){
             var shots=presentation.InitialShots;
@@ -673,7 +695,7 @@ namespace Olca.Presentation.Exploration
         }
         private void RenderTrialSword(float camera,float viewport,float verticalOffset){
             if(trialTargetImage==null)return;
-            RenderInitialShots(camera,viewport,verticalOffset);
+            RenderInitialShots(camera,viewport,verticalOffset);RenderBombs(camera,viewport,verticalOffset);
             bool combat=presentation.Core.TrialMapId==null;foreach(var graphic in new Graphic[]{trialTargetImage,trialTargetName,trialTargetHp,trialTargetGauge,secondTrialImage,secondTrialHp,secondTrialGauge})if(graphic!=null)graphic.enabled=combat;
             trialTargetPlate.gameObject.SetActive(combat);if(!combat){ClearTrialSword();return;}BindTrialTargetFeedback();var core=presentation.Core;var target=presentation.TrialTarget;float x=((float)OutsideExplorationSession.TrialTargetX/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit;float y=-verticalOffset*pixelsPerWorldUnit;trialTargetImage.rectTransform.anchoredPosition=new Vector2(x,y-Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(trialTargetImage.sprite).min.y*pixelsPerWorldUnit*.8f);trialTargetImage.enabled=!target.IsDead;
             float top=TrialTargetTop()+44.55f+y;trialTargetHp.rectTransform.anchoredPosition=new Vector2(x,top);trialTargetHp.text=target.CurrentHp.ToString();trialTargetHp.enabled=!target.IsDead;trialTargetGauge.rectTransform.anchoredPosition=new Vector2(x,top);trialTargetGauge.SetFraction(target.CurrentHp/(float)target.MaxHp);trialTargetGauge.enabled=!target.IsDead;trialTargetName.rectTransform.anchoredPosition=new Vector2(x+210,top+50);
@@ -697,7 +719,7 @@ namespace Olca.Presentation.Exploration
         private List<RectTransform> TrialNumberObstacles()=>new List<RectTransform>{trialTargetPlate,trialTargetGauge.rectTransform,secondTrialGauge.rectTransform,entrance!=null?(RectTransform)entrance.transform:null,reloadPoint,mapNameLabel!=null?mapNameLabel.rectTransform:null};
         private RectTransform TrialNumberProtectedOverlay()=>mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0?mapNameLabel.rectTransform:null;
         private void PaintSecondTrialFeedback(float camera,float verticalOffset){if(secondTrialFeedback?.ActiveCount>0)secondTrialFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),TrialNumberObstacles(),TrialNumberProtectedOverlay());}
-        private void ClearTrialSword(){foreach(var image in initialShotImages)if(image!=null)image.enabled=false;if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
+        private void ClearTrialSword(){ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null)image.enabled=false;if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
     }
 }
 

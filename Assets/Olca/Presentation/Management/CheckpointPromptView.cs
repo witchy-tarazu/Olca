@@ -252,6 +252,7 @@ namespace Olca.Presentation.Exploration
                 case Olca.Core.Logic.Integration.OutsideCardUseRestriction.EmptyHand:return "カードが ありません";
                 case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedCard:return "センタクカード: タンサクは ミタイオウ";
                 case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedLocation:return "センタクカード: ココでは シヨウできません";
+                case Olca.Core.Logic.Integration.OutsideCardUseRestriction.UnsupportedTrajectory:return "ボム: ココのチケイは ミタイオウ（カリ）";
                 case Olca.Core.Logic.Integration.OutsideCardUseRestriction.InsufficientGauge:return "センタクカード: ゲージが フソクしています";
                 default:return null;
             }

@@ -10,6 +10,123 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static OutsideExplorationSession Bomb289(int side=1,int startup=0,ExceedLevel level=ExceedLevel.Normal)
+        {
+            var session=new OutsideExplorationSession();session.TryInitializePlayer(()=>new PlayerCharacter(100));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"bomb",new PlayerAttackTiming(startup,8)}});var cards=factory.CreateStarterDeck().GetAllCards().ToArray();
+            if(level!=ExceedLevel.Normal){int at=Array.FindIndex(cards,c=>c.Id=="bomb");cards[at]=factory.CreateExceeded(cards[at],level);}
+            Assert.IsTrue(session.TryInitializeCards(cards,Owned(cards),new SeededBattleRandom(289),out _));for(int n=0;n<1000&&!session.Cards.Hand.Any(c=>c.Id=="bomb"&&c.ExceedLevel==level);n++)session.Cards.Reload();Assert.IsTrue(session.Cards.TrySelect(session.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb"&&c.ExceedLevel==level)));
+            BombPosition289(session,side==1?1008000:1242000,side);return session;
+        }
+        private static void BombPosition289(OutsideExplorationSession s,long x,int side,long height=0)
+        {var state=s.Core.CaptureState();state.Position=x;state.Facing=side;state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});}
+        [TestCase(1,ExceedLevel.Normal)] [TestCase(-1,ExceedLevel.Normal)] [TestCase(1,ExceedLevel.Lv1)] [TestCase(-1,ExceedLevel.Lv1)] [TestCase(1,ExceedLevel.Lv2)] [TestCase(-1,ExceedLevel.Lv2)]
+        public void 探索ボムは一度消費し90frameで二体へ各一回だけ既存威力を渡す(int side,ExceedLevel level)
+        {
+            using(var s=Bomb289(side,0,level))using(var lease=s.AttachPresentation()){
+                var c=s.Cards.SelectedCard;string hash=CollectionDisplay.DefinitionHash(c);int power=c.GetFinalPower();long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsTrue(s.TryUseSelectedCard(c,revision,out var error),error);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(gauge-c.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(1,s.Bombs.Count);
+                for(int i=0;i<100;i++)s.AdvancePlayerFrame();Assert.AreEqual(1,s.Bombs.Count);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
+                for(int n=1;n<90;n++)Tick160(s);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Tick160(s);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(Math.Max(0,120-power),s.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,s.Bombs.Count);Assert.AreEqual(1,s.BombBlasts.Count);for(int n=0;n<20;n++)Tick160(s);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(0,s.BombBlasts.Count);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(c));lease.Dispose();var saved=s.CaptureRuntime(Kick214Definitions(s));Assert.AreEqual(1,saved.TrialTarget.Hits);Assert.AreEqual(1,saved.SecondTrialTarget.Hits);
+            }
+        }
+        [TestCase(480000,1,0L,true)] [TestCase(600000,1,0L,false)] [TestCase(1320000,1,0L,false)] [TestCase(120000,1,0L,false)] [TestCase(30000,-1,0L,false)] [TestCase(1008000,1,60000L,false)]
+        public void 探索ボムは爆風までの未対応地形と空中を消費前に拒否する(long x,int side,long height,bool allowed)
+        {
+            using(var s=Bomb289()){
+                Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationPit));BombPosition289(s,x,side,height);using(var lease=s.AttachPresentation()){
+                    long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;var card=s.Cards.SelectedCard;Assert.AreEqual(allowed,s.TryUseSelectedCard(card,revision,out _));Assert.AreEqual(revision+(allowed?1:0),s.Cards.HandRevision);if(!allowed){Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(0,s.Bombs.Count);Assert.IsFalse(s.IsAttacking);}
+                }
+            }
+        }
+        [TestCase(0)] [TestCase(2)] [TestCase(3)] [TestCase(40)] [TestCase(92)] [TestCase(93)]
+        public void ボムの前隙飛翔と爆発確定を保存失敗再試行とcold後に二重適用しない(int at)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"bomb289-"+Guid.NewGuid().ToString("N"));
+            try{using(var s=Bomb289(startup:3)){
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<at;n++)Tick160(s);}
+                var defs=Kick214Definitions(s);var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;string key=runtime.Key();var profile=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsidePlayerSave=actor,OutsideRuntimeSave=runtime,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};
+                var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,profile,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(0,profile,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,profile,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var loaded=store.Read(out _);Assert.AreEqual(key,loaded.OutsideRuntimeSave.Key());
+                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null,defs));using(var lease=cold.AttachPresentation()){long revision=cold.Cards.HandRevision;for(int n=at;n<100;n++)Tick160(cold);Assert.AreEqual(revision,cold.Cards.HandRevision);Assert.AreEqual(80,cold.TrialTarget.CurrentHp);Assert.AreEqual(80,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,cold.Bombs.Count);lease.Dispose();Assert.AreEqual(1,cold.CaptureRuntime(defs).TrialTarget.Hits);Assert.AreEqual(1,cold.CaptureRuntime(defs).SecondTrialTarget.Hits);}}
+            }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
+        [Test] public void ボムの前隙中に位置と向きが変わっても消費時の発射計画を使う()
+        {
+            using(var s=Bomb289(startup:3))using(var lease=s.AttachPresentation()){
+                long x=s.Core.Position;Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));s.TickTraversal(-1,jumpDown:true,jumpHeld:true);s.TickTraversal(-1,jumpHeld:true);s.TickTraversal(-1,jumpHeld:true);Assert.AreNotEqual(x,s.Core.Position);Assert.AreEqual(1,s.Bombs.Count);Assert.AreEqual(x,s.Bombs[0].Launch.X);Assert.AreEqual(1,s.Bombs[0].Launch.Facing);for(int n=3;n<100;n++)Tick160(s);Assert.AreEqual(80,s.TrialTarget.CurrentHp);Assert.AreEqual(80,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(false)] [TestCase(true)] public void ボムは前隙中断なら未発射で発射済みは麻痺や再装填から独立する(bool fired)
+        {
+            using(var s=Bomb289(startup:3))using(var lease=s.AttachPresentation()){
+                long rev=s.Cards.HandRevision;Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,rev,out _));if(fired)for(int n=0;n<3;n++)Tick160(s);s.Player.ApplyParalysis(200);if(fired)s.Cards.Reload();for(int n=0;n<100;n++)Tick160(s);Assert.AreEqual(fired?80:120,s.TrialTarget.CurrentHp);Assert.AreEqual(0,s.Bombs.Count);Assert.Greater(s.Cards.HandRevision,rev);
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)]
+        public void ボムの無効時計未知版配列と地形はlive復元前に拒否する(int invalid)
+        {
+            using(var s=Bomb289())using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation())Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;
+                switch(invalid){case 0:data.Bombs[0].Launch.DefinitionId="unknown";break;case 1:data.Bombs[0].FiredAt=data.Core.Frame+1;break;case 2:data.Core.Frame=90;break;case 3:data.Bombs=new[]{data.Bombs[0],data.Bombs[0].Copy()};break;case 4:data.Bombs=Array.Empty<OutsideBombFlightData>();break;case 5:data.Bombs[0].Launch.X=long.MaxValue;break;case 6:data.Bombs[0].Launch.X=12*60000;break;case 7:data.Bombs[0].Launch.Element=(ElementType)999;break;}
+                cold.TryInitializePlayer(()=>new PlayerCharacter(100));var before=cold.CaptureRuntime();var player=cold.Player;Assert.Throws<Exception>(()=>{try{cold.RestoreSavedState(actor,data,null,defs);}catch(ArgumentException e){throw new Exception("validation",e);}catch(OverflowException e){throw new Exception("validation",e);}});var after=cold.CaptureRuntime();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(player,cold.Player);
+            }
+        }
+        [Test] public void ボムは回復で消去しForRunと外部copyは飛翔を独立所有する()
+        {
+            using(var s=Bomb289()){
+                using(var lease=s.AttachPresentation())Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var copy=data.ForRun(Guid.NewGuid().ToString("N"));copy.Bombs[0].Launch.Power=1;Assert.AreEqual(40,data.Bombs[0].Launch.Power);var projected=s.Bombs[0];projected.Launch.Power=2;Assert.AreEqual(40,s.Bombs[0].Launch.Power);s.RecoverOutside(OutsideTrialRoute.RecoveryPointId);Assert.AreEqual(0,s.Bombs.Count);Assert.IsNull(s.CaptureRuntime(defs).Bombs);
+            }
+        }
+        [TestCase(1,0)] [TestCase(-1,0)] [TestCase(1,1)] [TestCase(-1,1)]
+        public void ボムの爆風は左右とも半径の境界だけを含み一単位外を除く(int side,int beyond)
+        {
+            using(var s=Bomb289(side))using(var lease=s.AttachPresentation()){
+                long target=OutsideExplorationSession.TrialTargetX+OutsideBombLaunchData.Radius+beyond;BombPosition289(s,target-side*OutsideBombLaunchData.Distance,side);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<90;n++)Tick160(s);Assert.AreEqual(beyond==0?80:120,s.TrialTarget.CurrentHp);Assert.AreEqual(80,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)] [TestCase(6)] [TestCase(7)]
+        public void ボム前隙の発射計画は実カード性能と版と地形の不一致を復元前に拒否する(int invalid)
+        {
+            using(var s=Bomb289(startup:3))using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation())Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;var plan=data.Attack.BombLaunch;
+                switch(invalid){case 0:plan.Power++;break;case 1:plan.Element=ElementType.Fire;break;case 2:plan.PoiseDamage=null;break;case 3:plan.Level=ExceedLevel.Lv1;break;case 4:plan.DefinitionId="unknown";break;case 5:plan.X=12*60000;break;case 6:plan.Facing=0;break;case 7:data.Attack.BombLaunch=null;break;}
+                cold.TryInitializePlayer(()=>new PlayerCharacter(100));var player=cold.Player;var before=cold.CaptureRuntime();Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,data,null,defs));var after=cold.CaptureRuntime();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(player,cold.Player);
+            }
+        }
+        [Test] public void ボム飛翔中のアイテム保存失敗は効果消費CDと弾を変えず再試行後coldで一爆発する()
+        {
+            using(var s=Bomb289())using(var lease=s.AttachPresentation()){
+                s.Player.SetHp(50);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<8;n++)Tick160(s);var defs=Kick214Definitions(s);var before=PortableCheckpointJson.Serialize(s.Bombs.ToArray());var item=OutsideRecoveryItemDefinition.Provisional;var store=new Style231Store{Fail=true,Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=item.Id,Count=2}}}}};var save=new ClearReturnSession(store);
+                Assert.IsFalse(s.TryUseRecoveryItem(save,item,defs,out _));Assert.AreEqual(50,s.Player.CurrentHp);Assert.AreEqual(2,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(0,s.ItemCooldownRemaining(item.Id));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.Bombs.ToArray()));store.Fail=false;Assert.IsTrue(s.TryUseRecoveryItem(save,item,defs,out var error),error);Assert.AreEqual(75,s.Player.CurrentHp);Assert.AreEqual(1,save.OutsideInventorySnapshot.Items[0].Count);Assert.AreEqual(1,store.Value.OutsideRuntimeSave.Bombs.Length);
+                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(store.Value.OutsidePlayerSave,store.Value.OutsideRuntimeSave,null,defs));cold.RestoreItemCooldowns(store.Value.OutsideItemState,store.Value.OutsidePlayerSave,store.Value.OutsideRuntimeSave);using(var view=cold.AttachPresentation()){for(int n=0;n<100;n++)Tick160(cold);Assert.AreEqual(80,cold.TrialTarget.CurrentHp);Assert.AreEqual(80,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,cold.Bombs.Count);Assert.AreEqual(75,cold.Player.CurrentHp);}}
+            }
+        }
+        [Test] public void ボム飛翔中の扉保存失敗は弾を保持し成功時だけ別マップへ全回復移動する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));var cards=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();Assert.IsTrue(s.QueueSelectedDeck("bomb289-door",cards,Owned(cards),new SeededBattleRandom(289),out _));Walk155(s,OutsideTrialRoute.HomeDoorX);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id=="bomb");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));var defs=Door239Definitions(s);
+                using(var lease=s.AttachPresentation()){
+                    Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<8;n++)Tick160(s);var before=PortableCheckpointJson.Serialize(s.Bombs.ToArray());var store=new Style231Store{Fail=true};var save=new ClearReturnSession(store);Assert.IsFalse(s.TryTravelThroughDoor(save,defs,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.Bombs.ToArray()));Assert.IsTrue(lease.IsCurrent);store.Fail=false;Assert.IsTrue(s.TryTravelThroughDoor(save,defs,out var error),error);Assert.IsFalse(lease.IsCurrent);
+                }
+                Assert.AreEqual(OutsideTrialRoute.AnnexMapId,s.Core.TrialMapId);Assert.AreEqual(0,s.Bombs.Count);Assert.AreEqual(s.Player.MaxHp,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void ボムは撃破済み対象を除外し残る敵だけ一度爆発させる()
+        {
+            using(var s=Bomb289())using(var lease=s.AttachPresentation()){s.TrialTarget.TakeDamage(120,ElementType.None);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<95;n++)Tick160(s);Assert.AreEqual(0,s.TrialTarget.CurrentHp);Assert.AreEqual(80,s.SecondTrialTarget.CurrentHp);lease.Dispose();var data=s.CaptureRuntime(Kick214Definitions(s));Assert.AreEqual(0,data.TrialTarget.Hits);Assert.AreEqual(1,data.SecondTrialTarget.Hits);}
+        }
+        [Test] public void ボムも共通六frame予約では消費せず後隙キャンセル開始で一回だけ発射する()
+        {
+            using(var s=Bomb289())using(var lease=s.AttachPresentation()){
+                s.EnableTrialNormalKick();Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));long revision=s.Cards.HandRevision;for(int n=1;n<10;n++)Tick160(s);Tick160(s,press:true,cardAt:2);Assert.AreEqual(AttackReservationKind.Card,s.PendingAttack);Assert.AreEqual(revision,s.Cards.HandRevision);Assert.AreEqual(0,s.Bombs.Count);for(int n=11;n<=15;n++)Tick160(s);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(1,s.Bombs.Count);Assert.AreEqual(15,s.Bombs[0].FiredAt);for(int n=16;n<=110;n++)Tick160(s);Assert.AreEqual(0,s.Bombs.Count);Assert.AreEqual(70,s.TrialTarget.CurrentHp);Assert.AreEqual(70,s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void 探索死亡時は未着弾ボムを残さず再命中させない()
+        {
+            using(var s=Bomb289())using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));s.Player.SetHp(0);Tick160(s);Assert.AreEqual(0,s.Bombs.Count);Assert.AreEqual(0,s.BombBlasts.Count);Assert.AreEqual(120,s.TrialTarget.CurrentHp);}
+        }
+        [Test] public void ボム欄なし旧Runtimeと旧Attack五欄は追加後も同一bytesとkeyを保つ()
+        {
+            string oldRuntime="{\"Cards\":null,\"Core\":{\"Afterimages\":[],\"ConsecutiveDashes\":0,\"CooldownUntil\":-1,\"DashEndsAt\":-1,\"DashJumping\":false,\"DashStartedAt\":-1,\"DefinitionKey\":\"60B10441D6D95F49F4B4B6A1CECF377BC60A445DE7AC8C12016B28758E2A1503\",\"Facing\":1,\"Frame\":0,\"GaugeMaximum\":100,\"GaugeRecovery\":10,\"GaugeUnits\":6000,\"Height\":0,\"IdleFrame\":0,\"KickAway\":0,\"LastDashAt\":-1,\"MovementFrame\":0,\"Moving\":false,\"Position\":480000,\"Remainder\":0,\"SupportId\":\"floor\",\"Velocity\":0,\"WallContact\":0,\"WallKickAt\":-1,\"WallSlideFrame\":0,\"WallSliding\":false},\"FixedCameraCenter\":null,\"Id\":\"11111111111111111111111111111111\",\"Version\":1}",oldAttack="{\"CardIndex\":1,\"EffectApplied\":false,\"RecoveryFrames\":8,\"StartedAt\":0,\"StartupFrames\":3}";var runtime=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(System.Text.Encoding.UTF8.GetBytes(oldRuntime));Assert.IsNull(runtime.Bombs);Assert.AreEqual("286D22D1B4F75590D9733614E2442858A0E80DCF02BB69682ED4A47F5F890AFE",runtime.Key());Assert.AreEqual(oldRuntime,System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(runtime)));var attack=PortableCheckpointJson.Deserialize<OutsideAttackStateData>(System.Text.Encoding.UTF8.GetBytes(oldAttack));Assert.IsNull(attack.BombLaunch);Assert.AreEqual(oldAttack,System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(attack)));Assert.AreEqual("F71F02F664B90D9E5E8CF9A6C3E3A08448A55486E46AAA60D0969FB964E36959",PortableCheckpointJson.Hash(PortableCheckpointJson.Serialize(attack)));
+        }
         [Test] public void 一体目撃破後の探索ソードは範囲内の二体目へ単体命中する()
         {
             using(var s=Sword161(180,1))using(var view=s.AttachPresentation()){
@@ -886,7 +1003,7 @@ namespace Olca.Tests
         {
             using(var s=Heal158())using(var lease=s.AttachPresentation()){
                 if(mode==1)Assert.IsTrue(s.Core.CardGauge.TrySpend(100));
-                if(mode==2){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="bomb");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));}
+                if(mode==2){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="tuning");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="tuning")));}
                 if(mode==3)typeof(OutsideExplorationCore).GetMethod("SetRecoveryMap",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{OutsideTrialRoute.DoorAnnexPoint});
                 long frame=s.Core.Frame,gauge=s.Core.CardGauge.CurrentUnits,revision=s.Cards.HandRevision;int hp=s.Player.CurrentHp,selected=s.Cards.SelectedIndex,remaining=s.Cards.RemainingCount;var hand=s.Cards.Hand.ToArray();
                 for(int n=0;n<100;n++){Assert.AreEqual(expected,s.SelectedCardRestriction);Assert.AreEqual(expected,lease.SelectedCardRestriction);}
