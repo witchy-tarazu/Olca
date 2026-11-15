@@ -5033,15 +5033,49 @@ namespace Olca.Tests.Integration
             var old=System.IO.File.ReadAllBytes(Store().ActivePath);var restored=new ClearReturnSession(Store());Assert.IsTrue(restored.Ready,restored.Error);Assert.AreEqual(RunReturnOutcome.Cleared,restored.Snapshot.Flow.Outcome);Assert.AreEqual(RunReturnOutcome.Cleared,restored.Snapshot.Receipts.Single().Outcome);CollectionAssert.AreEqual(old,System.IO.File.ReadAllBytes(Store().ActivePath));
         }
 
-        private RestoredCheckpoint InitialOutside139(out ClearReturnSession flow,out FaultIo io,bool retry=false,bool legacy=false,bool previousSaved=false,long experience=0,bool timed=false,bool runtime=false)
+        private RestoredCheckpoint InitialOutside139(out ClearReturnSession flow,out FaultIo io,bool retry=false,bool legacy=false,bool previousSaved=false,long experience=0,bool timed=false,bool runtime=false,bool mixedCarryProbe=false)
         {
             var original=TerminalWithDeparture(out var start,Card("a"));var actor=new PlayerCharacter(120,attackPower:10,statusResistances:new TimedStatusResistances(80,17,19,23));actor.SetAttackGrowth(AttackMilestoneGrowth.ForLevel(1));actor.SetElementResistances(ElementResistances.Restore(150,-20,23,40,new[]{1,2,3,4}));actor.SetHp(60);actor.ApplyPoison("entry139",new StatusEffect(StatusEffectType.Poison,60000,1),600);
-            if(timed){actor.ApplyParalysis(3);actor.ApplyConfusion(4);actor.ApplyBlindness(5);}
-            var entry=OutsideDepartureVitals.Capture(actor,retry);if(legacy)entry.Template=null;start.Player.Hp=retry?100:60;start.Player.Poisons=retry?System.Array.Empty<PlayerPoisonDto>():entry.Poisons.Select(v=>v.Copy()).ToArray();
-            var dto=original.Snapshot;var ended=new PlayerCharacter(100);ended.SetHp(37);ended.ApplyPoison("end139",new StatusEffect(StatusEffectType.Poison,60000,3),600);dto.Player.Hp=37;dto.Player.Poisons=ended.CapturePoisons();
+            if(timed){actor.ApplyParalysis(mixedCarryProbe?30:3,mixedCarryProbe);actor.ApplyConfusion(mixedCarryProbe?40:4);actor.ApplyBlindness(mixedCarryProbe?50:5,carryAcrossBattles:mixedCarryProbe);}
+            // 初回gateは維持したまま、保存層へ明示DTOを渡す専用試験だけで三状態を扱う。
+            var entry=OutsideDepartureVitals.Capture(actor,retry||mixedCarryProbe);entry.Retry=retry;if(legacy)entry.Template=null;start.Player.Hp=retry?100:60;start.Player.Poisons=retry?System.Array.Empty<PlayerPoisonDto>():entry.Poisons.Select(v=>v.Copy()).ToArray();start.Player.TimedAilments=retry?null:entry.TimedAilments?.Copy();
+            var dto=original.Snapshot;var ended=new PlayerCharacter(100);ended.SetHp(37);ended.ApplyPoison("end139",new StatusEffect(StatusEffectType.Poison,60000,3),600);dto.Player.Hp=37;dto.Player.Poisons=ended.CapturePoisons();if(mixedCarryProbe){ended.ApplyParalysis(70);ended.ApplyConfusion(80,carryAcrossBattles:true);ended.ApplyBlindness(90);dto.Player.TimedAilments=ended.CaptureTimedAilments();}
             var definitions=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(new List<Card>{Card("a")})).Definitions;Assert.IsTrue(CheckpointCodec.TryRestore(dto,definitions,out var terminal,out var error),error);
             if(runtime){using(var outside=new Olca.Core.Logic.Integration.OutsideExplorationSession()){outside.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true));outside.TryInitializePlayer(()=>actor);for(int i=0;i<17;i++)outside.Core.TickFrame(1);outside.Core.CardGauge.TrySpend(40);entry.Runtime=outside.CaptureRuntime(definitions);}}
             var profile=Profile137(terminal);profile.Experience=experience;if(previousSaved)profile.OutsidePlayerSave=entry.Template.Copy();if(retry)profile.ClearedDungeons=new[]{start.DungeonId};io=new FaultIo();var store=Store(io);System.IO.Directory.CreateDirectory(directory);System.IO.File.WriteAllBytes(store.ActivePath,PortableCheckpointJson.Encode(profile));flow=new ClearReturnSession(store);Assert.IsTrue(flow.PrepareNextDeparture(start,start.MapHash,entry,start.DungeonId,Terms137(start)),flow.Error);Assert.IsTrue(flow.Begin(terminal,start.DungeonId,new ClearReturnSettings()),flow.Error);return terminal;
+        }
+        [TestCase(false,false,false)][TestCase(false,false,true)]
+        [TestCase(false,true,false)][TestCase(false,true,true)]
+        [TestCase(true,false,false)][TestCase(true,false,true)]
+        [TestCase(true,true,false)][TestCase(true,true,true)]
+        public void 三状態の混在方針は初回終了と再挑戦入場を区別し帰還失敗とcoldで二重適用しない(bool retry,bool after,bool restart)
+        {
+            var terminal=InitialOutside139(out var flow,out var io,retry:retry,previousSaved:true,timed:true,runtime:true,mixedCarryProbe:true);
+            var plan=flow.Snapshot.NextDeparture;var expected=(retry?plan.OutsideEntry.Template.Player:terminal.Snapshot.Player).Copy();
+            Assert.IsTrue(expected.TimedAilments.Confusion.PendingCarryAcrossBattles!=retry);
+            Assert.IsTrue(expected.TimedAilments.Paralysis.PendingCarryAcrossBattles==retry);
+            var runtimeKey=plan.OutsideEntry.Runtime.ForRun(plan.Start.RunId).Key();var prior=flow.Snapshot.OutsidePlayerSave.Key();
+            Assert.IsTrue(flow.ConfirmSelection(),flow.Error);long revision=flow.Snapshot.Revision;
+            var before=System.IO.File.ReadAllBytes(Store().ActivePath);io.Before=!after;io.After=after;
+            Assert.AreEqual(after,flow.ConfirmReturn(),flow.Error);
+            if(!after){CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(Store().ActivePath));Assert.AreEqual(prior,flow.Snapshot.OutsidePlayerSave.Key());Assert.IsNull(flow.ReturnedPlayer);}
+            io.Before=io.After=false;
+            if(restart){flow=new ClearReturnSession(Store());Assert.IsTrue(flow.Ready,flow.Error);Assert.IsTrue(flow.ConfirmReturn(),flow.Error);}
+            else Assert.IsTrue(flow.Retry(),flow.Error);
+            var saved=flow.Snapshot;Assert.AreEqual(revision+1,saved.Revision);Assert.AreEqual(retry?60:42,saved.OutsidePlayerSave.Player.Hp);
+            Assert.IsTrue(PlayerTimedAilmentsDto.Same(expected.TimedAilments,saved.OutsidePlayerSave.Player.TimedAilments));
+            CollectionAssert.AreEqual(PortableCheckpointJson.Serialize(expected.Poisons),PortableCheckpointJson.Serialize(saved.OutsidePlayerSave.Player.Poisons));
+            Assert.AreEqual(runtimeKey,saved.OutsideRuntimeSave.Key());Assert.AreEqual(1,saved.Receipts.Length);
+            before=System.IO.File.ReadAllBytes(Store().ActivePath);Assert.IsTrue(flow.ConfirmReturn());Assert.IsTrue(flow.Begin(terminal,terminal.Snapshot.DungeonId,new ClearReturnSettings()));
+            CollectionAssert.AreEqual(before,System.IO.File.ReadAllBytes(Store().ActivePath));
+            var cold=new ClearReturnSession(Store());Assert.IsTrue(cold.Ready,cold.Error);
+            using(var outside=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                outside.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true));
+                Assert.IsTrue(outside.RestoreSavedState(cold.Snapshot.OutsidePlayerSave,cold.Snapshot.OutsideRuntimeSave,null));
+                Assert.IsTrue(PlayerTimedAilmentsDto.Same(expected.TimedAilments,outside.Player.CaptureTimedAilments()));
+                Assert.AreEqual(17,outside.Core.Frame);Assert.AreEqual(3600,outside.Core.CardGauge.CurrentUnits);
+                Assert.IsFalse(outside.RestoreSavedState(cold.Snapshot.OutsidePlayerSave,cold.Snapshot.OutsideRuntimeSave,null));
+            }
         }
         [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
         public void 初回クリアHPと毒は成長差のみ加算して帰還保存し失敗と再起動で一度だけ復元する(bool after,bool restart)

@@ -135,6 +135,45 @@ namespace Olca.Tests
             string dir=Path.Combine(Path.GetTempPath(),"outside-recovery-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);
             try{var io=new ReplaceFault();var store=new ClearReturnFileStore(dir,io);File.WriteAllBytes(store.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(InventoryProfile()));var before=File.ReadAllBytes(store.ActivePath);var session=new ClearReturnSession(store);Assert.IsNull(session.Snapshot.OutsideRecoveryPointId);CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));Assert.IsFalse(session.TrySaveOutsideRecoveryPoint("unknown"));CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));io.Fail=true;io.After=after;Assert.AreEqual(after,session.TrySaveOutsideRecoveryPoint(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId));if(!after){Assert.IsNull(session.Snapshot.OutsideRecoveryPointId);CollectionAssert.AreEqual(before,File.ReadAllBytes(store.ActivePath));Assert.IsTrue(session.HasPendingSave);}io.Fail=false;Assert.IsTrue(session.Retry(),session.Error);Assert.AreEqual(1,session.Snapshot.Revision);var confirmed=File.ReadAllBytes(store.ActivePath);Assert.IsTrue(session.Retry());CollectionAssert.AreEqual(confirmed,File.ReadAllBytes(store.ActivePath));var loaded=new ClearReturnSession(new ClearReturnFileStore(dir));Assert.AreEqual(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId,loaded.Snapshot.OutsideRecoveryPointId);Assert.AreEqual(99,loaded.OutsideInventorySnapshot.Currency);Assert.AreEqual(3,loaded.Snapshot.Tokens);Assert.AreEqual(3,loaded.OutsideInventorySnapshot.Items[0].Count);CollectionAssert.AreEqual(confirmed,File.ReadAllBytes(store.ActivePath));}finally{Directory.Delete(dir,true);}
         }
+        [TestCase(false,false,false,false)]
+        [TestCase(false,false,false,true)]
+        [TestCase(false,false,true,false)]
+        [TestCase(false,false,true,true)]
+        [TestCase(false,true,false,false)]
+        [TestCase(false,true,false,true)]
+        [TestCase(false,true,true,false)]
+        [TestCase(false,true,true,true)]
+        [TestCase(true,false,false,false)]
+        [TestCase(true,false,false,true)]
+        [TestCase(true,false,true,false)]
+        [TestCase(true,false,true,true)]
+        [TestCase(true,true,false,false)]
+        [TestCase(true,true,false,true)]
+        [TestCase(true,true,true,false)]
+        [TestCase(true,true,true,true)]
+        public void 初回三状態の入場保存は失敗再試行とcoldで同じ計画と耐性適用済み時計を保持する(bool active,bool carry,bool after,bool retry)
+        {
+            string dir=Path.Combine(Path.GetTempPath(),"outside-entry281-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);
+            try{
+                var io=new ReplaceFault();var file=new ClearReturnFileStore(dir,io);var profile=InventoryProfile();profile.ClearedDungeons=retry?new[]{"entry135"}:Array.Empty<string>();File.WriteAllBytes(file.ActivePath,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Encode(profile));var before=File.ReadAllBytes(file.ActivePath);var progress=new ClearReturnSession(file);
+                var resist=new TimedStatusResistances(paralyze:50,confusion:25,blind:20);var actor=new PlayerCharacter(100,statusResistances:resist);actor.SetHp(37);actor.ApplyPoison("entry281",new StatusEffect(StatusEffectType.Poison,60000,1),600);actor.ApplyParalysis(120,carry);actor.ApplyConfusion(120,carryAcrossBattles:carry);actor.ApplyBlindness(120,carryAcrossBattles:carry);
+                using(var outside=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                    outside.TryInitializePlayer(()=>actor);if(active)using(var lease=outside.AttachPresentation()){outside.Core.TickFrame(0);outside.AdvancePlayerFrame();}
+                    var raw=actor.CaptureTimedAilments();var actorBefore=OutsidePlayerSaveData.Capture(actor);actorBefore.Id="11111111111111111111111111111111";
+                    // gateを解除する前に、既存の保存APIへ明示DTOを渡して境界を検証する。
+                    var entry=OutsideDepartureVitals.Capture(actor,true);entry.Retry=retry;var target=new PlayerCharacter(100,statusResistances:resist);entry.ApplyToStart(target);var start=Entry135Start(target,out var defs);entry.Runtime=outside.CaptureRuntime(defs);var frozen=entry.Copy();string run=start.RunId;
+                    io.Fail=true;io.After=after;Assert.AreEqual(after,progress.PrepareNextDeparture(start,defs.MapHash,entry,"entry135"),progress.Error);
+                    if(!after){CollectionAssert.AreEqual(before,File.ReadAllBytes(file.ActivePath));Assert.IsNull(progress.Snapshot.NextDeparture);Assert.IsTrue(progress.HasPendingSave);}
+                    var coldBeforeRetry=new ClearReturnSession(new ClearReturnFileStore(dir));Assert.IsTrue(coldBeforeRetry.Ready,coldBeforeRetry.Error);Assert.AreEqual(after,coldBeforeRetry.Snapshot.NextDeparture!=null);
+                    entry.Hp=2;entry.TimedAilments.Confusion.PendingFrames=999;entry.Runtime.Core.Frame+=99;io.Fail=false;
+                    Assert.IsTrue(progress.Retry(),progress.Error);var bytes=File.ReadAllBytes(file.ActivePath);var loaded=new ClearReturnSession(new ClearReturnFileStore(dir));var plan=loaded.Snapshot.NextDeparture;Assert.AreEqual(run,plan.Start.RunId);Assert.AreEqual(1,loaded.Snapshot.Revision);Assert.AreEqual(37,plan.OutsideEntry.Hp);Assert.IsTrue(PlayerTimedAilmentsDto.Same(raw,plan.OutsideEntry.TimedAilments));Assert.AreEqual(frozen.Runtime.Key(),plan.OutsideEntry.Runtime.Key());
+                    Assert.IsTrue(Olca.Core.Logic.Dungeon.CheckpointCodec.TryRestore(plan.Start,defs,out var restored,out var error),error);Assert.IsTrue(PlayerTimedAilmentsDto.Same(retry?null:raw,restored.Player.CaptureTimedAilments()));Assert.AreEqual(retry?100:37,restored.Player.CurrentHp);Assert.AreEqual(retry?0:1,restored.Player.CapturePoisons().Length);
+                    Assert.IsTrue(loaded.PrepareNextDeparture(start,defs.MapHash,frozen,"entry135"));Assert.IsTrue(progress.Retry());CollectionAssert.AreEqual(bytes,File.ReadAllBytes(file.ActivePath));Assert.AreEqual(99,loaded.OutsideInventorySnapshot.Currency);Assert.AreEqual(3,loaded.Snapshot.Tokens);
+                    var actorAfter=OutsidePlayerSaveData.Capture(actor);actorAfter.Id=actorBefore.Id;CollectionAssert.AreEqual(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(actorBefore),Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(actorAfter));
+                    var poisonBeforeTick=restored.Player.CapturePoisons().SingleOrDefault();var game=new Olca.Core.Logic.Integration.DungeonBattleManager(restored.Map,restored.Player,restored.Deck,new Olca.Tests.Mocks.MockRandomProvider(),new Olca.Tests.Mocks.MockLogger(),restoration:restored);game.Dungeon.TickFrame();if(retry){Assert.IsNull(game.Dungeon.Player.CaptureTimedAilments());Assert.Greater(game.Dungeon.PlayerPosition,0);}else{var first=game.Dungeon.Player.CaptureTimedAilments();Assert.AreEqual((active?raw.Paralysis.RemainingUnits:raw.Paralysis.PendingFrames.Value*50L)-50,first.Paralysis.RemainingUnits);Assert.AreEqual(carry,first.Paralysis.CarryAcrossBattles);Assert.IsFalse(first.Paralysis.InterruptPending);Assert.AreEqual((active?raw.Confusion.RemainingUnits:raw.Confusion.PendingFrames.Value*50L)-50,first.Confusion.RemainingUnits);Assert.AreEqual((active?raw.Blindness.RemainingUnits:raw.Blindness.PendingFrames.Value*50L)-50,first.Blindness.RemainingUnits);Assert.AreEqual(carry,first.Confusion.CarryAcrossBattles);Assert.AreEqual(carry,first.Blindness.CarryAcrossBattles);var poison=game.Dungeon.Player.CapturePoisons().Single();Assert.AreEqual(poisonBeforeTick.RemainingUnits-50,poison.RemainingUnits);Assert.AreEqual(poisonBeforeTick.NextDamageUnits-50,poison.NextDamageUnits);Assert.AreEqual(0,game.Dungeon.PlayerPosition);}
+                }
+            }finally{Directory.Delete(dir,true);}
+        }
         private static Olca.Core.Domain.CheckpointDto Entry135Start(PlayerCharacter player,out Olca.Core.Logic.Dungeon.CheckpointDefinitions definitions)
         {
             var map=DungeonConfig.CreateTestDungeon(6,1,2);definitions=new Olca.Core.Logic.Dungeon.CheckpointDefinitions("entry135",map);var session=new Olca.Core.Logic.Dungeon.DungeonCheckpointSession(definitions,new Olca.Core.Logic.Dungeon.MemoryCheckpointStore(definitions));
