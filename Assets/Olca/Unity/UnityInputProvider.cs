@@ -600,7 +600,8 @@ namespace Olca.Unity
             int previousTouchCount=physicalTouches.Count;
             float touchDown=0; bool touchCanceled=false;
             if(device is Touchscreen screen) CaptureTouches(evt,screen,out touchDown,out touchCanceled);
-            if(device is Gamepad&&!pauseBefore&&PadActionHeld(padContext,"Pause")&&GamepadPauseAvailable?.Invoke()==true)gamepadPausePending=true;
+            // DungeonのEscapeも停止中メニューと同じedge経路へ渡す。外界は既存の専用所有者に任せる。
+            if(((device is Gamepad&&!pauseBefore&&PadActionHeld(padContext,"Pause"))||(device is Keyboard&&padContext!="outside"&&!escape&&KeyHeld(Key.Escape)))&&GamepadPauseAvailable?.Invoke()==true)gamepadPausePending=true;
             CapturePcWheelInput(evt,device,selectionPresses);
             if(OutsideGamepad&&!GameplayPause.InputBlocked&&GamepadGameplayActive?.Invoke()==true&&selectionPresses.Any(IsOutsideInteractionControl))outsideInteractionPending=true;
             var next = BuildState();
@@ -1043,6 +1044,8 @@ namespace Olca.Unity
     {
         private readonly CustomGamepadInput input;private readonly System.Func<bool> top;private readonly System.Func<IEnumerable<UnityEngine.UI.Button>> external;
         private UnityEngine.UI.Selectable[] linked=System.Array.Empty<UnityEngine.UI.Selectable>();
+        private bool keyboardCancelArmed;
+        private readonly System.Func<(bool held,bool down)> keyboardCancelState;
         private bool directionScroll=true;private Vector2 linkedScrollPosition;private bool linkedScrollTracked;
         private Transform root;private System.Action cancel;private UnityEngine.UI.ScrollRect scroll;private UnityEngine.UI.Selectable focused;private string preferred;private Vector2 lastPoint;private bool havePoint;private int version;private static int cancelFrame=-1;
         public string FocusName=>focused!=null?focused.name:null;
@@ -1059,8 +1062,8 @@ namespace Olca.Unity
             var hits=new List<UnityEngine.EventSystems.RaycastResult>();es.RaycastAll(new UnityEngine.EventSystems.PointerEventData(es){position=new Vector2(Screen.width/2f,Screen.height/2f)},hits);
             return hits.Count==0||hits[0].gameObject.transform==root||hits[0].gameObject.transform.IsChildOf(root);
         }
-        public MenuPadScope(System.Func<bool> top,System.Func<IEnumerable<UnityEngine.UI.Button>> external=null,System.Func<bool> keyboardOwned=null)
-        {this.top=top;this.external=external;input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false,keyboardOwned:keyboardOwned,context:"menu");}
+        public MenuPadScope(System.Func<bool> top,System.Func<IEnumerable<UnityEngine.UI.Button>> external=null,System.Func<bool> keyboardOwned=null,System.Func<(bool held,bool down)> keyboardCancelState=null)
+        {this.top=top;this.external=external;this.keyboardCancelState=keyboardCancelState??(()=> (PolledInput.Held(Key.Escape),PolledInput.Down(Key.Escape)));input=new CustomGamepadInput(Usable,Usable,ownsKeyboard:false,keyboardOwned:keyboardOwned,context:"menu");}
         private bool Typing()=>root!=null&&root.GetComponentsInChildren<UnityEngine.UI.InputField>().Any(f=>f.isFocused);
         private bool Usable()=>root!=null&&root.gameObject.activeInHierarchy&&top()&&!Typing();
         private UnityEngine.UI.Selectable[] Buttons()=>root==null?System.Array.Empty<UnityEngine.UI.Selectable>():root.GetComponentsInChildren<UnityEngine.UI.Selectable>().Concat((external?.Invoke()??System.Array.Empty<UnityEngine.UI.Button>()).Cast<UnityEngine.UI.Selectable>()).Where(b=>b!=null&&(b is UnityEngine.UI.Button||b is UnityEngine.UI.Slider||b is UnityEngine.UI.Toggle)&&b.gameObject.activeInHierarchy&&b.IsInteractable()).Distinct().ToArray();
@@ -1070,7 +1073,7 @@ namespace Olca.Unity
         private UnityEngine.UI.Selectable Neighbor(UnityEngine.UI.Selectable from,Vector2 direction,UnityEngine.UI.Selectable[] buttons)
         {if(navigationResolver==null)return Near(from,direction,buttons);var next=navigationResolver(from,direction);return next!=null&&buttons.Contains(next)?next:null;}
         public void Bind(Transform root,string preferred,System.Action cancel,UnityEngine.UI.ScrollRect scroll=null,bool restorePosition=false,bool directionScroll=true)
-        {version++;input.Reset();this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;this.directionScroll=directionScroll;linked=System.Array.Empty<UnityEngine.UI.Selectable>();focused=null;if(!restorePosition)havePoint=false;
+        {version++;input.Reset();var openingCancel=keyboardCancelState();keyboardCancelArmed=!openingCancel.held&&!openingCancel.down;this.root=root;this.preferred=preferred;this.cancel=cancel;this.scroll=scroll;this.directionScroll=directionScroll;linked=System.Array.Empty<UnityEngine.UI.Selectable>();focused=null;if(!restorePosition)havePoint=false;
             if(Usable()){var initial=Buttons().FirstOrDefault(b=>b.name==preferred);if(initial!=null)Focus(initial);}Refresh();}
         public void Suspend(){version++;input.Reset();NavigationResolver=null;root=null;focused=null;cancel=null;scroll=null;}
         private void Focus(UnityEngine.UI.Selectable button,bool follow=true)
@@ -1104,7 +1107,10 @@ namespace Olca.Unity
         {
             var commands=input.Read();if(!Usable())return;Refresh();
             var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
-            if(PolledInput.Down(Key.Escape)&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
+            // 開いた押下を戻るへ持ち越さず、完全な解放更新の後だけ新しいEscapeを受ける。
+            var keyboardCancel=keyboardCancelState();
+            if(!keyboardCancelArmed&&!keyboardCancel.held&&!keyboardCancel.down)keyboardCancelArmed=true;
+            if(keyboardCancelArmed&&keyboardCancel.down&&cancelFrame!=Time.frameCount&&(selected==null||selected.GetComponent<UnityEngine.UI.InputField>()==null)){cancelFrame=Time.frameCount;cancel?.Invoke();return;}
             int current=version;
             foreach(var e in commands){if(current!=version||e.Epoch!=input.Epoch||!Usable())break;
                 if(e.Command==CustomPadCommand.Cancel){if(!SuppressPadCancel)cancel?.Invoke();continue;}
