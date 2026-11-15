@@ -1121,6 +1121,9 @@ namespace Olca.Presentation.CustomScreen
             Olca.Unity.BattleVisualClock.SetPaused(this,true);
             ResetCustomPad();
             UpdateSelectedCardDisplay();
+            // 射出演出を待たず、再オープン時の空選択と確定可否へ同期する。
+            UpdateCostDisplay();
+            UpdateConfirmButton();
             customizeSelectedCards.Clear();
             if (customizeModeView != null) customizeModeView.Exit();
             if (customizeModeOverlay != null) customizeModeOverlay.gameObject.SetActive(false);

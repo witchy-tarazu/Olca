@@ -16,6 +16,32 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [Test]
+        public void 再オープン直後は前回非零コストと確定無効を演出完了前に同期する()
+        {
+            var root=new GameObject("ReopenCostSync",typeof(RectTransform));CustomScreenView view=null;
+            try {
+                var previous=new Card("previous","前回",7,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,1,"");
+                var next=new Card("next","次回",3,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,1,"");
+                var model=new CustomScreenSystem(new Deck(new List<Card>{previous,next}));model.Open(new Card[0],new MockRandomProvider(0));Assert.IsTrue(model.TrySelectCard(previous));
+                view=root.AddComponent<CustomScreenView>();view.enabled=false;
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=typeof(CustomScreenView);
+                var cost=root.AddComponent<Text>();type.GetField("customScreen",flags).SetValue(view,model);type.GetField("costDisplay",flags).SetValue(view,cost);
+                var buttonObject=new GameObject("Confirm",typeof(RectTransform),typeof(Button));buttonObject.transform.SetParent(root.transform);var button=buttonObject.GetComponent<Button>();type.GetField("confirmButton",flags).SetValue(view,button);
+                type.GetField("cursor",flags).SetValue(view,new CustomScreenCursor());type.GetMethod("UpdateCostDisplay",flags).Invoke(view,null);Assert.AreEqual("コスト: 7 / 10",cost.text);
+                model.Confirm();model.CompleteClose();button.interactable=false;
+                model.OnScreenOpened+=hand=>type.GetMethod("OnScreenOpened",flags).Invoke(view,new object[]{hand});model.Open(new Card[0],new MockRandomProvider(0));
+                Assert.IsEmpty(model.SelectedCards);Assert.IsTrue((bool)type.GetField("handAnimating",flags).GetValue(view));
+                Assert.AreEqual("コスト: 0 / 10",cost.text);Assert.AreEqual(Color.white,cost.color);Assert.AreEqual(model.CanConfirm(),button.interactable);Assert.IsTrue(button.interactable);
+                view.OnCardClicked(next);Assert.AreEqual("コスト: 3 / 10",cost.text);CollectionAssert.AreEqual(new[]{next},model.SelectedCards);
+                model.Confirm();Assert.IsTrue(model.IsConfirming);CollectionAssert.AreEqual(new[]{next},model.AvailableCards);Assert.IsEmpty(model.SelectedCards);
+            } finally {
+                // 無効Viewの入口を直接試したため、通常の終了契約で自分の停止所有とCTSだけを返す。
+                try {if(view!=null)view.ReleaseSessionPresentation();}
+                finally {Object.DestroyImmediate(root);}
+            }
+        }
+
         [TestCase(false)][TestCase(true)] public void 再挑戦帰還HPは入場前個体と計画成長を示し終了時HPを採用しない(bool blocked)
         {
             var root=new GameObject("RetryPreview140",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);try{var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.Load<Font>("OlcaUI/MenuText"),null,null,null,null);var actor=new PlayerCharacter(120);actor.SetHp(60);var entry=OutsidePlayerSaveData.Capture(actor);var flow=new ClearReturnData{RunId=System.Guid.NewGuid().ToString("N"),Stage=ClearReturnStage.Awarded,NewLevel=2,ReturnedMaxHp=125,ReturnedAttack=11,Settings=new ClearReturnSettings(),OutsideRetry=new OutsideRetryReturnData{EntryLevel=1,Entry=entry}};var profile=new ClearReturnProfile{Level=1,Flow=flow.Copy()};view.Render(profile,flow,blocked,blocked?"ホゾン シッパイ":null);var label=root.GetComponentsInChildren<Text>().Single(t=>t.name=="ReturnStats");StringAssert.Contains("65/125",label.text);StringAssert.Contains("ニュウジョウマエ",label.text);Assert.AreEqual(60,flow.OutsideRetry.Entry.Player.Hp);}finally{Object.DestroyImmediate(root);}
