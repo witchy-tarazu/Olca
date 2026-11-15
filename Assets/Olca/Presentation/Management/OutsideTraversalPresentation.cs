@@ -70,11 +70,16 @@ namespace Olca.Presentation.Exploration
         private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
         private Sprite ResolveBodyCostume(Sprite sprite)=>(trialFireBody??(trialFireBody=new Olca.Presentation.Effects.TrialFireBodyMotion())).Resolve(sprite,presentation?.Player);
         private Sprite[] trialComboSprites,trialAirDownSprites;
+        private TrialGroundComboMotion trialGroundCombo;
         private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
         private Sprite TrialKickSprite()
         {
             var kind=presentation?.NormalKickKind;
             if(!kind.HasValue||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
+            if(kind.Value<=OutsideKickKind.GroundThird){
+                var frame=(trialGroundCombo??(trialGroundCombo=new TrialGroundComboMotion())).Resolve(kind.Value,presentation.KickElapsedFrames,presentation.KickTiming,Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation.Player));
+                if(frame!=null)return frame;
+            }
             if(kind.Value==OutsideKickKind.Dash){
                 if(trialDashKickContact==null)trialDashKickContact=Resources.Load<Sprite>("OlcaCharacterMotion/trial_dash_kick_contact");
                 return presentation.IsKickHitWindow&&trialDashKickContact!=null?trialDashKickContact:null;
@@ -215,7 +220,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -836,5 +841,45 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTargetBursts(){burstLease=null;for(int i=0;i<2;i++){observedBurstTargets[i]=null;observedDead[i]=false;targetDeathAt[i]=-1;if(targetBursts[i]!=null)targetBursts[i].enabled=false;}}
         private void ClearKickEffects(){if(kickTrail!=null)kickTrail.enabled=false;if(kickCaptionPlate!=null)kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;ClearTargetBursts();}
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>地上三段の試用連番。Sessionの論理時刻を読み、判定・移動・保存は変更しない。</summary>
+    public sealed class TrialGroundComboMotion : System.IDisposable
+    {
+        private readonly System.Func<string,UnityEngine.Sprite[]> load;
+        private UnityEngine.Sprite[] basic,fire;
+        private bool attemptedBasic,attemptedFire,disposed;
+        public TrialGroundComboMotion(System.Func<string,UnityEngine.Sprite[]> loader=null){load=loader??(key=>UnityEngine.Resources.LoadAll<UnityEngine.Sprite>(key));}
+        public static int FrameIndex(Olca.Core.Logic.Integration.OutsideKickKind kind,int elapsed,Olca.Core.Logic.Integration.OutsideKickTiming timing)
+        {
+            if(kind<Olca.Core.Logic.Integration.OutsideKickKind.GroundFirst||kind>Olca.Core.Logic.Integration.OutsideKickKind.GroundThird||timing==null||elapsed<0||elapsed>=timing.StartupFrames+(long)timing.ActiveFrames+timing.RecoveryFrames)return -1;
+            if(elapsed<timing.StartupFrames)return elapsed<System.Math.Max(1,timing.StartupFrames/3)?0:1;
+            if(elapsed<timing.StartupFrames+timing.ActiveFrames)return 2;
+            // 接触後は脚を引いてから立ち姿へ戻る。復帰の時計を別途進めない。
+            return elapsed-timing.StartupFrames-timing.ActiveFrames<System.Math.Max(1,timing.RecoveryFrames/2)?3:0;
+        }
+        public UnityEngine.Sprite Resolve(Olca.Core.Logic.Integration.OutsideKickKind kind,int elapsed,Olca.Core.Logic.Integration.OutsideKickTiming timing,bool isFire)
+        {
+            if(disposed)return null;int frame=FrameIndex(kind,elapsed,timing);if(frame<0)return null;
+            if(isFire&&!attemptedFire){attemptedFire=true;fire=Load(true);}else if(!isFire&&!attemptedBasic){attemptedBasic=true;basic=Load(false);}
+            var sprites=isFire?fire:basic;return sprites==null?null:sprites[(int)kind*4+frame];
+        }
+        private UnityEngine.Sprite[] Load(bool isFire)
+        {
+            string prefix=isFire?"trial_fire_combo_":"trial_combo_";var all=load("OlcaCharacterMotion/"+(isFire?"trial_fire_ground_combo_sheet":"trial_ground_combo_sheet"));
+            if(all==null||all.Length!=12)return null;var frames=new UnityEngine.Sprite[12];
+            for(int stage=0;stage<3;stage++)for(int frame=0;frame<4;frame++){
+                string name=prefix+(stage+1)+"_"+frame;var found=System.Array.FindAll(all,s=>s!=null&&s.name==name);
+                if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||UnityEngine.Mathf.Abs(found[0].pixelsPerUnit-100)>.001f)return null;frames[stage*4+frame]=found[0];
+            }
+            return frames;
+        }
+        // 新atlasは右向き原画。既存の左向き本体と反転基準を混同しない。
+        public bool Contains(UnityEngine.Sprite sprite)=>!disposed&&sprite!=null&&
+            (basic!=null&&System.Array.IndexOf(basic,sprite)>=0||fire!=null&&System.Array.IndexOf(fire,sprite)>=0);
+        public void Dispose(){disposed=true;basic=fire=null;}
     }
 }

@@ -1,0 +1,837 @@
+fileFormatVersion: 2
+guid: 511a549da09fccdf9a8a190d19ad1bf5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 7184148971873382811
+    second: trial_fire_ground_combo_sheet_0
+  - first:
+      213: 2023126326712737610
+    second: trial_fire_ground_combo_sheet_1
+  - first:
+      213: -3234024324327936653
+    second: trial_fire_ground_combo_sheet_2
+  - first:
+      213: 6623588593715514826
+    second: trial_fire_ground_combo_sheet_3
+  - first:
+      213: -5983501447074434001
+    second: trial_fire_ground_combo_sheet_4
+  - first:
+      213: -1694838478655512385
+    second: trial_fire_ground_combo_sheet_5
+  - first:
+      213: 5872256656214989058
+    second: trial_fire_ground_combo_sheet_6
+  - first:
+      213: 3885514153914193891
+    second: trial_fire_ground_combo_sheet_7
+  - first:
+      213: -6046116543066153642
+    second: trial_fire_ground_combo_sheet_8
+  - first:
+      213: -5677190764855684555
+    second: trial_fire_ground_combo_sheet_9
+  - first:
+      213: -6652528207326981463
+    second: trial_fire_ground_combo_sheet_10
+  - first:
+      213: -7333227741939671799
+    second: trial_fire_ground_combo_sheet_11
+  - first:
+      213: 1690463870981136719
+    second: trial_fire_ground_combo_sheet_12
+  - first:
+      213: 2418069197438536263
+    second: trial_fire_ground_combo_sheet_13
+  - first:
+      213: -8413254496332535112
+    second: trial_fire_ground_combo_sheet_14
+  - first:
+      213: 5106218736177262654
+    second: trial_fire_ground_combo_sheet_15
+  - first:
+      213: -5078736583345223414
+    second: trial_fire_ground_combo_sheet_16
+  - first:
+      213: -6901475823255925350
+    second: trial_fire_ground_combo_sheet_17
+  - first:
+      213: 4981813344785332076
+    second: trial_fire_ground_combo_sheet_18
+  - first:
+      213: -5227971456092496570
+    second: trial_fire_ground_combo_sheet_19
+  - first:
+      213: 8947990032510501913
+    second: trial_fire_ground_combo_sheet_20
+  - first:
+      213: -1623592762144764558
+    second: trial_fire_ground_combo_sheet_21
+  - first:
+      213: 3660001876764708976
+    second: trial_fire_ground_combo_sheet_22
+  - first:
+      213: 8846298641203525714
+    second: trial_fire_ground_combo_sheet_23
+  - first:
+      213: -7681783956465552998
+    second: trial_fire_ground_combo_sheet_24
+  - first:
+      213: 4326177229267445454
+    second: trial_fire_ground_combo_sheet_25
+  - first:
+      213: -5628783452616017045
+    second: trial_fire_ground_combo_sheet_26
+  - first:
+      213: 6099260327841499347
+    second: trial_fire_ground_combo_sheet_27
+  - first:
+      213: 8567031343131364562
+    second: trial_fire_ground_combo_sheet_28
+  - first:
+      213: -1237849277637041187
+    second: trial_fire_ground_combo_sheet_29
+  - first:
+      213: -753966342816698388
+    second: trial_fire_ground_combo_sheet_30
+  - first:
+      213: 6261327270718316741
+    second: trial_fire_ground_combo_sheet_31
+  - first:
+      213: -8570233916533341227
+    second: trial_fire_ground_combo_sheet_32
+  - first:
+      213: 2181863814771461870
+    second: trial_fire_ground_combo_sheet_33
+  - first:
+      213: -4991106961987797392
+    second: trial_fire_ground_combo_sheet_34
+  - first:
+      213: 7206405638237949104
+    second: trial_fire_ground_combo_sheet_35
+  - first:
+      213: -8843092333027783275
+    second: trial_fire_ground_combo_sheet_36
+  - first:
+      213: 6797375152786935655
+    second: trial_fire_ground_combo_sheet_37
+  - first:
+      213: -9109235272773035725
+    second: trial_fire_ground_combo_sheet_38
+  - first:
+      213: -3648893455197477890
+    second: trial_fire_ground_combo_sheet_39
+  - first:
+      213: -4521877119810650906
+    second: trial_fire_ground_combo_sheet_40
+  - first:
+      213: -4392855988861134009
+    second: trial_fire_ground_combo_sheet_41
+  - first:
+      213: -6916843628870951513
+    second: trial_fire_ground_combo_sheet_42
+  - first:
+      213: -6956342967895177527
+    second: trial_fire_ground_combo_sheet_43
+  - first:
+      213: -2586249800947522837
+    second: trial_fire_ground_combo_sheet_44
+  - first:
+      213: 3815697171435187652
+    second: trial_fire_ground_combo_sheet_45
+  - first:
+      213: -6123876990078978240
+    second: trial_fire_ground_combo_sheet_46
+  - first:
+      213: 4898759897454213326
+    second: trial_fire_ground_combo_sheet_47
+  - first:
+      213: 3150788410780478674
+    second: trial_fire_ground_combo_sheet_48
+  - first:
+      213: -7487396633699062604
+    second: trial_fire_ground_combo_sheet_49
+  - first:
+      213: -730474186431545421
+    second: trial_fire_ground_combo_sheet_50
+  - first:
+      213: -8450059532279372437
+    second: trial_fire_ground_combo_sheet_51
+  - first:
+      213: -1764231818171985764
+    second: trial_fire_ground_combo_sheet_52
+  - first:
+      213: 7658430454349616085
+    second: trial_fire_ground_combo_sheet_53
+  - first:
+      213: -1632936717776093603
+    second: trial_fire_ground_combo_sheet_54
+  - first:
+      213: -245748855614071926
+    second: trial_fire_ground_combo_sheet_55
+  - first:
+      213: 1969872789083289203
+    second: trial_fire_ground_combo_sheet_56
+  - first:
+      213: -3264658123613316040
+    second: trial_fire_ground_combo_sheet_57
+  - first:
+      213: -1643717451472175664
+    second: trial_fire_ground_combo_sheet_58
+  - first:
+      213: -6708428386192920856
+    second: trial_fire_ground_combo_sheet_59
+  - first:
+      213: 4612342042038859221
+    second: trial_fire_ground_combo_sheet_60
+  - first:
+      213: -6931033917343255870
+    second: trial_fire_ground_combo_sheet_61
+  - first:
+      213: 8392413110721537676
+    second: trial_fire_ground_combo_sheet_62
+  - first:
+      213: -7942784975777077217
+    second: trial_fire_ground_combo_sheet_63
+  - first:
+      213: -8017391444042691063
+    second: trial_fire_ground_combo_sheet_64
+  - first:
+      213: 4277797684975203346
+    second: trial_fire_ground_combo_sheet_65
+  - first:
+      213: 7752778575964566305
+    second: trial_fire_ground_combo_sheet_66
+  - first:
+      213: 6318424455212460284
+    second: trial_fire_ground_combo_sheet_67
+  - first:
+      213: -2211688532096772630
+    second: trial_fire_ground_combo_sheet_68
+  - first:
+      213: -7603498142862031281
+    second: trial_fire_ground_combo_sheet_69
+  - first:
+      213: 12180657234299700
+    second: trial_fire_ground_combo_sheet_70
+  - first:
+      213: -2748909054847022749
+    second: trial_fire_ground_combo_sheet_71
+  - first:
+      213: 597062915315378484
+    second: trial_fire_ground_combo_sheet_72
+  - first:
+      213: 5682461991490910597
+    second: trial_fire_ground_combo_sheet_73
+  - first:
+      213: -497410566548682625
+    second: trial_fire_ground_combo_sheet_74
+  - first:
+      213: -5013034304133257665
+    second: trial_fire_ground_combo_sheet_75
+  - first:
+      213: -7854235845735533735
+    second: trial_fire_ground_combo_sheet_76
+  - first:
+      213: -8154061719053175805
+    second: trial_fire_ground_combo_sheet_77
+  - first:
+      213: -3800704104196033312
+    second: trial_fire_ground_combo_sheet_78
+  - first:
+      213: 7166207626566785172
+    second: trial_fire_ground_combo_sheet_79
+  - first:
+      213: 3843258420430129657
+    second: trial_fire_ground_combo_sheet_80
+  - first:
+      213: 121681238581090736
+    second: trial_fire_ground_combo_sheet_81
+  - first:
+      213: -1042084530054824211
+    second: trial_fire_ground_combo_sheet_82
+  - first:
+      213: -8972537154013456191
+    second: trial_fire_ground_combo_sheet_83
+  - first:
+      213: 2038949977437124449
+    second: trial_fire_ground_combo_sheet_84
+  - first:
+      213: 6510520138935711031
+    second: trial_fire_ground_combo_sheet_85
+  - first:
+      213: 8674684158934979844
+    second: trial_fire_ground_combo_sheet_86
+  - first:
+      213: -8402417610178966760
+    second: trial_fire_ground_combo_sheet_87
+  - first:
+      213: -2189532560047760074
+    second: trial_fire_ground_combo_sheet_88
+  - first:
+      213: -5553106616576418912
+    second: trial_fire_ground_combo_sheet_89
+  - first:
+      213: -4958313088744630067
+    second: trial_fire_ground_combo_sheet_90
+  - first:
+      213: -7394964602488222788
+    second: trial_fire_ground_combo_sheet_91
+  - first:
+      213: 5889362751421227131
+    second: trial_fire_ground_combo_sheet_92
+  - first:
+      213: -8718091986864207610
+    second: trial_fire_ground_combo_sheet_93
+  - first:
+      213: -4900999347676193739
+    second: trial_fire_ground_combo_sheet_94
+  - first:
+      213: -5222193545445813718
+    second: trial_fire_ground_combo_sheet_95
+  - first:
+      213: -5857375502794070428
+    second: trial_fire_ground_combo_sheet_96
+  - first:
+      213: 4200917431853079542
+    second: trial_fire_ground_combo_sheet_97
+  - first:
+      213: 2254703588000261201
+    second: trial_fire_ground_combo_sheet_98
+  - first:
+      213: -3290096284417205660
+    second: trial_fire_ground_combo_sheet_99
+  - first:
+      213: -1316746911866340964
+    second: trial_fire_ground_combo_sheet_100
+  - first:
+      213: 6562480074429733247
+    second: trial_fire_ground_combo_sheet_101
+  - first:
+      213: 5609371184536111332
+    second: trial_fire_combo_1_0
+  - first:
+      213: 4332899930360833013
+    second: trial_fire_combo_1_1
+  - first:
+      213: -6858402313870215829
+    second: trial_fire_combo_1_2
+  - first:
+      213: 8034062666373498333
+    second: trial_fire_combo_1_3
+  - first:
+      213: -1467877737328638264
+    second: trial_fire_combo_2_0
+  - first:
+      213: -9130711751944548791
+    second: trial_fire_combo_2_1
+  - first:
+      213: 6165351192906244966
+    second: trial_fire_combo_2_2
+  - first:
+      213: -4230550998977023750
+    second: trial_fire_combo_2_3
+  - first:
+      213: 3795678465428676265
+    second: trial_fire_combo_3_0
+  - first:
+      213: 9051695049498012840
+    second: trial_fire_combo_3_1
+  - first:
+      213: -938118270095988833
+    second: trial_fire_combo_3_2
+  - first:
+      213: -5354270219080699290
+    second: trial_fire_combo_3_3
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 141.40625
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_fire_combo_1_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 724
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.041436464}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e846936f5d78dd40800000000000000
+      internalID: 5609371184536111332
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_1_1
+      rect:
+        serializedVersion: 2
+        x: 362
+        y: 724
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.046961326}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f3e87ca78d812c30800000000000000
+      internalID: 4332899930360833013
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_1_2
+      rect:
+        serializedVersion: 2
+        x: 724
+        y: 724
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.046961326}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b657c03de6f02d0a0800000000000000
+      internalID: -6858402313870215829
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_1_3
+      rect:
+        serializedVersion: 2
+        x: 1086
+        y: 724
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.046961326}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd58b64cd69be7f60800000000000000
+      internalID: 8034062666373498333
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_2_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 362
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.063535914}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8c682dc99fc01abe0800000000000000
+      internalID: -1467877737328638264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_2_1
+      rect:
+        serializedVersion: 2
+        x: 362
+        y: 362
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.055248618}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 94e4cd6c902394180800000000000000
+      internalID: -9130711751944548791
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_2_2
+      rect:
+        serializedVersion: 2
+        x: 724
+        y: 362
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.055248618}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66325b89e3abf8550800000000000000
+      internalID: 6165351192906244966
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_2_3
+      rect:
+        serializedVersion: 2
+        x: 1086
+        y: 362
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.055248618}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af0fcc5e7401a45c0800000000000000
+      internalID: -4230550998977023750
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_3_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.055248618}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9aed9753475fca430800000000000000
+      internalID: 3795678465428676265
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_3_1
+      rect:
+        serializedVersion: 2
+        x: 362
+        y: 0
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.055248618}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8acad7880b41e9d70800000000000000
+      internalID: 9051695049498012840
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_3_2
+      rect:
+        serializedVersion: 2
+        x: 724
+        y: 0
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.055248618}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f97ef9957622bf2f0800000000000000
+      internalID: -938118270095988833
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_fire_combo_3_3
+      rect:
+        serializedVersion: 2
+        x: 1086
+        y: 0
+        width: 362
+        height: 362
+      alignment: 9
+      pivot: {x: 0.5, y: 0.05248619}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 662fd389a9fc1b5b0800000000000000
+      internalID: -5354270219080699290
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_fire_combo_1_0: 5609371184536111332
+      trial_fire_combo_1_1: 4332899930360833013
+      trial_fire_combo_1_2: -6858402313870215829
+      trial_fire_combo_1_3: 8034062666373498333
+      trial_fire_combo_2_0: -1467877737328638264
+      trial_fire_combo_2_1: -9130711751944548791
+      trial_fire_combo_2_2: 6165351192906244966
+      trial_fire_combo_2_3: -4230550998977023750
+      trial_fire_combo_3_0: 3795678465428676265
+      trial_fire_combo_3_1: 9051695049498012840
+      trial_fire_combo_3_2: -938118270095988833
+      trial_fire_combo_3_3: -5354270219080699290
+      trial_fire_ground_combo_sheet_0: 7184148971873382811
+      trial_fire_ground_combo_sheet_1: 2023126326712737610
+      trial_fire_ground_combo_sheet_10: -6652528207326981463
+      trial_fire_ground_combo_sheet_100: -1316746911866340964
+      trial_fire_ground_combo_sheet_101: 6562480074429733247
+      trial_fire_ground_combo_sheet_11: -7333227741939671799
+      trial_fire_ground_combo_sheet_12: 1690463870981136719
+      trial_fire_ground_combo_sheet_13: 2418069197438536263
+      trial_fire_ground_combo_sheet_14: -8413254496332535112
+      trial_fire_ground_combo_sheet_15: 5106218736177262654
+      trial_fire_ground_combo_sheet_16: -5078736583345223414
+      trial_fire_ground_combo_sheet_17: -6901475823255925350
+      trial_fire_ground_combo_sheet_18: 4981813344785332076
+      trial_fire_ground_combo_sheet_19: -5227971456092496570
+      trial_fire_ground_combo_sheet_2: -3234024324327936653
+      trial_fire_ground_combo_sheet_20: 8947990032510501913
+      trial_fire_ground_combo_sheet_21: -1623592762144764558
+      trial_fire_ground_combo_sheet_22: 3660001876764708976
+      trial_fire_ground_combo_sheet_23: 8846298641203525714
+      trial_fire_ground_combo_sheet_24: -7681783956465552998
+      trial_fire_ground_combo_sheet_25: 4326177229267445454
+      trial_fire_ground_combo_sheet_26: -5628783452616017045
+      trial_fire_ground_combo_sheet_27: 6099260327841499347
+      trial_fire_ground_combo_sheet_28: 8567031343131364562
+      trial_fire_ground_combo_sheet_29: -1237849277637041187
+      trial_fire_ground_combo_sheet_3: 6623588593715514826
+      trial_fire_ground_combo_sheet_30: -753966342816698388
+      trial_fire_ground_combo_sheet_31: 6261327270718316741
+      trial_fire_ground_combo_sheet_32: -8570233916533341227
+      trial_fire_ground_combo_sheet_33: 2181863814771461870
+      trial_fire_ground_combo_sheet_34: -4991106961987797392
+      trial_fire_ground_combo_sheet_35: 7206405638237949104
+      trial_fire_ground_combo_sheet_36: -8843092333027783275
+      trial_fire_ground_combo_sheet_37: 6797375152786935655
+      trial_fire_ground_combo_sheet_38: -9109235272773035725
+      trial_fire_ground_combo_sheet_39: -3648893455197477890
+      trial_fire_ground_combo_sheet_4: -5983501447074434001
+      trial_fire_ground_combo_sheet_40: -4521877119810650906
+      trial_fire_ground_combo_sheet_41: -4392855988861134009
+      trial_fire_ground_combo_sheet_42: -6916843628870951513
+      trial_fire_ground_combo_sheet_43: -6956342967895177527
+      trial_fire_ground_combo_sheet_44: -2586249800947522837
+      trial_fire_ground_combo_sheet_45: 3815697171435187652
+      trial_fire_ground_combo_sheet_46: -6123876990078978240
+      trial_fire_ground_combo_sheet_47: 4898759897454213326
+      trial_fire_ground_combo_sheet_48: 3150788410780478674
+      trial_fire_ground_combo_sheet_49: -7487396633699062604
+      trial_fire_ground_combo_sheet_5: -1694838478655512385
+      trial_fire_ground_combo_sheet_50: -730474186431545421
+      trial_fire_ground_combo_sheet_51: -8450059532279372437
+      trial_fire_ground_combo_sheet_52: -1764231818171985764
+      trial_fire_ground_combo_sheet_53: 7658430454349616085
+      trial_fire_ground_combo_sheet_54: -1632936717776093603
+      trial_fire_ground_combo_sheet_55: -245748855614071926
+      trial_fire_ground_combo_sheet_56: 1969872789083289203
+      trial_fire_ground_combo_sheet_57: -3264658123613316040
+      trial_fire_ground_combo_sheet_58: -1643717451472175664
+      trial_fire_ground_combo_sheet_59: -6708428386192920856
+      trial_fire_ground_combo_sheet_6: 5872256656214989058
+      trial_fire_ground_combo_sheet_60: 4612342042038859221
+      trial_fire_ground_combo_sheet_61: -6931033917343255870
+      trial_fire_ground_combo_sheet_62: 8392413110721537676
+      trial_fire_ground_combo_sheet_63: -7942784975777077217
+      trial_fire_ground_combo_sheet_64: -8017391444042691063
+      trial_fire_ground_combo_sheet_65: 4277797684975203346
+      trial_fire_ground_combo_sheet_66: 7752778575964566305
+      trial_fire_ground_combo_sheet_67: 6318424455212460284
+      trial_fire_ground_combo_sheet_68: -2211688532096772630
+      trial_fire_ground_combo_sheet_69: -7603498142862031281
+      trial_fire_ground_combo_sheet_7: 3885514153914193891
+      trial_fire_ground_combo_sheet_70: 12180657234299700
+      trial_fire_ground_combo_sheet_71: -2748909054847022749
+      trial_fire_ground_combo_sheet_72: 597062915315378484
+      trial_fire_ground_combo_sheet_73: 5682461991490910597
+      trial_fire_ground_combo_sheet_74: -497410566548682625
+      trial_fire_ground_combo_sheet_75: -5013034304133257665
+      trial_fire_ground_combo_sheet_76: -7854235845735533735
+      trial_fire_ground_combo_sheet_77: -8154061719053175805
+      trial_fire_ground_combo_sheet_78: -3800704104196033312
+      trial_fire_ground_combo_sheet_79: 7166207626566785172
+      trial_fire_ground_combo_sheet_8: -6046116543066153642
+      trial_fire_ground_combo_sheet_80: 3843258420430129657
+      trial_fire_ground_combo_sheet_81: 121681238581090736
+      trial_fire_ground_combo_sheet_82: -1042084530054824211
+      trial_fire_ground_combo_sheet_83: -8972537154013456191
+      trial_fire_ground_combo_sheet_84: 2038949977437124449
+      trial_fire_ground_combo_sheet_85: 6510520138935711031
+      trial_fire_ground_combo_sheet_86: 8674684158934979844
+      trial_fire_ground_combo_sheet_87: -8402417610178966760
+      trial_fire_ground_combo_sheet_88: -2189532560047760074
+      trial_fire_ground_combo_sheet_89: -5553106616576418912
+      trial_fire_ground_combo_sheet_9: -5677190764855684555
+      trial_fire_ground_combo_sheet_90: -4958313088744630067
+      trial_fire_ground_combo_sheet_91: -7394964602488222788
+      trial_fire_ground_combo_sheet_92: 5889362751421227131
+      trial_fire_ground_combo_sheet_93: -8718091986864207610
+      trial_fire_ground_combo_sheet_94: -4900999347676193739
+      trial_fire_ground_combo_sheet_95: -5222193545445813718
+      trial_fire_ground_combo_sheet_96: -5857375502794070428
+      trial_fire_ground_combo_sheet_97: 4200917431853079542
+      trial_fire_ground_combo_sheet_98: 2254703588000261201
+      trial_fire_ground_combo_sheet_99: -3290096284417205660
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

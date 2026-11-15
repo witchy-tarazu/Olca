@@ -224,3 +224,66 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public class TrialGroundComboMotionTests
+    {
+        [NUnit.Framework.TestCase(0,0,0)]
+        [NUnit.Framework.TestCase(0,1,0)]
+        [NUnit.Framework.TestCase(0,2,1)]
+        [NUnit.Framework.TestCase(0,5,1)]
+        [NUnit.Framework.TestCase(0,6,2)]
+        [NUnit.Framework.TestCase(0,8,2)]
+        [NUnit.Framework.TestCase(0,9,3)]
+        [NUnit.Framework.TestCase(0,14,3)]
+        [NUnit.Framework.TestCase(0,15,0)]
+        [NUnit.Framework.TestCase(0,20,0)]
+        [NUnit.Framework.TestCase(0,21,-1)]
+        [NUnit.Framework.TestCase(1,0,0)]
+        [NUnit.Framework.TestCase(1,1,0)]
+        [NUnit.Framework.TestCase(1,2,1)]
+        [NUnit.Framework.TestCase(1,5,1)]
+        [NUnit.Framework.TestCase(1,6,2)]
+        [NUnit.Framework.TestCase(1,8,2)]
+        [NUnit.Framework.TestCase(1,9,3)]
+        [NUnit.Framework.TestCase(1,14,3)]
+        [NUnit.Framework.TestCase(1,15,0)]
+        [NUnit.Framework.TestCase(1,20,0)]
+        [NUnit.Framework.TestCase(1,21,-1)]
+        [NUnit.Framework.TestCase(2,0,0)]
+        [NUnit.Framework.TestCase(2,1,0)]
+        [NUnit.Framework.TestCase(2,2,1)]
+        [NUnit.Framework.TestCase(2,5,1)]
+        [NUnit.Framework.TestCase(2,6,2)]
+        [NUnit.Framework.TestCase(2,8,2)]
+        [NUnit.Framework.TestCase(2,9,3)]
+        [NUnit.Framework.TestCase(2,14,3)]
+        [NUnit.Framework.TestCase(2,15,0)]
+        [NUnit.Framework.TestCase(2,20,0)]
+        [NUnit.Framework.TestCase(2,21,-1)]
+        public void 地上三段は論理phase境界から同じ連番を選び読取りで進まない(int stage,int elapsed,int expected)
+        {
+            var kind=(Olca.Core.Logic.Integration.OutsideKickKind)stage;var timing=new Olca.Core.Logic.Integration.OutsideKickTiming(6,3,12);
+            for(int n=0;n<3;n++)NUnit.Framework.Assert.AreEqual(expected,Olca.Presentation.Exploration.TrialGroundComboMotion.FrameIndex(kind,elapsed,timing));
+        }
+        [NUnit.Framework.TestCase(false)] [NUnit.Framework.TestCase(true)]
+        public void 通常とカエンの各段は別の四姿勢を読み全枠が256で足元と透過を保つ(bool fire)
+        {
+            using(var motion=new Olca.Presentation.Exploration.TrialGroundComboMotion()){
+                var seen=new System.Collections.Generic.HashSet<UnityEngine.Sprite>();var timing=new Olca.Core.Logic.Integration.OutsideKickTiming(6,3,12);
+                for(int stage=0;stage<3;stage++)foreach(int elapsed in new[]{0,2,6,9}){
+                    var frame=motion.Resolve((Olca.Core.Logic.Integration.OutsideKickKind)stage,elapsed,timing,fire);NUnit.Framework.Assert.IsNotNull(frame);NUnit.Framework.Assert.IsTrue(seen.Add(frame));NUnit.Framework.Assert.IsTrue(motion.Contains(frame));NUnit.Framework.Assert.AreEqual(new UnityEngine.Vector2(256,256),frame.rect.size);NUnit.Framework.Assert.AreEqual(128,frame.pivot.x);NUnit.Framework.Assert.That(frame.pivot.y,NUnit.Framework.Is.InRange(10f,25f));
+                    var importer=(UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(UnityEditor.AssetDatabase.GetAssetPath(frame));NUnit.Framework.Assert.IsTrue(importer.alphaIsTransparency);NUnit.Framework.Assert.IsFalse(importer.mipmapEnabled);NUnit.Framework.Assert.AreEqual(UnityEngine.FilterMode.Point,importer.filterMode);
+                }
+                NUnit.Framework.Assert.IsNull(motion.Resolve(Olca.Core.Logic.Integration.OutsideKickKind.AirForward,0,timing,fire));motion.Dispose();NUnit.Framework.Assert.IsNull(motion.Resolve(Olca.Core.Logic.Integration.OutsideKickKind.GroundFirst,6,timing,fire));
+            }
+        }
+        [NUnit.Framework.Test] public void 欠損した連番は部分採用せず再読込ループも作らない()
+        {
+            int loads=0;using(var motion=new Olca.Presentation.Exploration.TrialGroundComboMotion(key=>{loads++;return new UnityEngine.Sprite[11];})){
+                var t=new Olca.Core.Logic.Integration.OutsideKickTiming(6,3,12);for(int n=0;n<10;n++)NUnit.Framework.Assert.IsNull(motion.Resolve(Olca.Core.Logic.Integration.OutsideKickKind.GroundFirst,n,t,false));NUnit.Framework.Assert.AreEqual(1,loads);
+            }
+        }
+    }
+}
