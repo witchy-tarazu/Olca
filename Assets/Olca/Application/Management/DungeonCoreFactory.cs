@@ -175,6 +175,17 @@ namespace Olca.Application.Management
     {
         public const string BoardId="trial-equipment-board-v1",AbilityId="trial-equipment-abilities-v1";
         public const string QualityAccessory="カリ・ホウシュウシツ+1";
+        public const string BoardV2Id="trial-equipment-board-5x5-v2";
+        public static IReadOnlyList<string> EdgeV2Ids { get; }=Array.AsReadOnly(new[]{"カリ・ウエ5マス-v2","カリ・シタ5マス-v2","カリ・ヒダリ3マス-v2","カリ・ミギ3マス-v2"});
+        public static bool IsTrialBoard(string id)=>id==BoardId||id==BoardV2Id;
+        public static Olca.Core.Logic.Customization.CustomizationCatalog CatalogV2()=>new Olca.Core.Logic.Customization.CustomizationCatalog(BoardV2Id,
+            new Olca.Core.Logic.Customization.PartsBoardDefinition(5,5,Enumerable.Range(1,3).SelectMany(y=>Enumerable.Range(1,3).Select(x=>new Vector2Int(x,y)))),new[]{Accessory,QualityAccessory},
+            new Dictionary<string,Olca.Core.Logic.Customization.PartShape>{{Part,new Olca.Core.Logic.Customization.PartShape(new[]{new Vector2Int(0,0),new Vector2Int(1,0)})}},
+            new Dictionary<string,IEnumerable<Vector2Int>>{{EdgeV2Ids[0],Enumerable.Range(0,5).Select(x=>new Vector2Int(x,0))},{EdgeV2Ids[1],Enumerable.Range(0,5).Select(x=>new Vector2Int(x,4))},{EdgeV2Ids[2],Enumerable.Range(1,3).Select(y=>new Vector2Int(0,y))},{EdgeV2Ids[3],Enumerable.Range(1,3).Select(y=>new Vector2Int(4,y))}});
+        public static Olca.Core.Logic.Customization.CustomizationProgress NewGameProgress(){var catalog=CatalogV2();return new Olca.Core.Logic.Customization.CustomizationProgress{BoardId=BoardV2Id,UnlockedCells=catalog.Board.UnlockedCells.Select(v=>new Olca.Core.Logic.Customization.CustomizationCell{X=v.X,Y=v.Y}).ToArray()};}
+        public static Olca.Core.Logic.Customization.CustomizationCatalog CatalogFor(Olca.Core.Logic.Customization.CustomizationProgress state){if(!CanRegister(state))throw new ArgumentException("試用盤面と所持品が一致しません");return state?.BoardId==BoardV2Id?CatalogV2():Catalog();}
+        public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider ProviderFor(Olca.Core.Logic.Customization.CustomizationProgress state){if(!CanRegister(state))throw new ArgumentException("試用盤面と所持品が一致しません");return state?.BoardId==BoardV2Id?new V2TrialProvider():Provider();}
+
         public const string Accessory="カリ・ヒタイセイ+10",Part="カリ・ヒタイセイ+5パーツ",Unlock="カリ・ミギ3マス";
         public static Olca.Core.Logic.Customization.CustomizationCatalog Catalog()
             =>new Olca.Core.Logic.Customization.CustomizationCatalog(BoardId,new Olca.Core.Logic.Customization.PartsBoardDefinition(3,3,
@@ -187,11 +198,11 @@ namespace Olca.Application.Management
                 new Dictionary<string,Olca.Core.Logic.Customization.CustomizationAbilityValue>{{Part,new Olca.Core.Logic.Customization.CustomizationAbilityValue(new ElementResistances(fire:5))}});
         // 別の登録/将来の所持品を自動変換しない。読込も保存も行わない。
         public static bool CanRegister(Olca.Core.Logic.Customization.CustomizationProgress state)
-            =>state==null||(state.BoardId==null||state.BoardId==BoardId)&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>x.Id==Unlock);
+            =>state==null||(state.BoardId==null||IsTrialBoard(state.BoardId))&&state.OwnedAccessoryIds.All(x=>x==Accessory||x==QualityAccessory)&&state.OwnedParts.All(x=>x.Id==Part)&&state.OwnedUnlockItems.All(x=>state.BoardId==BoardV2Id?EdgeV2Ids.Contains(x.Id):x.Id==Unlock);
         // 既存の試用盤面/能力定義だけを明示登録。別の製品定義へ仮商品を混ぜない。
         public static OutsideShopDefinition OutsideShop(Olca.Core.Logic.Customization.CustomizationCatalog catalog,Olca.Core.Logic.Customization.CustomizationAbilityCatalog abilities,IReadOnlyList<Card> cards=null,ClearReturnSettings settings=null)
             {
-            if(catalog?.BoardId!=BoardId||abilities?.DefinitionId!=AbilityId||!catalog.Parts.ContainsKey(Part))return OutsideShopDefinition.TrialInitial;
+            if(!IsTrialBoard(catalog?.BoardId)||abilities?.DefinitionId!=AbilityId||!catalog.Parts.ContainsKey(Part))return OutsideShopDefinition.TrialInitial;
             var offers=OutsideShopDefinition.TrialInitial.Offers.Concat(new[]{OutsideShopOffer.ForPart("fire-part-v1",Part,"ヒタイセイ+5（カリ）",4,1)}).ToList();
             if(catalog.Accessories.Contains(QualityAccessory))offers.Add(OutsideShopOffer.ForAccessory("quality-accessory-v1",QualityAccessory,"ホウシュウシツ+1（カリ）",5,1));
             var fire=cards?.Where(c=>c!=null&&c.Id=="fire_sword"&&c.ExceedLevel==ExceedLevel.Normal).GroupBy(CollectionDisplay.DefinitionHash).Select(g=>g.First()).ToArray();
@@ -201,6 +212,19 @@ namespace Olca.Application.Management
             return new OutsideShopDefinition(OutsideShopDefinition.TrialInitial.Id,offers,catalog);
         }
         public static Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider Provider()=>new TrialProvider();
+        private sealed class V2TrialProvider:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
+        {
+            private static string Id(string value){using(var hash=System.Security.Cryptography.SHA256.Create())return string.Concat(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes("trial-board-v2:"+value)).Take(16).Select(v=>v.ToString("x2")));}
+            public Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition Resolve(Olca.Core.Logic.Customization.CustomizationAcquisitionContext context){
+                if(context==null)throw new ArgumentNullException(nameof(context));
+                string origin=context.IsClearReward?"clear:"+context.ClearRunId:"trial-equipment-event-v2";
+                var names=new Dictionary<string,string>();var grants=new List<Olca.Core.Logic.Customization.CustomizationGrant>();
+                if(context.IsClearReward){string id=Id(origin+":quality");grants.Add(new Olca.Core.Logic.Customization.CustomizationGrant(id,new[]{QualityAccessory},clearRunId:context.ClearRunId));names[id]="ホウシュウシツ+1（カリ・キュウヒン）";}
+                else{string gear=Id(origin+":gear"),edges=Id(origin+":edges");grants.Add(new Olca.Core.Logic.Customization.CustomizationGrant(gear,new[]{Accessory},new Dictionary<string,int>{{Part,2}}));names[gear]="キュウシヨウ ソウビセット（カリ）";
+                    grants.Add(new Olca.Core.Logic.Customization.CustomizationGrant(edges,unlockItems:EdgeV2Ids.ToDictionary(v=>v,v=>1)));names[edges]="5x5 シヘンカイホウ4シュ（カリ・ムリョウシヨウ）";}
+                return new Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition(origin,context.IsClearReward?1:2,grants,names);
+            }
+        }
         private sealed class TrialProvider:Olca.Core.Logic.Customization.ICustomizationAcquisitionProvider
         {
             public Olca.Core.Logic.Customization.CustomizationAcquisitionDefinition Resolve(Olca.Core.Logic.Customization.CustomizationAcquisitionContext context)

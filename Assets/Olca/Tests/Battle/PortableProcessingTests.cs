@@ -644,6 +644,31 @@ namespace Olca.Tests.Battle
             public bool TryPrepare(string generation,ExplorationDeckProfile plan,out string error){error=null;if(Generation!=null){Assert.AreEqual(Generation,generation);Assert.AreEqual(Commit,plan.CommitId);}Generation=generation;Commit=plan.CommitId;if(FailBefore){error="seed before";return false;}if(Seeds.TryGetValue(generation,out var previous)){CollectionAssert.AreEqual(PortableCheckpointJson.Serialize(previous),PortableCheckpointJson.Serialize(plan));return true;}Seeds.Add(generation,plan.Copy());Commits++;if(FailAfter){error="seed ack";return false;}return true;}
         }
         private static InitialDeckLoadout Plan()=>new SimpleCardFactory().CreateTrialInitialLoadout();
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+        public void 新規五掛五盤面は二系統保存の成功まで旧盤面を保持し同計画で復旧する(int mode)
+        {
+            var store=new ProgressStore();var session=new ClearReturnSession(store);Assert.IsTrue(session.InitializeStarter(new SimpleCardFactory().CreateStarterDeck().GetAllCards()));
+            var old=PortableCheckpointJson.Serialize(session.Snapshot);var writer=new SeedWriter();var cards=Plan();var seed=Olca.Application.Management.TrialCustomizationDefinitions.NewGameProgress();
+            var plan=new InitialDeckLoadout(cards.Dungeon,cards.Outside,seed);seed.UnlockedCells[0].X=99;Assert.AreNotEqual(99,plan.InitialCustomization.UnlockedCells[0].X);
+            writer.FailBefore=mode==0;writer.FailAfter=mode==1;store.FailBefore=mode==2;store.FailAfter=mode==3;
+            Assert.IsFalse(session.StartNewGameWithLoadout(session.Snapshot.Revision,plan,writer));CollectionAssert.AreEqual(old,PortableCheckpointJson.Serialize(session.Snapshot));
+            writer.FailBefore=writer.FailAfter=store.FailBefore=store.FailAfter=false;Assert.IsTrue(session.Retry(),session.Error);
+            var cold=new ClearReturnSession(store);Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.BoardV2Id,cold.CustomizationSnapshot.BoardId);Assert.AreEqual(9,cold.CustomizationSnapshot.UnlockedCells.Length);Assert.IsEmpty(cold.CustomizationSnapshot.OwnedAccessoryIds);Assert.IsEmpty(cold.CustomizationSnapshot.OwnedParts);Assert.IsEmpty(cold.CustomizationSnapshot.OwnedUnlockItems);AssertBoth(store,writer);Assert.AreEqual(1,writer.Commits);
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+        public void 四辺解放は開始辺によらず全マスを保持し再送と再読込で増殖しない(int first)
+        {
+            var store=new ProgressStore();var session=new ClearReturnSession(store);Assert.IsTrue(session.InitializeStarter(new SimpleCardFactory().CreateStarterDeck().GetAllCards()));var cards=Plan();var defs=Olca.Application.Management.TrialCustomizationDefinitions.NewGameProgress();Assert.IsTrue(session.StartNewGameWithLoadout(session.Snapshot.Revision,new InitialDeckLoadout(cards.Dungeon,cards.Outside,defs),new SeedWriter()));
+            var catalog=Olca.Application.Management.TrialCustomizationDefinitions.CatalogV2();var provider=Olca.Application.Management.TrialCustomizationDefinitions.ProviderFor(defs);var candidates=provider.Resolve(new Olca.Core.Logic.Customization.CustomizationAcquisitionContext(null)).Snapshot;Assert.AreEqual(2,candidates.MaximumClaims);
+            foreach(var grant in candidates.Candidates)Assert.IsTrue(session.TryGrantCustomization(catalog,grant.ToGrant()),session.Error);
+            for(int i=0;i<4;i++){var id=Olca.Application.Management.TrialCustomizationDefinitions.EdgeV2Ids[(first+i)%4];Assert.IsTrue(session.TryApplyCustomizationUnlock(catalog,id),session.Error);long revision=session.Snapshot.Revision;Assert.IsTrue(session.TryApplyCustomizationUnlock(catalog,id));Assert.AreEqual(revision,session.Snapshot.Revision);}
+            var cold=new ClearReturnSession(store);Assert.AreEqual(25,cold.CustomizationSnapshot.UnlockedCells.Length);Assert.AreEqual(25,cold.CustomizationSnapshot.UnlockedCells.Select(v=>(v.X,v.Y)).Distinct().Count());Assert.AreEqual(4,cold.CustomizationSnapshot.AppliedUnlockItemIds.Length);Assert.AreEqual(2,cold.CustomizationSnapshot.OwnedParts.Single().Count);
+        }
+        [Test] public void 旧初期計画には盤面を付加せず所持品入りの初期盤面を拒否する()
+        {
+            var cards=Plan();Assert.IsNull(cards.InitialCustomization);var seed=Olca.Application.Management.TrialCustomizationDefinitions.NewGameProgress();seed.OwnedAccessoryIds=new[]{Olca.Application.Management.TrialCustomizationDefinitions.Accessory};Assert.Throws<ArgumentException>(()=>new InitialDeckLoadout(cards.Dungeon,cards.Outside,seed));
+        }
+
         private static void AssertBoth(ProgressStore store,SeedWriter seeds)
         {
             var p=store.Value;Assert.AreEqual(30,p.Owned.Sum(v=>v.Count));Assert.AreEqual(8,p.Owned.Length);Assert.AreEqual(20,p.SavedDecks.Single().Cards.Length);Assert.AreEqual(p.SavedDecks.Single().Id,p.EquippedDeckId);var outside=seeds.Seeds[p.CheckpointGeneration];Assert.AreEqual(30,outside.Decks.Single().Cards.Length);Assert.AreEqual(outside.Decks.Single().Id,outside.SelectedDeckId);Assert.IsTrue(ExplorationDeckRules.TryValidate(p,outside.Decks[0],out var error),error);Assert.IsTrue(p.Owned.All(v=>v.Rarity==CardRarity.Normal&&v.Level==ExceedLevel.Normal));Assert.AreEqual(0,p.Tokens);Assert.AreEqual(0,p.OutsideInventory?.Currency??0);Assert.AreEqual(0,p.OutsideInventory?.Items.Length??0);

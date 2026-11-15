@@ -13,6 +13,10 @@ namespace Olca.Tests.Application
 {
     public sealed class DungeonCoreFactoryTests
     {
+        [Test] public void タイトル用未初期化Controllerは明示的な新盤面だけを返し汎用計画を変えない()
+        {
+            var go=new UnityEngine.GameObject("InitialBoardBoundary");go.SetActive(false);try{var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();Assert.IsNull(controller.CreateNewGameLoadout().InitialCustomization);var plan=controller.CreateTrialNewGameLoadout();Assert.AreEqual(TrialCustomizationDefinitions.BoardV2Id,plan.InitialCustomization.BoardId);Assert.AreEqual(9,plan.InitialCustomization.UnlockedCells.Length);Assert.IsEmpty(plan.InitialCustomization.OwnedParts);Assert.IsNull(controller.CreateNewGameLoadout().InitialCustomization);}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
         private sealed class TelegraphProbeProvider:IEnemyAIProvider
         {
             public EnemyAIRegistration Result;public int Calls;

@@ -686,6 +686,7 @@ namespace Olca.Presentation.Management
         private ManagedScreenContext context;private UnityEngine.Transform content;private Olca.Unity.MenuPadScope menu;private string selected,message;private long renderEpoch;private int attemptFrame=-1;private System.Func<int> frame;private System.Func<bool> alive;private UnityEngine.UI.Text guide;
         private bool CanOperate=>this!=null&&isActiveAndEnabled&&context?.IsCurrent==true&&!context.DialogBlocksInput&&(alive?.Invoke()??true);
         public void Initialize(UnityEngine.Font value,Olca.Core.Domain.ClearReturnSession source,Olca.Core.Domain.OutsideShopDefinition definition,System.Action close,System.Func<int> readFrame=null,System.Func<bool> isAlive=null){if(definition==null||definition.Offers.Count>7)throw new System.ArgumentException("試用店は7商品までです");alive=isAlive;font=value;session=source;shop=definition;closed=close;frame=readFrame??(()=>UnityEngine.Time.frameCount);gameObject.SetActive(false);}
+        public void RebindDefinition(Olca.Core.Domain.OutsideShopDefinition definition){if(CanOperate)throw new System.InvalidOperationException("開いているショップ定義は変更できません");if(definition==null||definition.Offers.Count>7)throw new System.ArgumentException("試用店は7商品までです");shop=definition;}
         public void Open(ManagedScreenContext owner){context=owner;selected=message=null;gameObject.SetActive(true);transform.SetAsLastSibling();Render();}
         private UnityEngine.UI.Text Text(string name,string value,float x,float y,float width,float height,int size)
         {

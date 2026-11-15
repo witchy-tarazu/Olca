@@ -2663,6 +2663,12 @@ namespace Olca.Tests.Integration
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
         }
+        [Test] public void 同Host新規保存成功後だけ試用盤面と取得元を切替え再通知では再破棄しない()
+        {
+            var controller=Start(configure:c=>c.ConfigureTrialCustomizationDefaults(),production:true);var session=(ClearReturnSession)Get(controller,"clearReturnSession");var old=Get(controller,"customizationCatalog");Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.BoardId,((Olca.Core.Logic.Customization.CustomizationCatalog)old).BoardId);
+            Call(controller,"RefreshTrialCustomizationAfterNewGame");Assert.AreSame(old,Get(controller,"customizationCatalog"));var plan=controller.CreateNewGameLoadout();Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.BoardV2Id,plan.InitialCustomization.BoardId);
+            Assert.IsTrue(session.StartNewGameWithLoadout(session.Snapshot.Revision,plan,new Olca.Unity.InitialExplorationDeckWriter(directory)),session.Error);Assert.AreSame(old,Get(controller,"customizationCatalog"));long epoch=(long)Get(controller,"outsideEquipmentEpoch");Call(controller,"RefreshTrialCustomizationAfterNewGame");Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.BoardV2Id,((Olca.Core.Logic.Customization.CustomizationCatalog)Get(controller,"customizationCatalog")).BoardId);Assert.AreEqual(epoch+1,Get(controller,"outsideEquipmentEpoch"));var updated=Get(controller,"customizationCatalog");Call(controller,"RefreshTrialCustomizationAfterNewGame");Assert.AreSame(updated,Get(controller,"customizationCatalog"));Assert.AreEqual(epoch+1,Get(controller,"outsideEquipmentEpoch"));
+        }
         private static void Tick(Olca.Application.Dungeon.DungeonBattleController controller, LogicalInput input = null)
             => Call(controller, "TickLogicalFrame", 1L, 17, input ?? new LogicalInput());
         [Test] public void 質試用の未登録行き先は保存せず拒否しHub復帰と対応先の再試行を妨げない()

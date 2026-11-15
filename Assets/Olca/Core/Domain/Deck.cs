@@ -950,7 +950,7 @@ namespace Olca.Core.Domain
         {
             if(!Available()||current.Revision!=confirmedRevision)return Fail("確認後に進行が変わりました。確認し直してください");
             if(loadout==null||writer==null)return Fail("両用途の初期編成と探索保存先が必要です");
-            var next=new ClearReturnProfile{CheckpointGeneration=Guid.NewGuid().ToString("N")};
+            var next=new ClearReturnProfile{CheckpointGeneration=Guid.NewGuid().ToString("N"),Customization=loadout.InitialCustomization};
             if(!PopulateStarter(next,loadout.Dungeon,out var error))return Fail(error);
             next.Owned=loadout.Owned.Select(v=>v.Copy()).ToArray();
             foreach(var card in loadout.Outside)Discover(next,card.Id,card.Name,card.Rarity,card.ExceedLevel,CollectionDisplay.DefinitionHash(card));
@@ -1748,11 +1748,17 @@ namespace Olca.Core.Domain
     public sealed class InitialDeckLoadout
     {
         private readonly Card[] dungeon,outside;private readonly OwnedCardCount[] owned;
+        private readonly Olca.Core.Logic.Customization.CustomizationProgress initialCustomization;
+        public Olca.Core.Logic.Customization.CustomizationProgress InitialCustomization=>initialCustomization?.Copy();
         public IReadOnlyList<Card> Dungeon=>dungeon.Select(c=>c.Clone()).ToArray();
         public IReadOnlyList<Card> Outside=>outside.Select(c=>c.Clone()).ToArray();
         public IReadOnlyList<OwnedCardCount> Owned=>owned.Select(v=>v.Copy()).ToArray();
-        public InitialDeckLoadout(IReadOnlyList<Card> dungeonCards,IReadOnlyList<Card> outsideCards)
+        public InitialDeckLoadout(IReadOnlyList<Card> dungeonCards,IReadOnlyList<Card> outsideCards):this(dungeonCards,outsideCards,null){}
+        public InitialDeckLoadout(IReadOnlyList<Card> dungeonCards,IReadOnlyList<Card> outsideCards,Olca.Core.Logic.Customization.CustomizationProgress customization)
         {
+            Olca.Core.Logic.Customization.CustomizationProgress.Validate(customization);customization=customization?.Copy();
+            if(customization!=null&&(string.IsNullOrWhiteSpace(customization.BoardId)||customization.UnlockedCells.Length==0||customization.OwnedAccessoryIds.Length!=0||customization.OwnedParts.Length!=0||customization.OwnedUnlockItems.Length!=0||customization.EquippedAccessoryIds.Length!=0||customization.Placements.Length!=0||customization.AppliedUnlockItemIds.Length!=0||customization.Receipts.Length!=0||customization.Acquisitions.Length!=0))throw new ArgumentException("初期盤面に所持品・装備・受領履歴を含められません");
+            initialCustomization=customization?.Copy();
             if(dungeonCards==null||outsideCards==null||dungeonCards.Concat(outsideCards).Any(c=>c==null||c.IsEffectCopy||c.Rarity!=CardRarity.Normal||c.ExceedLevel!=ExceedLevel.Normal||c.TuningCount!=0))throw new ArgumentException("初期編成は未加工の無印Normalだけです");
             var all=dungeonCards.Concat(outsideCards).ToArray();
             if(all.GroupBy(c=>(c.Id,c.ExceedLevel)).Any(g=>g.Select(CollectionDisplay.DefinitionHash).Distinct().Count()!=1))throw new ArgumentException("同品目の初期定義が一致しません");

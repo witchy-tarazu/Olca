@@ -247,7 +247,7 @@ namespace Olca.Application.Dungeon
         {
             if(gameSystem!=null){pauseViews=gameSystem.Views.GetLayer("system-pause");pauseViewRegistered=true;}
             hostPanels.Register(ManagedPauseScreen,"system-pause",BuildPausePanel,
-                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.SetOutsidePresentation(OutsideRouteBusy);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);var equipmentButton=panel.transform.Find("OutsideEquipmentButton")?.GetComponent<Button>();if(equipmentButton!=null){equipmentButton.interactable=customizationCatalog!=null&&customizationAbilityCatalog!=null&&!clearReturnSession.HasPendingSave;equipmentButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":customizationCatalog.BoardId==Olca.Application.Management.TrialCustomizationDefinitions.BoardId?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";}managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
+                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.SetOutsidePresentation(OutsideRouteBusy);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);var equipmentButton=panel.transform.Find("OutsideEquipmentButton")?.GetComponent<Button>();if(equipmentButton!=null){equipmentButton.interactable=customizationCatalog!=null&&customizationAbilityCatalog!=null&&!clearReturnSession.HasPendingSave;equipmentButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":Olca.Application.Management.TrialCustomizationDefinitions.IsTrialBoard(customizationCatalog.BoardId)?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";}managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.GameplayPauseView>().Hide();});
         }
         private void RegisterReturnViews(){RegisterReturnView(false);RegisterReturnView(true);}
@@ -541,7 +541,7 @@ namespace Olca.Application.Dungeon
         {
             if(gameSystem==null)return;gameSystem.Views.Register(this,ManagedOutsideShop,
                 ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideShopView>("OutsideShopView",view=>view.Initialize(panelFactory.Font,clearReturnSession,Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(customizationCatalog,customizationAbilityCatalog,CurrentCollectionDefinitions(),ReturnSettings()),CloseOutsideShop,isAlive:()=>this!=null&&isActiveAndEnabled&&outsideShopActive&&IsUserPaused&&outsideExploration?.IsOpen==true)).gameObject);},
-                (panel,context)=>{if(!outsideShopActive||!isActiveAndEnabled||!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideShopView>().Open(context);},
+                (panel,context)=>{if(!outsideShopActive||!isActiveAndEnabled||!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);var view=panel.GetComponent<Olca.Presentation.Management.OutsideShopView>();view.RebindDefinition(Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(customizationCatalog,customizationAbilityCatalog,CurrentCollectionDefinitions(),ReturnSettings()));view.Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideShopView>().Hide();});
         }
 
@@ -929,7 +929,7 @@ namespace Olca.Application.Dungeon
             if(!TryGetCustomizationSources(out var sources,out var error))throw new System.ArgumentException(error);
             player.SetDepartureAbilities(customizationAbilityCatalog.Resolve(sources));
         }
-        private bool useTrialCustomizationDefaults;
+        private bool useTrialCustomizationDefaults,trialCustomizationRegistered;
         public void ConfigureTrialCustomizationDefaults()
         {
             if(manager!=null||clearReturnSession!=null)throw new System.InvalidOperationException("試用データは起動前に指定してください");
@@ -939,9 +939,18 @@ namespace Olca.Application.Dungeon
         {
             if(!useTrialCustomizationDefaults||clearReturnSession?.Ready!=true||customizationCatalog!=null||customizationAbilityCatalog!=null||customizationAcquisitionProvider!=null||
                 !Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(clearReturnSession.CustomizationSnapshot))return;
-            customizationCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();
+            customizationCatalog=Olca.Application.Management.TrialCustomizationDefinitions.CatalogFor(clearReturnSession.CustomizationSnapshot);
             customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();
-            customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.Provider();
+            customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.ProviderFor(clearReturnSession.CustomizationSnapshot);trialCustomizationRegistered=true;
+        }
+        // 新規開始の保存成功後だけ、自動登録した試用定義を新しい盤面へ切り替える。
+        private void RefreshTrialCustomizationAfterNewGame(){
+            if(!trialCustomizationRegistered||!Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(clearReturnSession.CustomizationSnapshot))return;
+            var next=Olca.Application.Management.TrialCustomizationDefinitions.CatalogFor(clearReturnSession.CustomizationSnapshot);if(customizationCatalog?.BoardId==next.BoardId)return;
+            customizationViews?.CloseCurrent();customizationAcquisitionView?.Close();customizationAcquisitionPending=false;customizationAcquisitionContext=null;
+            customizationUnlockView?.Close();customizationUnlockWasOpen=false;customizationEditorView?.Close();customizationDraft=null;customizationSavePending=false;
+            outsideEquipmentEpoch++;outsideEquipmentView?.Close();outsideEquipmentDraft=null;outsideEquipmentCandidate=null;outsideEquipmentHost=null;outsideEquipmentActor=null;outsideEquipmentPending=outsideEquipmentInterrupted=false;
+            customizationCatalog=next;customizationAbilityCatalog=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();customizationAcquisitionProvider=Olca.Application.Management.TrialCustomizationDefinitions.ProviderFor(clearReturnSession.CustomizationSnapshot);
         }
         private Olca.Core.Logic.Customization.CustomizationCatalog customizationCatalog;
         public void ConfigureCustomizationCatalog(Olca.Core.Logic.Customization.CustomizationCatalog catalog)
@@ -1561,7 +1570,7 @@ namespace Olca.Application.Dungeon
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
                 customizationEditorButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;
                 var label=customizationEditorButton.GetComponentInChildren<Text>();
-                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":customizationCatalog.BoardId==Olca.Application.Management.TrialCustomizationDefinitions.BoardId?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";
+                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":Olca.Application.Management.TrialCustomizationDefinitions.IsTrialBoard(customizationCatalog.BoardId)?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";
                 // 未登録注記の2行だけ、既存の外形と上下の装飾内に余白を確保する。
                 label.resizeTextMaxSize=customizationCatalog==null?24:30;
             }
@@ -1607,6 +1616,7 @@ namespace Olca.Application.Dungeon
                 gameSystem.ResetOutsideForNewProgress(generation);
                 outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();
             }
+            RefreshTrialCustomizationAfterNewGame();
             manager.SuspendForCheckpoint();combatFeedbackAudio?.Bind(null);battleSession?.Detach();transitionCts?.Cancel();battleView?.gameObject.SetActive(false);gameFieldView?.OnBattleEnded();
             awaitingCheckpointChoice=false;SetCheckpointPanelVisible(false);SetPausePanelVisible(false);initialHub=true;clearReturnVisible=true;
             dungeonSelectionOpen=false;selectedDungeon=selectionBeforeOpen=0;floorSwapPending=false;clearReturnError=null;nonClearReturnRequest=null;
@@ -3028,7 +3038,9 @@ namespace Olca.Application.Dungeon
             => new Olca.Application.Management.DungeonCoreFactory(randomProvider,logger,CreateCardFactory,enemyAIProvider,suppressEvaluation?null:evaluationRewardProvider??rewardChoice?.Rewards);
         /// <summary>タイトルの新規保存も、host prefabの既存スターター定義を副作用なく使用する。</summary>
         public IReadOnlyList<Card> CreateNewGameStarterCards()=>CreateNewGameLoadout().Dungeon;
-        public InitialDeckLoadout CreateNewGameLoadout()=>CreateCardFactory().CreateTrialInitialLoadout();
+        public InitialDeckLoadout CreateNewGameLoadout()=>trialCustomizationRegistered?CreateTrialNewGameLoadout():CreateCardFactory().CreateTrialInitialLoadout();
+        // タイトルの標準起動は未初期化prefabから呼ぶため、runtime登録状態と分離する。
+        public InitialDeckLoadout CreateTrialNewGameLoadout(){var loadout=CreateCardFactory().CreateTrialInitialLoadout();return new InitialDeckLoadout(loadout.Dungeon,loadout.Outside,Olca.Application.Management.TrialCustomizationDefinitions.NewGameProgress());}
         private SimpleCardFactory CreateCardFactory()
             => new SimpleCardFactory(new CardPoiseSettings(swordPoiseDamage, bombPoiseDamage, fireSwordPoiseDamage), cardTimings: configuredCardTimings);
 

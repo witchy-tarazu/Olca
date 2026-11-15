@@ -53,7 +53,7 @@ namespace Olca.Application.Management
                     return controllers[0].CreateNewGameStarterCards();
                 },()=>!closed&&context.IsCurrent&&services.CurrentSession==null,revision=>{
                     var prefab=services.Resources.GetShared<GameObject>(GameplayHostPrefabPath);var controllers=prefab.GetComponentsInChildren<DungeonBattleController>(true);if(controllers.Length!=1)throw new InvalidOperationException("hostのControllerは1つ必要です");
-                    return progress.StartNewGameWithLoadout(revision,controllers[0].CreateNewGameLoadout(),new InitialExplorationDeckWriter(progressStore.DirectoryPath));
+                    return progress.StartNewGameWithLoadout(revision,controllers[0].CreateTrialNewGameLoadout(),new InitialExplorationDeckWriter(progressStore.DirectoryPath));
                 });
                 async void Begin(bool newGame=false){
                     if(starting||!context.IsCurrent)return;starting=true;view.SetBusy(true,null);

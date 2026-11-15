@@ -173,3 +173,21 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class TrialBoardV2Tests
+    {
+        [Test] public void 新盤面中央九マスと四辺は重複なく全二十五マスを覆い旧盤面は変更しない()
+        {
+            var seed=Olca.Application.Management.TrialCustomizationDefinitions.NewGameProgress();var catalog=Olca.Application.Management.TrialCustomizationDefinitions.CatalogV2();
+            Assert.AreEqual(5,catalog.Board.Width);Assert.AreEqual(5,catalog.Board.Height);Assert.AreEqual(9,seed.UnlockedCells.Length);Assert.IsTrue(seed.UnlockedCells.All(c=>c.X>=1&&c.X<=3&&c.Y>=1&&c.Y<=3));
+            var old=Olca.Application.Management.TrialCustomizationDefinitions.Catalog();Assert.AreEqual(3,old.Board.Width);Assert.AreEqual(6,old.Board.UnlockedCells.Count());
+        }
+        [Test] public void 新旧盤面を自動移行せず外来定義と旧解放品の混入を拒否する()
+        {
+            Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.BoardId,Olca.Application.Management.TrialCustomizationDefinitions.CatalogFor(null).BoardId);
+            var seed=Olca.Application.Management.TrialCustomizationDefinitions.NewGameProgress();Assert.IsTrue(Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(seed));seed.BoardId="foreign";Assert.IsFalse(Olca.Application.Management.TrialCustomizationDefinitions.CanRegister(seed));
+        }
+    }
+}
