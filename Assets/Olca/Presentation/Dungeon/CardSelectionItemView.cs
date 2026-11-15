@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+using Olca.Core.Logic.Dungeon;
 using UnityEngine;
 using UnityEngine.UI;
 using Olca.Core.Domain;
@@ -15,6 +18,9 @@ namespace Olca.Presentation.Dungeon
         [SerializeField] private Text cardDescText;
         [SerializeField] private Text cardRarityText;
         [SerializeField] private Button selectButton;
+
+        // 旧試用定義との完全一致だけを表示で識別し、同IDの正式定義や加工品には広げない。
+        private static readonly HashSet<string> fallbackDefinitionHashes = new HashSet<string>(CardRewardSystem.FallbackDefinitions.Select(CollectionDisplay.DefinitionHash));
 
         private Font presentationFont;
         private Image illustration;
@@ -61,11 +67,12 @@ namespace Olca.Presentation.Dungeon
         public void Setup(Card card)
         {
             this.card = card;
+            bool isTrialSword = card.Description == "Fallback card" && card.TuningCount == 0 && !card.IsEffectCopy && fallbackDefinitionHashes.Contains(CollectionDisplay.DefinitionHash(card));
             UiLook.Face(GetComponent<Image>()); UiLook.Button(selectButton);
             UiLook.Label(cardNameText);UiLook.Label(cardCostText);UiLook.Label(cardDescText);UiLook.Label(cardRarityText);
             if (cardNameText != null)
             {
-                cardNameText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Name);
+                cardNameText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(isTrialSword ? $"試用ソード（{card.Id}）" : card.Name);
                 var nameRect=cardNameText.rectTransform;
                 nameRect.anchorMin=new Vector2(0,nameRect.anchorMin.y);nameRect.anchorMax=new Vector2(1,nameRect.anchorMax.y);
                 nameRect.sizeDelta=new Vector2(presentationFont!=null?-48:-28,nameRect.sizeDelta.y);nameRect.anchoredPosition=new Vector2(0,nameRect.anchoredPosition.y);
@@ -75,7 +82,7 @@ namespace Olca.Presentation.Dungeon
                 cardNameText.resizeTextMaxSize=cardNameText.fontSize;
             }
             if (cardCostText != null) cardCostText.text = $"コスト: {card.Cost}";
-            if (cardDescText != null) cardDescText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(card.Description);
+            if (cardDescText != null) cardDescText.text = Olca.Presentation.CustomScreen.CustomDisplay.Katakana(isTrialSword ? "剣攻撃の仮カード\n回復・防御効果なし\n威力30・無属性" : card.Description);
             if(descriptionScroll!=null){Canvas.ForceUpdateCanvases();LateUpdate();descriptionScroll.StopMovement();descriptionScroll.verticalNormalizedPosition=1;}
             if (cardRarityText != null) cardRarityText.text = Olca.Presentation.CustomScreen.CustomDisplay.Regulation(card.Rarity);
         }

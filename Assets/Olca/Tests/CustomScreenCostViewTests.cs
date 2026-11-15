@@ -1072,6 +1072,27 @@ namespace Olca.Tests
             finally{Object.DestroyImmediate(root);}
         }
         [Test]
+        public void 報酬の旧仮定義だけ試用ソードと明示し通常定義と加工品は変更しない()
+        {
+            var root=new GameObject("FallbackReward",typeof(RectTransform));
+            try {
+                var view=root.AddComponent<CardSelectionItemView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                Text Label(string field){var obj=new GameObject(field,typeof(RectTransform),typeof(Text));obj.transform.SetParent(root.transform,false);var label=obj.GetComponent<Text>();typeof(CardSelectionItemView).GetField(field,flags).SetValue(view,label);return label;}
+                var name=Label("cardNameText");var body=Label("cardDescText");
+                var normal=new Card("heal","ヒール",2,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,25,"HPを回復");
+                foreach(var card in Olca.Core.Logic.Dungeon.CardRewardSystem.FallbackDefinitions){
+                    string hash=CollectionDisplay.DefinitionHash(card);view.Setup(card);
+                    Assert.AreEqual(CustomDisplay.Katakana($"試用ソード（{card.Id}）"),name.text);Assert.AreEqual(CustomDisplay.Katakana("剣攻撃の仮カード\n回復・防御効果なし\n威力30・無属性"),body.text);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(card));
+                    view.Setup(normal);Assert.AreEqual(normal.Name,name.text);Assert.AreEqual(CustomDisplay.Katakana(normal.Description),body.text);
+                }
+                var different=new Card("heal","heal_card",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,31,"Fallback card");
+                var original=Olca.Core.Logic.Dungeon.CardRewardSystem.CreateFallbackCard("heal",CardRarity.Normal);
+                var tuned=original.ApplyTuning(new Card("tune","調律",0,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.None,0,""));
+                foreach(var card in new[]{different,tuned,original.WithPowerMultiplier(1f)}){view.Setup(card);Assert.AreEqual(CustomDisplay.Katakana(card.Name),name.text);Assert.AreEqual(CustomDisplay.Katakana(card.Description),body.text);}
+            }finally{Object.DestroyImmediate(root);}
+        }
+
+        [Test]
         public void 報酬の本絵は借用の正方形で再利用され本文とフォントを変換せず末尾まで保持する()
         {
             var root=new GameObject("RewardPresentation",typeof(RectTransform));var texture=new Texture2D(8,8);var art=Sprite.Create(texture,new Rect(0,0,8,8),new Vector2(.5f,.5f));
