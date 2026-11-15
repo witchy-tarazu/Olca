@@ -7,11 +7,29 @@ using Olca.Core.Domain;
 
 namespace Olca.Core.Logic.Battle
 {
+    /// <summary>演出用の調整可能な停止時間。未設定のモデルは停止なしを維持する。</summary>
+    public sealed class AttackHitStopSettings
+    {
+        public int NormalFrames { get; }
+        public int HeavyFrames { get; }
+        public AttackHitStopSettings(int normalFrames = 0, int heavyFrames = 0)
+        {
+            if (normalFrames < 0 || heavyFrames < 0 || normalFrames > 60 || heavyFrames > 60)
+                throw new ArgumentOutOfRangeException(nameof(normalFrames));
+            NormalFrames = normalFrames; HeavyFrames = heavyFrames;
+        }
+        public int CardFrames(Card card) => card?.Category == CardCategory.Attack
+            ? (card.Series == CardSeries.Bomb ? HeavyFrames : NormalFrames) : 0;
+        public static AttackHitStopSettings Provisional => new AttackHitStopSettings(3, 5);
+    }
     /// <summary>
     /// バトルシステムのメインロジック
     /// </summary>
     public class BattleSystem
     {
+        public AttackHitStopSettings HitStopSettings { get; private set; } = new AttackHitStopSettings();
+        public void ConfigureHitStop(AttackHitStopSettings settings)
+            => HitStopSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         private readonly PlayerCharacter player;
         public TransformationAttackDefinition ActivePlayerAttack => Transformations.ActiveAttack ?? player.DepartureStyle.Attack;
         public int BasicAttackRange => Transformations.ActiveId==null?1+(player.AttackGrowth?.RangeBonus??0):1;
@@ -630,7 +648,8 @@ namespace Olca.Core.Logic.Battle
             {
                 int damage = (int)Math.Min(int.MaxValue, (decimal)player.AttackPower * powerPercent / 100);
                 using (var influence = new AttackInfluence())
-                    target.TakeDamage(damage, ActivePlayerAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs, influence: influence);
+                    target.TakeDamage(damage, ActivePlayerAttack?.Element ?? ElementType.None, hitInvincibilityMs: DefaultHitInvincibilityMs,
+                        hitStopFrames: powerPercent > (ActivePlayerAttack?.NormalPowerPercent ?? 100) ? HitStopSettings.HeavyFrames : HitStopSettings.NormalFrames, influence: influence);
 
                 logger?.LogInfo($"プレイヤーが{target.Name}に{damage}ダメージを与えた");
                 OnPlayerAttack?.Invoke(target, damage);

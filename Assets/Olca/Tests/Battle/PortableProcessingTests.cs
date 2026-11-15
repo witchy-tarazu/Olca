@@ -456,6 +456,16 @@ namespace Olca.Tests.Battle
 {
     public sealed class TrialInitialCardBattleTests
     {
+        [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.Spear)]
+        [TestCase(TrialInitialCardDefinitions.WideSword)] [TestCase(TrialInitialCardDefinitions.AirShot)]
+        public void 新四品の通常使用は実命中から三フレームのヒットストップを要求する(string id)
+        {
+            var b=Battle271();b.ConfigureHitStop(Olca.Core.Logic.Battle.AttackHitStopSettings.Provisional);
+            b.CardUsage.EnqueueCards(new List<Card>{new SimpleCardFactory().CreateById(id)});var use=b.CardUsage.TryUseCurrentCardAsync();
+            for(int i=0;i<90&&!b.IsHitStopped;i++)b.TickFrame(16);
+            Assert.AreEqual(987,b.Enemies[0].CurrentHp);Assert.AreEqual(3,b.HitStopRemainingFrames);
+            Frames(b,70);Assert.IsTrue(use.GetAwaiter().GetResult());Assert.AreEqual(987,b.Enemies[0].CurrentHp);
+        }
         private static Olca.Core.Logic.Battle.BattleSystem Battle271(int x=3,int y=0,int actor=13)
             =>new Olca.Core.Logic.Battle.BattleSystem(new PlayerCharacter(100,new Vector2Int(2,0),attackPower:actor),new System.Collections.Generic.List<Enemy>{new Enemy("first","first",1000,ElementType.None,new Vector2Int(x,y)),new Enemy("second","second",1000,ElementType.None,new Vector2Int(5,0))},new Deck(new System.Collections.Generic.List<Card>()),customGaugeSpeed:0);
         private static void Frames(Olca.Core.Logic.Battle.BattleSystem b,int count){for(int i=0;i<count;i++)b.TickFrame(16);}
@@ -515,6 +525,19 @@ namespace Olca.Tests.Battle
 {
     public sealed class TrialInitialCardOutsideTests
     {
+        [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.Spear)]
+        [TestCase(TrialInitialCardDefinitions.WideSword)] [TestCase(TrialInitialCardDefinitions.AirShot)]
+        public void 探索の新四品も実命中でヒットストップし弾と攻撃の時計を止める(string id)
+        {
+            using(var s=Outside271(id,out _))using(var lease=s.AttachPresentation()){
+                s.EnableTrialHitStop();Go(s,(TrialInitialCardDefinitions.IsShot(id)?14:17)*60000);
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);
+                for(int i=0;i<90&&!s.IsHitStopped;i++)s.TickTraversal(0);
+                Assert.AreEqual(107,s.TrialTarget.CurrentHp);Assert.AreEqual(3,s.HitStopRemainingFrames);
+                long frame=s.Core.Frame;Frames(s,3);Assert.AreEqual(frame,s.Core.Frame);Assert.IsFalse(s.IsHitStopped);
+                Frames(s,1);Assert.AreEqual(frame+1,s.Core.Frame);Assert.AreEqual(107,s.TrialTarget.CurrentHp);
+            }
+        }
         private static OutsideExplorationSession Outside271(string id,out CheckpointDefinitions defs)
         {
             var f=new SimpleCardFactory();var source=f.CreateStarterDeck().GetAllCards().Select(c=>c.Id=="sword"?f.CreateById(id):c).ToArray();defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(source.ToList())).Definitions;

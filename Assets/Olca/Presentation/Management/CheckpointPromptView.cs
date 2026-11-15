@@ -258,6 +258,7 @@ namespace Olca.Presentation.Exploration
         }
         public void Render()
         {
+            Olca.Unity.BattleVisualClock.SetPaused(this,IsOpen&&presentation?.IsHitStopped==true);
             if(!IsOpen||player==null)return;
             RefreshItemHud();
             RefreshOutsideStatusIcons();
@@ -330,7 +331,7 @@ namespace Olca.Presentation.Exploration
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
         public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
+        private void OnDisable(){Olca.Unity.BattleVisualClock.SetPaused(this,false);if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;}
     }
 }

@@ -125,7 +125,7 @@ namespace Olca.Core.Logic.Battle
             var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase };
 
             // カード効果を取得して実行
-            var effect = CardEffectFactory.CreateEffect(card);
+            var effect = CardEffectFactory.CreateEffect(card, battleSystem.HitStopSettings.CardFrames(card));
             if (effect != null)
             {
                 effect.Execute(context);
@@ -153,7 +153,7 @@ namespace Olca.Core.Logic.Battle
         {
             card = ApplyConcentrate(card);
             var context = new BattleContext(battleSystem, card) { CardDatabase = cardDatabase, PlayerActionOwner = owner };
-            var effect = CardEffectFactory.CreateEffect(card); var timing = battleSystem.CardTiming(card);
+            var effect = CardEffectFactory.CreateEffect(card, battleSystem.HitStopSettings.CardFrames(card)); var timing = battleSystem.CardTiming(card);
             bool resolved = false;
             try {
                 if (effect is CardActionSequenceEffect actions) {

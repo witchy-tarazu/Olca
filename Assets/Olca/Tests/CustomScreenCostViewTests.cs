@@ -1510,6 +1510,7 @@ namespace Olca.Tests
         [Test]
         public async System.Threading.Tasks.Task カスタム停止中もHUD退場遷移を完了してカスタム画面の登場を妨げない()
         {
+            using var clock=new Olca.Tests.Mocks.PresentationClockScope();
             var root=new GameObject("HudTransition");var owner=new object();
             using(var cancel=new System.Threading.CancellationTokenSource()){
                 try {
@@ -1665,6 +1666,29 @@ namespace Olca.Tests
                 for(int i=0;i<3;i++)typeof(CustomScreenView).GetMethod("UpdateCursorIndicator",flags).Invoke(view,new object[]{-1});
                 Assert.Less(background.transform.GetSiblingIndex(),focus.transform.GetSiblingIndex());Assert.Less(focus.transform.GetSiblingIndex(),cards.transform.GetSiblingIndex());Assert.IsFalse(focus.GetComponent<Image>().raycastTarget);
             } finally {Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 表示時計の注入中も全体ポーズと戦闘停止の境界を維持し元の時計へ戻せる()
+        {
+            var field=typeof(Olca.Unity.GameplayPause).GetField("timeProvider",BindingFlags.Static|BindingFlags.NonPublic);
+            var previous=field.GetValue(null);bool paused=Olca.Unity.GameplayPause.IsPaused;var owner=new object();
+            var release=typeof(Olca.Unity.GameplayPause).GetField("awaitRelease",BindingFlags.Static|BindingFlags.NonPublic);
+            var resume=typeof(Olca.Unity.GameplayPause).GetField("resumeFrames",BindingFlags.Static|BindingFlags.NonPublic);
+            var previousRelease=release.GetValue(null);var previousResume=resume.GetValue(null);bool previousBlocked=Olca.Unity.GameplayPause.InputBlocked;
+            try{
+                using(var clock=new Olca.Tests.Mocks.PresentationClockScope(20)){
+                    Olca.Unity.GameplayPause.SetPaused(false);Assert.AreEqual(.02f,Olca.Unity.GameplayPause.DeltaTime);
+                    Olca.Unity.BattleVisualClock.SetPaused(owner,true);Assert.AreEqual(0f,Olca.Unity.BattleVisualClock.DeltaTime);Assert.AreEqual(.02f,Olca.Unity.GameplayPause.DeltaTime);
+                    Olca.Unity.GameplayPause.SetPaused(true);Assert.AreEqual(0f,Olca.Unity.GameplayPause.DeltaTime);
+                    Olca.Unity.BattleVisualClock.SetPaused(owner,false);Assert.AreEqual(0f,Olca.Unity.BattleVisualClock.DeltaTime);
+                }
+                Assert.AreSame(previous,field.GetValue(null));
+            }finally{
+                Olca.Unity.BattleVisualClock.SetPaused(owner,false);Olca.Unity.GameplayPause.SetPaused(paused);
+                // ポーズ解除に伴う入力待ちも戻し、後続のUI入力テストへ持ち越さない。
+                release.SetValue(null,previousRelease);resume.SetValue(null,previousResume);
+            }
+            Assert.AreEqual(previousBlocked,Olca.Unity.GameplayPause.InputBlocked,"時計の検証は後続入力の遮断状態を変えない");
         }
         [Test]
         public void カスタム停止は戦闘Animatorの元速度を復元しUIアニメと入力を止めない()
@@ -2622,6 +2646,7 @@ namespace Olca.Tests
         private sealed class Fixture
         {
             private readonly GameObject parent = new GameObject("inactive-card-effect-fixture");
+            private readonly Olca.Tests.Mocks.PresentationClockScope clock = new Olca.Tests.Mocks.PresentationClockScope();
             public readonly Image Image;
             public readonly Olca.Presentation.Effects.CardEffectView Effect;
             public readonly Color Original = new Color(.3f, .4f, .5f, 1);
@@ -2632,12 +2657,12 @@ namespace Olca.Tests
             {
                 try
                 {
-                    Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused); Assert.Greater(Time.deltaTime, 0f, "Animation clock prerequisite; do not replace positive duration with zero");
+                    Assert.IsFalse(Olca.Unity.GameplayPause.IsPaused); Assert.Greater(Olca.Unity.GameplayPause.DeltaTime, 0f, "Animation clock prerequisite; do not replace positive duration with zero");
                     parent.SetActive(false); var go = new GameObject("effect", typeof(RectTransform), typeof(Image)); go.transform.SetParent(parent.transform, false); Image = go.GetComponent<Image>(); Image.color = Original;
                     Effect = go.AddComponent<Olca.Presentation.Effects.CardEffectView>(); typeof(Olca.Presentation.Effects.CardEffectView).GetField("targetImage", F).SetValue(Effect, Image); Effect.InitializeIfNeeded();
                     Assert.AreEqual(.15f, (float)typeof(Olca.Presentation.Effects.CardEffectView).GetField("scaleDuration", F).GetValue(Effect));
                 }
-                catch { UnityEngine.Object.DestroyImmediate(parent); deadline.Dispose(); throw; }
+                catch { UnityEngine.Object.DestroyImmediate(parent); deadline.Dispose(); clock.Dispose(); throw; }
             }
             public bool Highlighted => (bool)typeof(Olca.Presentation.Effects.CardEffectView).GetField("isHighlighted", F).GetValue(Effect);
             private System.Threading.CancellationToken Token(System.Threading.CancellationToken external)
@@ -2657,7 +2682,7 @@ namespace Olca.Tests
                 deadline.Cancel(); var all = System.Threading.Tasks.Task.WhenAll(tasks); await System.Threading.Tasks.Task.WhenAny(all, System.Threading.Tasks.Task.Delay(1000));
                 bool completed = all.IsCompleted;
                 try { if (completed) await all; }
-                finally { typeof(Olca.Presentation.Effects.CardEffectView).GetMethod("OnDestroy", F).Invoke(Effect, null); UnityEngine.Object.DestroyImmediate(parent); foreach (var c in linked) c.Dispose(); deadline.Dispose(); }
+                finally { typeof(Olca.Presentation.Effects.CardEffectView).GetMethod("OnDestroy", F).Invoke(Effect, null); UnityEngine.Object.DestroyImmediate(parent); foreach (var c in linked) c.Dispose(); deadline.Dispose(); clock.Dispose(); }
                 Assert.IsTrue(completed, "Cancelled effect awaits must drain before next case");
             }
         }

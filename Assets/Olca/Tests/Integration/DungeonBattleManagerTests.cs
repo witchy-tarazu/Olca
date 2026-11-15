@@ -3588,6 +3588,8 @@ namespace Olca.Tests.Integration
             var card = new Card("poise-fixture", "検証ソード", 1, CardRarity.Normal, CardCategory.Attack,
                 ElementType.None, CardSeries.Sword, 1, "HP1とは独立の削り7", poiseDamage: 7);
             System.Action hit = () => {
+                // 命中停止中は次のカードを受理しない。ゲーム時計を進めず停止分だけ消費する。
+                while (battle.IsHitStopped) battle.TickFrame(17);
                 battle.CardUsage.EnqueueCards(new List<Card> { card.Clone() });
                 battle.RunLogicalFrame(() => Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()));
             };
@@ -3598,9 +3600,11 @@ namespace Olca.Tests.Integration
             Assert.AreEqual(stagger, enemy.StaggerRemainingFrames); Assert.AreEqual(0, enemy.AccumulatedPoiseDamage);
             battle.Pause(BattlePauseReason.User); for (int f = 0; f < 20; f++) battle.TickFrame(17);
             Assert.AreEqual(stagger, enemy.StaggerRemainingFrames); battle.Resume(BattlePauseReason.User);
+            while (battle.IsHitStopped) battle.TickFrame(17);
             for (int f = 0; f < stagger; f++) battle.TickFrame(17);
             Assert.IsFalse(enemy.IsStaggered);
             hit(); Assert.AreEqual(7, enemy.AccumulatedPoiseDamage);
+            while (battle.IsHitStopped) battle.TickFrame(17);
             for (int f = 0; f < recovery - 1; f++) battle.TickFrame(17);
             Assert.AreEqual(7, enemy.AccumulatedPoiseDamage); battle.TickFrame(17);
             Assert.AreEqual(0, enemy.AccumulatedPoiseDamage); Assert.AreEqual(1, notices);
@@ -3663,6 +3667,10 @@ namespace Olca.Tests.Integration
             battle.PlayerBasicAttack(enemy); Assert.AreEqual(30, enemy.CurrentHp);
             var card = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword");
             battle.CardUsage.EnqueueCards(new List<Card> { card });
+            // 通常入口で有効になった命中停止は、無敵の残時間を消費しない。
+            int invincibilityBeforeHitStop = player.InvincibleDurationMs;
+            while (battle.IsHitStopped) battle.TickFrame(17);
+            Assert.AreEqual(invincibilityBeforeHitStop, player.InvincibleDurationMs);
             Assert.IsTrue(battle.CardUsage.TryUseCurrentCard()); Assert.AreEqual(30, enemy.CurrentHp, "発生設定0のカードも既存無敵を貫通しない");
             controller.SetUserPaused(true); for (int f = 0; f < 20; f++) Tick(controller);
             Assert.AreEqual(milliseconds, player.InvincibleDurationMs); controller.SetUserPaused(false);

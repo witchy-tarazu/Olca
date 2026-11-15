@@ -2,6 +2,26 @@ using Olca.Core.Interfaces;
 
 namespace Olca.Tests.Mocks
 {
+    /// <summary>EditModeでも正の演出時間を進める。終了時に本来の時計へ戻す。</summary>
+    public sealed class PresentationClockScope : System.IDisposable
+    {
+        private static readonly System.Reflection.FieldInfo field = typeof(Olca.Unity.GameplayPause).GetField("timeProvider", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        private readonly object previous;
+        private bool disposed;
+        public MockTimeProvider Clock { get; }
+        public PresentationClockScope(int deltaTimeMs = 16)
+        {
+            previous = field.GetValue(null);
+            Clock = new MockTimeProvider(deltaTimeMs);
+            field.SetValue(null, Clock);
+        }
+        public void Dispose()
+        {
+            if (disposed) return;
+            disposed = true;
+            field.SetValue(null, previous);
+        }
+    }
     /// <summary>
     /// テスト用の時間プロバイダー
     /// 整数ベース（ミリ秒）で時間を管理

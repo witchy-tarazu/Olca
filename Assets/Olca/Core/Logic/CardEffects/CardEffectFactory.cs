@@ -81,14 +81,15 @@ namespace Olca.Core.Logic.CardEffects
             return card.TargetType;
         }
 
-        public static ICardEffect CreateEffect(Card card)
+        public static ICardEffect CreateEffect(Card card) => CreateEffect(card, 0);
+        public static ICardEffect CreateEffect(Card card, int hitStopFrames)
         {
             if (card == null) return new NullEffect();
             if(card.AttackPowerBasisPoints!=0)throw new NotSupportedException("使用者攻撃力の明示解決が必要です");
 
             if(TrialInitialCardDefinitions.IsId(card.Id)){
                 if(!TrialInitialCardDefinitions.IsResolved(card))throw new NotSupportedException("試用初期カードには登録定義由来の使用者解決copyが必要です");
-                return new ModifiableCardEffect(card.Id);
+                return new ModifiableCardEffect(card.Id, hitStopFrames);
             }
 
             // 一時移動カードの判定（モーション時間が設定されている）
@@ -113,7 +114,7 @@ namespace Olca.Core.Logic.CardEffects
                     // Modifier の追加効果（スプレッド、貫通、多段ヒット等）が自動適用される
                     return new ModifiableCardEffect(ResolveAttackTarget(card), productBomb:
                         card.Id == "bomb" && card.Series == CardSeries.Bomb && card.TargetType == DamageTargetType.Single &&
-                        !card.Modifier.AdditionalEffects.Exists(e => e.EffectType == AdditionalEffectType.DelayedProjectile));
+                        !card.Modifier.AdditionalEffects.Exists(e => e.EffectType == AdditionalEffectType.DelayedProjectile), hitStopFrames: hitStopFrames);
 
                 case CardCategory.Defense:
                     // 明示された小カテゴリを優先し、未指定の旧定義だけID判定を維持する。

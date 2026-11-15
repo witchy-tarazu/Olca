@@ -372,6 +372,23 @@ namespace Olca.Tests.Application
             public Olca.Core.Domain.ClearReturnProfile Read(out string error){error=null;return Value.Copy();}
             public bool TryWrite(long expected,Olca.Core.Domain.ClearReturnProfile value,out string error){error=Fail?"fixture save failure":null;if(Fail)return false;if(Value.Revision!=expected)return false;Value=value.Copy();return true;}
         }
+        [Test] public void 回復薬と毒消しのHUDは別画像を使い空き枠へ戻すと表示を消す()
+        {
+            var root=new GameObject("ItemGraphicFixture",typeof(RectTransform));var resources=new Olca.Unity.ResourceManager();
+            try{
+                var panel=Olca.Presentation.Exploration.OutsideExplorationView.Create(root.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources);
+                var view=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>();
+                var heal=Olca.Core.Domain.OutsideItemDisplayDefinition.RecoverySample;var poison=Olca.Core.Domain.OutsideItemDisplayDefinition.PoisonSample;
+                var inventory=new Olca.Core.Domain.OutsideInventoryData{Items=new[]{new Olca.Core.Domain.OutsideItemCount{Id=heal.Id,Count=2},new Olca.Core.Domain.OutsideItemCount{Id=poison.Id,Count=1}},Shortcuts=new[]{heal.Id,poison.Id,null,null}};
+                long revision=1;view.ConfigureItemInventory(()=>inventory,()=>revision,new[]{heal,poison});
+                Image Icon(int slot)=>panel.GetComponentsInChildren<Image>(true).Single(v=>v.name=="OutsideItemImage_"+slot);
+                Assert.IsTrue(Icon(0).enabled);Assert.IsTrue(Icon(1).enabled);Assert.AreNotSame(Icon(0).sprite,Icon(1).sprite);
+                Assert.AreEqual(FilterMode.Point,Icon(1).sprite.texture.filterMode);Assert.AreEqual(1,Icon(1).sprite.texture.mipmapCount);
+                Assert.AreEqual("2",panel.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideItemCount_0").text);
+                inventory.Shortcuts[1]=null;revision++;view.ConfigureItemInventory(()=>inventory,()=>revision,new[]{heal,poison});
+                Assert.IsFalse(Icon(1).enabled);Assert.IsNull(Icon(1).sprite);
+            }finally{UnityEngine.Object.DestroyImmediate(root);resources.Dispose();}
+        }
         [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(3840,2160)]
         public void 複合回復のHUD略記は実メニュー書体と既存小枠で全字が表示される(int width,int height)
         {

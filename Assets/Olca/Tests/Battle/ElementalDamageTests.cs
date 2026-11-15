@@ -25,6 +25,17 @@ namespace Olca.Tests.Battle
             logger = new MockLogger();
         }
 
+        [Test] public void 通常入口の仮停止設定は通常攻撃三フレームと重い攻撃五フレーム()
+        {
+            var enemy=new Enemy("hitstop","テスト",100,ElementType.None,new Vector2Int(1,0));
+            var battle=CreateBattle(enemy);battle.ConfigureHitStop(AttackHitStopSettings.Provisional);
+            battle.RunLogicalFrame(()=>battle.PlayerBasicAttack(enemy));
+            Assert.AreEqual(3,battle.HitStopRemainingFrames);
+            var bomb=new Card("bomb","ボム",2,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Bomb,10,"");
+            Assert.AreEqual(5,battle.HitStopSettings.CardFrames(bomb));
+            Assert.Throws<System.ArgumentOutOfRangeException>(()=>new AttackHitStopSettings(-1,0));
+        }
+
         private BattleSystem CreateBattle(Enemy enemy)
         {
             var enemies = new List<Enemy> { enemy };
@@ -33,6 +44,17 @@ namespace Olca.Tests.Battle
                 new Card("atk", "攻撃", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Canon, 10, "攻撃"),
             };
             return new BattleSystem(player, enemies, new Deck(cards), logger: logger);
+        }
+
+        [Test] public void 攻撃カードの使用経路も仮ヒットストップを命中から開始する()
+        {
+            var enemy=new Enemy("cardstop","テスト",100,ElementType.None,new Vector2Int(1,0));
+            var battle=CreateBattle(enemy);battle.ConfigureHitStop(AttackHitStopSettings.Provisional);
+            var card=new Card("sword","ソード",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,10,"");
+            battle.CardUsage.EnqueueCards(new List<Card>{card});
+            Assert.IsTrue(battle.CardUsage.TryUseCurrentCard());
+            for(int i=0;i<30&&!battle.IsHitStopped;i++)battle.TickFrame(17);
+            Assert.Less(enemy.CurrentHp,100);Assert.AreEqual(3,battle.HitStopRemainingFrames);
         }
 
 

@@ -120,6 +120,66 @@ namespace Olca.Tests
                 using(var cold=new OutsideExplorationSession(trialContactDamage:true)){cold.RestoreSavedState(loaded.OutsidePlayerSave,loaded.OutsideRuntimeSave,null);using(var lease=cold.AttachPresentation()){for(int n=0;n<59;n++)cold.TickTraversal(0);Assert.AreEqual(90,cold.Player.CurrentHp);cold.TickTraversal(0);Assert.AreEqual(80,cold.Player.CurrentHp);}}
             }
         }
+        [Test] public void 外界ヒットストップは移動ゲージ毒攻撃時計を三フレーム停止する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));s.EnableTrialHitStop();s.EnableTrialNormalKick();
+                s.Core.CardGauge.TrySpend(10);
+                using(var lease=s.AttachPresentation()){
+                    s.Player.ApplyPoison("hitstop",new StatusEffect(StatusEffectType.Poison,60000,2),60);
+                    s.TickTraversal(0);long frame=s.Core.Frame,x=s.Core.Position,gauge=s.Core.CardGauge.CurrentUnits;
+                    var poisons=s.Player.CapturePoisons();
+                    s.TrialTarget.TakeDamage(1,ElementType.None,hitStopFrames:3);
+                    for(int i=0;i<3;i++){
+                        Assert.IsFalse(s.ProcessCardUseInput(false,false,true,0,0,out _));
+                        s.TickTraversal(1,true,true,true,true);
+                        Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);
+                        Assert.AreEqual(poisons[0].RemainingUnits,s.Player.CapturePoisons()[0].RemainingUnits);
+                    }
+                    Assert.IsFalse(s.IsHitStopped);s.TickTraversal(0);Assert.AreEqual(frame+1,s.Core.Frame);
+                }
+            }
+        }
+        [Test] public void 外界ヒットストップは多対象の最長値と防御破壊条件を使う()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));s.EnableTrialHitStop();
+                using(var lease=s.AttachPresentation()){
+                    s.TrialTarget.TakeDamage(1,ElementType.None,hitStopFrames:3);
+                    s.SecondTrialTarget.TakeDamage(1,ElementType.None,hitStopFrames:5);
+                    Assert.AreEqual(5,s.HitStopRemainingFrames);
+                    for(int i=0;i<5;i++)s.AdvanceHitStopFrame();
+                    s.Player.SetBarrier(15);s.Player.TakeDamage(1,hitStopFrames:3);Assert.IsFalse(s.IsHitStopped);
+                    s.Player.TakeDamage(20,hitStopFrames:3);Assert.AreEqual(3,s.HitStopRemainingFrames);
+                }
+            }
+        }
+        [Test] public void 外界ヒットストップの残数は非表示再表示と保存復元で保持する()
+        {
+            using(var s=new OutsideExplorationSession())using(var cold=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));s.EnableTrialHitStop();
+                using(var lease=s.AttachPresentation())s.TrialTarget.TakeDamage(1,ElementType.None,hitStopFrames:3);
+                Assert.IsFalse(s.AdvanceHitStopFrame());Assert.AreEqual(3,s.HitStopRemainingFrames);
+                var runtime=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                Assert.AreEqual(3,runtime.Copy().HitStopFrames);Assert.AreEqual(0,runtime.ForRun(Guid.NewGuid().ToString("N")).HitStopFrames);
+                Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null));Assert.AreEqual(3,cold.HitStopRemainingFrames);
+                using(var lease=cold.AttachPresentation())for(int i=0;i<3;i++)cold.TickTraversal(1);
+                Assert.AreEqual(runtime.Core.Frame,cold.Core.Frame);Assert.IsFalse(cold.IsHitStopped);
+                runtime.HitStopFrames=-1;Assert.Throws<ArgumentException>(()=>runtime.Validate());
+            }
+        }
+        [Test] public void 外界の通常蹴りの実命中から仮ヒットストップを開始する()
+        {
+            using(var s=Contact266(-OutsideMovementDefinition.UnitsPerWorldUnit)){
+                s.EnableTrialNormalKick();s.EnableTrialHitStop();
+                using(var lease=s.AttachPresentation()){
+                    Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,0,out _));
+                    for(int i=0;i<30&&!s.IsHitStopped;i++)s.TickTraversal(0);
+                    Assert.Less(s.TrialTarget.CurrentHp,OutsideExplorationSession.TrialTargetMaximum);
+                    Assert.AreEqual(3,s.HitStopRemainingFrames);
+                }
+            }
+        }
         private static OutsideExplorationSession Contact266(long offset=0,long height=0)
         {
             var s=new OutsideExplorationSession(trialContactDamage:true);s.TryInitializePlayer(()=>new PlayerCharacter(100));

@@ -2717,6 +2717,7 @@ namespace Olca.Application.Dungeon
             ResetTouchInput();
             battle.ConfigureDefaultHitInvincibility(commonHitInvincibilityMs);
             battle.ConfigureBasicAttackTiming(CheckpointBattleFactory.ProductBasicTiming);
+            battle.ConfigureHitStop(AttackHitStopSettings.Provisional);
             battleFieldReady = false;
             // 接敵フレームでモデルを停止する。描画遷移中にAIや状態異常を先行させない。
             battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);

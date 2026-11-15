@@ -365,6 +365,7 @@ namespace Olca.Tests
         [Test]
         public async Task 通常の消滅演出は戦闘停止に従い終端演出は別時計で完了する()
         {
+            using var clock=new Olca.Tests.Mocks.PresentationClockScope();
             var go=new GameObject("DeathClock");var owner=new object();
             var body=go.AddComponent<SpriteRenderer>();var visual=go.AddComponent<Olca.Presentation.Battle.EnemyView>();
             typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",Private).SetValue(visual,body);

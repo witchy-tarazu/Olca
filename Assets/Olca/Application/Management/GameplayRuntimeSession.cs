@@ -78,7 +78,7 @@ namespace Olca.Application.Management
             if(disposed)throw new System.ObjectDisposedException(nameof(OutsideExplorationRuntime));
             if(owner==null||provider==null)throw new System.ArgumentNullException(nameof(owner));
             if(driver!=null&&!ReferenceEquals(driver,owner))throw new System.InvalidOperationException("外界driverが重複しています");
-            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);session.EnableTrialNormalKick();driver=owner;input=provider;itemUse=useItem;covered=resumeSelection=false;selection.Reset();Reset();
+            if(loop==null)loop=new Olca.Unity.UnityLogicalLoop(true,()=>active&&session.IsPresented&&!session.IsEnded&&session.Player?.IsDead!=true);session.EnableTrialNormalKick();session.EnableTrialHitStop();driver=owner;input=provider;itemUse=useItem;covered=resumeSelection=false;selection.Reset();Reset();
         }
         private void Reset(){directionRequested=directionResumed=false;directionDelay=0;session.CancelAttackReservation();active=false;armed=false;loop?.Observe(false);loop?.ReleaseInput();input?.CaptureTimestamped();input?.QueueSnapshot();}
         public void Detach(object owner){if(!ReferenceEquals(driver,owner))return;Reset();selection.Reset();covered=resumeSelection=false;driver=null;input=null;itemUse=null;}
@@ -97,6 +97,7 @@ namespace Olca.Application.Management
                     samples.Add(new Olca.Unity.TimestampedLogicalInput(time,null,()=>selection.Queue(time,value.SelectionPreviousHeld,value.SelectionNextHeld,value.SelectionPreviousDown,value.SelectionNextDown,value.SelectionSnapshot,value.AnyKey,value.SelectionPreviousAt,value.SelectionNextAt)));
                 }
                 loop.PumpTimestamped(true,samples,(frame,ms,value)=>{
+                    if(session.AdvanceHitStopFrame())return;
                     bool selectionChanged=selection.AdvanceFrame(session.Cards,!Olca.Unity.GameplayPause.InputBlocked&&!session.IsDeckEditingLocation);
                     if(!armed&&focusActive&&!input.IsFocusResynchronizing&&value.HasInputSample&&!value.AnyKey&&System.Math.Abs(value.Horizontal)<.01f&&(!value.HasOutsideHorizontalSample||System.Math.Abs(value.OutsideHorizontal)<.01f))armed=true;
                     bool accept=armed&&!Olca.Unity.GameplayPause.InputBlocked;

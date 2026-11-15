@@ -715,7 +715,9 @@ namespace Olca.Unity
         private static bool awaitRelease;
         private static int resumeFrames;
         public static bool InputBlocked => IsPaused || awaitRelease || resumeFrames > 0;
-        public static float DeltaTime => IsPaused ? 0f : Time.deltaTime;
+        // 表示時計の取得元を分離し、停止判定は常にこの境界で適用する。
+        private static Olca.Core.Interfaces.ITimeProvider timeProvider = new UnityTimeProvider();
+        public static float DeltaTime => IsPaused ? 0f : timeProvider.DeltaTime;
         public static void SetPaused(bool paused)
         {
             if (IsPaused == paused) return;

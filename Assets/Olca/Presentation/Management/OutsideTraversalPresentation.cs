@@ -463,6 +463,29 @@ namespace Olca.Presentation.Exploration
         private readonly OutsideItemPressGuard[] itemPresses=new OutsideItemPressGuard[4];
         private readonly UnityEngine.UI.Text[] itemSeconds=new UnityEngine.UI.Text[4],itemKeys=new UnityEngine.UI.Text[4];
         private readonly OutsideItemCooldownRing[] itemRings=new OutsideItemCooldownRing[4];
+        private readonly UnityEngine.UI.Image[] itemImages=new UnityEngine.UI.Image[4];
+        private Olca.Unity.GeneratedSpriteAssets.Lease itemIconAssets;
+        private void RefreshItemGraphic(int slot,string id)
+        {
+            string path=id==Olca.Core.Domain.OutsideRecoveryItemDefinition.PoisonProvisional.Id?"OlcaPickups/antidote_vial_v1":
+                id==Olca.Core.Domain.OutsideRecoveryItemDefinition.Provisional.Id?"OlcaPickups/heal_vial":null;
+            UnityEngine.Sprite sprite=null;
+            if(path!=null){
+                var source=UnityEngine.Resources.Load<UnityEngine.TextAsset>(path);
+                if(source!=null)sprite=(itemIconAssets??(itemIconAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this))).Get<UnityEngine.Sprite>(path,builder=>{
+                    var texture=builder.CreateTexture(2,2);if(!UnityEngine.ImageConversion.LoadImage(texture,source.bytes,true))return null;
+                    texture.filterMode=UnityEngine.FilterMode.Point;texture.wrapMode=UnityEngine.TextureWrapMode.Clamp;
+                    return builder.CreateSprite(texture,new UnityEngine.Rect(0,0,texture.width,texture.height),new UnityEngine.Vector2(.5f,.5f));
+                });
+            }
+            if(itemImages[slot]==null&&sprite!=null){
+                var go=new UnityEngine.GameObject("OutsideItemImage_"+slot,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));
+                go.transform.SetParent(itemMarks[slot].transform,false);var image=itemImages[slot]=go.GetComponent<UnityEngine.UI.Image>();
+                image.raycastTarget=false;image.preserveAspect=true;image.rectTransform.sizeDelta=new UnityEngine.Vector2(56,56);
+            }
+            if(itemImages[slot]!=null){itemImages[slot].sprite=sprite;itemImages[slot].enabled=sprite!=null;itemImages[slot].color=itemMarks[slot].color;}
+            if(sprite!=null)itemMarks[slot].text="";
+        }
         private UnityEngine.UI.Text itemFeedback;
         public void ConfigureItemUse(System.Action<int> queue,System.Func<string,int> remaining,System.Func<int,string> key)=>ConfigureItemUse(queue,remaining,key,null);
         public void ConfigureItemUse(System.Action<int> queue,System.Func<string,int> remaining,System.Func<int,string> key,System.Func<string,int> duration){queueItemUse=queue;readItemCooldown=remaining;readItemKey=key;readItemDuration=duration;RefreshItemHud();}
@@ -493,6 +516,7 @@ namespace Olca.Presentation.Exploration
             for(int i=0;i<4;i++){
                 string id=cachedItems.Shortcuts[i];var definition=itemDefinitions?.FirstOrDefault(v=>v.Id==id);int count=cachedItems.Items.FirstOrDefault(v=>v.Id==id)?.Count??0;int remaining=readItemCooldown?.Invoke(id)??0;
                 itemMarks[i].text=id==null?"—":definition?.Mark??"?";itemMarks[i].color=count==0||remaining>0?new UnityEngine.Color(.45f,.58f,.62f,1):UnityEngine.Color.white;itemCounts[i].text=id==null?"":count.ToString();itemCounts[i].color=UnityEngine.Color.white;
+                RefreshItemGraphic(i,id);
                 itemButtons[i].interactable=CanPlay&&queueItemUse!=null&&definition!=null&&count>0&&remaining==0;
                 itemKeys[i].text=readItemKey?.Invoke(i)??new[]{"1 / ↑","2 / →","3 / ↓","4 / ←"}[i];itemKeys[i].enabled=remaining==0;
                 itemSeconds[i].text=remaining>0?((remaining+59L)/60).ToString():"";itemSeconds[i].enabled=remaining>0;
@@ -500,7 +524,7 @@ namespace Olca.Presentation.Exploration
             }
         }
         private void ClearItemPresses(){foreach(var press in itemPresses)if(press!=null)press.Clear();}
-        private void ClearItemProviders(){ClearItemPresses();foreach(var press in itemPresses)if(press!=null)press.BeginAllowed=null;itemInventory=null;itemRevision=null;itemDefinitions=null;queueItemUse=null;readItemCooldown=readItemDuration=null;readItemKey=null;cachedItems=null;shownItemRevision=long.MinValue;foreach(var button in itemButtons)if(button!=null){button.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();button.interactable=false;}}
+        private void ClearItemProviders(){foreach(var image in itemImages)if(image!=null){image.sprite=null;image.enabled=false;}itemIconAssets?.Dispose();itemIconAssets=null;ClearItemPresses();foreach(var press in itemPresses)if(press!=null)press.BeginAllowed=null;itemInventory=null;itemRevision=null;itemDefinitions=null;queueItemUse=null;readItemCooldown=readItemDuration=null;readItemKey=null;cachedItems=null;shownItemRevision=long.MinValue;foreach(var button in itemButtons)if(button!=null){button.onClick=new UnityEngine.UI.Button.ButtonClickedEvent();button.interactable=false;}}
     }
 
     // 使用可になるまで保持した入力を、解放時のクリックとして後から受理しない。

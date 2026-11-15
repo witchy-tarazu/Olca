@@ -22,7 +22,7 @@ namespace Olca.Core.Logic.CardEffects.Effects
         private readonly DamageTargetType baseTargetType;
 
         private readonly string trialInitialId;
-        internal ModifiableCardEffect(string trialId):this(DamageTargetType.Single){
+        internal ModifiableCardEffect(string trialId,int hitStopFrames=0):this(DamageTargetType.Single,hitStopFrames:hitStopFrames){
             if(!TrialInitialCardDefinitions.IsId(trialId))throw new ArgumentException("試用初期カードIDが必要です");trialInitialId=trialId;
         }
         private readonly int hitStopFrames;

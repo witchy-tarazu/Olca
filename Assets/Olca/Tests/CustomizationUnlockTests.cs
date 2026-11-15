@@ -14,6 +14,7 @@ namespace Olca.Tests {
   [Test] public void 供給元は有効な装備個体を保持し同種を合算せず入力と隔離する(){var s=State();var sources=new CustomizationLoadoutSources(Catalog(),s);s.EquippedAccessoryIds[0]="changed";s.Placements[0].PartId="changed";CollectionAssert.AreEqual(new[]{"a"},sources.Accessories);CollectionAssert.AreEqual(new[]{"p","q"},sources.Parts.Select(v=>v.InstanceId));Assert.IsTrue(sources.Parts.All(v=>v.PartId=="dot"));}
   [Test] public void 供給元は不整合な装備配置を能力登録先へ渡さない(){var s=State();s.Placements[1].Y=0;Assert.Throws<ArgumentException>(()=>new CustomizationLoadoutSources(Catalog(),s));}
   GameObject root;CustomizationUnlockView view;int applies,cancels,retries;string applied;
+  [SetUp] public void ResetCounters(){applies=cancels=retries=0;applied=null;root=null;view=null;}
   void Open(){root=new GameObject("UnlockFixture",typeof(RectTransform),typeof(Canvas));var go=new GameObject("Unlock",typeof(RectTransform));go.transform.SetParent(root.transform,false);view=go.AddComponent<CustomizationUnlockView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),id=>{applies++;applied=id;},()=>{cancels++;view.Close();},()=>retries++);view.Open(Catalog(),State());}
   Button B(string name)=>view.GetComponentsInChildren<Button>().Single(v=>v.name==name);
   [TearDown] public void Cleanup(){if(root!=null)UnityEngine.Object.DestroyImmediate(root);}
