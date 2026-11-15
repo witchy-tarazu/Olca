@@ -293,7 +293,7 @@ namespace Olca.Core.Logic.Integration
             if(Core.TrialMapId!=null||Core.Definition.Id!=OutsideKickTrialDefinition.MapId||NormalKick.IsConfigured)return;
             NormalKick.Configure(OutsideKickTrialDefinition.Timings());NormalKick.ConfigureDash(OutsideKickTrialDefinition.DashTiming());
         }
-        // カードは従来どおり移動不可。空中蹴りは移動/落下を保ち、地上蹴りでもジャンプ中断は受け付ける。
+        // カードは従来どおり移動不可。空中蹴りは移動/落下を保ち、地上蹴りの後隙はジャンプで中断しない。
         public bool AllowsTraversalInput=>attackState==null;
         public void TickTraversal(float horizontal,bool jumpDown=false,bool jumpHeld=false,bool dashDown=false,bool dashHeld=false)
         {
@@ -302,10 +302,14 @@ namespace Olca.Core.Logic.Integration
             ObserveNormalKick(BodyCanAttack);
             int facing=Core.Facing;bool grounded=Core.IsGrounded;
             bool kick=normalKick?.IsActive==true;
+            // Coreは次のframeでジャンプを実行する。後隙の初frameから抑止し、終了frameでは解除する。
+            bool blockRecoveryJump=normalKick?.LocksGroundMotion==true&&
+                Core.Frame-normalKick.StartedAt+1>=normalKick.ActiveTiming.StartupFrames+(long)normalKick.ActiveTiming.ActiveFrames&&
+                Core.Frame+1<normalKick.EndsAt;
             if(normalKick?.IsDashAttack==true){
                 if(Core.Frame+1>=normalKick.EndsAt)Core.TickAfterDashAttackFrame(horizontal,jumpDown,jumpHeld,dashDown,dashHeld,IsMovementLockedForNextFrame);
                 else Core.TickDashAttackFrame(normalKick.AttackFacing,jumpHeld,IsMovementLockedForNextFrame);
-            }else Core.TickFrame(normalKick?.ResolveHorizontal(horizontal)??horizontal,jumpDown,jumpHeld,!kick&&dashDown,!kick&&dashHeld,IsMovementLockedForNextFrame);
+            }else Core.TickFrame(normalKick?.ResolveHorizontal(horizontal)??horizontal,!blockRecoveryJump&&jumpDown,jumpHeld,!kick&&dashDown,!kick&&dashHeld,IsMovementLockedForNextFrame);
             ObserveAttackBoundary(facing,grounded);AdvanceDeckLocation();AdvancePlayerFrame();
         }
         private void ObserveNormalKick(bool allowed){bool active=normalKick?.IsActive==true,dash=normalKick?.IsDashAttack==true;normalKick?.Observe(Core.Frame,Core.IsGrounded,Core.Facing,allowed);if(dash&&normalKick?.IsDashAttack!=true)Core.EndDashAfterAttack();if(active&&normalKick?.IsActive!=true)Core.RestartIdleMotion();}

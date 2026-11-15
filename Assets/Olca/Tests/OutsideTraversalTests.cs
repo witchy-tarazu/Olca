@@ -9,11 +9,41 @@ namespace Olca.Tests
     {
         private static OutsideExplorationSession TrialKick212()
         {var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));s.EnableTrialNormalKick();return s;}
-        [Test] public void 試用蹴り入力は地上移動向きを固定しジャンプで中断する()
+        private static void GroundStage288(OutsideExplorationSession s,int stage)
+        {
+            for(int n=0;n<=stage;n++){
+                if(n>0){long cancel=s.NormalKick.StartedAt+15;while(s.Core.Frame<cancel)s.TickTraversal(0);}
+                Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,n+1,out _));Assert.AreEqual((OutsideKickKind)n,s.NormalKick.Kind);
+            }
+        }
+        [TestCase(0,8)] [TestCase(0,9)] [TestCase(0,15)] [TestCase(0,20)] [TestCase(0,21)] [TestCase(1,8)] [TestCase(1,9)] [TestCase(1,15)] [TestCase(1,20)] [TestCase(1,21)] [TestCase(2,8)] [TestCase(2,9)] [TestCase(2,15)] [TestCase(2,20)] [TestCase(2,21)]
+        public void 地上蹴りの後隙は最初のframeからジャンプ中断せず前隙と終了境界は維持する(int stage,int elapsed)
+        {
+            using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
+                GroundStage288(s,stage);long start=s.NormalKick.StartedAt,x=s.Core.Position;int facing=s.Core.Facing;
+                while(s.Core.Frame+1<start+elapsed)s.TickTraversal(-facing);
+                s.TickTraversal(-facing,jumpDown:true,jumpHeld:true);
+                bool blocked=elapsed>=9&&elapsed<21;Assert.AreEqual(blocked,s.Core.IsGrounded);Assert.AreEqual(blocked,s.IsAttacking);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(facing,s.Core.Facing);
+                if(blocked){Assert.AreEqual(start,s.NormalKick.StartedAt);Assert.AreEqual((OutsideKickKind)stage,s.NormalKick.Kind);}else Assert.AreEqual(1,s.NormalKick.NextGroundStage);
+            }
+        }
+        [TestCase(0,false)] [TestCase(1,false)] [TestCase(2,false)] [TestCase(0,true)] [TestCase(1,true)] [TestCase(2,true)]
+        public void 後隙中のジャンプ保持は保存復元後も終了時に自動発火せず押し直しが必要(int stage,bool cold)
+        {
+            using(var s=TrialKick212())using(var restored=TrialKick212()){
+                var lease=s.AttachPresentation();GroundStage288(s,stage);long end=s.NormalKick.EndsAt;while(s.Core.Frame+1<s.NormalKick.StartedAt+9)s.TickTraversal(0);s.TickTraversal(0,jumpDown:true,jumpHeld:true);Assert.IsTrue(s.Core.IsGrounded);
+                OutsideExplorationSession active=s;
+                if(cold){lease.Dispose();var data=s.CaptureRuntime();var actor=Olca.Core.Domain.OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;restored.RestoreSavedState(actor,data,null);active=restored;lease=restored.AttachPresentation();}
+                using(lease){while(active.Core.Frame<end+2){active.TickTraversal(0,jumpDown:true,jumpHeld:true);Assert.IsTrue(active.Core.IsGrounded);}
+                    Assert.IsFalse(active.IsAttacking);active.TickTraversal(0);active.TickTraversal(0,jumpDown:true,jumpHeld:true);Assert.IsFalse(active.Core.IsGrounded);Assert.AreEqual(1,active.NormalKick.NextGroundStage);
+                }
+            }
+        }
+        [Test] public void 試用蹴り入力は地上移動向きを固定し動作中のジャンプで中断する()
         {
             using(var s=TrialKick212())using(var lease=s.AttachPresentation()){
                 Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));long x=s.Core.Position;int facing=s.Core.Facing;
-                for(int n=0;n<10;n++){s.TickTraversal(-facing);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(facing,s.Core.Facing);Assert.IsTrue(s.IsAttacking);}
+                for(int n=0;n<7;n++){s.TickTraversal(-facing);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(facing,s.Core.Facing);Assert.IsTrue(s.IsAttacking);}
                 s.TickTraversal(0,true,true);Assert.IsFalse(s.Core.IsGrounded);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(1,s.NormalKick.NextGroundStage);
             }
         }
