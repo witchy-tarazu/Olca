@@ -636,6 +636,7 @@ namespace Olca.Core.Domain
         public long Revision, Experience, Tokens;
         public int Level = 1, ReturnedHp;
         public string OutsideRecoveryPointId; // nullは旧保存/復帰地点未登録。
+        public string[] OutsideDiscoveredRecoveryPoints; // nullは旧保存。復帰先や回復操作とは別の訪問記録。
         public OutsideInventoryData OutsideInventory; // nullは旧保存。カード/装備/超過トークンとは別の所持欄。
         public string CommitId;
         public string CheckpointGeneration; // nullは旧保存の領域。新規開始だけで切替。
@@ -657,7 +658,7 @@ namespace Olca.Core.Domain
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public Olca.Core.Logic.Customization.CustomizationProgress Customization; // 旧省略/nullは空状態
         public ClearReturnProfile Copy() => new ClearReturnProfile {
-            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(), OutsideRecoveryPointId=OutsideRecoveryPointId, OutsidePlayerSave=OutsidePlayerSave?.Copy(), OutsideRuntimeSave=OutsideRuntimeSave?.Copy(), OutsideItemState=OutsideItemState?.Copy(),
+            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(), OutsideRecoveryPointId=OutsideRecoveryPointId, OutsideDiscoveredRecoveryPoints=OutsideDiscoveredRecoveryPoints?.ToArray(), OutsidePlayerSave=OutsidePlayerSave?.Copy(), OutsideRuntimeSave=OutsideRuntimeSave?.Copy(), OutsideItemState=OutsideItemState?.Copy(),
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
             Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, Customization=Customization?.Copy(), DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
@@ -668,6 +669,7 @@ namespace Olca.Core.Domain
             OutsideInventoryData.Validate(p?.OutsideInventory);p?.OutsidePlayerSave?.Validate();p?.OutsideRuntimeSave?.Validate();if(p?.OutsideRuntimeSave!=null&&(p.OutsidePlayerSave==null||p.OutsideRuntimeSave.Id!=p.OutsidePlayerSave.Id))throw new ArgumentException("外界の個体とRuntime保存の攻略IDが不一致です");
             if(p?.OutsideRuntimeSave?.Core.TrialMapId!=null||p?.OutsideRecoveryPointId==Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint||p?.OutsideRecoveryPointId==Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint)Olca.Core.Logic.Integration.OutsideTrialRoute.ValidateMapRecovery(p.OutsideRuntimeSave!=null?p.OutsideRuntimeSave.Core.TrialMapId:Olca.Core.Logic.Integration.OutsideTrialRoute.MapForRecovery(p.OutsideRecoveryPointId),p.OutsideRecoveryPointId);
             if(p?.OutsideRecoveryPointId!=null&&string.IsNullOrWhiteSpace(p.OutsideRecoveryPointId))throw new ArgumentException("外界復帰地点IDが不正です");
+            if(p?.OutsideDiscoveredRecoveryPoints!=null&&(p.OutsideDiscoveredRecoveryPoints.Any(string.IsNullOrWhiteSpace)||p.OutsideDiscoveredRecoveryPoints.Distinct(StringComparer.Ordinal).Count()!=p.OutsideDiscoveredRecoveryPoints.Length))throw new ArgumentException("外界の訪問済み回復地点が不正です");
             if (p == null || p.Version != 1 || p.Revision < 0 || p.Experience < 0 || p.Tokens < 0 || p.Level < 1 || p.ReturnedHp < 0 ||
                 (p.Revision > 0 && string.IsNullOrWhiteSpace(p.CommitId)) || p.Owned == null || p.ClearedDungeons == null || p.Receipts == null)
                 throw new ArgumentException("進行データの版・基本値が不正です");
@@ -1539,13 +1541,27 @@ namespace Olca.Core.Domain
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out var failure)){LastOutsideMapTravelError=failure;error="ホゾン シッパイ / オシテ サイシコウ";return false;}current=next;Error=null;LastOutsideMapTravelError=null;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
         }
+        public bool IsOutsideRecoveryPointDiscovered(string id)=>id!=null&&current?.OutsideDiscoveredRecoveryPoints?.Contains(id)==true;
+        private static void AddOutsideRecoveryVisit(ClearReturnProfile value,string id)
+            =>value.OutsideDiscoveredRecoveryPoints=(value.OutsideDiscoveredRecoveryPoints??Array.Empty<string>()).Concat(new[]{id}).Distinct(StringComparer.Ordinal).OrderBy(v=>v,StringComparer.Ordinal).ToArray();
+        // 訪問記録だけを保存し、失敗計画や一般Errorを作らず次の訪問/回復操作で再試行できる。
+        public bool TryDiscoverOutsideRecoveryPoint(string id,out string error)
+        {
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="今は地点記録を保存できません";return false;}
+            if(id!=Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId){error="未登録の回復地点です";return false;}
+            if(IsOutsideRecoveryPointDiscovered(id))return true;
+            try{
+                var next=current.Copy();AddOutsideRecoveryVisit(next,id);next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;return true;}finally{writing=false;}
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException||e is System.IO.IOException||e is UnauthorizedAccessException){error="地点記録の保存に失敗しました";return false;}
+        }
         public bool TrySaveOutsideRecoveryPoint(string id,PlayerCharacter player=null)
         {
             if(!Available())return Fail("未保存の処理を先に再試行してください");
             if(customizationRunActive?.Invoke()==true)return Fail("ダンジョン中は外界復帰地点を変更できません");
             if(id!=Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId)return Fail("未登録の外界回復ポイントです");
             if(player==null&&current.OutsidePlayerSave!=null)return Fail("保存個体のある外界回復には現在個体が必要です");
-            try{var next=current.Copy();next.OutsideRecoveryPointId=id;if(player!=null){next.OutsidePlayerSave=OutsidePlayerSaveData.ForRecovery(player);next.OutsideRuntimeSave=null;next.OutsideItemState=null;}return Stage(next);}catch(Exception e)when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
+            try{var next=current.Copy();next.OutsideRecoveryPointId=id;AddOutsideRecoveryVisit(next,id);if(player!=null){next.OutsidePlayerSave=OutsidePlayerSaveData.ForRecovery(player);next.OutsideRuntimeSave=null;next.OutsideItemState=null;}return Stage(next);}catch(Exception e)when(e is ArgumentException||e is OverflowException){return Fail(e.Message);}
         }
         public bool TrySaveOutsideDeathRecovery(PlayerCharacter player)
         {

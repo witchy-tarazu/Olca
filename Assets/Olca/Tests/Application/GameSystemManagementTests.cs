@@ -125,6 +125,20 @@ namespace Olca.Tests.Application
             Assert.AreEqual(!entrance?"OutsideExplorationEntry":otherPage?"ConfirmDungeonSelection":"DungeonChoice_1",EventSystem.current.currentSelectedGameObject.name);
             EventSystem.current.currentSelectedGameObject.GetComponent<Button>().onClick.Invoke();Assert.AreEqual(entrance&&!otherPage?1:-1,chosen);Assert.AreEqual(entrance?0:1,opened);Assert.AreEqual(entrance&&otherPage?1:0,confirmed);
         }
+        [TestCase(false,false)][TestCase(true,false)][TestCase(true,true)] public async Task 実Controllerの訪問保存は古い世代通知を捨て現在個体を回復移動させない(bool sameGeneration,bool fail)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=typeof(Olca.Application.Dungeon.DungeonBattleController);var go=new GameObject("RecoveryVisitController");go.SetActive(false);var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            void Observe()=>type.GetMethod("ObserveOutsideRecoveryVisit",flags).Invoke(controller,null);
+            var store=new DoorBoundaryStore();store.Profile.CheckpointGeneration=Guid.NewGuid().ToString("N");var progress=new Olca.Core.Domain.ClearReturnSession(store);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.Player.SetHp(80);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            try{using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Set("gameSystem",system);Set("clearReturnSession",progress);Set("outsideExploration",binding);Set("initialHub",true);Set("recoveryVisitOwner",model);Set("recoveryVisitGeneration",sameGeneration?store.Profile.CheckpointGeneration:"old");
+                void Walk(int direction){for(int i=0;i<20;i++){model.Core.TickFrame(direction);model.AdvancePlayerFrame();}}
+                store.Fail=fail;Walk(-1);var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());Observe();Observe();Assert.AreEqual(sameGeneration?1:0,store.Attempts);Assert.AreEqual(sameGeneration&&!fail?1:0,store.Writes);Assert.AreEqual(sameGeneration&&!fail,progress.IsOutsideRecoveryPointDiscovered(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId));Assert.AreEqual(80,model.Player.CurrentHp);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.IsNull(progress.Snapshot.OutsideRecoveryPointId);Assert.IsNull(progress.Snapshot.OutsidePlayerSave);Assert.IsFalse(progress.HasPendingSave);
+                if(fail)Assert.IsNotNull(type.GetField("recoveryVisitError",flags).GetValue(controller));store.Fail=false;Walk(1);Walk(-1);Observe();Assert.IsNull(type.GetField("recoveryVisitError",flags).GetValue(controller));Assert.AreEqual(1,store.Writes);Assert.IsTrue(progress.IsOutsideRecoveryPointDiscovered(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId));
+            }}finally{Set("outsideExploration",null);Set("gameSystem",null);UnityEngine.Object.DestroyImmediate(go);}
+        }
         private sealed class DoorBoundaryStore : Olca.Core.Domain.IClearReturnStore
         {
             public Olca.Core.Domain.ClearReturnProfile Profile=new Olca.Core.Domain.ClearReturnProfile();public Action Committed;public bool Fail;public int Attempts,Writes;

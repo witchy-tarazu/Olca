@@ -1846,6 +1846,18 @@ namespace Olca.Tests
                 var cards=source.Cards;cards.Reload();cards.TrySelect(2);var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",flags).GetValue(cards);var random=(SeededBattleRandom)typeof(OutsideExplorationCards).GetField("random",flags).GetValue(cards);var returned=deck.DrawCards(2,random);typeof(Deck).GetMethod("ReturnPreviewDraws",flags).Invoke(deck,new object[]{returned});var data=cards.CaptureState(defs);long draws=random.Draws;var restored=OutsideExplorationCards.RestoreState(data,defs);Assert.AreEqual(data.Key(),restored.CaptureState(defs).Key());Assert.AreEqual(draws,random.Draws);Assert.AreEqual(1,restored.HandRevision);var other=(Deck)typeof(OutsideExplorationCards).GetField("deck",flags).GetValue(restored);var otherRandom=(SeededBattleRandom)typeof(OutsideExplorationCards).GetField("random",flags).GetValue(restored);for(int n=0;n<4;n++){var a=deck.DrawCards(1,random).Single();var b=other.DrawCards(1,otherRandom).Single();Assert.AreEqual(Array.IndexOf(deck.GetAllCards().ToArray(),a),Array.IndexOf(other.GetAllCards().ToArray(),b));Assert.AreEqual(random.Draws,otherRandom.Draws);}Assert.AreEqual(2,restored.SelectedIndex);
             }
         }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)] public void 回復地点の訪問通知は論理frameの接地遷移だけを地点ID付きで保持する(int kind)
+        {
+            using(var model=new OutsideExplorationSession()){
+                model.TryInitializePlayer(()=>new PlayerCharacter(100));if(kind==2)model.Player.SetHp(0);
+                var lease=kind==3?null:model.AttachPresentation();
+                void Step(int direction,bool jump=false){model.Core.TickFrame(direction,jump,jump);model.AdvancePlayerFrame();}
+                try{
+                    if(kind==1){Step(-1,true);Assert.IsFalse(model.Core.IsGrounded);for(int i=0;i<180&&!model.Core.IsGrounded;i++){Step(model.Core.Position>OutsideTrialRoute.RecoveryX?-1:0);if(!model.Core.IsGrounded)Assert.AreEqual(0,model.RecoveryVisitNotice.Serial);}Assert.IsTrue(OutsideTrialRoute.CanRecover(model.Core));Assert.AreEqual(1,model.RecoveryVisitNotice.Serial);}
+                    else{for(int i=0;i<40;i++)Step(-1);Assert.AreEqual(kind==0?1:0,model.RecoveryVisitNotice.Serial);if(kind==0){Assert.IsFalse(OutsideTrialRoute.CanRecover(model.Core),"描画せず範囲を通過しても訪問を保持");Assert.AreEqual(OutsideTrialRoute.RecoveryPointId,model.RecoveryVisitNotice.PointId);Assert.IsFalse(model.AdvancePlayerFrame());for(int i=0;i<40;i++)Step(1);Assert.AreEqual(2,model.RecoveryVisitNotice.Serial);for(int i=0;i<20;i++)Step(-1);Assert.AreEqual(3,model.RecoveryVisitNotice.Serial);for(int i=0;i<10;i++)Step(0);Assert.AreEqual(3,model.RecoveryVisitNotice.Serial);lease.Dispose();lease=model.AttachPresentation();Step(0);Assert.AreEqual(4,model.RecoveryVisitNotice.Serial,"初回表示で既に接地訪問中なら新通知");}}
+                }finally{lease?.Dispose();}
+            }
+        }
         [Test] public void 通常退避と表示中の即時保存は同じ探索状態を独立したsnapshotへ写す()
         {
             using(var source=RuntimeSession141(true,0,out var defs)){

@@ -480,10 +480,25 @@ namespace Olca.Application.Dungeon
             if(!outsideRecoveryPending)outsideRecoveryRelocate=false;
             bool saved=outsideRecoveryPending?clearReturnSession.Retry():clearReturnSession.TrySaveOutsideRecoveryPoint(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId,gameSystem.OutsideExploration.Player);
             outsideRecoveryPending=clearReturnSession.HasPendingSave;outsideRecoveryError=saved?null:clearReturnSession.Error;
-            if(saved){gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId,outsideRecoveryRelocate);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();}
+            if(saved){recoveryVisitError=null;gameSystem.OutsideExploration.RecoverOutside(clearReturnSession.Snapshot.OutsideRecoveryPointId,outsideRecoveryRelocate);gameSystem.OutsideExploration.AcknowledgeRecovery(clearReturnSession.Snapshot.OutsidePlayerSave);outsideRecoveryRelocate=false;outsideRecoveryAppliedFrame=Time.frameCount;ResetOutsideRouteInput();}
         }
+        private Olca.Core.Logic.Integration.OutsideExplorationSession recoveryVisitOwner;private string recoveryVisitGeneration,recoveryVisitError;private long recoveryVisitObserved;
+        private void ObserveOutsideRecoveryVisit()
+        {
+            if(!OutsideHubEligible||gameSystem==null||outsideExploration?.IsOpen!=true||recoveryVisitOwner?.IsEnded!=false||!recoveryVisitOwner.IsPresented||!ReferenceEquals(recoveryVisitOwner,gameSystem.OutsideExploration))return;
+            var notice=recoveryVisitOwner.RecoveryVisitNotice;if(notice.Serial<=recoveryVisitObserved||notice.PointId==null)return;
+            recoveryVisitObserved=notice.Serial;
+            var generation=clearReturnSession.Snapshot.CheckpointGeneration;
+            if(recoveryVisitGeneration!=generation){recoveryVisitGeneration=generation;recoveryVisitError=null;return;}
+            recoveryVisitError=clearReturnSession.TryDiscoverOutsideRecoveryPoint(notice.PointId,out var error)?null:error;
+        }
+        private string OutsideRecoveryVisitText()=>recoveryVisitError!=null?"チテン キロク シッパイ / サイホウモンか カイフクで サイシコウ":clearReturnSession.IsOutsideRecoveryPointDiscovered(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId)?"ハッケンずみ":"ミハッケン";
         private void BindOutsideRecovery()
-        {outsideExploration.View.ConfigureRecovery(UseOutsideRecovery,()=>OutsideRecoveryReady,()=>outsideRecoveryPending?"ホゾン シッパイ / オシテ サイシコウ":outsideRecoveryError!=null?outsideRecoveryError:"ケンショウ カイフク（カリ）\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ カイフク・ホゾン":"チカヅイテ シラベル"));}
+        {
+            var model=gameSystem.OutsideExploration;var generation=clearReturnSession.Snapshot.CheckpointGeneration;
+            if(!ReferenceEquals(recoveryVisitOwner,model)||recoveryVisitGeneration!=generation){recoveryVisitOwner=model;recoveryVisitGeneration=generation;recoveryVisitObserved=model.RecoveryVisitNotice.Serial;recoveryVisitError=null;}
+            outsideExploration.View.ConfigureRecovery(UseOutsideRecovery,()=>OutsideRecoveryReady,()=>outsideRecoveryPending?"ホゾン シッパイ / オシテ サイシコウ":outsideRecoveryError!=null?outsideRecoveryError:"ケンショウ カイフク（カリ）\n"+(Olca.Core.Logic.Integration.OutsideTrialRoute.CanRecover(gameSystem.OutsideExploration.Core)?inputProvider.OutsideInteractionLabel+" デ カイフク・ホゾン":"チカヅイテ シラベル")+"\n"+OutsideRecoveryVisitText());
+        }
 
         private readonly System.Collections.Generic.Dictionary<string,string> outsideSupplyMessages=new System.Collections.Generic.Dictionary<string,string>();private int outsideSupplyAttemptFrame=-1;
         private static readonly OutsideSupplyDefinition[] outsideSupplies={OutsideSupplyDefinition.Provisional,OutsideSupplyDefinition.PoisonProvisional};
@@ -2544,6 +2559,7 @@ namespace Olca.Application.Dungeon
                 if(OutsideCardSupplyReady&&inspect){ClaimOutsideCardSupply();return;}
                 if(OutsideEntranceReady&&inspect){EnterOutsideDungeon();return;}
                 outsideExploration?.Pump(!outsideMapTravelBusy&&!outsideMapTravelNeedsBind&&!IsUserPaused&&!outsideWheelPaused&&!outsideRecoveryPending&&!progressStartupBlocked&&Time.timeScale>0);
+                ObserveOutsideRecoveryVisit();
                 if(IsUserPaused)RefreshSystemMenu();else{systemMenu?.Suspend();systemMenuRoot=null;}
                 return;
             }

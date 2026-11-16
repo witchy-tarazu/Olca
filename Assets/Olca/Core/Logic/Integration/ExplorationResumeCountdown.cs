@@ -524,6 +524,14 @@ namespace Olca.Core.Logic.Integration
             if(data==null)return;data.Validate();var actual=Olca.Core.Domain.OutsidePlayerSaveData.Capture(Player);actual.Id=data.Id;
             if(actual.Key()!=data.Key())throw new System.ArgumentException("回復した個体と保存が一致しません");savedPlayerId=data.Id;savedPlayerKey=data.Key();
         }
+        private long recoveryVisitSerial;private string recoveryVisitPointId;private bool recoveryVisitInside;
+        public (long Serial,string PointId) RecoveryVisitNotice=>(recoveryVisitSerial,recoveryVisitPointId);
+        private void ObserveRecoveryVisit(PlayerCharacter actor)
+        {
+            bool inside=IsPresented&&ReferenceEquals(Player,actor)&&!actor.IsDead&&OutsideTrialRoute.CanRecover(Core);
+            if(inside&&!recoveryVisitInside){recoveryVisitPointId=OutsideTrialRoute.RecoveryPointId;recoveryVisitSerial=checked(recoveryVisitSerial+1);}
+            recoveryVisitInside=inside;
+        }
         public bool AdvancePlayerFrame()=>AdvancePlayerFrame(out _);
         public bool AdvancePlayerFrame(out bool attackAllowed)
         {
@@ -535,7 +543,7 @@ namespace Olca.Core.Logic.Integration
             try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
             if(value.IsDead){CancelChargeInput();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();}
-            attackAllowed&=!value.IsDead;return true;
+            ObserveRecoveryVisit(value);attackAllowed&=!value.IsDead;return true;
         }
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
@@ -610,7 +618,7 @@ namespace Olca.Core.Logic.Integration
         {
             if(IsEnded)throw new System.ObjectDisposedException(nameof(OutsideExplorationSession));
             if(mapEntryPending){mapNameStartedAt=Core.Frame;mapEntryPending=false;}
-            CancelAttackReservation();return current=new PresentationLease(this);
+            recoveryVisitInside=false;CancelAttackReservation();return current=new PresentationLease(this);
         }
         public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=null;trialEnemyAttack=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
     }
