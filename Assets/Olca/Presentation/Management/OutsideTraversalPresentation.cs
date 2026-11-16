@@ -72,6 +72,21 @@ namespace Olca.Presentation.Exploration
         private Sprite[] trialComboSprites,trialAirDownSprites;
         private TrialGroundComboMotion trialGroundCombo;
         private TrialChargeMotion trialChargeMotion;
+        private TrialBombThrowMotion trialBombMotion;
+        private Sprite TrialBombSprite()
+        {
+            // 試用の立ち投げ。空中・カエンは専用姿勢が未登録なので既存表示を維持する。
+            if(presentation?.IsCurrent!=true||!presentation.Core.IsGrounded||presentation.Player==null||
+                presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||
+                presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId)return null;
+            if(presentation.IsThrowingBomb)return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(
+                presentation.BombThrowElapsedFrames,presentation.BombThrowStartupFrames,presentation.BombThrowRecoveryFrames);
+            // 既存の0/0定義は実発射と同時の解放→復帰だけを短く描く。行動/移動を拘束しない。
+            if(presentation.InstantBombReleasedAt<0||presentation.HasAttackAction||presentation.IsCharging||
+                presentation.IsDeckEditingLocation||presentation.Core.IsMoving||presentation.Core.Facing!=presentation.BombThrowFacing)return null;
+            return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(
+                presentation.Core.Frame-presentation.InstantBombReleasedAt,0,TrialBombThrowMotion.InstantReleaseVisualFrames);
+        }
         private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
         private Sprite TrialKickSprite()
         {
@@ -232,7 +247,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -876,6 +891,34 @@ namespace Olca.Presentation.Exploration
 {
     /// <summary>地上三段の試用連番。Sessionの論理時刻を読み、判定・移動・保存は変更しない。</summary>
     /// <summary>探索タメ専用の試用本体。共有Spriteを借り、破棄・ゲーム更新は行わない。</summary>
+    /// <summary>地上ボムの試用4姿勢。Sessionの前後隙を表示へ写すだけで、独自時計を持たない。</summary>
+    public sealed class TrialBombThrowMotion : System.IDisposable
+    {
+        private readonly System.Func<string,Sprite[]> load;
+        private Sprite[] frames;private bool attempted,disposed;
+        public const int InstantReleaseVisualFrames=12; // 表示だけの仮値。入力予約や実行硬直を延ばさない。
+        public TrialBombThrowMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(long elapsed,int startup,int recovery)
+        {
+            if(elapsed<0||startup<0||recovery<0||elapsed>=startup+(long)recovery)return -1;
+            if(elapsed<startup)return elapsed<Math.Max(1,startup/2)?0:1;
+            return elapsed-startup<Math.Max(1,recovery/2)?2:3;
+        }
+        public Sprite Resolve(long elapsed,int startup,int recovery)
+        {
+            int index=FrameIndex(elapsed,startup,recovery);if(disposed||index<0)return null;
+            if(!attempted){attempted=true;var all=load("OlcaCharacterMotion/trial_bomb_throw_sheet");
+                if(all!=null&&all.Length==4){var candidate=new Sprite[4];for(int n=0;n<4;n++){
+                    var found=System.Array.FindAll(all,s=>s!=null&&s.name=="trial_bomb_throw_"+n);
+                    if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f)return null;
+                    candidate[n]=found[0];
+                }frames=candidate;}
+            }
+            return frames==null?null:frames[index];
+        }
+        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&frames!=null&&System.Array.IndexOf(frames,sprite)>=0;
+        public void Dispose(){disposed=true;frames=null;}
+    }
     public sealed class TrialChargeMotion : System.IDisposable
     {
         private readonly System.Func<string,Sprite[]> load;

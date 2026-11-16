@@ -384,3 +384,38 @@ namespace Olca.Tests {
   }
  }
 }
+
+namespace Olca.Tests {
+ public class TrialBombThrowMotionTests {
+  [NUnit.Framework.TestCase(-1,3,5,-1)] [NUnit.Framework.TestCase(0,3,5,0)] [NUnit.Framework.TestCase(1,3,5,1)]
+  [NUnit.Framework.TestCase(2,3,5,1)] [NUnit.Framework.TestCase(3,3,5,2)] [NUnit.Framework.TestCase(5,3,5,3)]
+  [NUnit.Framework.TestCase(8,3,5,-1)] [NUnit.Framework.TestCase(0,0,2,2)] [NUnit.Framework.TestCase(0,0,0,-1)] [NUnit.Framework.TestCase(5,0,12,2)] [NUnit.Framework.TestCase(6,0,12,3)] [NUnit.Framework.TestCase(12,0,12,-1)]
+  public void 投擲の表示phaseは指定された論理frame境界だけを読む(int age,int start,int end,int pose){NUnit.Framework.Assert.AreEqual(pose,Olca.Presentation.Exploration.TrialBombThrowMotion.FrameIndex(age,start,end));}
+  [NUnit.Framework.TestCase(0)] [NUnit.Framework.TestCase(1)] [NUnit.Framework.TestCase(2)] [NUnit.Framework.TestCase(3)] [NUnit.Framework.TestCase(4)] [NUnit.Framework.TestCase(5)] [NUnit.Framework.TestCase(6)] [NUnit.Framework.TestCase(7)] [NUnit.Framework.TestCase(8)] [NUnit.Framework.TestCase(9)]
+  public void 投擲Viewは地上Basicだけを採用し空中未知形態と行動不能へ流用しない(int state){
+   var session=new Olca.Core.Logic.Integration.OutsideExplorationSession();var go=new UnityEngine.GameObject("BombProjection299");go.SetActive(false);var view=go.AddComponent<Olca.Presentation.Exploration.OutsideExplorationView>();
+   var field=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("presentation",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+   try{session.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100,staggerDurationFrames:3));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,Olca.Core.Domain.PlayerAttackTiming>{{"bomb",new Olca.Core.Domain.PlayerAttackTiming(state>=7?0:3,state>=7?0:8)}});var cards=factory.CreateStarterDeck().GetAllCards().ToArray();
+    NUnit.Framework.Assert.IsTrue(session.TryInitializeCards(cards,cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(299),out _));for(int n=0;n<1000&&!session.Cards.Hand.Any(c=>c.Id=="bomb");n++)session.Cards.Reload();NUnit.Framework.Assert.IsTrue(session.Cards.TrySelect(session.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));
+    using(var lease=session.AttachPresentation()){NUnit.Framework.Assert.IsTrue(session.TryUseSelectedCard(session.Cards.SelectedCard,session.Cards.HandRevision,out _));
+     if(state==1)session.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+     if(state==2)session.Player.SetDepartureStyle(new Olca.Core.Domain.DepartureStyleDefinition("unknown299","未登録",null));
+     if(state==3){var data=session.Core.CaptureState();data.Height=60000;data.SupportId=null;typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(session.Core,new object[]{data});}
+     if(state==4)session.Player.SetHp(0);
+     if(state==5){session.Player.RestoreTimedAilments(new Olca.Core.Domain.PlayerTimedAilmentsDto{Paralysis=new Olca.Core.Domain.PlayerTimedAilmentDto{RemainingUnits=1000,DisplayFrames=20},Confusion=new Olca.Core.Domain.PlayerTimedAilmentDto(),Blindness=new Olca.Core.Domain.PlayerTimedAilmentDto()});NUnit.Framework.Assert.IsTrue(session.Player.IsParalyzed);}
+     if(state==6){session.Player.TryTakeDamage(1,forceStagger:true);NUnit.Framework.Assert.IsTrue(session.Player.IsStaggered);}
+     if(state==8)for(int n=0;n<Olca.Presentation.Exploration.TrialBombThrowMotion.InstantReleaseVisualFrames;n++)session.TickTraversal(0);if(state==9){session.TickTraversal(1);session.TickTraversal(0);}
+     field.SetValue(view,lease);var result=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("TrialBombSprite",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);NUnit.Framework.Assert.AreEqual(state==0||state==7,result!=null);if(state==7)NUnit.Framework.Assert.AreEqual("trial_bomb_throw_2",((UnityEngine.Sprite)result).name);
+     lease.Dispose();NUnit.Framework.Assert.IsNull(typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("TrialBombSprite",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null));field.SetValue(view,null);
+    }
+   }finally{field.SetValue(view,null);session.Dispose();UnityEngine.Object.DestroyImmediate(go);}
+  }
+  [NUnit.Framework.Test]public void 投擲連番は四つの256透過共有資産を借り破棄時も元画像を壊さない(){
+   var seen=new System.Collections.Generic.HashSet<UnityEngine.Sprite>();using(var m=new Olca.Presentation.Exploration.TrialBombThrowMotion()){
+    foreach(int age in new[]{0,2,4,6}){var p=m.Resolve(age,4,4);NUnit.Framework.Assert.IsNotNull(p);NUnit.Framework.Assert.IsTrue(seen.Add(p));NUnit.Framework.Assert.IsTrue(m.Contains(p));NUnit.Framework.Assert.AreEqual(256,p.rect.width);NUnit.Framework.Assert.AreEqual(256,p.rect.height);NUnit.Framework.Assert.AreEqual(100,p.pixelsPerUnit,.001f);NUnit.Framework.Assert.AreEqual(14,p.pivot.y,.01f);}
+    m.Dispose();foreach(var p in seen){NUnit.Framework.Assert.IsTrue(p!=null);NUnit.Framework.Assert.IsFalse(m.Contains(p));}NUnit.Framework.Assert.IsNull(m.Resolve(0,4,4));
+   }
+  }
+  [NUnit.Framework.Test]public void 投擲素材欠損時は部分採用や描画ごとの再読込をしない(){int loads=0;using(var m=new Olca.Presentation.Exploration.TrialBombThrowMotion(k=>{loads++;return new UnityEngine.Sprite[3];})){for(int n=0;n<20;n++)NUnit.Framework.Assert.IsNull(m.Resolve(0,4,4));NUnit.Framework.Assert.AreEqual(1,loads);}}
+ }
+}

@@ -121,9 +121,9 @@ namespace Olca.Tests
                 cold.TryInitializePlayer(()=>new PlayerCharacter(100));var before=cold.CaptureRuntime();var prior=cold.Player;Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,data,null,defs));var after=cold.CaptureRuntime();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(prior,cold.Player);
             }
         }
-        private static OutsideExplorationSession Bomb289(int side=1,int startup=0,ExceedLevel level=ExceedLevel.Normal)
+        private static OutsideExplorationSession Bomb289(int side=1,int startup=0,ExceedLevel level=ExceedLevel.Normal,int recovery=8)
         {
-            var session=new OutsideExplorationSession();session.TryInitializePlayer(()=>new PlayerCharacter(100));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"bomb",new PlayerAttackTiming(startup,8)}});var cards=factory.CreateStarterDeck().GetAllCards().ToArray();
+            var session=new OutsideExplorationSession();session.TryInitializePlayer(()=>new PlayerCharacter(100));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{"bomb",new PlayerAttackTiming(startup,recovery)}});var cards=factory.CreateStarterDeck().GetAllCards().ToArray();
             if(level!=ExceedLevel.Normal){int at=Array.FindIndex(cards,c=>c.Id=="bomb");cards[at]=factory.CreateExceeded(cards[at],level);}
             Assert.IsTrue(session.TryInitializeCards(cards,Owned(cards),new SeededBattleRandom(289),out _));for(int n=0;n<1000&&!session.Cards.Hand.Any(c=>c.Id=="bomb"&&c.ExceedLevel==level);n++)session.Cards.Reload();Assert.IsTrue(session.Cards.TrySelect(session.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb"&&c.ExceedLevel==level)));
             BombPosition289(session,side==1?1008000:1242000,side);return session;
@@ -180,6 +180,43 @@ namespace Olca.Tests
                 var c=s.Cards.SelectedCard;string hash=CollectionDisplay.DefinitionHash(c);int power=c.GetFinalPower();long revision=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.IsTrue(s.TryUseSelectedCard(c,revision,out var error),error);Assert.AreEqual(revision+1,s.Cards.HandRevision);Assert.AreEqual(gauge-c.GetFinalCost()*60,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(1,s.Bombs.Count);
                 for(int i=0;i<100;i++)s.AdvancePlayerFrame();Assert.AreEqual(1,s.Bombs.Count);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
                 for(int n=1;n<90;n++)Tick160(s);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Tick160(s);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(Math.Max(0,120-power),s.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,s.Bombs.Count);Assert.AreEqual(1,s.BombBlasts.Count);for(int n=0;n<20;n++)Tick160(s);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(0,s.BombBlasts.Count);Assert.AreEqual(hash,CollectionDisplay.DefinitionHash(c));lease.Dispose();var saved=s.CaptureRuntime(Kick214Definitions(s));Assert.AreEqual(1,saved.TrialTarget.Hits);Assert.AreEqual(1,saved.SecondTrialTarget.Hits);
+            }
+        }
+        [Test] public void 瞬時ボムの表示通知はゲームを拘束せず保存とcold再演に混入しない()
+        {
+            using(var s=Bomb289(recovery:0))using(var cold=new OutsideExplorationSession())using(var lease=s.AttachPresentation()){
+                Assert.AreEqual(-1,lease.InstantBombReleasedAt);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));
+                Assert.IsNull(s.AttackState);Assert.IsFalse(lease.HasAttackAction);Assert.IsTrue(s.AllowsTraversalInput);Assert.IsTrue(s.CanPerformAttack);Assert.AreEqual(s.Core.Frame,lease.InstantBombReleasedAt);Assert.AreEqual(1,s.Bombs.Count);
+                var defs=Kick214Definitions(s);var bombs=PortableCheckpointJson.Serialize(s.Bombs.ToArray());var cards=PortableCheckpointJson.Serialize(s.Cards.CaptureState(defs));var core=PortableCheckpointJson.Serialize(s.Core.CaptureState());
+                for(int n=0;n<30;n++){Assert.AreEqual(0,lease.InstantBombReleasedAt);Assert.AreEqual(1,lease.BombThrowFacing);}CollectionAssert.AreEqual(bombs,PortableCheckpointJson.Serialize(s.Bombs.ToArray()));CollectionAssert.AreEqual(cards,PortableCheckpointJson.Serialize(s.Cards.CaptureState(defs)));CollectionAssert.AreEqual(core,PortableCheckpointJson.Serialize(s.Core.CaptureState()));
+                lease.Dispose();var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null,defs));using(var next=cold.AttachPresentation()){Assert.AreEqual(-1,next.InstantBombReleasedAt);Assert.AreEqual(1,cold.Bombs.Count);Assert.IsFalse(next.HasAttackAction);for(int n=0;n<100;n++)Tick160(cold);Assert.AreEqual(80,cold.TrialTarget.CurrentHp);Assert.AreEqual(80,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,cold.Bombs.Count);Assert.AreEqual(-1,next.InstantBombReleasedAt);}
+            }
+        }
+        [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] public void 瞬時ボムの表示通知は再入移動別攻撃で消えて弾の結果を変えない(int boundary)
+        {
+            using(var s=Bomb289(recovery:0)){
+                s.EnableTrialNormalKick();var lease=s.AttachPresentation();try{
+                    Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Assert.AreEqual(0,lease.InstantBombReleasedAt);
+                    if(boundary==0){lease.Dispose();using(var next=s.AttachPresentation())Assert.AreEqual(-1,next.InstantBombReleasedAt);}
+                    else if(boundary==1){s.TickTraversal(1);s.TickTraversal(0);Assert.AreEqual(-1,lease.InstantBombReleasedAt);}
+                    else if(boundary==2){s.TickTraversal(0);Assert.IsTrue(s.ProcessCardUseInput(false,false,true,0,1,out _));Assert.AreEqual(-1,lease.InstantBombReleasedAt);}
+                    else{s.Player.ApplyParalysis(1);s.TickTraversal(0);Assert.AreEqual(-1,lease.InstantBombReleasedAt);s.TickTraversal(0);Assert.AreEqual(-1,lease.InstantBombReleasedAt);}
+                    Assert.AreEqual(1,s.Bombs.Count);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
+                }finally{lease.Dispose();}
+            }
+        }
+        [Test] public void ボム投擲表示は発射境界と保存時計を読み古いleaseに状態を漏らさない()
+        {
+            using(var s=Bomb289(startup:3)){
+                var lease=s.AttachPresentation();Assert.IsFalse(lease.IsThrowingBomb);Assert.AreEqual(-1,lease.BombThrowElapsedFrames);
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));
+                Assert.IsTrue(lease.IsThrowingBomb);Assert.AreEqual(0,lease.BombThrowElapsedFrames);Assert.AreEqual(3,lease.BombThrowStartupFrames);
+                var before=PortableCheckpointJson.Serialize(s.AttackState);for(int n=0;n<20;n++){Assert.AreEqual(1,lease.BombThrowFacing);Assert.AreEqual(0,lease.BombThrowElapsedFrames);}
+                CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.AttackState));Assert.AreEqual(0,s.Bombs.Count);
+                for(int n=0;n<3;n++)Tick160(s);Assert.IsTrue(s.AttackState.EffectApplied);Assert.AreEqual(3,lease.BombThrowElapsedFrames);Assert.AreEqual(1,s.Bombs.Count);
+                lease.Dispose();Assert.IsFalse(lease.IsThrowingBomb);Assert.AreEqual(-1,lease.BombThrowElapsedFrames);
+                using(var next=s.AttachPresentation()){Assert.IsTrue(next.IsThrowingBomb);for(int n=0;n<20;n++)Tick160(s);Assert.IsFalse(next.IsThrowingBomb);Assert.AreEqual(-1,next.BombThrowElapsedFrames);Assert.AreEqual(1,s.Bombs.Count);}
             }
         }
         [TestCase(480000,1,0L,true)] [TestCase(600000,1,0L,true)] [TestCase(1320000,1,0L,true)] [TestCase(120000,1,0L,true)] [TestCase(30000,-1,0L,true)] [TestCase(1008000,1,60000L,true)]
