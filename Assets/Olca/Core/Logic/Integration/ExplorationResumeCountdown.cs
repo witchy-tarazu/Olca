@@ -1108,8 +1108,10 @@ namespace Olca.Core.Logic.Integration
             finally{usingItem=false;}
         }
         private OutsideRuntimeSaveData CaptureItemRuntime(CheckpointDefinitions definitions)
+            => BuildRuntimeSnapshot(definitions,CaptureKickState());
+        // 呼出元の退避可否判定は保ち、通常退避と即時保存の項目集合だけを共有する。
+        private OutsideRuntimeSaveData BuildRuntimeSnapshot(CheckpointDefinitions definitions,OutsideKickStateData kick)
         {
-            var kick=CaptureKickState();
             var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,ChargeKick=normalKick?.IsCharged==true?normalKick.ActiveChargePlan.Copy():null,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy(),TrialContact=CaptureTrialContact(),InitialShots=CaptureInitialShots(),Bombs=CaptureBombs(),HitStopFrames=HitStopRemainingFrames};value.Validate();return value;
         }
         private bool startupClassified,startupRecoveryPending;
@@ -1150,7 +1152,7 @@ namespace Olca.Core.Logic.Integration
         {
             var kick=CaptureKickState();
             if(IsEnded)throw new ObjectDisposedException(nameof(OutsideExplorationSession));if(IsPresented)throw new InvalidOperationException("外界表示を閉じて退避してください");if(Core.HasFallenOut)throw new ArgumentException("死亡済み落下を生存状態として保存できません");
-            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,ChargeKick=normalKick?.IsCharged==true?normalKick.ActiveChargePlan.Copy():null,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy(),TrialContact=CaptureTrialContact(),InitialShots=CaptureInitialShots(),Bombs=CaptureBombs(),HitStopFrames=HitStopRemainingFrames};value.Validate();return value;
+            return BuildRuntimeSnapshot(definitions,kick);
         }
         public bool RestoreSavedState(OutsidePlayerSaveData player,OutsideRuntimeSaveData runtime,string recoveryPoint,CheckpointDefinitions definitions=null,OutsideTraversalProfile initializationProfile=null)
         {

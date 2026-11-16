@@ -1846,6 +1846,22 @@ namespace Olca.Tests
                 var cards=source.Cards;cards.Reload();cards.TrySelect(2);var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;var deck=(Deck)typeof(OutsideExplorationCards).GetField("deck",flags).GetValue(cards);var random=(SeededBattleRandom)typeof(OutsideExplorationCards).GetField("random",flags).GetValue(cards);var returned=deck.DrawCards(2,random);typeof(Deck).GetMethod("ReturnPreviewDraws",flags).Invoke(deck,new object[]{returned});var data=cards.CaptureState(defs);long draws=random.Draws;var restored=OutsideExplorationCards.RestoreState(data,defs);Assert.AreEqual(data.Key(),restored.CaptureState(defs).Key());Assert.AreEqual(draws,random.Draws);Assert.AreEqual(1,restored.HandRevision);var other=(Deck)typeof(OutsideExplorationCards).GetField("deck",flags).GetValue(restored);var otherRandom=(SeededBattleRandom)typeof(OutsideExplorationCards).GetField("random",flags).GetValue(restored);for(int n=0;n<4;n++){var a=deck.DrawCards(1,random).Single();var b=other.DrawCards(1,otherRandom).Single();Assert.AreEqual(Array.IndexOf(deck.GetAllCards().ToArray(),a),Array.IndexOf(other.GetAllCards().ToArray(),b));Assert.AreEqual(random.Draws,otherRandom.Draws);}Assert.AreEqual(2,restored.SelectedIndex);
             }
         }
+        [Test] public void 通常退避と表示中の即時保存は同じ探索状態を独立したsnapshotへ写す()
+        {
+            using(var source=RuntimeSession141(true,0,out var defs)){
+                source.Core.CardGauge.TrySpend(7);var normal=source.CaptureRuntime(defs);
+                var capture=typeof(OutsideExplorationSession).GetMethod("CaptureItemRuntime",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+                OutsideRuntimeSaveData immediate;
+                using(var lease=source.AttachPresentation()){
+                    Assert.Throws<InvalidOperationException>(()=>source.CaptureRuntime(defs));
+                    immediate=(OutsideRuntimeSaveData)capture.Invoke(source,new object[]{defs});
+                }
+                Assert.AreNotEqual(normal.Id,immediate.Id);immediate.Id=normal.Id;
+                CollectionAssert.AreEqual(PortableCheckpointJson.Serialize(normal),PortableCheckpointJson.Serialize(immediate));
+                Assert.AreNotSame(normal.Core,immediate.Core);Assert.AreNotSame(normal.Cards,immediate.Cards);
+                string before=normal.Key();source.Core.TickFrame(1);Assert.AreEqual(before,normal.Key());Assert.AreEqual(before,immediate.Key());
+            }
+        }
         [Test] public void 外界退避は表示中と未知乱数を拒否し回復後の古いRuntimeを再生しない()
         {
             using(var source=RuntimeSession141(true,0,out var defs)){
