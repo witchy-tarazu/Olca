@@ -314,7 +314,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -944,11 +944,15 @@ namespace Olca.Presentation.Exploration
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();
+        private TrialShotFlightMotion initialShotMotion;
         private void RenderInitialShots(float camera,float viewport,float verticalOffset){
             var shots=presentation.InitialShots;
             for(int i=0;i<shots.Count;i++){
                 if(i>=initialShotImages.Count){var go=new GameObject("TrialStraightShot",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.color=new Color(.45f,.95f,1,.95f);created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(0,.21f);initialShotImages.Add(created);}
-                var shot=shots[i];var image=initialShotImages[i];image.enabled=true;image.rectTransform.sizeDelta=new Vector2(.35f,.1f)*pixelsPerWorldUnit;image.rectTransform.anchoredPosition=new Vector2(((float)shot.Position(presentation.Core.Frame)/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit,((float)shot.Height/OutsideMovementDefinition.UnitsPerWorldUnit+1.2f-verticalOffset)*pixelsPerWorldUnit);
+                var shot=shots[i];var image=initialShotImages[i];image.enabled=true;
+                // 飛翔時計を読むだけの独立6コマ。弾速・命中・寿命・保存には触れない。
+                image.sprite=(initialShotMotion??(initialShotMotion=new TrialShotFlightMotion())).Resolve(presentation.Core.Frame-shot.StartedAt);
+                bool animated=image.sprite!=null;image.color=animated?Color.white:new Color(.45f,.95f,1,.95f);image.rectTransform.localScale=new Vector3(animated?shot.Facing:1,1,1);image.rectTransform.sizeDelta=(animated?Vector2.one*.8f:new Vector2(.35f,.1f))*pixelsPerWorldUnit;image.rectTransform.anchoredPosition=new Vector2(((float)shot.Position(presentation.Core.Frame)/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit,((float)shot.Height/OutsideMovementDefinition.UnitsPerWorldUnit+1.2f-verticalOffset)*pixelsPerWorldUnit);
             }
             for(int i=shots.Count;i<initialShotImages.Count;i++)if(initialShotImages[i]!=null)initialShotImages[i].enabled=false;
         }
@@ -980,7 +984,7 @@ namespace Olca.Presentation.Exploration
         private List<RectTransform> TrialNumberObstacles()=>new List<RectTransform>{trialTargetPlate,trialTargetGauge.rectTransform,secondTrialGauge.rectTransform,entrance!=null?(RectTransform)entrance.transform:null,reloadPoint,mapNameLabel!=null?mapNameLabel.rectTransform:null};
         private RectTransform TrialNumberProtectedOverlay()=>mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0?mapNameLabel.rectTransform:null;
         private void PaintSecondTrialFeedback(float camera,float verticalOffset){if(secondTrialFeedback?.ActiveCount>0)secondTrialFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),TrialNumberObstacles(),TrialNumberProtectedOverlay());}
-        private void ClearTrialSword(){if(polishedSwordTrail!=null){polishedSwordTrail.enabled=false;polishedSwordTrail.sprite=null;}ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null)image.enabled=false;if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
+        private void ClearTrialSword(){if(polishedSwordTrail!=null){polishedSwordTrail.enabled=false;polishedSwordTrail.sprite=null;}ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null){image.enabled=false;image.sprite=null;}if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
     }
 }
 
@@ -1121,6 +1125,20 @@ namespace Olca.Presentation.Exploration
     /// <summary>地上三段の試用連番。Sessionの論理時刻を読み、判定・移動・保存は変更しない。</summary>
     /// <summary>探索タメ専用の試用本体。共有Spriteを借り、破棄・ゲーム更新は行わない。</summary>
     /// <summary>地上ボムの試用4姿勢。Sessionの前後隙を表示へ写すだけで、独自時計を持たない。</summary>
+    /// <summary>直進弾の試用6コマ。既存の60論理フレーム寿命と発射時刻を表示へ写す。</summary>
+    public sealed class TrialShotFlightMotion : System.IDisposable
+    {
+        private readonly System.Func<string,Sprite[]> load;private Sprite[] frames;private bool tried,disposed;
+        public TrialShotFlightMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(long age)=>age<0||age>=60?-1:(int)(age/2%6);
+        public Sprite Resolve(long age)
+        {
+            int frame=FrameIndex(age);if(disposed||frame<0)return null;
+            if(!tried){tried=true;var all=load("OlcaCharacterMotion/trial_shot_flight_sheet");if(all!=null&&all.Length==6){var ordered=new Sprite[6];for(int i=0;i<6;i++){var found=Array.FindAll(all,s=>s!=null&&s.name=="trial_shot_flight_"+i);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||found[0].pivot!=new Vector2(128,128))return null;ordered[i]=found[0];}frames=ordered;}}
+            return frames?[frame];
+        }
+        public void Dispose(){disposed=true;frames=null;}
+    }
     /// <summary>地上/空中ソード専用の試用6コマ。判定・移動・時計を変更せず共有Spriteだけを借りる。</summary>
     public sealed class TrialSwordSwingMotion : System.IDisposable
     {
