@@ -132,6 +132,12 @@ namespace Olca.Presentation.Exploration
         private TrialGroundComboMotion trialGroundCombo;
         private TrialChargeMotion trialChargeMotion;
         private TrialBombThrowMotion trialBombMotion;
+        private Sprite TrialSwordSprite()
+        {
+            if(presentation?.IsSwingingSword!=true||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
+            // 本体は承認済み投擲連番の仮流用。剣と独立した斬撃連番を重ねて動作を区別する。
+            return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Core.IsGrounded,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
+        }
         private Sprite TrialBombSprite()
         {
             // 試用の地上/空中投擲。登録済みBasicとカエンだけを借用する。
@@ -844,6 +850,10 @@ namespace Olca.Presentation.Exploration
 {
     // World EnemyViewと同じ円/外周半円の配色と5度分割をOverlayへ適応する。生成Textureは不要。
     /// <summary>既存の即時効果を遅らせず、接触から12論理frameだけ振り抜く暫定表示。</summary>
+    public static class OutsideSwordSwingVisual
+    {
+        public static int FrameIndex(long relativeToHit)=>relativeToHit< -2||relativeToHit>=12?-1:relativeToHit<0?0:relativeToHit<3?1:relativeToHit<7?2:3;
+    }
     public sealed class OutsideSwordTrailGraphic:Graphic
     {
         private float angle,alpha,radius;
@@ -882,6 +892,24 @@ namespace Olca.Presentation.Exploration
         private readonly List<Image> bombImages=new List<Image>();
         private Olca.Unity.GeneratedSpriteAssets.Lease bombAssets;
         private void ClearBombVisuals(){foreach(var image in bombImages)if(image!=null){image.enabled=false;image.sprite=null;}bombAssets?.Dispose();bombAssets=null;}
+        private Image polishedSwordTrail;
+        private bool RenderPolishedSword(float camera,float viewport,float verticalOffset)
+        {
+            var core=presentation.Core;var strike=presentation.TrialStrike;bool action=presentation.IsSwingingSword;
+            long age=action?presentation.SwordSwingElapsed-presentation.SwordSwingStartup:strike!=null?core.Frame-strike.Frame:-1;
+            bool active=action||strike?.SpriteSwing==true&&age>=0&&age<12;
+            if(!active){if(polishedSwordTrail!=null)polishedSwordTrail.enabled=false;return false;}
+            trialSwordTrail.enabled=false;
+            if(polishedSwordTrail==null){var go=new GameObject("OutsideSwordSpriteTrail",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);polishedSwordTrail=go.GetComponent<Image>();polishedSwordTrail.raycastTarget=false;polishedSwordTrail.rectTransform.anchorMin=polishedSwordTrail.rectTransform.anchorMax=new Vector2(0,.21f);}
+            bool windup=age<0;int facing=action?core.Facing:strike.Facing;float unit=OutsideMovementDefinition.UnitsPerWorldUnit;
+            float reach=(action?presentation.SwordSwingReach:strike.Reach)/unit,vertical=action?presentation.SwordSwingVerticalScale:strike.VerticalScale;
+            if(trialSwordAssets==null)trialSwordAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
+            if(trialSwordImage.sprite==null){if(!Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Sword,out var sprite,trialSwordAssets))throw new InvalidOperationException("共用ソード素材がありません");trialSwordImage.sprite=sprite;trialSwordImage.rectTransform.pivot=sprite.pivot/sprite.rect.size;}
+            var blade=trialSwordImage.rectTransform;blade.sizeDelta=trialSwordImage.sprite.bounds.size*pixelsPerWorldUnit;blade.anchoredPosition=new Vector2((core.Position/unit-camera+viewport*.5f+.35f*facing)*pixelsPerWorldUnit,(core.Height/unit+1.3f-verticalOffset)*pixelsPerWorldUnit);float scale=(reach-.35f)/trialSwordImage.sprite.bounds.max.x;blade.localScale=new Vector3(facing*scale,scale,1);float angle=windup?45+55*(presentation.SwordSwingElapsed/(float)Math.Max(1,presentation.SwordSwingStartup)):20-Math.Min(5,(int)age)*18;blade.localRotation=Quaternion.Euler(0,0,angle*facing);trialSwordImage.color=Color.white;trialSwordImage.enabled=true;
+            int frame=OutsideSwordSwingVisual.FrameIndex(age);polishedSwordTrail.enabled=frame>=0;
+            if(frame>=0){polishedSwordTrail.sprite=(slashSprites??(slashSprites=new Olca.Presentation.Effects.TrialSlashSprites())).Resolve(1,frame);polishedSwordTrail.color=Color.white;var rr=polishedSwordTrail.rectTransform;long expectedFired=action?core.Frame-presentation.SwordSwingElapsed+presentation.SwordSwingStartup:strike.Frame;bool useStrike=strike?.SpriteSwing==true&&strike.Frame==expectedFired;float x=useStrike?strike.X/unit:core.Position/unit,y=useStrike?strike.Y/unit:core.Height/unit;rr.anchoredPosition=new Vector2((x-camera+viewport*.5f+facing*reach*.5f)*pixelsPerWorldUnit,(y+1.2f-verticalOffset)*pixelsPerWorldUnit);rr.sizeDelta=new Vector2(reach,1.8f*vertical)*pixelsPerWorldUnit;rr.localScale=new Vector3(facing,1,1);}
+            return true;
+        }
         private void RenderBombs(float camera,float viewport,float verticalOffset)
         {
             if(presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null){ClearBombVisuals();return;}
@@ -900,13 +928,12 @@ namespace Olca.Presentation.Exploration
                 parent.anchoredPosition=new Vector2((center-camera+viewport*.5f)*pixelsPerWorldUnit,(y-verticalOffset)*pixelsPerWorldUnit);parent.sizeDelta=new Vector2(Mathf.Max(0,right-left)*pixelsPerWorldUnit,image.rectTransform.sizeDelta.y);
                 image.rectTransform.anchoredPosition=new Vector2((x-center)*pixelsPerWorldUnit,0);image.rectTransform.localRotation=Quaternion.Euler(0,0,angle);return image;
             }
-            foreach(var flight in flights){float age=frame-flight.FiredAt;float target=flight.Launch.ImpactX/(float)OutsideMovementDefinition.UnitsPerWorldUnit;
-                // 着弾予定だけの薄い目印。ダメージはSessionの90frame到達時に一度だけ発生する。
-                if(!flight.Launch.Dissipates){var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,flight.Launch.X,flight.Launch.ImpactX,flight.Launch.ImpactHeight);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,flight.Launch.ImpactHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.18f,.18f,clip:clip);}
+            foreach(var flight in flights){float age=frame-flight.FiredAt;
+                // 着弾前に爆風を描かない。実際の爆発通知だけを下のループで表示する。
                 var visible=TrialBombThrowMotion.FlightPosition(flight,frame);
-                Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
+                Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/flight.Launch.FlightDuration);
             }
-            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
+            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)blast.VisualFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();
@@ -930,7 +957,9 @@ namespace Olca.Presentation.Exploration
             trialTargetName.lineSpacing=presentation.TrialContactDamageEnabled?1.5f:1f;
             trialTargetName.rectTransform.sizeDelta=new Vector2(300,presentation.TrialContactDamageEnabled?60:40);trialTargetPlate.sizeDelta=new Vector2(316,presentation.TrialContactDamageEnabled?68:48);
             trialTargetName.text=presentation.TrialContactDamageEnabled?((target.IsDead&&second.IsDead)?"カイフクデ サイセイ":((target.IsDead||second.IsDead)?"1タイ":"2タイ")+" / セッショク10（カリ）\n"+(target.IsDead?"AIコウゲキOFF":presentation.TrialEnemyAttackEnabled?"AIコウゲキON / クリック":"AIコウゲキOFF / クリック")):target.IsDead?"カイフクデ サイセイ":presentation.TrialEnemyAttackEnabled?"コウゲキON / クリック（カリ）":"コウゲキOFF / クリック（カリ）";trialEnemyAttackButton.interactable=CanPlay&&!target.IsDead;trialTargetImage.color=presentation.TrialEnemyAttackEnabled&&presentation.TrialEnemyWindupFrames<=12?new Color(1,.45f,.45f):Color.white;trialTargetName.rectTransform.anchoredPosition=new Vector2(x+210,top+100);trialTargetPlate.anchoredPosition=trialTargetName.rectTransform.anchoredPosition;PlaceTrialTargetName();
+            if(!RenderPolishedSword(camera,viewport,verticalOffset)){
             var strike=presentation.TrialStrike;float swordAngle=0,swordAlpha=0;bool show=strike!=null&&OutsideSwordTrailGraphic.TrySample(core.Frame>=strike.Frame?core.Frame-strike.Frame:-1,strike.Facing,out swordAngle,out swordAlpha);trialSwordImage.enabled=show;trialSwordTrail.enabled=show;if(show){if(trialSwordAssets==null)trialSwordAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);if(trialSwordImage.sprite==null){if(!Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Sword,out var sprite,trialSwordAssets))throw new InvalidOperationException("共用ソード素材がありません");trialSwordImage.sprite=sprite;trialSwordImage.rectTransform.pivot=sprite.pivot/sprite.rect.size;trialSwordImage.rectTransform.sizeDelta=sprite.bounds.size*pixelsPerWorldUnit;}trialSwordImage.rectTransform.anchoredPosition=new Vector2(((float)strike.X/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f+.35f*strike.Facing)*pixelsPerWorldUnit,((float)strike.Y/OutsideMovementDefinition.UnitsPerWorldUnit+1.2f-verticalOffset)*pixelsPerWorldUnit);float tip=(float)(strike.Reach>0?strike.Reach:OutsideExplorationSession.TrialSwordRange)/OutsideMovementDefinition.UnitsPerWorldUnit-.35f;float scale=tip/trialSwordImage.sprite.bounds.max.x;trialSwordImage.rectTransform.localScale=new Vector3(strike.Facing*scale,scale*(strike.VerticalScale>0?strike.VerticalScale:1),1);trialSwordImage.rectTransform.localRotation=Quaternion.Euler(0,0,swordAngle);trialSwordImage.color=new Color(1,1,1,swordAlpha);trialSwordTrail.rectTransform.anchoredPosition=trialSwordImage.rectTransform.anchoredPosition;trialSwordTrail.rectTransform.localScale=new Vector3(strike.Facing,strike.VerticalScale>0?strike.VerticalScale:1,1);trialSwordTrail.SetPose(swordAngle*strike.Facing,swordAlpha,tip*pixelsPerWorldUnit);}
+            }
             PaintSecondTrialFeedback(camera,verticalOffset);
             if(trialTargetFeedback.ActiveCount>0){var obstacles=TrialNumberObstacles();trialTargetFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),obstacles,TrialNumberProtectedOverlay());}
         }
@@ -944,7 +973,7 @@ namespace Olca.Presentation.Exploration
         private List<RectTransform> TrialNumberObstacles()=>new List<RectTransform>{trialTargetPlate,trialTargetGauge.rectTransform,secondTrialGauge.rectTransform,entrance!=null?(RectTransform)entrance.transform:null,reloadPoint,mapNameLabel!=null?mapNameLabel.rectTransform:null};
         private RectTransform TrialNumberProtectedOverlay()=>mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0?mapNameLabel.rectTransform:null;
         private void PaintSecondTrialFeedback(float camera,float verticalOffset){if(secondTrialFeedback?.ActiveCount>0)secondTrialFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),TrialNumberObstacles(),TrialNumberProtectedOverlay());}
-        private void ClearTrialSword(){ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null)image.enabled=false;if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
+        private void ClearTrialSword(){if(polishedSwordTrail!=null){polishedSwordTrail.enabled=false;polishedSwordTrail.sprite=null;}ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null)image.enabled=false;if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
     }
 }
 

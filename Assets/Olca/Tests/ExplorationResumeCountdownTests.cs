@@ -33,6 +33,38 @@ namespace Olca.Tests
             var profile=new ClearReturnProfile();var before=PortableCheckpointJson.Serialize(profile);var nav=new OutsideTrialNavigation();Assert.IsNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));Assert.IsTrue(nav.Select("trial-find-recovery"));Assert.IsFalse(nav.Select("unknown"));Assert.AreEqual("trial-find-recovery",nav.SelectedId);Assert.IsNull(nav.Resolve("unknown"));nav.ToggleVisibility();Assert.IsNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));Assert.AreEqual("trial-find-recovery",nav.SelectedId);nav.ToggleVisibility();Assert.IsNotNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));nav.Select(null);Assert.IsNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));nav.Select("trial-visit-annex");nav.ToggleVisibility();nav.Reset();Assert.IsNull(nav.SelectedId);Assert.IsTrue(nav.Visible);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(profile));
         }
 
+        [TestCase(150,1,true)][TestCase(149,1,false)][TestCase(210,-1,true)][TestCase(211,-1,false)]
+        public void 改善カードのソードは振りかぶり後に三world境界へ一回命中する(int position,int side,bool firstHit)
+        {
+            using(var s=Sword161(position,side))using(var lease=s.AttachPresentation()){
+                s.EnableTrialCardPolish();var selected=s.Cards.SelectedCard;long revision=s.Cards.HandRevision;Assert.IsTrue(s.TryUseSelectedCard(selected,revision,out var error),error);Assert.AreEqual(OutsideCardPolishTrial.SwordMotionId,s.AttackState.SwordMotionId);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.IsTrue(lease.IsSwingingSword);Assert.IsFalse(s.TryUseSelectedCard(selected,revision,out _));
+                for(int n=0;n<7;n++)s.TickTraversal(0);Assert.AreEqual(120,s.TrialTarget.CurrentHp);s.TickTraversal(0);Assert.AreEqual(firstHit?90:120,s.TrialTarget.CurrentHp);Assert.AreEqual(180000,s.TrialStrike.Reach);Assert.IsTrue(s.TrialStrike.SpriteSwing);for(int n=0;n<80;n++)s.TickTraversal(0);Assert.AreEqual(firstHit?90:120,s.TrialTarget.CurrentHp);Assert.IsFalse(s.IsAttacking);
+            }
+        }
+        [TestCase(false,3)][TestCase(true,3)][TestCase(true,9)]
+        public void 改善カードのソード保存は旧前隙を維持し新前隙と命中済みを二重適用しない(bool polished,int age)
+        {
+            using(var s=Sword161(165,startup:5,recovery:12))using(var cold=new OutsideExplorationSession()){
+                if(polished)s.EnableTrialCardPolish();using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<age;n++)s.TickTraversal(0);}
+                var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);Assert.AreEqual(polished?OutsideCardPolishTrial.SwordMotionId:null,data.Attack.SwordMotionId);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;var bytes=PortableCheckpointJson.Serialize(data);Assert.IsTrue(cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes),null,defs));Assert.IsFalse(cold.RestoreSavedState(actor,data,null,defs));CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(data));using(var lease=cold.AttachPresentation()){for(int n=0;n<100;n++)cold.TickTraversal(0);Assert.AreEqual(90,cold.TrialTarget.CurrentHp);Assert.IsFalse(cold.IsAttacking);}
+            }
+        }
+        [TestCase(1)][TestCase(-1)]
+        public void 改善カードのボムは五worldを三十六frameで飛び着弾までダメージを与えない(int side)
+        {
+            using(var s=Bomb289(side,recovery:0))using(var lease=s.AttachPresentation()){
+                s.EnableTrialCardPolish();BombPosition289(s,(side==1?14:24)*60000,side);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);var plan=s.Bombs.Single().Launch;Assert.AreEqual(OutsideBombLaunchData.FastTerrainDefinition,plan.DefinitionId);Assert.AreEqual(300000,plan.FlightDistance);Assert.AreEqual(36,plan.FlightDuration);Assert.AreEqual(19*60000,plan.ImpactX);Assert.AreEqual(36,plan.Duration);for(int n=0;n<35;n++)s.TickTraversal(0);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(0,s.BombBlasts.Count);s.TickTraversal(0);Assert.AreEqual(80,s.TrialTarget.CurrentHp);Assert.AreEqual(80,s.SecondTrialTarget.CurrentHp);Assert.IsEmpty(s.Bombs);Assert.AreEqual(18,s.BombBlasts.Single().VisualFrames);for(int n=0;n<17;n++)s.TickTraversal(0);Assert.AreEqual(1,s.BombBlasts.Count);Assert.AreEqual(80,s.TrialTarget.CurrentHp);s.TickTraversal(0);Assert.IsEmpty(s.BombBlasts);for(int n=0;n<100;n++)s.TickTraversal(0);Assert.AreEqual(80,s.TrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 改善カードのボム冷復帰は旧軌道と新軌道を混ぜず消費命中を一回に保つ(bool polished)
+        {
+            using(var s=Bomb289(recovery:0))using(var cold=new OutsideExplorationSession()){
+                if(polished)s.EnableTrialCardPolish();BombPosition289(s,14*60000,1);using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<5;n++)s.TickTraversal(0);}
+                var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;var bytes=PortableCheckpointJson.Serialize(data);Assert.IsTrue(cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes),null,defs));var plan=cold.Bombs.Single().Launch;Assert.AreEqual(polished?36:90,plan.FlightDuration);Assert.AreEqual(polished?300000:120000,plan.FlightDistance);CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(data));using(var lease=cold.AttachPresentation()){for(int n=0;n<120;n++)cold.TickTraversal(0);Assert.IsEmpty(cold.Bombs);Assert.AreEqual(polished?80:120,cold.TrialTarget.CurrentHp);}
+            }
+        }
+
         private static OutsideExplorationSession Charge291(){var s=Sword161(175);s.EnableTrialNormalKick();return s;}
         private static bool ChargeStep291(OutsideExplorationSession s,bool held,bool down=false,bool card=false,bool actions=true,bool permit=true)
         {s.TickTraversal(0);return s.ProcessAttackInput(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=held,BasicAttackButton=held,BasicAttackButtonDown=down,CardUseButtonDown=card,CardUsePressedAt=card?1:0,BasicAttackPressedAt=down?2:0},false,actions,permit,out _);}

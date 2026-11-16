@@ -555,6 +555,7 @@ namespace Olca.Application.Dungeon
         }
         private void BindOutsidePresentation()
         {
+            if(outsideLandingRoute)gameSystem.OutsideExploration.EnableTrialCardPolish();
             outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);
             outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);
             outsideExploration.View.ConfigureMiniMap(()=>clearReturnSession.InventoryRevision,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(clearReturnSession.Snapshot,gameSystem.OutsideExploration.Core));
