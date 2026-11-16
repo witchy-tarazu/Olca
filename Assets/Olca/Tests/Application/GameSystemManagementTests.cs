@@ -113,6 +113,18 @@ namespace Olca.Tests.Application
             Button Control(string name)=>view.GetComponentsInChildren<Button>(true).Single(b=>b.name==name);
             var notice=Message();Assert.IsFalse(string.IsNullOrWhiteSpace(notice));Assert.IsTrue(Control("OutsideExplorationEntry").interactable);Control("NextDungeonPage").onClick.Invoke();Assert.AreEqual(notice,Message());Control("PreviousDungeonPage").onClick.Invoke();Assert.AreEqual(notice,Message());Control("OutsideExplorationEntry").onClick.Invoke();Assert.AreEqual(1,opens);
         }
+        [TestCase(true,false)] [TestCase(false,false)] [TestCase(true,true)] [TestCase(false,true)]
+        public void 入口の行き先focusは記憶した探索戻り先を上書きし通常Backでは維持する(bool entrance,bool otherPage)
+        {
+            var panel=Panel("EntranceFocus");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);int opened=0,chosen=-1,confirmed=0;
+            void Render(int selected)=>view.RenderDungeonSelection(Enumerable.Range(0,6).Select(n=>"試用"+n).ToArray(),Enumerable.Repeat(true,6).ToArray(),selected,n=>chosen=n,()=>confirmed++,()=>{},false,null,()=>{},outsideExploration:()=>opened++);
+            Render(0);view.FocusMenuControl("OutsideExplorationEntry");Assert.AreEqual("OutsideExplorationEntry",EventSystem.current.currentSelectedGameObject.name);
+            if(otherPage)view.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDungeonPage").onClick.Invoke();
+            Render(1);Assert.AreEqual("OutsideExplorationEntry",EventSystem.current.currentSelectedGameObject.name,"再描画だけでは記憶したfocusへ戻る");
+            if(entrance){view.FocusMenuControl("ConfirmDungeonSelection");view.FocusMenuControl("DungeonChoice_1");}else view.FocusMenuControl("OutsideExplorationEntry");
+            Assert.AreEqual(!entrance?"OutsideExplorationEntry":otherPage?"ConfirmDungeonSelection":"DungeonChoice_1",EventSystem.current.currentSelectedGameObject.name);
+            EventSystem.current.currentSelectedGameObject.GetComponent<Button>().onClick.Invoke();Assert.AreEqual(entrance&&!otherPage?1:-1,chosen);Assert.AreEqual(entrance?0:1,opened);Assert.AreEqual(entrance&&otherPage?1:0,confirmed);
+        }
         private sealed class DoorBoundaryStore : Olca.Core.Domain.IClearReturnStore
         {
             public Olca.Core.Domain.ClearReturnProfile Profile=new Olca.Core.Domain.ClearReturnProfile();public Action Committed;public bool Fail;public int Attempts,Writes;
