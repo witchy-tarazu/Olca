@@ -166,6 +166,44 @@ namespace Olca.Core.Logic.Integration
             cell=new OutsideMapCellData{X=checked((int)x),Y=checked((int)y)};return true;
         }
     }
+    public enum OutsideTrialObjectiveKind {Chest,RecoveryPoint,UniqueEnemy,Boss,Quest}
+    public sealed class OutsideTrialMapObjective
+    {
+        public string Id {get;}public OutsideTrialObjectiveKind Kind {get;}
+        public OutsideTrialMapObjective(string id,OutsideTrialObjectiveKind kind){if(string.IsNullOrWhiteSpace(id)||!Enum.IsDefined(typeof(OutsideTrialObjectiveKind),kind))throw new ArgumentException("試用地図要素が不正です");Id=id;Kind=kind;}
+    }
+    /// <summary>保存済み情報から作る読み取り専用の試用地図。率を地形開示量から計算しない。</summary>
+    public sealed class OutsideTrialMapOverview
+    {
+        public string MapId {get;private set;}public string Name {get;private set;}
+        public IReadOnlyList<OutsideMapCellData> Cells {get;private set;}
+        public bool IsCurrent {get;private set;}public double PlayerX {get;private set;}public double PlayerY {get;private set;}
+        public bool RecoveryKnown {get;private set;}public int? ExplorationPercent {get;private set;}
+        // 対象種類の全一覧は未決。試用カタログでは種類で自動対象化し、要素ごとの参加flagを持たない。
+        public static int? Percent(IEnumerable<OutsideTrialMapObjective> source,Func<OutsideTrialMapObjective,bool> completed)
+        {
+            if(source==null||completed==null)throw new ArgumentNullException();var all=source.ToArray();
+            if(all.Any(v=>v==null)||all.Select(v=>(v.Kind,v.Id)).Distinct().Count()!=all.Length)throw new ArgumentException("試用地図要素が重複/欠落しています");
+            var targets=all.Where(v=>v.Kind!=OutsideTrialObjectiveKind.Quest).ToArray();if(targets.Length==0)return null;
+            int count=targets.Count(completed);return count==targets.Length?100:(int)((long)count*100/targets.Length);
+        }
+        private static int? HomePercent(ClearReturnProfile profile)
+        {
+            var chests=new[]{OutsideSupplyDefinition.Provisional.Id,OutsideSupplyDefinition.PoisonProvisional.Id,OutsideTrialRoute.CardSupplyId};
+            var objectives=chests.Select(id=>new OutsideTrialMapObjective(id,OutsideTrialObjectiveKind.Chest)).Concat(new[]{new OutsideTrialMapObjective(OutsideTrialRoute.RecoveryPointId,OutsideTrialObjectiveKind.RecoveryPoint)});
+            return Percent(objectives,v=>v.Kind==OutsideTrialObjectiveKind.RecoveryPoint?profile.OutsideDiscoveredRecoveryPoints?.Contains(v.Id)==true:profile.OutsideInventory?.ClaimedSources?.Contains(v.Id)==true);
+        }
+        public static OutsideTrialMapOverview[] Build(ClearReturnProfile profile,OutsideExplorationCore core)
+        {
+            if(profile==null||core?.Definition.Id!="validation-landing-32"||!OutsideTrialRoute.KnownMap(core.TrialMapId))return Array.Empty<OutsideTrialMapOverview>();
+            string current=core.TrialMapId??OutsideMapRevealTrial.HomeMapId;bool recovery=profile.OutsideDiscoveredRecoveryPoints?.Contains(OutsideTrialRoute.RecoveryPointId)==true;
+            var result=new List<OutsideTrialMapOverview>();foreach(var id in new[]{OutsideMapRevealTrial.HomeMapId,OutsideTrialRoute.AnnexMapId}){
+                var saved=profile.OutsideMapReveals?.FirstOrDefault(v=>v.MapId==id);bool home=id==OutsideMapRevealTrial.HomeMapId;
+                if(id!=current&&saved==null&&!(home&&recovery))continue;
+                result.Add(new OutsideTrialMapOverview{MapId=id,Name=home?"ケンショウ エリア（カリ）":"シヨウ ベツマップ（カリ）",Cells=Array.AsReadOnly(saved?.Cells.Select(c=>c.Copy()).ToArray()??Array.Empty<OutsideMapCellData>()),IsCurrent=id==current,PlayerX=core.Position/(double)OutsideMovementDefinition.UnitsPerWorldUnit,PlayerY=core.Height/(double)OutsideMovementDefinition.UnitsPerWorldUnit,RecoveryKnown=home&&recovery,ExplorationPercent=home?HomePercent(profile):null});
+            }return result.ToArray();
+        }
+    }
     public enum OutsideAfterimagePose {Dash,JumpRise,JumpApex,JumpFall}
     public readonly struct OutsideAfterimage
     {

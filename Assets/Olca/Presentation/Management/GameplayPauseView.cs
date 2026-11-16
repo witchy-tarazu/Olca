@@ -278,7 +278,7 @@ namespace Olca.Presentation.Management
         public GameObject Pause()
         {
             var panel=Panel("PauseOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
-            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("OutsideEquipmentButton","ソウビ・パーツ"),("OutsideKamuiButton","カムイ キリカエ"),("OutsideFastTravelButton","ファストトラベル（シヨウ）"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
+            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("OutsideEquipmentButton","ソウビ・パーツ"),("OutsideKamuiButton","カムイ キリカエ"),("OutsideFastTravelButton","ゼンタイマップ / イドウ"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
                 Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero);
             LayoutPauseMenu(panel);panel.transform.Find("OutsideEquipmentButton").gameObject.SetActive(false);panel.transform.Find("OutsideKamuiButton").gameObject.SetActive(false);panel.transform.Find("OutsideFastTravelButton").gameObject.SetActive(false);return panel;
         }

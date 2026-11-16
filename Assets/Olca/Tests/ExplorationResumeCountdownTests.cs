@@ -793,6 +793,27 @@ namespace Olca.Tests
             if(kind==0)map.Version=2;else if(kind==1)map.Cells=null;else if(kind==2)map.Cells=new OutsideMapCellData[]{null};else if(kind==3)map.Cells=new[]{new OutsideMapCellData(),new OutsideMapCellData()};else if(kind==4)map.Cells[0].X=-1;else map.MapId="unknown";
             Assert.IsFalse(save.TryRecordOutsideMapVisits(new[]{map},out _));Assert.AreEqual(0,store.Writes);Assert.IsNull(save.Snapshot.OutsideMapReveals);
         }
+        [TestCase(0,0)][TestCase(1,33)][TestCase(2,66)][TestCase(3,100)]
+        public void 試用地図の率は等重みで切捨て依頼を除外し全部完了だけ百にする(int completed,int expected)
+        {
+            var objectives=new[]{new OutsideTrialMapObjective("a",OutsideTrialObjectiveKind.Chest),new OutsideTrialMapObjective("b",OutsideTrialObjectiveKind.Boss),new OutsideTrialMapObjective("c",OutsideTrialObjectiveKind.RecoveryPoint),new OutsideTrialMapObjective("q",OutsideTrialObjectiveKind.Quest)};
+            Assert.AreEqual(expected,OutsideTrialMapOverview.Percent(objectives,v=>v.Id=="q"||Array.IndexOf(objectives,v)<completed));
+            Assert.IsNull(OutsideTrialMapOverview.Percent(Array.Empty<OutsideTrialMapObjective>(),_=>true));Assert.IsNull(OutsideTrialMapOverview.Percent(objectives.Where(v=>v.Kind==OutsideTrialObjectiveKind.Quest),_=>true));
+            Assert.Throws<ArgumentException>(()=>OutsideTrialMapOverview.Percent(new[]{objectives[0],objectives[0]},_=>true));
+        }
+        [Test] public void 百未満を四捨五入で百にせず固有強敵も対象に含める()
+        {var data=Enumerable.Range(0,1001).Select(i=>new OutsideTrialMapObjective(i.ToString(),OutsideTrialObjectiveKind.UniqueEnemy)).ToArray();Assert.AreEqual(99,OutsideTrialMapOverview.Percent(data,v=>v.Id!="0"));}
+        [TestCase(0,0)][TestCase(1,25)][TestCase(2,50)][TestCase(3,75)][TestCase(4,100)]
+        public void 試用Home率は保存済み宝箱と地点からだけ計算し地形や未知購入履歴と無関係(int unlocked,int expected)
+        {
+            var p=new ClearReturnProfile{OutsideMapReveals=new[]{new OutsideMapRevealData{MapId=OutsideMapRevealTrial.HomeMapId,Cells=Enumerable.Range(0,8).Select(x=>new OutsideMapCellData{X=x,Y=0}).ToArray()}},OutsideInventory=new OutsideInventoryData{ClaimedSources=new[]{OutsideSupplyDefinition.Provisional.Id,OutsideSupplyDefinition.PoisonProvisional.Id,OutsideTrialRoute.CardSupplyId}.Take(Math.Min(3,unlocked)).Concat(new[]{"purchase:unknown"}).ToArray()},OutsideDiscoveredRecoveryPoints=unlocked==4?new[]{OutsideTrialRoute.RecoveryPointId}:null};
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain);var before=PortableCheckpointJson.Serialize(p);string oldCore=CoreKey141(core);var maps=OutsideTrialMapOverview.Build(p,core);Assert.AreEqual(expected,maps.Single().ExplorationPercent);Assert.AreEqual(8,maps.Single().Cells.Count);maps[0].Cells[0].X=100;CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(p));Assert.AreEqual(oldCore,CoreKey141(core));
+        }
+        [Test] public void 旧保存は訪問を推測せず別マップ率未登録と現在地を分ける()
+        {
+            var p=new ClearReturnProfile();var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain);var first=OutsideTrialMapOverview.Build(p,core);Assert.AreEqual(1,first.Length);Assert.IsEmpty(first[0].Cells);Assert.IsFalse(first[0].RecoveryKnown);Assert.AreEqual(0,first[0].ExplorationPercent);Assert.IsNull(p.OutsideMapReveals);
+            p.OutsideMapReveals=new[]{new OutsideMapRevealData{MapId=OutsideTrialRoute.AnnexMapId,Cells=new[]{new OutsideMapCellData{X=1,Y=0}}}};var maps=OutsideTrialMapOverview.Build(p,core);Assert.AreEqual(2,maps.Length);Assert.IsNull(maps[1].ExplorationPercent);Assert.IsFalse(maps[1].IsCurrent);Assert.IsTrue(maps[0].IsCurrent);Assert.IsFalse(maps[1].RecoveryKnown);
+        }
         private sealed class Style231Store:IClearReturnStore
         {
             public ClearReturnProfile Value=new ClearReturnProfile{Tokens=7};public bool Fail;public int Writes;
