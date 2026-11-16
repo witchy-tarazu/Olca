@@ -28,6 +28,48 @@ namespace Olca.Presentation.Exploration
             mapDoor.GetComponent<RectTransform>().sizeDelta=new Vector2(Mathf.Clamp(((RectTransform)transform).rect.width-1440,180,380),90);mapDoor.interactable=CanPlay&&canTravelMap?.Invoke()==true;mapDoor.GetComponentInChildren<Text>().text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(mapDoorMessage?.Invoke()??"シヨウ マップ イドウ（カリ）");
         }
         private void ClearMapDoor(){travelMap=null;canTravelMap=null;mapDoorMessage=null;if(mapDoor!=null){mapDoor.onClick.RemoveAllListeners();mapDoor.interactable=false;mapDoor.gameObject.SetActive(false);}if(mapDoorMarker!=null)mapDoorMarker.gameObject.SetActive(false);}
+        private Func<long> miniMapRevision;private Func<OutsideTrialMapOverview[]> miniMapSource;
+        private OutsideTrialMapOverview miniMapData;private long miniMapShownRevision=long.MinValue;private string miniMapShownId;
+        private RectTransform miniMapPanel;private Image[] miniMapCells;private Image miniMapPlayer,miniMapRecovery;private int miniMapLeft,miniMapBottom;private int miniMapDrawLeft=int.MinValue,miniMapDrawBottom;private long miniMapDrawRevision=long.MinValue;private string miniMapDrawId;
+        // 全体マップと同じ確定済み開示だけを読む。表示は保存・発見・時計を進めない。
+        public void ConfigureMiniMap(Func<long> revision,Func<OutsideTrialMapOverview[]> maps)
+        {
+            ClearMiniMap();miniMapRevision=revision;miniMapSource=maps;
+        }
+        private void RenderMiniMap()
+        {
+            if(miniMapSource==null||!IsOpen){if(miniMapPanel!=null)miniMapPanel.gameObject.SetActive(false);return;}
+            var core=presentation.Core;string id=core.TrialMapId??OutsideMapRevealTrial.HomeMapId;
+            if(!OutsideMapRevealTrial.KnownMap(id)){if(miniMapPanel!=null)miniMapPanel.gameObject.SetActive(false);return;}
+            long revision=miniMapRevision?.Invoke()??-1;
+            if(miniMapData==null||miniMapShownRevision!=revision||miniMapShownId!=id){miniMapData=miniMapSource()?.FirstOrDefault(m=>m.MapId==id);miniMapShownRevision=revision;miniMapShownId=id;}
+            if(miniMapData==null){if(miniMapPanel!=null)miniMapPanel.gameObject.SetActive(false);return;}
+            if(miniMapPanel==null)CreateMiniMap();miniMapPanel.gameObject.SetActive(true);
+            double x=core.Position/(double)OutsideMapRevealTrial.CellSize,y=core.Height/(double)OutsideMapRevealTrial.CellSize;
+            int columns=(int)Math.Ceiling(core.Definition.Width/(double)OutsideMapRevealTrial.CellSize);
+            miniMapLeft=Math.Max(0,Math.Min(Math.Max(0,columns-8),(int)Math.Floor(x)-4));miniMapBottom=(int)Math.Floor(y)-1;
+            if(miniMapDrawRevision!=revision||miniMapDrawId!=id||miniMapDrawLeft!=miniMapLeft||miniMapDrawBottom!=miniMapBottom){
+            miniMapDrawRevision=revision;miniMapDrawId=id;miniMapDrawLeft=miniMapLeft;miniMapDrawBottom=miniMapBottom;
+            for(int row=0;row<3;row++)for(int column=0;column<8;column++){
+                int cx=miniMapLeft+column,cy=miniMapBottom+row;bool revealed=miniMapData.ItemRevealed||miniMapData.Cells.Any(c=>c.X==cx&&c.Y==cy);
+                miniMapCells[row*8+column].color=revealed?new Color(.1f,.42f,.56f,1):new Color(.025f,.075f,.1f,1);
+            }
+            }
+            miniMapPlayer.rectTransform.anchoredPosition=new Vector2(-200+(float)(x-miniMapLeft)*50,-24+(float)(y-miniMapBottom)*16);
+            bool recovery=miniMapData.RecoveryVisible&&miniMapBottom<=0&&miniMapBottom+3>0&&miniMapLeft<=1&&miniMapLeft+8>1;
+            miniMapRecovery.gameObject.SetActive(recovery);if(recovery){miniMapRecovery.rectTransform.anchoredPosition=new Vector2(-200+(1.5f-miniMapLeft)*50,-8-miniMapBottom*16);miniMapRecovery.color=miniMapData.RecoveryKnown?new Color(.02f,.4f,.42f,1):new Color(.22f,.27f,.32f,1);}
+        }
+        private void CreateMiniMap()
+        {
+            var go=new GameObject("OutsideMiniMap",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);miniMapPanel=(RectTransform)go.transform;miniMapPanel.anchorMin=miniMapPanel.anchorMax=new Vector2(0,1);miniMapPanel.anchoredPosition=new Vector2(255,-348);miniMapPanel.sizeDelta=new Vector2(430,96);var panel=go.GetComponent<Image>();panel.color=new Color(.005f,.03f,.045f,.97f);panel.raycastTarget=false;
+            Text Label(string name,string text,Vector2 at,Vector2 size,int points){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(go.transform,false);var t=obj.GetComponent<Text>();t.font=gaugeLabel.font;t.text=text;t.fontSize=points;t.color=Color.white;t.alignment=TextAnchor.MiddleCenter;t.raycastTarget=false;t.rectTransform.anchoredPosition=at;t.rectTransform.sizeDelta=size;return t;}
+            Label("MiniMapTitle","ミニマップ（シヨウ）",new Vector2(0,35),new Vector2(410,24),14);Label("MiniMapLegend","P: ゲンザイチ / R: カイフク / 4worldグリッド（カリ）",new Vector2(0,-36),new Vector2(420,20),12);
+            Image Tile(string name,Vector2 at,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(go.transform,false);var image=obj.GetComponent<Image>();image.raycastTarget=false;image.rectTransform.anchoredPosition=at;image.rectTransform.sizeDelta=size;return image;}
+            miniMapCells=new Image[24];for(int row=0;row<3;row++)for(int column=0;column<8;column++)miniMapCells[row*8+column]=Tile("MiniMapCell_"+column+"_"+row,new Vector2(-175+column*50,-16+row*16),new Vector2(48,14));
+            Image Marker(string name,string text,Color color){var im=Tile(name,Vector2.zero,new Vector2(16,16));im.color=color;var label=Label(name+"Label",text,Vector2.zero,new Vector2(16,20),12);label.transform.SetParent(im.transform,false);return im;}
+            miniMapRecovery=Marker("MiniMapRecovery","R",Color.gray);miniMapPlayer=Marker("MiniMapPlayer","P",new Color(.6f,.34f,.08f,1));
+        }
+        private void ClearMiniMap(){miniMapRevision=null;miniMapSource=null;miniMapData=null;miniMapShownRevision=long.MinValue;miniMapShownId=miniMapDrawId=null;miniMapDrawRevision=long.MinValue;miniMapDrawLeft=int.MinValue;if(miniMapPanel!=null)miniMapPanel.gameObject.SetActive(false);}
         private Text mapNameLabel;
         private void RenderMapName()
         {
