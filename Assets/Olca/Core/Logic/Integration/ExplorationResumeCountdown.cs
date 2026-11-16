@@ -197,6 +197,7 @@ namespace Olca.Core.Logic.Integration
             public int BombThrowFacing=>IsThrowingBomb?owner.attackState.BombLaunch.Facing:IsCurrent?owner.instantBombFacing:1;
             public bool HasAttackAction=>IsCurrent&&owner.IsAttacking;
             public long InstantBombReleasedAt=>IsCurrent?owner.instantBombReleasedAt:-1;
+            public bool InstantBombWasAirborne=>IsCurrent&&owner.instantBombAirborne;
             public OutsideCardUseRestriction SelectedCardRestriction=>IsCurrent?owner.SelectedCardRestriction:OutsideCardUseRestriction.None;
             public bool IsDashAttacking=>IsCurrent&&owner.normalKick?.IsDashAttack==true;
             public OutsideKickKind? NormalKickKind=>IsCurrent&&owner.normalKick?.IsActive==true?owner.normalKick.Kind:(OutsideKickKind?)null;
@@ -237,8 +238,8 @@ namespace Olca.Core.Logic.Integration
         private long bodyPreventedFrame=-1;
         private OutsideAttackStateData attackState;
         // 瞬時発動の表示用通知。セーブ/判定へ含めず、再入・復元時には再演しない。
-        private long instantBombReleasedAt=-1;private int instantBombFacing=1;
-        private void ClearBombReleaseVisual(){instantBombReleasedAt=-1;instantBombFacing=1;}
+        private long instantBombReleasedAt=-1;private int instantBombFacing=1;private bool instantBombAirborne;
+        private void ClearBombReleaseVisual(){instantBombReleasedAt=-1;instantBombFacing=1;instantBombAirborne=false;}
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
         private Enemy trialTarget;private bool trialTargetChanged;private int trialTargetHits;private OutsideTrialStrike trialStrike;
@@ -529,7 +530,7 @@ namespace Olca.Core.Logic.Integration
             attackAllowed=false;
             if(IsEnded||!IsPresented||Player==null||Core.Frame==playerFrame)return false;
             playerFrame=Core.Frame;var value=Player;
-            if(Core.IsMoving||!Core.IsGrounded||Core.Facing!=instantBombFacing||value.IsActionPrevented)ClearBombReleaseVisual();
+            if(Core.IsGrounded==instantBombAirborne||Core.IsGrounded&&Core.IsMoving||Core.Facing!=instantBombFacing||value.IsActionPrevented)ClearBombReleaseVisual();
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
             try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
@@ -1362,7 +1363,7 @@ namespace Olca.Core.Logic.Integration
             try{plan=new OutsideBombLaunchData{X=Core.Position,Facing=Core.Facing,Power=card.GetFinalPower(),Element=card.GetFinalElement(),Level=card.ExceedLevel,PoiseDamage=card.PoiseDamage,HitStopFrames=hitStopSettings.CardFrames(card)};if(!Core.IsGrounded||Core.Height!=0||!OutsideBombLaunchData.HasTerrain(Core,Core.Position,Core.Facing)){plan.DefinitionId=OutsideBombLaunchData.TerrainDefinition;plan.Terrain=OutsideBombTerrainData.Create(Core,plan.X,plan.Facing,Core.Height);}plan.Validate();return true;}
             catch(Exception e)when(e is ArgumentException||e is OverflowException){plan=null;error=e.Message;return false;}
         }
-        private void EmitBomb(OutsideAttackStateData action){if(action.BombLaunch==null)throw new InvalidOperationException("ボムの発射計画がありません");bombs.Add(new OutsideBombFlightData{Launch=action.BombLaunch.Copy(),ActionStartedAt=action.StartedAt,FiredAt=Core.Frame});if(action.StartupFrames==0&&action.RecoveryFrames==0){instantBombReleasedAt=Core.Frame;instantBombFacing=action.BombLaunch.Facing;}}
+        private void EmitBomb(OutsideAttackStateData action){if(action.BombLaunch==null)throw new InvalidOperationException("ボムの発射計画がありません");bombs.Add(new OutsideBombFlightData{Launch=action.BombLaunch.Copy(),ActionStartedAt=action.StartedAt,FiredAt=Core.Frame});if(action.StartupFrames==0&&action.RecoveryFrames==0){instantBombReleasedAt=Core.Frame;instantBombFacing=action.BombLaunch.Facing;instantBombAirborne=!Core.IsGrounded;}}
         private OutsideBombFlightData[] CaptureBombs()=>bombs.Count==0?null:bombs.Select(v=>v.Copy()).ToArray();
         private void AdvanceBombs()
         {

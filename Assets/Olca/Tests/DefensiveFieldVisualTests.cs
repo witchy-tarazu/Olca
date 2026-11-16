@@ -392,7 +392,7 @@ namespace Olca.Tests {
   [NUnit.Framework.TestCase(8,3,5,-1)] [NUnit.Framework.TestCase(0,0,2,2)] [NUnit.Framework.TestCase(0,0,0,-1)] [NUnit.Framework.TestCase(5,0,12,2)] [NUnit.Framework.TestCase(6,0,12,3)] [NUnit.Framework.TestCase(12,0,12,-1)]
   public void 投擲の表示phaseは指定された論理frame境界だけを読む(int age,int start,int end,int pose){NUnit.Framework.Assert.AreEqual(pose,Olca.Presentation.Exploration.TrialBombThrowMotion.FrameIndex(age,start,end));}
   [NUnit.Framework.TestCase(0)] [NUnit.Framework.TestCase(1)] [NUnit.Framework.TestCase(2)] [NUnit.Framework.TestCase(3)] [NUnit.Framework.TestCase(4)] [NUnit.Framework.TestCase(5)] [NUnit.Framework.TestCase(6)] [NUnit.Framework.TestCase(7)] [NUnit.Framework.TestCase(8)] [NUnit.Framework.TestCase(9)]
-  public void 投擲Viewは地上Basicだけを採用し空中未知形態と行動不能へ流用しない(int state){
+  public void 投擲Viewは登録形態と地上空中を採用し未知形態と行動不能へ流用しない(int state){
    var session=new Olca.Core.Logic.Integration.OutsideExplorationSession();var go=new UnityEngine.GameObject("BombProjection299");go.SetActive(false);var view=go.AddComponent<Olca.Presentation.Exploration.OutsideExplorationView>();
    var field=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("presentation",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
    try{session.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100,staggerDurationFrames:3));var factory=new Olca.Application.Battle.SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,Olca.Core.Domain.PlayerAttackTiming>{{"bomb",new Olca.Core.Domain.PlayerAttackTiming(state>=7?0:3,state>=7?0:8)}});var cards=factory.CreateStarterDeck().GetAllCards().ToArray();
@@ -405,7 +405,7 @@ namespace Olca.Tests {
      if(state==5){session.Player.RestoreTimedAilments(new Olca.Core.Domain.PlayerTimedAilmentsDto{Paralysis=new Olca.Core.Domain.PlayerTimedAilmentDto{RemainingUnits=1000,DisplayFrames=20},Confusion=new Olca.Core.Domain.PlayerTimedAilmentDto(),Blindness=new Olca.Core.Domain.PlayerTimedAilmentDto()});NUnit.Framework.Assert.IsTrue(session.Player.IsParalyzed);}
      if(state==6){session.Player.TryTakeDamage(1,forceStagger:true);NUnit.Framework.Assert.IsTrue(session.Player.IsStaggered);}
      if(state==8)for(int n=0;n<Olca.Presentation.Exploration.TrialBombThrowMotion.InstantReleaseVisualFrames;n++)session.TickTraversal(0);if(state==9){session.TickTraversal(1);session.TickTraversal(0);}
-     field.SetValue(view,lease);var result=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("TrialBombSprite",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);NUnit.Framework.Assert.AreEqual(state==0||state==7,result!=null);if(state==7)NUnit.Framework.Assert.AreEqual("trial_bomb_throw_2",((UnityEngine.Sprite)result).name);
+     field.SetValue(view,lease);var result=typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("TrialBombSprite",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);NUnit.Framework.Assert.AreEqual(state==0||state==1||state==3||state==7,result!=null);if(state==7)NUnit.Framework.Assert.AreEqual("trial_bomb_throw_2",((UnityEngine.Sprite)result).name);
      lease.Dispose();NUnit.Framework.Assert.IsNull(typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("TrialBombSprite",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null));field.SetValue(view,null);
     }
    }finally{field.SetValue(view,null);session.Dispose();UnityEngine.Object.DestroyImmediate(go);}
@@ -417,5 +417,30 @@ namespace Olca.Tests {
    }
   }
   [NUnit.Framework.Test]public void 投擲素材欠損時は部分採用や描画ごとの再読込をしない(){int loads=0;using(var m=new Olca.Presentation.Exploration.TrialBombThrowMotion(k=>{loads++;return new UnityEngine.Sprite[3];})){for(int n=0;n<20;n++)NUnit.Framework.Assert.IsNull(m.Resolve(0,4,4));NUnit.Framework.Assert.AreEqual(1,loads);}}
+ }
+}
+
+namespace Olca.Tests {
+ public class TrialBombVariantVisualTests {
+  [NUnit.Framework.TestCase(false,false,0)] [NUnit.Framework.TestCase(true,true,4)] [NUnit.Framework.TestCase(false,true,8)]
+  public void 空中とカエンの投擲は専用四姿勢を一度だけ借用する(bool grounded,bool fire,int first){
+   using(var motion=new Olca.Presentation.Exploration.TrialBombThrowMotion()){
+    var seen=new System.Collections.Generic.HashSet<UnityEngine.Sprite>();for(int n=0;n<4;n++){
+     var sprite=motion.Resolve(n*2,4,4,grounded,fire);NUnit.Framework.Assert.IsNotNull(sprite);NUnit.Framework.Assert.AreEqual("trial_bomb_variant_"+(first+n),sprite.name);NUnit.Framework.Assert.IsTrue(seen.Add(sprite));NUnit.Framework.Assert.IsTrue(motion.Contains(sprite));NUnit.Framework.Assert.AreEqual(14,sprite.pivot.y,.01f);
+    }motion.Dispose();foreach(var sprite in seen){NUnit.Framework.Assert.IsTrue(sprite!=null);NUnit.Framework.Assert.IsFalse(motion.Contains(sprite));}
+   }
+  }
+  [NUnit.Framework.TestCase(-1,1)] [NUnit.Framework.TestCase(1,1)] [NUnit.Framework.TestCase(-1,5)] [NUnit.Framework.TestCase(1,5)] [NUnit.Framework.TestCase(-1,90)] [NUnit.Framework.TestCase(1,90)]
+  public void 手先補間は固定発射位置から単調に終点へ収束し保存計画を変更しない(int facing,int duration){
+   long origin=600000;long end=origin+facing*(duration==90?120000:6000);var launch=new Olca.Core.Logic.Integration.OutsideBombLaunchData{X=origin,Facing=facing};if(duration!=90)launch.Terrain=new Olca.Core.Logic.Integration.OutsideBombTerrainData{OriginHeight=60000,ImpactX=end,ImpactFrame=duration,ImpactHeight=30000};var flight=new Olca.Core.Logic.Integration.OutsideBombFlightData{Launch=launch,FiredAt=10};
+   byte[] before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(flight);float previous=0;
+   for(int age=0;age<=duration;age++){
+    var point=Olca.Presentation.Exploration.TrialBombThrowMotion.FlightPosition(flight,10+age);
+    float x=point.x;NUnit.Framework.Assert.GreaterOrEqual(x,(float)System.Math.Min(origin,end)/60000-.0001f);NUnit.Framework.Assert.LessOrEqual(x,(float)System.Math.Max(origin,end)/60000+.0001f);if(age>0)NUnit.Framework.Assert.GreaterOrEqual((x-previous)*facing,-.0001f);previous=x;
+    NUnit.Framework.Assert.AreEqual(point,Olca.Presentation.Exploration.TrialBombThrowMotion.FlightPosition(flight,10+age));
+   }
+   var start=Olca.Presentation.Exploration.TrialBombThrowMotion.FlightPosition(flight,10);NUnit.Framework.Assert.AreEqual(start,Olca.Presentation.Exploration.TrialBombThrowMotion.FlightPosition(flight,9));
+   var final=Olca.Presentation.Exploration.TrialBombThrowMotion.FlightPosition(flight,10+duration);NUnit.Framework.Assert.AreEqual(flight.Launch.ImpactX/60000f,final.x,.0001f);NUnit.Framework.Assert.AreEqual(flight.Height(10+duration)/60000f,final.y,.0001f);NUnit.Framework.CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(flight));
+  }
  }
 }

@@ -75,17 +75,17 @@ namespace Olca.Presentation.Exploration
         private TrialBombThrowMotion trialBombMotion;
         private Sprite TrialBombSprite()
         {
-            // 試用の立ち投げ。空中・カエンは専用姿勢が未登録なので既存表示を維持する。
-            if(presentation?.IsCurrent!=true||!presentation.Core.IsGrounded||presentation.Player==null||
+            // 試用の地上/空中投擲。登録済みBasicとカエンだけを借用する。
+            if(presentation?.IsCurrent!=true||presentation.Player==null||
                 presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||
-                presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId)return null;
+                presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
             if(presentation.IsThrowingBomb)return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(
-                presentation.BombThrowElapsedFrames,presentation.BombThrowStartupFrames,presentation.BombThrowRecoveryFrames);
+                presentation.BombThrowElapsedFrames,presentation.BombThrowStartupFrames,presentation.BombThrowRecoveryFrames,presentation.Core.IsGrounded,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
             // 既存の0/0定義は実発射と同時の解放→復帰だけを短く描く。行動/移動を拘束しない。
             if(presentation.InstantBombReleasedAt<0||presentation.HasAttackAction||presentation.IsCharging||
-                presentation.IsDeckEditingLocation||presentation.Core.IsMoving||presentation.Core.Facing!=presentation.BombThrowFacing)return null;
+                presentation.IsDeckEditingLocation||presentation.Core.IsGrounded&&presentation.Core.IsMoving||presentation.Core.IsGrounded==presentation.InstantBombWasAirborne||presentation.Core.Facing!=presentation.BombThrowFacing)return null;
             return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(
-                presentation.Core.Frame-presentation.InstantBombReleasedAt,0,TrialBombThrowMotion.InstantReleaseVisualFrames);
+                presentation.Core.Frame-presentation.InstantBombReleasedAt,0,TrialBombThrowMotion.InstantReleaseVisualFrames,presentation.Core.IsGrounded,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
         }
         private Sprite trialKickPrepare,trialKickContact,trialAirForwardContact,trialDashKickContact;
         private Sprite TrialKickSprite()
@@ -711,7 +711,8 @@ namespace Olca.Presentation.Exploration
             foreach(var flight in flights){float age=frame-flight.FiredAt;float target=flight.Launch.ImpactX/(float)OutsideMovementDefinition.UnitsPerWorldUnit;
                 // 着弾予定だけの薄い目印。ダメージはSessionの90frame到達時に一度だけ発生する。
                 if(!flight.Launch.Dissipates)for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,flight.Launch.ImpactHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.18f,.18f);
-                Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,flight.Position(frame)/(float)OutsideMovementDefinition.UnitsPerWorldUnit,flight.Height(frame)/(float)OutsideMovementDefinition.UnitsPerWorldUnit,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
+                var visible=TrialBombThrowMotion.FlightPosition(flight,frame);
+                Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
             }
             foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
@@ -895,7 +896,7 @@ namespace Olca.Presentation.Exploration
     public sealed class TrialBombThrowMotion : System.IDisposable
     {
         private readonly System.Func<string,Sprite[]> load;
-        private Sprite[] frames;private bool attempted,disposed;
+        private Sprite[] frames,variants;private bool attempted,attemptedVariants,disposed;
         public const int InstantReleaseVisualFrames=12; // 表示だけの仮値。入力予約や実行硬直を延ばさない。
         public TrialBombThrowMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
         public static int FrameIndex(long elapsed,int startup,int recovery)
@@ -904,9 +905,10 @@ namespace Olca.Presentation.Exploration
             if(elapsed<startup)return elapsed<Math.Max(1,startup/2)?0:1;
             return elapsed-startup<Math.Max(1,recovery/2)?2:3;
         }
-        public Sprite Resolve(long elapsed,int startup,int recovery)
+        public Sprite Resolve(long elapsed,int startup,int recovery,bool grounded=true,bool isFire=false)
         {
             int index=FrameIndex(elapsed,startup,recovery);if(disposed||index<0)return null;
+            if(!grounded||isFire){if(!attemptedVariants){attemptedVariants=true;variants=LoadVariants();}return variants==null?null:variants[(isFire?(grounded?1:2):0)*4+index];}
             if(!attempted){attempted=true;var all=load("OlcaCharacterMotion/trial_bomb_throw_sheet");
                 if(all!=null&&all.Length==4){var candidate=new Sprite[4];for(int n=0;n<4;n++){
                     var found=System.Array.FindAll(all,s=>s!=null&&s.name=="trial_bomb_throw_"+n);
@@ -916,8 +918,26 @@ namespace Olca.Presentation.Exploration
             }
             return frames==null?null:frames[index];
         }
-        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&frames!=null&&System.Array.IndexOf(frames,sprite)>=0;
-        public void Dispose(){disposed=true;frames=null;}
+        private Sprite[] LoadVariants()
+        {
+            var all=load("OlcaCharacterMotion/trial_bomb_variants_sheet");if(all==null||all.Length!=12)return null;
+            var result=new Sprite[12];for(int n=0;n<12;n++){
+                var found=System.Array.FindAll(all,s=>s!=null&&s.name=="trial_bomb_variant_"+n);
+                if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f)return null;result[n]=found[0];
+            }return result;
+        }
+        /// <summary>試用の手先から既存衝突終点へ収束する表示だけの補間。live actorや保存計画を変更しない。</summary>
+        public static Vector2 FlightPosition(OutsideBombFlightData flight,long frame)
+        {
+            float unit=OutsideMovementDefinition.UnitsPerWorldUnit;
+            float age=Mathf.Clamp(frame-flight.FiredAt,0,flight.Launch.Duration);
+            float remaining=1-age/Mathf.Max(1,flight.Launch.Duration);
+            float start=Mathf.Clamp(flight.Launch.X/unit+flight.Launch.Facing*.68f,Mathf.Min(flight.Launch.X,flight.Launch.ImpactX)/unit,Mathf.Max(flight.Launch.X,flight.Launch.ImpactX)/unit);
+            float x=Mathf.Lerp(flight.Launch.ImpactX/unit,start,remaining);
+            return new Vector2(x,flight.Height(frame)/unit+.85f*remaining);
+        }
+        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&(frames!=null&&System.Array.IndexOf(frames,sprite)>=0||variants!=null&&System.Array.IndexOf(variants,sprite)>=0);
+        public void Dispose(){disposed=true;frames=variants=null;}
     }
     public sealed class TrialChargeMotion : System.IDisposable
     {

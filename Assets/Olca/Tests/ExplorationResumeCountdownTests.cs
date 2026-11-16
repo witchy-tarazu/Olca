@@ -206,6 +206,21 @@ namespace Olca.Tests
                 }finally{lease.Dispose();}
             }
         }
+        [TestCase(false,0)] [TestCase(true,0)] [TestCase(false,1)] [TestCase(true,1)] [TestCase(false,2)] [TestCase(true,2)]
+        public void 空中投擲通知は横移動を妨げず反転着地で取消し保存へ混入しない(bool fire,int boundary)
+        {
+            using(var s=Bomb289(recovery:0))using(var lease=s.AttachPresentation()){
+                if(fire){s.Player.SetDepartureStyle(DepartureStyleDefinition.TrialFire);s.Player.SetElementResistances(ElementAffinity.CreatePlayerBase(ElementType.Fire));}
+                BombPosition289(s,1008000,1,120000);Assert.IsFalse(s.Core.IsGrounded);
+                Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);
+                Assert.IsTrue(lease.InstantBombWasAirborne);Assert.GreaterOrEqual(lease.InstantBombReleasedAt,0);long stamp=lease.InstantBombReleasedAt;long x=s.Core.Position;
+                s.TickTraversal(1);Assert.Greater(s.Core.Position,x);Assert.AreEqual(stamp,lease.InstantBombReleasedAt);Assert.IsTrue(s.AllowsTraversalInput);
+                if(boundary==1){s.TickTraversal(-1);Assert.AreEqual(-1,lease.InstantBombReleasedAt);}
+                if(boundary==2){for(int n=0;n<200&&!s.Core.IsGrounded;n++)s.TickTraversal(0);Assert.IsTrue(s.Core.IsGrounded);Assert.AreEqual(-1,lease.InstantBombReleasedAt);}
+                var actor=OutsidePlayerSaveData.Capture(s.Player);var defs=Kick214Definitions(s);lease.Dispose();var saved=s.CaptureRuntime(defs);actor.Id=saved.Id;
+                using(var cold=new OutsideExplorationSession()){Assert.IsTrue(cold.RestoreSavedState(actor,saved,null,defs));using(var next=cold.AttachPresentation())Assert.AreEqual(-1,next.InstantBombReleasedAt);}
+            }
+        }
         [Test] public void ボム投擲表示は発射境界と保存時計を読み古いleaseに状態を漏らさない()
         {
             using(var s=Bomb289(startup:3)){

@@ -1,0 +1,745 @@
+fileFormatVersion: 2
+guid: fd2b8f566e5732d718c4e41265e27fc3
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 4743504119406263040
+    second: trial_bomb_variants_sheet_0
+  - first:
+      213: -8501007864719399356
+    second: trial_bomb_variants_sheet_1
+  - first:
+      213: 4483310905524783323
+    second: trial_bomb_variants_sheet_2
+  - first:
+      213: -1028914690378116251
+    second: trial_bomb_variants_sheet_3
+  - first:
+      213: -747335305621601989
+    second: trial_bomb_variants_sheet_4
+  - first:
+      213: 8338508444341207664
+    second: trial_bomb_variants_sheet_5
+  - first:
+      213: -4913379892908977220
+    second: trial_bomb_variants_sheet_6
+  - first:
+      213: 435392865802760943
+    second: trial_bomb_variants_sheet_7
+  - first:
+      213: 790942569553286765
+    second: trial_bomb_variants_sheet_8
+  - first:
+      213: 3090712464291565104
+    second: trial_bomb_variants_sheet_9
+  - first:
+      213: 6707741600902285396
+    second: trial_bomb_variants_sheet_10
+  - first:
+      213: -4358689429160299682
+    second: trial_bomb_variants_sheet_11
+  - first:
+      213: -8750488323507103783
+    second: trial_bomb_variants_sheet_12
+  - first:
+      213: -6132165775732005500
+    second: trial_bomb_variants_sheet_13
+  - first:
+      213: 8119116084085085774
+    second: trial_bomb_variants_sheet_14
+  - first:
+      213: 5084978864849310771
+    second: trial_bomb_variants_sheet_15
+  - first:
+      213: 4297406980002214709
+    second: trial_bomb_variants_sheet_16
+  - first:
+      213: -235140616996055131
+    second: trial_bomb_variants_sheet_17
+  - first:
+      213: -1474072028958293518
+    second: trial_bomb_variants_sheet_18
+  - first:
+      213: 6918511900714443119
+    second: trial_bomb_variants_sheet_19
+  - first:
+      213: -56447080336004297
+    second: trial_bomb_variants_sheet_20
+  - first:
+      213: -8189585031144390122
+    second: trial_bomb_variants_sheet_21
+  - first:
+      213: -4078572446991739890
+    second: trial_bomb_variants_sheet_22
+  - first:
+      213: 2146495955827793177
+    second: trial_bomb_variants_sheet_23
+  - first:
+      213: 7886929990673281939
+    second: trial_bomb_variants_sheet_24
+  - first:
+      213: -1538222142835564426
+    second: trial_bomb_variants_sheet_25
+  - first:
+      213: 5849466694523480760
+    second: trial_bomb_variants_sheet_26
+  - first:
+      213: -5985068779410898831
+    second: trial_bomb_variants_sheet_27
+  - first:
+      213: -833287475798738304
+    second: trial_bomb_variants_sheet_28
+  - first:
+      213: -5899292018223666756
+    second: trial_bomb_variants_sheet_29
+  - first:
+      213: -8025917901063042753
+    second: trial_bomb_variants_sheet_30
+  - first:
+      213: 6002066728670839435
+    second: trial_bomb_variants_sheet_31
+  - first:
+      213: 9156907942554400745
+    second: trial_bomb_variants_sheet_32
+  - first:
+      213: -5325978268030204383
+    second: trial_bomb_variants_sheet_33
+  - first:
+      213: -3267592447110333388
+    second: trial_bomb_variants_sheet_34
+  - first:
+      213: 8828890676305325470
+    second: trial_bomb_variants_sheet_35
+  - first:
+      213: 6725285067937268514
+    second: trial_bomb_variants_sheet_36
+  - first:
+      213: -8841207217709324245
+    second: trial_bomb_variants_sheet_37
+  - first:
+      213: 607196490450685506
+    second: trial_bomb_variants_sheet_38
+  - first:
+      213: 7970348718125668297
+    second: trial_bomb_variants_sheet_39
+  - first:
+      213: 2254208206501077782
+    second: trial_bomb_variants_sheet_40
+  - first:
+      213: 5930536786943329684
+    second: trial_bomb_variants_sheet_41
+  - first:
+      213: -116714373781968305
+    second: trial_bomb_variants_sheet_42
+  - first:
+      213: 2333684054951011392
+    second: trial_bomb_variants_sheet_43
+  - first:
+      213: -7812160864002147709
+    second: trial_bomb_variants_sheet_44
+  - first:
+      213: 2415454054205715568
+    second: trial_bomb_variants_sheet_45
+  - first:
+      213: 736120369727123795
+    second: trial_bomb_variants_sheet_46
+  - first:
+      213: -4104189488078445306
+    second: trial_bomb_variants_sheet_47
+  - first:
+      213: 148488332547580061
+    second: trial_bomb_variants_sheet_48
+  - first:
+      213: -7390269392880962833
+    second: trial_bomb_variants_sheet_49
+  - first:
+      213: -345611492854811896
+    second: trial_bomb_variants_sheet_50
+  - first:
+      213: 6871512081607247825
+    second: trial_bomb_variants_sheet_51
+  - first:
+      213: -5958101351720871611
+    second: trial_bomb_variants_sheet_52
+  - first:
+      213: 8588790349312825962
+    second: trial_bomb_variants_sheet_53
+  - first:
+      213: -6344767351235911871
+    second: trial_bomb_variants_sheet_54
+  - first:
+      213: -499563336695523504
+    second: trial_bomb_variants_sheet_55
+  - first:
+      213: -8680350002977683772
+    second: trial_bomb_variants_sheet_56
+  - first:
+      213: 4333772332008832281
+    second: trial_bomb_variants_sheet_57
+  - first:
+      213: -1135771101309986967
+    second: trial_bomb_variants_sheet_58
+  - first:
+      213: -8113649278949162354
+    second: trial_bomb_variants_sheet_59
+  - first:
+      213: -283380856925827529
+    second: trial_bomb_variants_sheet_60
+  - first:
+      213: 2586724282605559993
+    second: trial_bomb_variants_sheet_61
+  - first:
+      213: 8516156005470119182
+    second: trial_bomb_variants_sheet_62
+  - first:
+      213: -7319454034504658677
+    second: trial_bomb_variants_sheet_63
+  - first:
+      213: 7142892515741729837
+    second: trial_bomb_variants_sheet_64
+  - first:
+      213: -7104754274651516495
+    second: trial_bomb_variants_sheet_65
+  - first:
+      213: 7188455983205462965
+    second: trial_bomb_variants_sheet_66
+  - first:
+      213: 1543384962173515963
+    second: trial_bomb_variants_sheet_67
+  - first:
+      213: 5395364676256299078
+    second: trial_bomb_variants_sheet_68
+  - first:
+      213: -1818202351709903240
+    second: trial_bomb_variants_sheet_69
+  - first:
+      213: -6970502371578619944
+    second: trial_bomb_variants_sheet_70
+  - first:
+      213: 2920492540419894713
+    second: trial_bomb_variants_sheet_71
+  - first:
+      213: -8862296519463065458
+    second: trial_bomb_variants_sheet_72
+  - first:
+      213: -8985497670865951591
+    second: trial_bomb_variants_sheet_73
+  - first:
+      213: -8440536181701457057
+    second: trial_bomb_variants_sheet_74
+  - first:
+      213: 64371164107713006
+    second: trial_bomb_variants_sheet_75
+  - first:
+      213: 2327035437317694075
+    second: trial_bomb_variants_sheet_76
+  - first:
+      213: -3536072286550224678
+    second: trial_bomb_variants_sheet_77
+  - first:
+      213: 4468819951851533101
+    second: trial_bomb_variants_sheet_78
+  - first:
+      213: -9184513948480919851
+    second: trial_bomb_variant_0
+  - first:
+      213: -5141278593771824355
+    second: trial_bomb_variant_1
+  - first:
+      213: -1419968687499294008
+    second: trial_bomb_variant_2
+  - first:
+      213: 5333033817780839864
+    second: trial_bomb_variant_3
+  - first:
+      213: 7816419966371888887
+    second: trial_bomb_variant_4
+  - first:
+      213: 4273627444614330532
+    second: trial_bomb_variant_5
+  - first:
+      213: -1234953504686113478
+    second: trial_bomb_variant_6
+  - first:
+      213: -2309557051609300256
+    second: trial_bomb_variant_7
+  - first:
+      213: 215104222277937331
+    second: trial_bomb_variant_8
+  - first:
+      213: 2237942467759905509
+    second: trial_bomb_variant_9
+  - first:
+      213: 5301310946358051806
+    second: trial_bomb_variant_10
+  - first:
+      213: 1081936551604227830
+    second: trial_bomb_variant_11
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_bomb_variant_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 512
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5d6ac2ab93d0a8080800000000000000
+      internalID: -9184513948480919851
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 512
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d1b19eecb5286a8b0800000000000000
+      internalID: -5141278593771824355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 512
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ca4d6580024b4ce0800000000000000
+      internalID: -1419968687499294008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_3
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 512
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b5e8fb600eb20a40800000000000000
+      internalID: 5333033817780839864
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_4
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7fefdd6db80897c60800000000000000
+      internalID: 7816419966371888887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_5
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a8f89aa489fe4b30800000000000000
+      internalID: 4273627444614330532
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_6
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a3d7f0f94509cdee0800000000000000
+      internalID: -1234953504686113478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_7
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0e2445e191ec2ffd0800000000000000
+      internalID: -2309557051609300256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_8
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b8209686243cf200800000000000000
+      internalID: 215104222277937331
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_9
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ea179a31d4ce0f10800000000000000
+      internalID: 2237942467759905509
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_10
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed3cf89d73a029940800000000000000
+      internalID: 5301310946358051806
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_variant_11
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.0546875}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6fe81e3bf8fc30f00800000000000000
+      internalID: 1081936551604227830
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_bomb_variant_0: -9184513948480919851
+      trial_bomb_variant_1: -5141278593771824355
+      trial_bomb_variant_10: 5301310946358051806
+      trial_bomb_variant_11: 1081936551604227830
+      trial_bomb_variant_2: -1419968687499294008
+      trial_bomb_variant_3: 5333033817780839864
+      trial_bomb_variant_4: 7816419966371888887
+      trial_bomb_variant_5: 4273627444614330532
+      trial_bomb_variant_6: -1234953504686113478
+      trial_bomb_variant_7: -2309557051609300256
+      trial_bomb_variant_8: 215104222277937331
+      trial_bomb_variant_9: 2237942467759905509
+      trial_bomb_variants_sheet_0: 4743504119406263040
+      trial_bomb_variants_sheet_1: -8501007864719399356
+      trial_bomb_variants_sheet_10: 6707741600902285396
+      trial_bomb_variants_sheet_11: -4358689429160299682
+      trial_bomb_variants_sheet_12: -8750488323507103783
+      trial_bomb_variants_sheet_13: -6132165775732005500
+      trial_bomb_variants_sheet_14: 8119116084085085774
+      trial_bomb_variants_sheet_15: 5084978864849310771
+      trial_bomb_variants_sheet_16: 4297406980002214709
+      trial_bomb_variants_sheet_17: -235140616996055131
+      trial_bomb_variants_sheet_18: -1474072028958293518
+      trial_bomb_variants_sheet_19: 6918511900714443119
+      trial_bomb_variants_sheet_2: 4483310905524783323
+      trial_bomb_variants_sheet_20: -56447080336004297
+      trial_bomb_variants_sheet_21: -8189585031144390122
+      trial_bomb_variants_sheet_22: -4078572446991739890
+      trial_bomb_variants_sheet_23: 2146495955827793177
+      trial_bomb_variants_sheet_24: 7886929990673281939
+      trial_bomb_variants_sheet_25: -1538222142835564426
+      trial_bomb_variants_sheet_26: 5849466694523480760
+      trial_bomb_variants_sheet_27: -5985068779410898831
+      trial_bomb_variants_sheet_28: -833287475798738304
+      trial_bomb_variants_sheet_29: -5899292018223666756
+      trial_bomb_variants_sheet_3: -1028914690378116251
+      trial_bomb_variants_sheet_30: -8025917901063042753
+      trial_bomb_variants_sheet_31: 6002066728670839435
+      trial_bomb_variants_sheet_32: 9156907942554400745
+      trial_bomb_variants_sheet_33: -5325978268030204383
+      trial_bomb_variants_sheet_34: -3267592447110333388
+      trial_bomb_variants_sheet_35: 8828890676305325470
+      trial_bomb_variants_sheet_36: 6725285067937268514
+      trial_bomb_variants_sheet_37: -8841207217709324245
+      trial_bomb_variants_sheet_38: 607196490450685506
+      trial_bomb_variants_sheet_39: 7970348718125668297
+      trial_bomb_variants_sheet_4: -747335305621601989
+      trial_bomb_variants_sheet_40: 2254208206501077782
+      trial_bomb_variants_sheet_41: 5930536786943329684
+      trial_bomb_variants_sheet_42: -116714373781968305
+      trial_bomb_variants_sheet_43: 2333684054951011392
+      trial_bomb_variants_sheet_44: -7812160864002147709
+      trial_bomb_variants_sheet_45: 2415454054205715568
+      trial_bomb_variants_sheet_46: 736120369727123795
+      trial_bomb_variants_sheet_47: -4104189488078445306
+      trial_bomb_variants_sheet_48: 148488332547580061
+      trial_bomb_variants_sheet_49: -7390269392880962833
+      trial_bomb_variants_sheet_5: 8338508444341207664
+      trial_bomb_variants_sheet_50: -345611492854811896
+      trial_bomb_variants_sheet_51: 6871512081607247825
+      trial_bomb_variants_sheet_52: -5958101351720871611
+      trial_bomb_variants_sheet_53: 8588790349312825962
+      trial_bomb_variants_sheet_54: -6344767351235911871
+      trial_bomb_variants_sheet_55: -499563336695523504
+      trial_bomb_variants_sheet_56: -8680350002977683772
+      trial_bomb_variants_sheet_57: 4333772332008832281
+      trial_bomb_variants_sheet_58: -1135771101309986967
+      trial_bomb_variants_sheet_59: -8113649278949162354
+      trial_bomb_variants_sheet_6: -4913379892908977220
+      trial_bomb_variants_sheet_60: -283380856925827529
+      trial_bomb_variants_sheet_61: 2586724282605559993
+      trial_bomb_variants_sheet_62: 8516156005470119182
+      trial_bomb_variants_sheet_63: -7319454034504658677
+      trial_bomb_variants_sheet_64: 7142892515741729837
+      trial_bomb_variants_sheet_65: -7104754274651516495
+      trial_bomb_variants_sheet_66: 7188455983205462965
+      trial_bomb_variants_sheet_67: 1543384962173515963
+      trial_bomb_variants_sheet_68: 5395364676256299078
+      trial_bomb_variants_sheet_69: -1818202351709903240
+      trial_bomb_variants_sheet_7: 435392865802760943
+      trial_bomb_variants_sheet_70: -6970502371578619944
+      trial_bomb_variants_sheet_71: 2920492540419894713
+      trial_bomb_variants_sheet_72: -8862296519463065458
+      trial_bomb_variants_sheet_73: -8985497670865951591
+      trial_bomb_variants_sheet_74: -8440536181701457057
+      trial_bomb_variants_sheet_75: 64371164107713006
+      trial_bomb_variants_sheet_76: 2327035437317694075
+      trial_bomb_variants_sheet_77: -3536072286550224678
+      trial_bomb_variants_sheet_78: 4468819951851533101
+      trial_bomb_variants_sheet_8: 790942569553286765
+      trial_bomb_variants_sheet_9: 3090712464291565104
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
