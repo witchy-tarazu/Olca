@@ -701,20 +701,25 @@ namespace Olca.Presentation.Exploration
         {
             if(presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null){ClearBombVisuals();return;}
             var flights=presentation.Bombs;var blasts=presentation.BombBlasts;int used=0;long frame=presentation.Core.Frame;
-            Image Part(string key,float x,float y,float visibleWidth,float visibleHeight,float alpha,float angle=0)
+            Image Part(string key,float x,float y,float visibleWidth,float visibleHeight,float alpha,float angle=0,(long Left,long Right)? clip=null)
             {
-                if(used==bombImages.Count){var go=new GameObject("TrialOutsideBombVisual",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(0,.21f);bombImages.Add(created);}
+                if(used==bombImages.Count){var wrapper=new GameObject("TrialOutsideBombClip",typeof(RectTransform),typeof(RectMask2D));wrapper.transform.SetParent(transform,false);var wr=wrapper.GetComponent<RectTransform>();wr.anchorMin=wr.anchorMax=new Vector2(0,.21f);var go=new GameObject("TrialOutsideBombVisual",typeof(RectTransform),typeof(Image));go.transform.SetParent(wrapper.transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(.5f,.5f);bombImages.Add(created);}
                 var image=bombImages[used++];Sprite sprite;bool found=Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(key,out sprite,bombAssets??(bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));image.sprite=found?sprite:null;image.enabled=found;image.color=new Color(1,1,1,alpha);
                 if(found){float aw=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleWidth;float ah=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleHeight;image.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x*visibleWidth/aw,sprite.bounds.size.y*visibleHeight/ah)*pixelsPerWorldUnit;}
-                image.rectTransform.anchoredPosition=new Vector2((x-camera+viewport*.5f)*pixelsPerWorldUnit,(y-verticalOffset)*pixelsPerWorldUnit);image.rectTransform.localRotation=Quaternion.Euler(0,0,angle);return image;
+                var parent=(RectTransform)image.transform.parent;var mask=parent.GetComponent<RectMask2D>();mask.enabled=clip.HasValue;
+                float half=image.rectTransform.sizeDelta.x/(2*pixelsPerWorldUnit),left=x-half,right=x+half;
+                if(clip.HasValue){left=Mathf.Max(left,clip.Value.Left/(float)OutsideMovementDefinition.UnitsPerWorldUnit);right=Mathf.Min(right,clip.Value.Right/(float)OutsideMovementDefinition.UnitsPerWorldUnit);}
+                image.enabled&=right>left;float center=(left+right)*.5f;
+                parent.anchoredPosition=new Vector2((center-camera+viewport*.5f)*pixelsPerWorldUnit,(y-verticalOffset)*pixelsPerWorldUnit);parent.sizeDelta=new Vector2(Mathf.Max(0,right-left)*pixelsPerWorldUnit,image.rectTransform.sizeDelta.y);
+                image.rectTransform.anchoredPosition=new Vector2((x-center)*pixelsPerWorldUnit,0);image.rectTransform.localRotation=Quaternion.Euler(0,0,angle);return image;
             }
             foreach(var flight in flights){float age=frame-flight.FiredAt;float target=flight.Launch.ImpactX/(float)OutsideMovementDefinition.UnitsPerWorldUnit;
                 // 着弾予定だけの薄い目印。ダメージはSessionの90frame到達時に一度だけ発生する。
-                if(!flight.Launch.Dissipates)for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,flight.Launch.ImpactHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.18f,.18f);
+                if(!flight.Launch.Dissipates){var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,flight.Launch.X,flight.Launch.ImpactX,flight.Launch.ImpactHeight);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,target+i,flight.Launch.ImpactHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.18f,.18f,clip:clip);}
                 var visible=TrialBombThrowMotion.FlightPosition(flight,frame);
                 Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
             }
-            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha);}
+            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();

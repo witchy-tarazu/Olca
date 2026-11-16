@@ -1348,7 +1348,31 @@ namespace Olca.Core.Logic.Integration
         public long Position(long frame){long age=Math.Max(0,Math.Min(OutsideBombLaunchData.FlightFrames,frame-FiredAt));return checked(Launch.X+Launch.Facing*OutsideBombLaunchData.Distance*age/OutsideBombLaunchData.FlightFrames);}
         public long Height(long frame){long age=Math.Max(0,Math.Min(OutsideBombLaunchData.FlightFrames,frame-FiredAt));return (Launch.Terrain?.OriginHeight??0)*(OutsideBombLaunchData.FlightFrames-age)/OutsideBombLaunchData.FlightFrames+27000+4*age*(OutsideBombLaunchData.FlightFrames-age)*84000/(OutsideBombLaunchData.FlightFrames*OutsideBombLaunchData.FlightFrames);}
     }
-    public sealed class OutsideBombBlastData{public long X,Height,Frame;public OutsideBombBlastData Copy()=>(OutsideBombBlastData)MemberwiseClone();}
+    /// <summary>探索ボムだけの試用遮蔽。有限壁との線分交差と、壁面爆発時の固定発射側を用いる。</summary>
+    public static class OutsideBombOcclusion
+    {
+        public static bool CanReach(IEnumerable<OutsideValidationWall> walls,long sourceX,long x,long height,long targetX,long targetHeight=0)
+        {
+            if(walls==null)return true;
+            foreach(var wall in walls){
+                if(targetX==x){if(wall.X==x&&Math.Max(height,targetHeight)>=wall.Bottom&&Math.Min(height,targetHeight)<=wall.Top)return false;continue;}
+                decimal t=((decimal)wall.X-x)/((decimal)targetX-x);if(t<0||t>1)continue;
+                decimal y=height+((decimal)targetHeight-height)*t;if(y<wall.Bottom||y>wall.Top)continue;
+                if(t==0&&((sourceX<wall.X&&targetX<wall.X)||(sourceX>wall.X&&targetX>wall.X)))continue;
+                return false;
+            }return true;
+        }
+        // 横へ広がる試用表示用。同じ壁高/発射側で切り、斜めの対敵rayとの違いは正式形状とは区別する。
+        public static (long Left,long Right) HorizontalBounds(IEnumerable<OutsideValidationWall> walls,long sourceX,long x,long height)
+        {
+            long left=x-OutsideBombLaunchData.Radius,right=x+OutsideBombLaunchData.Radius;
+            if(walls!=null)foreach(var wall in walls){if(height<wall.Bottom||height>wall.Top)continue;
+                if(wall.X==x){if(sourceX<=x)right=x;if(sourceX>=x)left=x;}
+                else if(wall.X<x)left=Math.Max(left,wall.X);else right=Math.Min(right,wall.X);
+            }return(left,right);
+        }
+    }
+    public sealed class OutsideBombBlastData{public long SourceX,X,Height,Frame;public OutsideBombBlastData Copy()=>(OutsideBombBlastData)MemberwiseClone();}
     public sealed partial class OutsideExplorationSession
     {
         private readonly List<OutsideBombFlightData> bombs=new List<OutsideBombFlightData>();
@@ -1371,11 +1395,11 @@ namespace Olca.Core.Logic.Integration
             if(Player.IsDead){bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();return;}
             for(int i=bombs.Count-1;i>=0;i--){var flight=bombs[i];if(Core.Frame-flight.FiredAt<flight.Launch.Duration)continue;
                 var plan=flight.Launch;long target=plan.ImpactX;if(plan.Dissipates){bombs.RemoveAt(i);continue;}
-                void Hit(int id,long x,Enemy enemy){if(enemy.IsDead||Math.Abs(x-target)>OutsideBombLaunchData.Radius||plan.Terrain!=null&&((decimal)(x-target)*(x-target)+(decimal)plan.ImpactHeight*plan.ImpactHeight>(decimal)OutsideBombLaunchData.Radius*OutsideBombLaunchData.Radius))return;
+                void Hit(int id,long x,Enemy enemy){if(enemy.IsDead||!OutsideBombOcclusion.CanReach(Core.TraversalProfile?.Walls,plan.X,target,plan.ImpactHeight,x)||Math.Abs(x-target)>OutsideBombLaunchData.Radius||plan.Terrain!=null&&((decimal)(x-target)*(x-target)+(decimal)plan.ImpactHeight*plan.ImpactHeight>(decimal)OutsideBombLaunchData.Radius*OutsideBombLaunchData.Radius))return;
                     if(id==0){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}else secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
                     enemy.TakeDamage(plan.Power,plan.Element,AttackProperty.None,plan.PoiseDamage,0,hitStopFrames:plan.HitStopFrames);
                 }
-                Hit(0,TrialTargetX,TrialTarget);Hit(1,OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget);bombs.RemoveAt(i);bombBlasts.Add(new OutsideBombBlastData{X=target,Height=plan.ImpactHeight,Frame=Core.Frame});
+                Hit(0,TrialTargetX,TrialTarget);Hit(1,OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget);bombs.RemoveAt(i);bombBlasts.Add(new OutsideBombBlastData{SourceX=plan.X,X=target,Height=plan.ImpactHeight,Frame=Core.Frame});
             }
         }
     }

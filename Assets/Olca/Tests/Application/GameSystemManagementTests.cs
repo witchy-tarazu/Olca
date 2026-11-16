@@ -212,6 +212,33 @@ namespace Olca.Tests.Application
             }
         }
 
+        [TestCase(1920f,1080f,false,false)] [TestCase(1920f,1080f,true,false)] [TestCase(1920f,1080f,false,true)] [TestCase(1920f,1080f,true,true)]
+        [TestCase(3840f,2160f,false,false)] [TestCase(3840f,2160f,true,false)] [TestCase(3840f,2160f,false,true)] [TestCase(3840f,2160f,true,true)]
+        [TestCase(1280f,960f,false,false)] [TestCase(1280f,960f,true,false)] [TestCase(1280f,960f,false,true)] [TestCase(1280f,960f,true,true)]
+        public async Task 高い足場の補給詳細は利用不可で本体を覆う時だけ隠れ地面へ戻す(float width,float height,bool fire,bool usable)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            void Position(bool high){var state=model.Core.CaptureState();state.Position=16*60000;state.Height=high?60000:0;state.SupportId=high?"validation-top":"floor";typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(model.Core,new object[]{state});}
+            Position(true);int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigurePoisonSupply(()=>calls++,()=>usable||model.Core.Height==0,()=>"ホキュウバコ（カリ）\nドクケシ2コ");var button=view.transform.Find("OutsidePoisonSupplyChest").GetComponent<Button>();var old=button.onClick;var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());
+                for(int n=0;n<3;n++){view.Render();Assert.AreEqual(usable,button.gameObject.activeSelf);CollectionAssert.AreEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));}old.Invoke();Assert.AreEqual(usable?1:0,calls);
+                Position(false);view.Render();Assert.IsTrue(button.gameObject.activeSelf);Assert.IsTrue(button.interactable);button.onClick.Invoke();Assert.AreEqual(usable?2:1,calls);
+            }
+        }
+        [TestCase(1920f,1080f)] [TestCase(3840f,2160f)] [TestCase(1280f,960f)]
+        public async Task 爆風maskは壁の発射側へ切り反転と飛翔へのpool再利用で残らない(float width,float height)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);var model=system.OutsideExploration;var p=Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true);Assert.IsTrue(model.TryConfigureTraversal(new Olca.Core.Logic.Integration.OutsideTraversalProfile("test-mask19",p.DashSpeedPerSecond,p.DashFrames,p.DashCooldownFrames,p.DashResetFrames,p.DashJumpSpeedPerSecond,p.BodyHalfWidth,p.BodyHeight,p.WallSlidePerFrame,p.WallKickVelocity,p.WallKickSpeedPerSecond,p.WallKickPushFrames,p.WallKickMotionFrames,true,new Olca.Core.Logic.Integration.OutsideValidationWall("mask-wall",19*60000,0,600000))));model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var blasts=(List<Olca.Core.Logic.Integration.OutsideBombBlastData>)typeof(Olca.Core.Logic.Integration.OutsideExplorationSession).GetField("bombBlasts",flags).GetValue(model);var blast=new Olca.Core.Logic.Integration.OutsideBombBlastData{SourceX=17*60000,X=19*60000,Height=0,Frame=0};blasts.Add(blast);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();Canvas.ForceUpdateCanvases();var wall=(RectTransform)view.transform.Find("OutsideValidationWall-mask-wall");var parts=view.GetComponentsInChildren<Image>(true).Where(i=>i.name=="TrialOutsideBombVisual").ToArray();Assert.AreEqual(3,parts.Length);var ids=parts.Select(i=>i.GetInstanceID()).ToArray();
+                foreach(var image in parts){Assert.IsFalse(image.raycastTarget);var mask=image.transform.parent.GetComponent<RectMask2D>();Assert.IsTrue(mask.enabled);if(image.enabled)Assert.LessOrEqual(((RectTransform)mask.transform).anchoredPosition.x+((RectTransform)mask.transform).rect.xMax,wall.anchoredPosition.x+.01f);}
+                blast.SourceX=21*60000;view.Render();Canvas.ForceUpdateCanvases();CollectionAssert.AreEqual(ids,view.GetComponentsInChildren<Image>(true).Where(i=>i.name=="TrialOutsideBombVisual").Select(i=>i.GetInstanceID()).ToArray());foreach(var image in parts)if(image.enabled){var clip=(RectTransform)image.transform.parent;Assert.GreaterOrEqual(clip.anchoredPosition.x+clip.rect.xMin,wall.anchoredPosition.x-.01f);}
+                blasts.Clear();var flights=(List<Olca.Core.Logic.Integration.OutsideBombFlightData>)typeof(Olca.Core.Logic.Integration.OutsideExplorationSession).GetField("bombs",flags).GetValue(model);var terrain=Olca.Core.Logic.Integration.OutsideBombTerrainData.Create(model.Core,30000,-1,0);Assert.IsTrue(terrain.Dissipates);flights.Add(new Olca.Core.Logic.Integration.OutsideBombFlightData{Launch=new Olca.Core.Logic.Integration.OutsideBombLaunchData{DefinitionId=Olca.Core.Logic.Integration.OutsideBombLaunchData.TerrainDefinition,X=30000,Facing=-1,Terrain=terrain},FiredAt=0});long frame=model.Core.Frame;view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.IsTrue(parts[0].enabled);Assert.IsFalse(parts[0].transform.parent.GetComponent<RectMask2D>().enabled);Assert.IsTrue(parts.Skip(1).All(i=>!i.enabled));
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue(parts.All(i=>!i.enabled&&i.sprite==null));
+            }
+        }
         [Test] public async Task 外界店の案内は地名と隣接地点を隠さず覆いと旧世代の操作を拒否する()
         {
             var model=system.OutsideExploration;int calls=0;Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));

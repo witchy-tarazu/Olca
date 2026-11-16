@@ -128,6 +128,26 @@ namespace Olca.Tests
             Assert.IsTrue(session.TryInitializeCards(cards,Owned(cards),new SeededBattleRandom(289),out _));for(int n=0;n<1000&&!session.Cards.Hand.Any(c=>c.Id=="bomb"&&c.ExceedLevel==level);n++)session.Cards.Reload();Assert.IsTrue(session.Cards.TrySelect(session.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb"&&c.ExceedLevel==level)));
             BombPosition289(session,side==1?1008000:1242000,side);return session;
         }
+        [TestCase(1)] [TestCase(-1)]
+        public void 探索爆風の遮蔽は壁前後の複数敵を分け各一回だけ命中する(int side)
+        {
+            using(var s=Bomb289(side,recovery:0)){
+                var p=OutsideTraversalProfile.ValidationWall(true);var test=new OutsideTraversalProfile("test-bomb-wall19",p.DashSpeedPerSecond,p.DashFrames,p.DashCooldownFrames,p.DashResetFrames,p.DashJumpSpeedPerSecond,p.BodyHalfWidth,p.BodyHeight,p.WallSlidePerFrame,p.WallKickVelocity,p.WallKickSpeedPerSecond,p.WallKickPushFrames,p.WallKickMotionFrames,true,new OutsideValidationWall("between-targets",19*60000,0,600000));Assert.IsTrue(s.TryConfigureTraversal(test));BombPosition289(s,(side==1?17:21)*60000,side);
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);for(int n=0;n<100;n++)s.TickTraversal(0);Assert.AreEqual(side==1?80:120,s.TrialTarget.CurrentHp);Assert.AreEqual(side==1?120:80,s.SecondTrialTarget.CurrentHp);for(int n=0;n<50;n++)s.TickTraversal(0);Assert.AreEqual(side==1?80:120,s.TrialTarget.CurrentHp);Assert.AreEqual(side==1?120:80,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,s.Bombs.Count);}
+            }
+        }
+        [TestCase(1)] [TestCase(-1)]
+        public void 旧v2進行弾は保存bytesを保ちcold後も固定発射側から遮蔽する(int side)
+        {
+            using(var s=Bomb289(side,recovery:0))using(var cold=new OutsideExplorationSession()){
+                Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true)));BombPosition289(s,side==1?1392000:1488000,side);
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);for(int n=0;n<5;n++)s.TickTraversal(0);}
+                var defs=Kick214Definitions(s);var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;var before=PortableCheckpointJson.Serialize(data);Assert.AreEqual(OutsideBombLaunchData.TerrainDefinition,data.Bombs[0].Launch.DefinitionId);
+                Assert.IsTrue(cold.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true)));Assert.IsTrue(cold.RestoreSavedState(actor,data,null,defs));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(data));
+                var plan=cold.Bombs.Single().Launch;Assert.IsTrue(OutsideBombOcclusion.CanReach(cold.Core.TraversalProfile.Walls,plan.X,plan.ImpactX,plan.ImpactHeight,(side==1?23:25)*60000));Assert.IsFalse(OutsideBombOcclusion.CanReach(cold.Core.TraversalProfile.Walls,plan.X,plan.ImpactX,plan.ImpactHeight,(side==1?25:23)*60000));
+                using(var next=cold.AttachPresentation()){for(int n=0;n<100;n++)cold.TickTraversal(0);Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(0,cold.Bombs.Count);}
+            }
+        }
         private static void BombPosition289(OutsideExplorationSession s,long x,int side,long height=0)
         {var state=s.Core.CaptureState();state.Position=x;state.Facing=side;state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});}
         [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)]
@@ -2154,4 +2174,19 @@ namespace Olca.Tests
             }
         }
     }
+}
+
+namespace Olca.Tests {
+ public class OutsideBombOcclusionTests {
+  [TestCase(0,0,4,20,4,false)] [TestCase(0,0,4,5,4,true)] [TestCase(0,0,9,20,9,true)] [TestCase(0,0,1,20,1,true)]
+  [TestCase(0,0,2,20,2,false)] [TestCase(0,0,8,20,8,false)]
+  [TestCase(0,10,4,5,0,true)] [TestCase(0,10,4,15,0,false)] [TestCase(20,10,4,15,0,true)] [TestCase(20,10,4,5,0,false)]
+  [TestCase(10,10,4,5,0,false)] [TestCase(0,0,4,10,4,false)] [TestCase(0,10,10,10,9,true)] [TestCase(0,10,10,10,0,false)]
+  [TestCase(0,5,10,5,0,true)] [TestCase(0,10,9,20,0,true)] [TestCase(0,0,10,20,0,false)] [TestCase(0,0,10,20,9,true)]
+  public void 爆風遮蔽の線分は壁高と端点と同Xと固定発射側を扱う(long source,long x,long y,long tx,long ty,bool expected){var walls=new[]{new OutsideValidationWall("wall",10,2,8)};Assert.AreEqual(expected,OutsideBombOcclusion.CanReach(walls,source,x,y,tx,ty));}
+  [Test] public void 複数壁は一枚でも遮れば命中を拒否し壁なしは同じ範囲判定へ返す(){var walls=new[]{new OutsideValidationWall("low",10,2,8),new OutsideValidationWall("high",15,0,20)};Assert.IsFalse(OutsideBombOcclusion.CanReach(walls,0,0,9,20,9));Assert.IsTrue(OutsideBombOcclusion.CanReach(Array.Empty<OutsideValidationWall>(),0,0,9,20,9));Assert.IsTrue(OutsideBombOcclusion.CanReach(null,0,0,9,20,9));}
+  [TestCase(0,10,10)] [TestCase(20,10,10)] [TestCase(10,10,10)]
+  public void 壁面の横表示は投げた側へだけ広がり不明な側は閉じる(long source,long x,long wall){var bounds=OutsideBombOcclusion.HorizontalBounds(new[]{new OutsideValidationWall("wall",wall,0,20)},source,x,4);Assert.AreEqual(source>=wall?x:x-OutsideBombLaunchData.Radius,bounds.Left);Assert.AreEqual(source<=wall?x:x+OutsideBombLaunchData.Radius,bounds.Right);}
+  [Test] public void 横表示は複数壁の間に収まり上端より上なら半径を維持する(){var walls=new[]{new OutsideValidationWall("l",9,0,8),new OutsideValidationWall("r",11,0,8)};Assert.AreEqual((9L,11L),OutsideBombOcclusion.HorizontalBounds(walls,0,10,8));Assert.AreEqual((10-OutsideBombLaunchData.Radius,10+OutsideBombLaunchData.Radius),OutsideBombOcclusion.HorizontalBounds(walls,0,10,9));}
+ }
 }

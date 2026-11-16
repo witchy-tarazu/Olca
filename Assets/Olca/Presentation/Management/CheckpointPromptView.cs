@@ -147,12 +147,12 @@ namespace Olca.Presentation.Exploration
             recoveryMarker.rectTransform.anchoredPosition=new Vector2(p.x,p.y-340);
             if(visible&&!grounded&&BoundsInView((RectTransform)recoveryPoint.transform).Overlaps(BoundsInView(player.rectTransform)))recoveryPoint.gameObject.SetActive(false);
         }
-        // 操作不能な空中で本体を覆う補給詳細だけを退避する。Shopは独立した表示規則を保つ。
+        // 空中、または利用不可の高い足場で本体を覆う補給button全体だけを隠す。Shop/操作可能な入口は維持する。
         private void PlaceSupplyPanels(bool grounded)
         {
-            if(grounded)return;
+            if(grounded&&(presentation?.Core.Height??0)==0)return;
             var actor=BoundsInView(player.rectTransform);
-            foreach(var slot in supplySlots)if(slot!=null&&slot.Index<4&&slot.Button.gameObject.activeSelf&&
+            foreach(var slot in supplySlots)if(slot!=null&&slot.Index<4&&slot.Button.gameObject.activeSelf&&(!grounded||!slot.Button.interactable)&&
                 BoundsInView((RectTransform)slot.Button.transform).Overlaps(actor))slot.Button.gameObject.SetActive(false);
         }
         // ワールド追従の案内だけを避け、固定HUDやゲーム座標は動かさない。
