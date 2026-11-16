@@ -630,12 +630,34 @@ namespace Olca.Core.Domain
         public long Paid, OverflowTokens;
         public ExchangeReceipt Copy() => (ExchangeReceipt)MemberwiseClone();
     }
+    /// <summary>試用4world四方セルの訪問記録。探索率や回復地点の解放には転用しない。</summary>
+    public sealed class OutsideMapRevealData
+    {
+        public string MapId;
+        public int Version=1;
+        public OutsideMapCellData[] Cells=Array.Empty<OutsideMapCellData>();
+        public OutsideMapRevealData Copy()=>new OutsideMapRevealData{MapId=MapId,Version=Version,Cells=Cells?.Select(c=>c?.Copy()).ToArray()};
+        public static void ValidateAll(OutsideMapRevealData[] maps)
+        {
+            if(maps==null)return;
+            if(maps.Length>128||maps.Any(m=>m==null)||maps.Select(m=>m.MapId).Distinct(StringComparer.Ordinal).Count()!=maps.Length)throw new ArgumentException("外界の開示マップが不正です");
+            foreach(var map in maps){
+                if(string.IsNullOrWhiteSpace(map.MapId)||map.MapId.Length>128||map.Version!=1||map.Cells==null||map.Cells.Length==0||map.Cells.Length>4096||map.Cells.Any(c=>c==null||c.X<0||c.X>1000000||c.Y< -1000000||c.Y>1000000)||map.Cells.Select(c=>(c.X,c.Y)).Distinct().Count()!=map.Cells.Length)throw new ArgumentException("外界の開示セルが不正です");
+            }
+        }
+    }
+    public sealed class OutsideMapCellData
+    {
+        public int X,Y;
+        public OutsideMapCellData Copy()=>(OutsideMapCellData)MemberwiseClone();
+    }
     public sealed class ClearReturnProfile
     {
         public int Version = 1;
         public long Revision, Experience, Tokens;
         public int Level = 1, ReturnedHp;
         public string OutsideRecoveryPointId; // nullは旧保存/復帰地点未登録。
+        public OutsideMapRevealData[] OutsideMapReveals; // nullは旧保存。地形の訪問と地点発見は別記録。
         public string[] OutsideDiscoveredRecoveryPoints; // nullは旧保存。復帰先や回復操作とは別の訪問記録。
         public OutsideInventoryData OutsideInventory; // nullは旧保存。カード/装備/超過トークンとは別の所持欄。
         public string CommitId;
@@ -658,7 +680,7 @@ namespace Olca.Core.Domain
         public string SelectedStyleId; // 旧省略/nullは基本スタイル
         public Olca.Core.Logic.Customization.CustomizationProgress Customization; // 旧省略/nullは空状態
         public ClearReturnProfile Copy() => new ClearReturnProfile {
-            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(), OutsideRecoveryPointId=OutsideRecoveryPointId, OutsideDiscoveredRecoveryPoints=OutsideDiscoveredRecoveryPoints?.ToArray(), OutsidePlayerSave=OutsidePlayerSave?.Copy(), OutsideRuntimeSave=OutsideRuntimeSave?.Copy(), OutsideItemState=OutsideItemState?.Copy(),
+            Version = Version, Revision = Revision, Experience = Experience, Tokens = Tokens, Level = Level, ReturnedHp = ReturnedHp, CommitId = CommitId, CheckpointGeneration=CheckpointGeneration, OutsideInventory=OutsideInventory?.Copy(), OutsideRecoveryPointId=OutsideRecoveryPointId, OutsideDiscoveredRecoveryPoints=OutsideDiscoveredRecoveryPoints?.ToArray(), OutsideMapReveals=OutsideMapReveals?.Select(v=>v?.Copy()).ToArray(), OutsidePlayerSave=OutsidePlayerSave?.Copy(), OutsideRuntimeSave=OutsideRuntimeSave?.Copy(), OutsideItemState=OutsideItemState?.Copy(),
             Owned = Owned?.Select(c => c?.Copy()).ToArray(), ClearedDungeons = ClearedDungeons?.ToArray(),
             Receipts = Receipts?.Select(r => r?.Copy()).ToArray(), Flow = Flow?.Copy(), NextDeparture = NextDeparture?.Copy(), EquippedDeckId=EquippedDeckId, SelectedStyleId=SelectedStyleId, Customization=Customization?.Copy(), DiscoveredCards=DiscoveredCards?.Select(c=>c?.Copy()).ToArray(), RevealedRecipes=RevealedRecipes?.ToArray(), ExchangeStock=ExchangeStock?.Copy(),
             ExchangeTotals=ExchangeTotals?.Select(t=>t?.Copy()).ToArray(), ExchangeReceipts=ExchangeReceipts?.Select(t=>t?.Copy()).ToArray(),
@@ -666,6 +688,7 @@ namespace Olca.Core.Domain
         public static void Validate(ClearReturnProfile p)
         {
             Olca.Core.Logic.Customization.CustomizationProgress.Validate(p?.Customization);
+            OutsideMapRevealData.ValidateAll(p?.OutsideMapReveals);
             OutsideInventoryData.Validate(p?.OutsideInventory);p?.OutsidePlayerSave?.Validate();p?.OutsideRuntimeSave?.Validate();if(p?.OutsideRuntimeSave!=null&&(p.OutsidePlayerSave==null||p.OutsideRuntimeSave.Id!=p.OutsidePlayerSave.Id))throw new ArgumentException("外界の個体とRuntime保存の攻略IDが不一致です");
             if(p?.OutsideRuntimeSave?.Core.TrialMapId!=null||p?.OutsideRecoveryPointId==Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint||p?.OutsideRecoveryPointId==Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint)Olca.Core.Logic.Integration.OutsideTrialRoute.ValidateMapRecovery(p.OutsideRuntimeSave!=null?p.OutsideRuntimeSave.Core.TrialMapId:Olca.Core.Logic.Integration.OutsideTrialRoute.MapForRecovery(p.OutsideRecoveryPointId),p.OutsideRecoveryPointId);
             if(p?.OutsideRecoveryPointId!=null&&string.IsNullOrWhiteSpace(p.OutsideRecoveryPointId))throw new ArgumentException("外界復帰地点IDが不正です");
@@ -1542,6 +1565,25 @@ namespace Olca.Core.Domain
                 var next=current.Copy();next.OutsideRecoveryPointId=point;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()};next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out var failure)){LastOutsideMapTravelError=failure;error="ホゾン シッパイ / オシテ サイシコウ";return false;}current=next;Error=null;LastOutsideMapTravelError=null;return true;}finally{writing=false;}
             }catch(Exception e)when(e is ArgumentException||e is OverflowException){error=e.Message;return false;}
+        }
+        // 訪問セルの追加だけをCAS保存。失敗時は一般Pendingや個体の保存状態を変更しない。
+        public bool TryRecordOutsideMapVisits(OutsideMapRevealData[] visits,out string error)
+        {
+            error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="今は地形記録を保存できません";return false;}
+            try{
+                OutsideMapRevealData.ValidateAll(visits);
+                if(visits==null||visits.Any(m=>!Olca.Core.Logic.Integration.OutsideMapRevealTrial.KnownMap(m.MapId))){error="訪問マップが未登録です";return false;}
+                var next=current.Copy();var maps=(next.OutsideMapReveals??Array.Empty<OutsideMapRevealData>()).ToDictionary(m=>m.MapId,StringComparer.Ordinal);bool changed=false;
+                foreach(var visit in visits){
+                    if(!maps.TryGetValue(visit.MapId,out var map)){map=new OutsideMapRevealData{MapId=visit.MapId};maps.Add(map.MapId,map);}
+                    var cells=map.Cells.ToDictionary(c=>(c.X,c.Y));
+                    foreach(var cell in visit.Cells)if(!cells.ContainsKey((cell.X,cell.Y))){cells.Add((cell.X,cell.Y),cell.Copy());changed=true;}
+                    map.Cells=cells.Values.OrderBy(c=>c.X).ThenBy(c=>c.Y).ToArray();
+                }
+                if(!changed)return true;
+                next.OutsideMapReveals=maps.Values.OrderBy(m=>m.MapId,StringComparer.Ordinal).ToArray();next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
+                writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out error))return false;current=next;return true;}finally{writing=false;}
+            }catch(Exception e)when(e is ArgumentException||e is OverflowException||e is System.IO.IOException||e is UnauthorizedAccessException){error="地形記録の保存に失敗しました";return false;}
         }
         public bool IsOutsideRecoveryPointDiscovered(string id)=>id!=null&&current?.OutsideDiscoveredRecoveryPoints?.Contains(id)==true;
         private static void AddOutsideRecoveryVisit(ClearReturnProfile value,string id)

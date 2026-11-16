@@ -759,6 +759,40 @@ namespace Olca.Tests
         {
             var factory=new Olca.Application.Battle.SimpleCardFactory();var ability=Olca.Application.Management.TrialCustomizationDefinitions.Abilities();var old=Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(Olca.Application.Management.TrialCustomizationDefinitions.Catalog(),ability,factory.CollectionCards,new ClearReturnSettings());var next=Olca.Application.Management.TrialCustomizationDefinitions.OutsideShop(Olca.Application.Management.TrialCustomizationDefinitions.CatalogV2(),ability,factory.CollectionCards,new ClearReturnSettings());Assert.AreEqual(7,old.Offers.Count);Assert.AreEqual(11,next.Offers.Count);Assert.AreEqual(old.Id,next.Id);for(int i=0;i<7;i++){Assert.AreEqual(old.Offers[i].Id,next.Offers[i].Id);Assert.AreEqual(old.Offers[i].Price,next.Offers[i].Price);Assert.AreEqual(old.Offers[i].PurchaseLimit,next.Offers[i].PurchaseLimit);}Assert.IsTrue(next.Offers.Skip(7).All(v=>v.Price==100&&v.PurchaseLimit==1&&v.UnlockItemId!=null));Assert.Throws<ArgumentException>(()=>new OutsideShopDefinition("invalid",next.Offers.Skip(7),old.EquipmentCatalog));
         }
+        [TestCase(false)][TestCase(true)] public void 地形訪問は表示中の生存個体だけを論理frame単位で蓄積しsnapshotから変更されない(bool dead)
+        {
+            using(var model=new OutsideExplorationSession()){
+                model.TryInitializePlayer(()=>new PlayerCharacter(100));if(dead)model.Player.SetHp(0);
+                model.Core.TickFrame(1);Assert.IsFalse(model.AdvancePlayerFrame());Assert.AreEqual(0,model.MapVisitSerial);
+                using(var lease=model.AttachPresentation()){
+                    for(int i=0;i<80;i++){model.Core.TickFrame(1);model.AdvancePlayerFrame();}
+                    if(dead){Assert.AreEqual(0,model.MapVisitSerial);Assert.IsEmpty(model.CaptureMapVisits());return;}
+                    Assert.GreaterOrEqual(model.MapVisitSerial,2);var visits=model.CaptureMapVisits();Assert.AreEqual(OutsideMapRevealTrial.HomeMapId,visits.Single().MapId);Assert.IsFalse(model.AdvancePlayerFrame());long serial=model.MapVisitSerial;for(int i=0;i<10;i++)model.TickTraversal(0);Assert.AreEqual(serial,model.MapVisitSerial);visits[0].Cells[0].X=999;Assert.IsFalse(model.CaptureMapVisits()[0].Cells.Any(c=>c.X==999));
+                }
+            }
+        }
+        [TestCase(0,0)][TestCase(239999,0)][TestCase(240000,1)][TestCase(1920000,7)]
+        public void 地図セルは試用境界で右端を最終セルに含める(long x,int expected)
+        {
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain);var state=core.CaptureState();state.Position=x;
+            typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(core,new object[]{state});
+            Assert.IsTrue(OutsideMapRevealTrial.TryCell(core,out var map,out var cell));Assert.AreEqual(OutsideMapRevealTrial.HomeMapId,map);Assert.AreEqual(expected,cell.X);Assert.AreEqual(0,cell.Y);
+        }
+        [Test] public void 地形訪問の保存は失敗で個体や地点を変えず再試行とcoldで和集合を保つ()
+        {
+            var store=new Style231Store();var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(save.Snapshot);
+            var visits=new[]{new OutsideMapRevealData{MapId=OutsideMapRevealTrial.HomeMapId,Cells=new[]{new OutsideMapCellData{X=2,Y=0}}}};
+            store.Fail=true;Assert.IsFalse(save.TryRecordOutsideMapVisits(visits,out _));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(save.Snapshot));Assert.IsFalse(save.HasPendingSave);Assert.IsNull(save.Error);
+            store.Fail=false;Assert.IsTrue(save.TryRecordOutsideMapVisits(visits,out var error),error);int writes=store.Writes;Assert.IsTrue(save.TryRecordOutsideMapVisits(visits,out _));Assert.AreEqual(writes,store.Writes);visits[0].Cells[0].X=3;Assert.AreEqual(2,save.Snapshot.OutsideMapReveals.Single().Cells.Single().X);
+            Assert.IsTrue(save.TryRecordOutsideMapVisits(visits,out _));var cold=new ClearReturnSession(store);CollectionAssert.AreEqual(new[]{2,3},cold.Snapshot.OutsideMapReveals.Single().Cells.Select(c=>c.X));Assert.IsNull(cold.Snapshot.OutsideRecoveryPointId);Assert.IsNull(cold.Snapshot.OutsideDiscoveredRecoveryPoints);Assert.IsNull(cold.Snapshot.OutsidePlayerSave);var copy=cold.Snapshot;copy.OutsideMapReveals[0].Cells[0].Y=50;Assert.AreEqual(0,cold.Snapshot.OutsideMapReveals[0].Cells[0].Y);
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)]
+        public void 不正な地形開示記録は保存前に拒否し現行保存を変えない(int kind)
+        {
+            var store=new Style231Store();var save=new ClearReturnSession(store);var map=new OutsideMapRevealData{MapId=OutsideMapRevealTrial.HomeMapId,Cells=new[]{new OutsideMapCellData{X=0,Y=0}}};
+            if(kind==0)map.Version=2;else if(kind==1)map.Cells=null;else if(kind==2)map.Cells=new OutsideMapCellData[]{null};else if(kind==3)map.Cells=new[]{new OutsideMapCellData(),new OutsideMapCellData()};else if(kind==4)map.Cells[0].X=-1;else map.MapId="unknown";
+            Assert.IsFalse(save.TryRecordOutsideMapVisits(new[]{map},out _));Assert.AreEqual(0,store.Writes);Assert.IsNull(save.Snapshot.OutsideMapReveals);
+        }
         private sealed class Style231Store:IClearReturnStore
         {
             public ClearReturnProfile Value=new ClearReturnProfile{Tokens=7};public bool Fail;public int Writes;

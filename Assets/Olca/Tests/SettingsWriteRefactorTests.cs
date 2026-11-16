@@ -130,6 +130,12 @@ namespace Olca.Tests
                 }
             }
         }
+        [TestCase(0)][TestCase(1)][TestCase(2)] public void 旧地形欄の欠落null空配列は読込だけで変更せず訪問時に追加する(int form)
+        {
+            string dir=Path.Combine(Path.GetTempPath(),"outside-map-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);
+            try{var p=InventoryProfile();p.OutsideMapReveals=form==2?Array.Empty<OutsideMapRevealData>():null;var json=System.Text.Encoding.UTF8.GetString(Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(p));if(form==0)json=json.Replace("\"OutsideMapReveals\":null,","");var raw=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(new LegacySupplyEnvelope{Version=1,Payload=json,Sha256=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Hash(System.Text.Encoding.UTF8.GetBytes(json))});var store=new ClearReturnFileStore(dir);File.WriteAllBytes(store.ActivePath,raw);var save=new ClearReturnSession(store);Assert.IsTrue(save.Ready,save.Error);CollectionAssert.AreEqual(raw,File.ReadAllBytes(store.ActivePath));Assert.IsTrue(save.TryRecordOutsideMapVisits(new[]{new OutsideMapRevealData{MapId=Olca.Core.Logic.Integration.OutsideMapRevealTrial.HomeMapId,Cells=new[]{new OutsideMapCellData{X=2,Y=0}}}},out var error),error);var saved=File.ReadAllBytes(store.ActivePath);var cold=new ClearReturnSession(new ClearReturnFileStore(dir));Assert.AreEqual(2,cold.Snapshot.OutsideMapReveals.Single().Cells.Single().X);CollectionAssert.AreEqual(saved,File.ReadAllBytes(store.ActivePath));
+            }finally{Directory.Delete(dir,true);}
+        }
         [TestCase(false)][TestCase(true)] public void 訪問記録だけの保存は失敗で一般Pendingを作らず再試行と既知の無書込を守る(bool after)
         {
             string dir=Path.Combine(Path.GetTempPath(),"outside-visit-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);

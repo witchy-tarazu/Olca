@@ -524,6 +524,25 @@ namespace Olca.Core.Logic.Integration
             if(data==null)return;data.Validate();var actual=Olca.Core.Domain.OutsidePlayerSaveData.Capture(Player);actual.Id=data.Id;
             if(actual.Key()!=data.Key())throw new System.ArgumentException("回復した個体と保存が一致しません");savedPlayerId=data.Id;savedPlayerKey=data.Key();
         }
+        private readonly Dictionary<string,HashSet<(int X,int Y)>> mapVisits=new Dictionary<string,HashSet<(int X,int Y)>>(StringComparer.Ordinal);
+        public long MapVisitSerial {get;private set;}
+        public long MapVisitClock {get;private set;}
+        private bool mapVisitGenerationBound;private string mapVisitGeneration;
+        // 個体やCoreの時計を戻さず、記録集合だけを進行保存の世代へ所属させる。
+        public void BeginMapVisitGeneration(string generation)
+        {
+            if(generation!=null&&!Guid.TryParseExact(generation,"N",out _))throw new ArgumentException("地図記録の世代が不正です");
+            if(mapVisitGenerationBound&&mapVisitGeneration==generation)return;
+            mapVisitGenerationBound=true;mapVisitGeneration=generation;mapVisits.Clear();MapVisitSerial=0;
+        }
+        public OutsideMapRevealData[] CaptureMapVisits()=>mapVisits.OrderBy(v=>v.Key,StringComparer.Ordinal).Select(v=>new OutsideMapRevealData{MapId=v.Key,Cells=v.Value.OrderBy(c=>c.X).ThenBy(c=>c.Y).Select(c=>new OutsideMapCellData{X=c.X,Y=c.Y}).ToArray()}).ToArray();
+        private void ObserveMapVisit(PlayerCharacter actor)
+        {
+            MapVisitClock=checked(MapVisitClock+1);
+            if(!IsPresented||!ReferenceEquals(actor,Player)||actor.IsDead||!OutsideMapRevealTrial.TryCell(Core,out var map,out var cell))return;
+            if(!mapVisits.TryGetValue(map,out var cells)){cells=new HashSet<(int X,int Y)>();mapVisits.Add(map,cells);}
+            if(cells.Add((cell.X,cell.Y)))MapVisitSerial=checked(MapVisitSerial+1);
+        }
         private long recoveryVisitSerial;private string recoveryVisitPointId;private bool recoveryVisitInside;
         public (long Serial,string PointId) RecoveryVisitNotice=>(recoveryVisitSerial,recoveryVisitPointId);
         private void ObserveRecoveryVisit(PlayerCharacter actor)
@@ -543,7 +562,7 @@ namespace Olca.Core.Logic.Integration
             try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{value.CommitHpFrame();value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();}
             if(value.IsDead){CancelChargeInput();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();}
-            ObserveRecoveryVisit(value);attackAllowed&=!value.IsDead;return true;
+            ObserveMapVisit(value);ObserveRecoveryVisit(value);attackAllowed&=!value.IsDead;return true;
         }
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;

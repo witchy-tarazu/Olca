@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Olca.Core.Domain;
 
 namespace Olca.Core.Logic.Integration
 {
@@ -148,6 +149,22 @@ namespace Olca.Core.Logic.Integration
         public const long EntranceX=20*OutsideMovementDefinition.UnitsPerWorldUnit;
         public const long EntranceRadius=OutsideMovementDefinition.UnitsPerWorldUnit;
         public static bool CanInspect(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.IsGrounded&&Math.Abs(core.Position-EntranceX)<=EntranceRadius;
+    }
+    /// <summary>正式な地図データの代わりに既存2マップだけを記録する試用グリッド。</summary>
+    public static class OutsideMapRevealTrial
+    {
+        public const string HomeMapId="trial-home-v1";
+        public const long CellSize=4*OutsideMovementDefinition.UnitsPerWorldUnit;
+        public static bool KnownMap(string id)=>id==HomeMapId||id==OutsideTrialRoute.AnnexMapId;
+        public static bool TryCell(OutsideExplorationCore core,out string map,out OutsideMapCellData cell)
+        {
+            map=null;cell=null;if(core==null||core.Definition.Id!="validation-landing-32"||!OutsideTrialRoute.KnownMap(core.TrialMapId)||core.HasFallenOut)return false;
+            map=core.TrialMapId??HomeMapId;
+            // 右端は最終セルに含める。高さは負側も数学的な床除算とする。
+            long x=Math.Min(core.Position,core.Definition.Width-1)/CellSize,y=core.Height/CellSize;
+            if(core.Height%CellSize<0)y--;
+            cell=new OutsideMapCellData{X=checked((int)x),Y=checked((int)y)};return true;
+        }
     }
     public enum OutsideAfterimagePose {Dash,JumpRise,JumpApex,JumpFall}
     public readonly struct OutsideAfterimage

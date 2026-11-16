@@ -125,6 +125,24 @@ namespace Olca.Tests.Application
             Assert.AreEqual(!entrance?"OutsideExplorationEntry":otherPage?"ConfirmDungeonSelection":"DungeonChoice_1",EventSystem.current.currentSelectedGameObject.name);
             EventSystem.current.currentSelectedGameObject.GetComponent<Button>().onClick.Invoke();Assert.AreEqual(entrance&&!otherPage?1:-1,chosen);Assert.AreEqual(entrance?0:1,opened);Assert.AreEqual(entrance&&otherPage?1:0,confirmed);
         }
+        [TestCase(false)][TestCase(true)] public async Task 地図訪問の実Controllerは世代集合を分離しCore時計を戻しても六十frameで再試行する(bool newGeneration)
+        {
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=typeof(Olca.Application.Dungeon.DungeonBattleController);var go=new GameObject("MapVisitController");go.SetActive(false);var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
+            void Set(string name,object value)=>type.GetField(name,flags).SetValue(controller,value);
+            void Call(string name)=>type.GetMethod(name,flags).Invoke(controller,null);
+            var store=new DoorBoundaryStore();store.Profile.CheckpointGeneration=Guid.NewGuid().ToString("N");var progress=new Olca.Core.Domain.ClearReturnSession(store);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            try{using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Set("gameSystem",system);Set("clearReturnSession",progress);Set("outsideExploration",binding);Set("initialHub",true);Call("BindOutsideRecovery");
+                void Step(int direction=0){model.Core.TickFrame(direction);model.AdvancePlayerFrame();}
+                for(int i=0;i<180;i++)Step();store.Fail=true;Call("ObserveOutsideMapVisit");Assert.AreEqual(1,store.Attempts);Call("ObserveOutsideMapVisit");Assert.AreEqual(1,store.Attempts);Assert.IsFalse(progress.HasPendingSave);
+                var state=new Olca.Core.Logic.Integration.OutsideExplorationCore(model.Core.Definition,model.Core.TraversalProfile).CaptureState();if(newGeneration)state.Position=18*60000;
+                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",flags).Invoke(model.Core,new object[]{state});
+                if(newGeneration){store.Profile.CheckpointGeneration=Guid.NewGuid().ToString("N");Assert.IsTrue(progress.Reload());Call("BindOutsideRecovery");Assert.IsEmpty(model.CaptureMapVisits());Step();store.Fail=false;Call("ObserveOutsideMapVisit");Assert.AreEqual(1,store.Writes);var cells=progress.Snapshot.OutsideMapReveals.Single().Cells;Assert.IsTrue(cells.All(c=>c.X==4),"旧世代の開始セル2は混入しない");}
+                else{store.Fail=false;for(int i=0;i<59;i++){Step();Call("ObserveOutsideMapVisit");}Assert.AreEqual(1,store.Attempts);Step();Call("ObserveOutsideMapVisit");Assert.AreEqual(1,store.Writes);Assert.AreEqual(2,progress.Snapshot.OutsideMapReveals.Single().Cells.Single().X);}
+                var core=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());Call("ObserveOutsideMapVisit");CollectionAssert.AreEqual(core,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.IsNull(progress.Snapshot.OutsideRecoveryPointId);Assert.IsNull(progress.Snapshot.OutsideDiscoveredRecoveryPoints);Assert.IsNull(progress.Snapshot.OutsidePlayerSave);
+            }}finally{Set("outsideExploration",null);Set("gameSystem",null);UnityEngine.Object.DestroyImmediate(go);}
+        }
         [TestCase(false,false)][TestCase(true,false)][TestCase(true,true)] public async Task 実Controllerの訪問保存は古い世代通知を捨て現在個体を回復移動させない(bool sameGeneration,bool fail)
         {
             var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=typeof(Olca.Application.Dungeon.DungeonBattleController);var go=new GameObject("RecoveryVisitController");go.SetActive(false);var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();
