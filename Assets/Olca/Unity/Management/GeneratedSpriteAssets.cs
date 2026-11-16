@@ -139,13 +139,20 @@ namespace Olca.Unity
                 else if(pending.Add(value))UnityEngine.Object.Destroy(value);
             }
         }
-        private static async void QueuePrune()
+        private static void QueuePrune()
         {
             if(!Application.isPlaying||pruneQueued||shuttingDown)return;
+            QueuePruneUntilExit(Application.exitCancellationToken);
+        }
+        private static async void QueuePruneUntilExit(System.Threading.CancellationToken lifetime)
+        {
+            // 終了通知より先にtokenが取消されても、同期完了するawaitを再帰予約しない。
+            // 同じtokenを引き継ぎ、旧Play世代の処理を次の世代へ持ち越さない。
+            if(pruneQueued||shuttingDown||lifetime.IsCancellationRequested)return;
             pruneQueued=true;
-            try{await Awaitable.NextFrameAsync(Application.exitCancellationToken);if(!shuttingDown)Prune();}
+            try{await Awaitable.NextFrameAsync(lifetime);if(!shuttingDown&&!lifetime.IsCancellationRequested)Prune();}
             catch(OperationCanceledException) { }
-            finally{pruneQueued=false;if(!shuttingDown&&(pending.Count!=0||live.Any(cache=>cache.roots==0&&cache.borrowers.Any(lease=>lease.HasNativeOwner))))QueuePrune();}
+            finally{pruneQueued=false;if(Application.isPlaying&&!shuttingDown&&!lifetime.IsCancellationRequested&&(pending.Count!=0||live.Any(cache=>cache.roots==0&&cache.borrowers.Any(lease=>lease.HasNativeOwner))))QueuePruneUntilExit(lifetime);}
         }
         private static void Shutdown()
         {

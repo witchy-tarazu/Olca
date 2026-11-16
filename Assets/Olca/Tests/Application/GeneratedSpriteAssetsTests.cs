@@ -7,6 +7,26 @@ namespace Olca.Tests.Application
 {
     public class GeneratedSpriteAssetsTests
     {
+        private static void QueueUntilExit(System.Threading.CancellationToken lifetime)
+        {typeof(GeneratedSpriteAssets).GetMethod("QueuePruneUntilExit",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).Invoke(null,new object[]{lifetime});}
+        private static bool PruneQueued=>(bool)typeof(GeneratedSpriteAssets).GetField("pruneQueued",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);
+        [Test] public void 終了済みtokenではRootなしの生存借用があっても再帰予約しない()
+        {
+            var owner=new GameObject("CancelledPruneOwner");var scope=GeneratedSpriteAssets.Acquire(owner);
+            try{var sprite=scope.Get("fixture/cancelled-prune",Make);using(var lifetime=new System.Threading.CancellationTokenSource()){
+                lifetime.Cancel();QueueUntilExit(lifetime.Token);Assert.IsFalse(PruneQueued);Assert.IsTrue(sprite!=null);Assert.Greater(scope.Generation,0);
+            }}finally{scope.Dispose();UnityEngine.Object.DestroyImmediate(owner);GeneratedSpriteAssets.Prune();}
+        }
+        [UnityEngine.TestTools.UnityTest] public System.Collections.IEnumerator 待機中の終了取消は予約を解除し次の世代を妨げない()
+        {
+            var owner=new GameObject("PendingPruneOwner");var scope=GeneratedSpriteAssets.Acquire(owner);
+            var first=new System.Threading.CancellationTokenSource();var next=new System.Threading.CancellationTokenSource();
+            try{scope.Get("fixture/pending-prune",Make);QueueUntilExit(first.Token);Assert.IsTrue(PruneQueued);first.Cancel();
+                for(int n=0;n<5&&PruneQueued;n++)yield return null;Assert.IsFalse(PruneQueued,"取消された待機を再予約しない");
+                QueueUntilExit(next.Token);Assert.IsTrue(PruneQueued,"新しい有効tokenでは回収を再開できる");next.Cancel();
+                for(int n=0;n<5&&PruneQueued;n++)yield return null;Assert.IsFalse(PruneQueued);
+            }finally{first.Cancel();next.Cancel();first.Dispose();next.Dispose();scope.Dispose();UnityEngine.Object.DestroyImmediate(owner);GeneratedSpriteAssets.Prune();}
+        }
         [SetUp] public void 外部所有者のない検証境界を確認する()
         {
             var state=GeneratedSpriteAssets.Inspect();
