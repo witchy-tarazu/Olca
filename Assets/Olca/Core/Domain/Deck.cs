@@ -1689,6 +1689,7 @@ namespace Olca.Core.Domain
         }
         public bool HasClaimedOutsideSupply(string id)=>(current?.OutsideInventory?.ClaimedSources??Array.Empty<string>()).Contains(id);
         public long InventoryRevision=>current?.Revision??-1;
+        public string ProgressGeneration=>current?.CheckpointGeneration;
         public OutsideInventoryData OutsideInventorySnapshot=>(current?.OutsideInventory??new OutsideInventoryData()).Copy();
         public bool TryAssignOutsideItem(int slot,string id,IReadOnlyList<OutsideItemDisplayDefinition> definitions)
         {

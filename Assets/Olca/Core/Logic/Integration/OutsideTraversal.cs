@@ -184,6 +184,35 @@ namespace Olca.Core.Logic.Integration
             });
         }
     }
+    /// <summary>試用目的の一時的な案内。所持・開示・達成やセーブを変更しない。</summary>
+    public sealed class OutsideTrialNavigation
+    {
+        public string SelectedId {get;private set;}
+        public bool Visible {get;private set;}=true;
+        public bool Select(string id)
+        {
+            if(id!=null&&id!="trial-find-recovery"&&id!="trial-visit-annex"&&id!="trial-clear-two-floors")return false;
+            SelectedId=id;return true;
+        }
+        public void ToggleVisibility()=>Visible=!Visible;
+        public void Reset(){SelectedId=null;Visible=true;}
+        public OutsideTrialNavigationTarget Resolve(string mapId)
+        {
+            if(!Visible||SelectedId==null||!OutsideMapRevealTrial.KnownMap(mapId))return null;
+            bool annex=SelectedId=="trial-visit-annex";
+            string destination=annex?OutsideTrialRoute.AnnexMapId:OutsideMapRevealTrial.HomeMapId;
+            long x=annex?OutsideTrialRoute.AnnexDoorX:SelectedId=="trial-find-recovery"?OutsideTrialRoute.RecoveryX:OutsideTrialRoute.EntranceX;
+            string title=annex?"ベツマップ":SelectedId=="trial-find-recovery"?"カイフクチテン":"ダンジョン イリグチ";
+            return new OutsideTrialNavigationTarget(destination,x,title,mapId!=destination,
+                mapId==destination?x:mapId==OutsideTrialRoute.AnnexMapId?OutsideTrialRoute.AnnexDoorX:OutsideTrialRoute.HomeDoorX);
+        }
+    }
+    public sealed class OutsideTrialNavigationTarget
+    {
+        public string MapId {get;}public long Position {get;}public string Title {get;}
+        public bool ViaExit {get;}public long GuidePosition {get;}
+        internal OutsideTrialNavigationTarget(string map,long position,string title,bool viaExit,long guide){MapId=map;Position=position;Title=title;ViaExit=viaExit;GuidePosition=guide;}
+    }
     public enum OutsideTrialObjectiveKind {Chest,RecoveryPoint,UniqueEnemy,Boss,Quest}
     public sealed class OutsideTrialMapObjective
     {
@@ -212,14 +241,14 @@ namespace Olca.Core.Logic.Integration
             var objectives=chests.Select(id=>new OutsideTrialMapObjective(id,OutsideTrialObjectiveKind.Chest)).Concat(new[]{new OutsideTrialMapObjective(OutsideTrialRoute.RecoveryPointId,OutsideTrialObjectiveKind.RecoveryPoint)});
             return Percent(objectives,v=>v.Kind==OutsideTrialObjectiveKind.RecoveryPoint?profile.OutsideDiscoveredRecoveryPoints?.Contains(v.Id)==true:profile.OutsideInventory?.ClaimedSources?.Contains(v.Id)==true);
         }
-        public static OutsideTrialMapOverview[] Build(ClearReturnProfile profile,OutsideExplorationCore core)
+        public static OutsideTrialMapOverview[] Build(ClearReturnProfile profile,OutsideExplorationCore core,string navigationMapId=null)
         {
             if(profile==null||core?.Definition.Id!="validation-landing-32"||!OutsideTrialRoute.KnownMap(core.TrialMapId))return Array.Empty<OutsideTrialMapOverview>();
             string current=core.TrialMapId??OutsideMapRevealTrial.HomeMapId;bool recovery=profile.OutsideDiscoveredRecoveryPoints?.Contains(OutsideTrialRoute.RecoveryPointId)==true;
             var result=new List<OutsideTrialMapOverview>();foreach(var id in new[]{OutsideMapRevealTrial.HomeMapId,OutsideTrialRoute.AnnexMapId}){
                 var saved=profile.OutsideMapReveals?.FirstOrDefault(v=>v.MapId==id);bool home=id==OutsideMapRevealTrial.HomeMapId;
                 bool item=profile.OutsideItemRevealedMaps?.Contains(id)==true;
-                if(id!=current&&saved==null&&!item&&!(home&&recovery))continue;
+                if(id!=current&&id!=navigationMapId&&saved==null&&!item&&!(home&&recovery))continue;
                 result.Add(new OutsideTrialMapOverview{MapId=id,Name=home?"ケンショウ エリア（カリ）":"シヨウ ベツマップ（カリ）",ItemRevealed=item,RecoveryVisible=home&&(recovery||item),Cells=Array.AsReadOnly(saved?.Cells.Select(c=>c.Copy()).ToArray()??Array.Empty<OutsideMapCellData>()),IsCurrent=id==current,PlayerX=core.Position/(double)OutsideMovementDefinition.UnitsPerWorldUnit,PlayerY=core.Height/(double)OutsideMovementDefinition.UnitsPerWorldUnit,RecoveryKnown=home&&recovery,ExplorationPercent=home?HomePercent(profile):null});
             }return result.ToArray();
         }

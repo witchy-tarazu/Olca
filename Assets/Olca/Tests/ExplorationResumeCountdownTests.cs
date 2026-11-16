@@ -22,6 +22,17 @@ namespace Olca.Tests
             var missing=Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(profile,null);Assert.IsFalse(missing[2].Completed);Assert.AreEqual(3,missing.Count);Assert.Throws<System.ArgumentNullException>(()=>Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(null,route));
         }
 
+        [TestCase("trial-find-recovery",false,6d)][TestCase("trial-clear-two-floors",false,20d)][TestCase("trial-visit-annex",true,17.5d)]
+        public void 試用ナビは同一マップの目的地と別マップの出口を区別する(string id,bool exit,double x)
+        {
+            var nav=new OutsideTrialNavigation();Assert.IsTrue(nav.Select(id));var t=nav.Resolve(OutsideMapRevealTrial.HomeMapId);Assert.AreEqual(exit,t.ViaExit);Assert.AreEqual(x*OutsideMovementDefinition.UnitsPerWorldUnit,t.GuidePosition);
+            var a=nav.Resolve(OutsideTrialRoute.AnnexMapId);Assert.AreEqual(id!="trial-visit-annex",a.ViaExit);Assert.AreEqual(OutsideTrialRoute.AnnexDoorX,a.GuidePosition);
+        }
+        [Test] public void 試用ナビは解除非表示不正IDと未知マップを安全に扱い保存開示達成を変えない()
+        {
+            var profile=new ClearReturnProfile();var before=PortableCheckpointJson.Serialize(profile);var nav=new OutsideTrialNavigation();Assert.IsNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));Assert.IsTrue(nav.Select("trial-find-recovery"));Assert.IsFalse(nav.Select("unknown"));Assert.AreEqual("trial-find-recovery",nav.SelectedId);Assert.IsNull(nav.Resolve("unknown"));nav.ToggleVisibility();Assert.IsNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));Assert.AreEqual("trial-find-recovery",nav.SelectedId);nav.ToggleVisibility();Assert.IsNotNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));nav.Select(null);Assert.IsNull(nav.Resolve(OutsideMapRevealTrial.HomeMapId));nav.Select("trial-visit-annex");nav.ToggleVisibility();nav.Reset();Assert.IsNull(nav.SelectedId);Assert.IsTrue(nav.Visible);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(profile));
+        }
+
         private static OutsideExplorationSession Charge291(){var s=Sword161(175);s.EnableTrialNormalKick();return s;}
         private static bool ChargeStep291(OutsideExplorationSession s,bool held,bool down=false,bool card=false,bool actions=true,bool permit=true)
         {s.TickTraversal(0);return s.ProcessAttackInput(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=held,BasicAttackButton=held,BasicAttackButtonDown=down,CardUseButtonDown=card,CardUsePressedAt=card?1:0,BasicAttackPressedAt=down?2:0},false,actions,permit,out _);}

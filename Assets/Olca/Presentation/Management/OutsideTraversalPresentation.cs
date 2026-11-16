@@ -29,6 +29,22 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearMapDoor(){travelMap=null;canTravelMap=null;mapDoorMessage=null;if(mapDoor!=null){mapDoor.onClick.RemoveAllListeners();mapDoor.interactable=false;mapDoor.gameObject.SetActive(false);}if(mapDoorMarker!=null)mapDoorMarker.gameObject.SetActive(false);}
         private Func<long> miniMapRevision;private Func<OutsideTrialMapOverview[]> miniMapSource;
+        private Func<OutsideTrialNavigation> navigation;private Image miniMapTarget;private Text navigationLabel,miniMapTargetText;
+        public void ConfigureNavigation(Func<OutsideTrialNavigation> source){navigation=source;}
+        private void RenderNavigation(string mapId,double playerX,double playerY)
+        {
+            var target=navigation?.Invoke()?.Resolve(mapId);
+            if(navigationLabel==null){var go=new GameObject("OutsideNavigation",typeof(RectTransform),typeof(Text));go.transform.SetParent(miniMapPanel,false);navigationLabel=go.GetComponent<Text>();navigationLabel.font=gaugeLabel.font;navigationLabel.fontSize=14;navigationLabel.color=new Color(1,.94f,.5f);navigationLabel.alignment=TextAnchor.MiddleCenter;navigationLabel.raycastTarget=false;navigationLabel.rectTransform.anchoredPosition=new Vector2(0,35);navigationLabel.rectTransform.sizeDelta=new Vector2(420,24);}
+            navigationLabel.gameObject.SetActive(target!=null);miniMapPanel.Find("MiniMapTitle").gameObject.SetActive(target==null);miniMapTarget.gameObject.SetActive(target!=null);
+            if(target==null)return;
+            double x=target.GuidePosition/(double)OutsideMovementDefinition.UnitsPerWorldUnit;
+            string direction=Math.Abs(x-playerX)<.5&&Math.Abs(playerY)<.5?"ココ":x>playerX?"→":x<playerX?"←":playerY>0?"↓":"↑";
+            navigationLabel.text=direction+" "+target.Title+(target.ViaExit?" / イドウグチ":"")+"（カリ）";
+            miniMapTarget.rectTransform.anchoredPosition=new Vector2(Mathf.Clamp(-200+(float)(x/4-miniMapLeft)*50,-192,192),Mathf.Clamp(-14-miniMapBottom*16,-22,22));
+            // 同地点のP/Rを覆わない。目的地点自体は動かさず記号だけ横へ逃がす。
+            var at=miniMapTarget.rectTransform.anchoredPosition;bool overlap=(at-miniMapPlayer.rectTransform.anchoredPosition).sqrMagnitude<24*24||(miniMapRecovery.gameObject.activeSelf&&(at-miniMapRecovery.rectTransform.anchoredPosition).sqrMagnitude<24*24);
+            miniMapTarget.color=overlap?Color.clear:new Color(.6f,.3f,.02f,1);miniMapTargetText.color=new Color(1,.94f,.5f);miniMapTargetText.rectTransform.anchoredPosition=overlap?new Vector2(at.x>176?-18:18,0):Vector2.zero;
+        }
         private OutsideTrialMapOverview miniMapData;private long miniMapShownRevision=long.MinValue;private string miniMapShownId;
         private RectTransform miniMapPanel;private Image[] miniMapCells;private Image miniMapPlayer,miniMapRecovery;private int miniMapLeft,miniMapBottom;private int miniMapDrawLeft=int.MinValue,miniMapDrawBottom;private long miniMapDrawRevision=long.MinValue;private string miniMapDrawId;
         // 全体マップと同じ確定済み開示だけを読む。表示は保存・発見・時計を進めない。
@@ -58,18 +74,19 @@ namespace Olca.Presentation.Exploration
             miniMapPlayer.rectTransform.anchoredPosition=new Vector2(-200+(float)(x-miniMapLeft)*50,-24+(float)(y-miniMapBottom)*16);
             bool recovery=miniMapData.RecoveryVisible&&miniMapBottom<=0&&miniMapBottom+3>0&&miniMapLeft<=1&&miniMapLeft+8>1;
             miniMapRecovery.gameObject.SetActive(recovery);if(recovery){miniMapRecovery.rectTransform.anchoredPosition=new Vector2(-200+(1.5f-miniMapLeft)*50,-8-miniMapBottom*16);miniMapRecovery.color=miniMapData.RecoveryKnown?new Color(.02f,.4f,.42f,1):new Color(.22f,.27f,.32f,1);}
+            RenderNavigation(id,core.Position/(double)OutsideMovementDefinition.UnitsPerWorldUnit,core.Height/(double)OutsideMovementDefinition.UnitsPerWorldUnit);
         }
         private void CreateMiniMap()
         {
             var go=new GameObject("OutsideMiniMap",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);miniMapPanel=(RectTransform)go.transform;miniMapPanel.anchorMin=miniMapPanel.anchorMax=new Vector2(0,1);miniMapPanel.anchoredPosition=new Vector2(255,-348);miniMapPanel.sizeDelta=new Vector2(430,96);var panel=go.GetComponent<Image>();panel.color=new Color(.005f,.03f,.045f,.97f);panel.raycastTarget=false;
             Text Label(string name,string text,Vector2 at,Vector2 size,int points){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(go.transform,false);var t=obj.GetComponent<Text>();t.font=gaugeLabel.font;t.text=text;t.fontSize=points;t.color=Color.white;t.alignment=TextAnchor.MiddleCenter;t.raycastTarget=false;t.rectTransform.anchoredPosition=at;t.rectTransform.sizeDelta=size;return t;}
-            Label("MiniMapTitle","ミニマップ（シヨウ）",new Vector2(0,35),new Vector2(410,24),14);Label("MiniMapLegend","P: ゲンザイチ / R: カイフク / 4worldグリッド（カリ）",new Vector2(0,-36),new Vector2(420,20),12);
+            Label("MiniMapTitle","ミニマップ（シヨウ）",new Vector2(0,35),new Vector2(410,24),14);Label("MiniMapLegend","P: ゲンザイチ / R: カイフク / !: アンナイ",new Vector2(0,-36),new Vector2(420,20),12);
             Image Tile(string name,Vector2 at,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(go.transform,false);var image=obj.GetComponent<Image>();image.raycastTarget=false;image.rectTransform.anchoredPosition=at;image.rectTransform.sizeDelta=size;return image;}
             miniMapCells=new Image[24];for(int row=0;row<3;row++)for(int column=0;column<8;column++)miniMapCells[row*8+column]=Tile("MiniMapCell_"+column+"_"+row,new Vector2(-175+column*50,-16+row*16),new Vector2(48,14));
             Image Marker(string name,string text,Color color){var im=Tile(name,Vector2.zero,new Vector2(16,16));im.color=color;var label=Label(name+"Label",text,Vector2.zero,new Vector2(16,20),12);label.transform.SetParent(im.transform,false);return im;}
-            miniMapRecovery=Marker("MiniMapRecovery","R",Color.gray);miniMapPlayer=Marker("MiniMapPlayer","P",new Color(.6f,.34f,.08f,1));
+            miniMapRecovery=Marker("MiniMapRecovery","R",Color.gray);miniMapTarget=Marker("MiniMapTarget","!",new Color(.6f,.3f,.02f,1));miniMapTargetText=miniMapTarget.GetComponentInChildren<Text>();miniMapPlayer=Marker("MiniMapPlayer","P",new Color(.6f,.34f,.08f,1));
         }
-        private void ClearMiniMap(){miniMapRevision=null;miniMapSource=null;miniMapData=null;miniMapShownRevision=long.MinValue;miniMapShownId=miniMapDrawId=null;miniMapDrawRevision=long.MinValue;miniMapDrawLeft=int.MinValue;if(miniMapPanel!=null)miniMapPanel.gameObject.SetActive(false);}
+        private void ClearMiniMap(){navigation=null;miniMapRevision=null;miniMapSource=null;miniMapData=null;miniMapShownRevision=long.MinValue;miniMapShownId=miniMapDrawId=null;miniMapDrawRevision=long.MinValue;miniMapDrawLeft=int.MinValue;if(miniMapPanel!=null)miniMapPanel.gameObject.SetActive(false);}
         private Text mapNameLabel;
         private void RenderMapName()
         {
@@ -469,13 +486,32 @@ namespace Olca.Presentation.Management
     /// <summary>保存済みの試用目的を読む。正式依頼・受注・報酬の状態は生成しない。</summary>
     public sealed class OutsideObjectivesView : MonoBehaviour
     {
+        private Func<OutsideTrialNavigation> navigation;private Button clearNavigation,toggleNavigation;
+        public void ConfigureNavigation(Func<OutsideTrialNavigation> source)
+        {
+            navigation=source;
+            Button Make(string name,float x,string text){var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(transform,false);var b=go.GetComponent<Button>();Olca.Presentation.Dungeon.UiLook.MenuButton(b);b.navigation=new Navigation{mode=Navigation.Mode.None};var rr=(RectTransform)go.transform;rr.anchoredPosition=new Vector2(x,-267);rr.sizeDelta=new Vector2(570,48);Label(name+"Label",text,Vector2.zero,new Vector2(550,44),22,go.transform);return b;}
+            clearNavigation=Make("ClearOutsideNavigation",-300,"アンナイ カイジョ");toggleNavigation=Make("ToggleOutsideNavigation",300,"アンナイ ヒョウジ");
+        }
+        private Selectable FindNavigation(Selectable from,Vector2 direction)
+        {
+            var buttons=rows.GetComponentsInChildren<Button>();int index=Array.FindIndex(buttons,b=>b==from);int row=index>=0?index:from==clearNavigation||from==toggleNavigation?buttons.Length:buttons.Length+1;
+            if(direction.x!=0)return row==buttons.Length?(direction.x>0&&from==clearNavigation?toggleNavigation:direction.x<0&&from==toggleNavigation?clearNavigation:null):null;
+            int next=row+(direction.y>0?-1:1);if(next<0||next>buttons.Length+1)return null;if(next<buttons.Length)return buttons[next];if(next==buttons.Length)return clearNavigation;return back;
+        }
+        private void RefreshNavigationSelection()
+        {
+            var state=navigation?.Invoke();if(state==null)return;
+            foreach(var b in rows.GetComponentsInChildren<Button>()){bool selected=b.name=="Objective_"+state.SelectedId;var colors=b.colors;colors.normalColor=selected?new Color(.08f,.28f,.35f,1):new Color(.045f,.25f,.31f,1);b.colors=colors;var t=b.transform.Find("ObjectiveTitle").GetComponent<Text>();t.text=t.text.Replace("[アンナイ] ","");if(selected)t.text="[アンナイ] "+t.text;}
+            toggleNavigation.GetComponentInChildren<Text>().text="アンナイ ヒョウジ: "+(state.Visible?"ON":"OFF");
+        }
         private ManagedScreenContext context;private Func<bool> ownerAlive;private Func<IReadOnlyList<OutsideTrialGoalOverview>> source;private Action close;private Button back;private Text guide;private Font font;private Transform rows;private Olca.Unity.MenuPadScope menu;private long epoch;
         private bool CanOperate=>this!=null&&context?.IsCurrent==true&&!context.DialogBlocksInput&&gameObject.activeInHierarchy&&ownerAlive?.Invoke()==true;
         public void Initialize(Font value,Func<IReadOnlyList<OutsideTrialGoalOverview>> read,Action closed,Func<bool> alive)
         {
             font=value;source=read;close=closed;ownerAlive=alive;((RectTransform)transform).sizeDelta=new Vector2(1380,900);var panel=GetComponent<Image>()??gameObject.AddComponent<Image>();panel.color=new Color(.015f,.045f,.065f,.98f);panel.raycastTarget=true;
             Label("ObjectivesTitle","モクテキ・イライ（シヨウ）",new Vector2(0,365),new Vector2(1260,70),34,transform);
-            Label("ObjectivesScope","メインモクテキ: シヨウルートの アンナイ（カリ）\nイライデータ: ミトウロク / ジュチュウ・ホウシュウ・ナビは ミジッソウ",new Vector2(0,275),new Vector2(1260,100),24,transform);
+            Label("ObjectivesScope","メインモクテキ: シヨウルートの アンナイ（カリ）\nイライデータ: ミトウロク / ジュチュウ・ホウシュウは ミジッソウ / アンナイは カリ",new Vector2(0,275),new Vector2(1260,100),24,transform);
             rows=new GameObject("ObjectiveRows",typeof(RectTransform)).transform;rows.SetParent(transform,false);
             var obj=new GameObject("CloseOutsideObjectives",typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);back=obj.GetComponent<Button>();back.navigation=new Navigation{mode=Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.MenuButton(back);back.GetComponent<RectTransform>().anchoredPosition=new Vector2(0,-335);back.GetComponent<RectTransform>().sizeDelta=new Vector2(480,80);Label("ObjectivesBackLabel","ポーズへ モドる",Vector2.zero,new Vector2(450,70),26,obj.transform);
             guide=Label("ObjectivesInputGuide","",new Vector2(0,-407),new Vector2(1260,50),22,transform);
@@ -489,20 +525,24 @@ namespace Olca.Presentation.Management
             Hide();context=owner;long token=++epoch;for(int n=rows.childCount-1;n>=0;n--){var child=rows.GetChild(n);child.gameObject.SetActive(false);if(Application.isPlaying)Destroy(child.gameObject);else DestroyImmediate(child.gameObject);}
             var goals=source?.Invoke()??Array.Empty<OutsideTrialGoalOverview>();for(int i=0;i<goals.Count;i++){
                 var goal=goals[i];var obj=new GameObject("Objective_"+goal.Id,typeof(RectTransform),typeof(Image));obj.transform.SetParent(rows,false);var rr=(RectTransform)obj.transform;rr.anchoredPosition=new Vector2(0,145-i*155);rr.sizeDelta=new Vector2(1260,140);var bg=obj.GetComponent<Image>();bg.color=new Color(.035f,.14f,.19f,1);bg.raycastTarget=false;
+                if(navigation!=null){bg.raycastTarget=true;var button=obj.AddComponent<Button>();button.targetGraphic=bg;button.navigation=new Navigation{mode=Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.MenuButton(button);button.onClick.AddListener(()=>{if(CanOperate&&epoch==token&&ReferenceEquals(context,owner)){navigation().Select(goal.Id);RefreshNavigationSelection();}});}
                 var title=Label("ObjectiveTitle",(goal.Completed?"[タッセイ] ":"[ミタッセイ] ")+goal.Title,new Vector2(0,35),new Vector2(1220,50),26,obj.transform);title.color=goal.Completed?new Color(.55f,1,1):Color.white;
                 Label("ObjectiveDetail",goal.Detail,new Vector2(0,-24),new Vector2(1210,68),22,obj.transform);
             }
-            back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(CanOperate&&epoch==token&&ReferenceEquals(context,owner))close?.Invoke();});gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>CanOperate);menu.Bind(transform,back.name,()=>{if(CanOperate&&epoch==token)close?.Invoke();});RefreshGuide();
+            if(navigation!=null){clearNavigation.onClick=new Button.ButtonClickedEvent();clearNavigation.onClick.AddListener(()=>{if(CanOperate&&epoch==token){navigation().Select(null);RefreshNavigationSelection();}});toggleNavigation.onClick=new Button.ButtonClickedEvent();toggleNavigation.onClick.AddListener(()=>{if(CanOperate&&epoch==token){navigation().ToggleVisibility();RefreshNavigationSelection();}});RefreshNavigationSelection();}
+            back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(CanOperate&&epoch==token&&ReferenceEquals(context,owner))close?.Invoke();});gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>CanOperate);if(navigation!=null)menu.NavigationResolver=FindNavigation;menu.Bind(transform,navigation==null?back.name:"Objective_"+(navigation().SelectedId??goals.FirstOrDefault()?.Id),()=>{if(CanOperate&&epoch==token)close?.Invoke();});RefreshGuide();
         }
-        private void RefreshGuide(){guide.text=GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad)+" / ポーズへ モドる";}
+        private void RefreshGuide(){guide.text=GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad)+(navigation==null?" / ポーズへ モドる":" / モクテキを エラんで アンナイ / サイキドウで カイジョ（カリ）");}
         private void LateUpdate(){if(context!=null&&(context.IsCurrent!=true||ownerAlive?.Invoke()!=true)){Hide();return;}menu?.Tick();if(context!=null)RefreshGuide();}
         public void Hide(){epoch++;menu?.Dispose();menu=null;var prior=context;context=null;if(this!=null)gameObject.SetActive(false);prior?.NotifyHidden();}
         private void OnDisable(){epoch++;menu?.Dispose();menu=null;var prior=context;context=null;prior?.NotifyHidden();}
-        private void OnDestroy(){OnDisable();source=null;close=null;ownerAlive=null;}
+        private void OnDestroy(){OnDisable();source=null;close=null;ownerAlive=null;navigation=null;}
     }
     /// <summary>試用地図と登録済み地点の移動確認。保存と時間停止はController/Sessionが所有する。</summary>
     public sealed class OutsideFastTravelView : MonoBehaviour
     {
+        private Func<OutsideTrialNavigation> navigation;
+        public void ConfigureNavigation(Func<OutsideTrialNavigation> source){navigation=source;}
         private ManagedScreenContext context;private Olca.Unity.MenuPadScope menu;private Button confirm;private Text message;private Func<bool> discovered,ownerAlive;private Action travel,close;private bool busy;private long renderEpoch;private readonly Dictionary<Button,Action> actions=new Dictionary<Button,Action>();
         private bool CanOperate=>this!=null&&isActiveAndEnabled&&context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy&&ownerAlive?.Invoke()==true;
         public void Initialize(Font font,Func<bool> known,Action execute,Action closed,Func<bool> alive=null,Func<OutsideTrialMapOverview[]> maps=null,Action<string> acquire=null)
@@ -556,7 +596,13 @@ namespace Olca.Presentation.Management
             }else foreach(var cell in cells)Cell(cell.X,cell.Y,"Visited_");
             if(map.RecoveryVisible)Tile(map.RecoveryKnown?"DiscoveredRecovery":"UnvisitedRecovery",left+1.5f*size,(float)(bottom+(0-(double)low)*size)+38,32,32,map.RecoveryKnown?new Color(.02f,.4f,.42f,1):new Color(.22f,.27f,.32f,1),"R");
             if(map.IsCurrent)Tile("CurrentPosition",left+(float)(map.PlayerX/4)*size,(float)(bottom+(map.PlayerY/4-low)*size),28,28,new Color(.6f,.34f,.08f,1),"P");
-            var legend=new GameObject("MapLegend",typeof(RectTransform),typeof(Text)).GetComponent<Text>();legend.transform.SetParent(root.transform,false);legend.font=mapFont;legend.fontSize=18;legend.color=new Color(.8f,.96f,1);legend.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("P: ゲンザイチ / R: カイフクチテン（イドウは ジッホウモンご） / アカルいクカク: カイジずみ\n4worldグリッド（カリ） / シヨウリツ: タカラバコ・カイフクチテンの カイホウ");legend.alignment=TextAnchor.MiddleCenter;legend.raycastTarget=false;legend.rectTransform.sizeDelta=new Vector2(1220,70);legend.rectTransform.anchoredPosition=new Vector2(0,mapAcquire==null?-185:-160);
+            var target=navigation?.Invoke()?.Resolve(map.MapId);if(target!=null){
+                string name=target.ViaExit?"NavigationExit":"NavigationDestination";Tile(name,left+(float)(target.GuidePosition/(double)OutsideMapRevealTrial.CellSize)*size,(float)(bottom+(-low+.5)*size),32,32,new Color(.6f,.3f,.02f,1),"!");
+                var mark=root.transform.Find(name).GetComponent<Image>();var at=mark.rectTransform.anchoredPosition;var player=root.transform.Find("CurrentPosition") as RectTransform;var recovery=root.transform.Find(map.RecoveryKnown?"DiscoveredRecovery":"UnvisitedRecovery") as RectTransform;
+                bool nearPlayer=player!=null&&(at-player.anchoredPosition).sqrMagnitude<42*42;bool nearRecovery=recovery!=null&&(at-recovery.anchoredPosition).sqrMagnitude<42*42;
+                if(nearPlayer||nearRecovery){var label=mark.GetComponentInChildren<Text>();mark.color=Color.clear;float offset=nearPlayer&&at.x<=player.anchoredPosition.x?-40:40;if(Mathf.Abs(at.x+offset)>580)offset=-offset;label.rectTransform.anchoredPosition=new Vector2(offset,0);label.color=new Color(1,.94f,.5f);}
+            }
+            var legend=new GameObject("MapLegend",typeof(RectTransform),typeof(Text)).GetComponent<Text>();legend.transform.SetParent(root.transform,false);legend.font=mapFont;legend.fontSize=18;legend.color=new Color(.8f,.96f,1);legend.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("P: ゲンザイチ / R: カイフク / !: アンナイ / アカルいクカク: カイジずみ\n4worldグリッド（カリ） / シヨウリツ: タカラバコ・カイフクチテンの カイホウ");legend.alignment=TextAnchor.MiddleCenter;legend.raycastTarget=false;legend.rectTransform.sizeDelta=new Vector2(1220,70);legend.rectTransform.anchoredPosition=new Vector2(0,mapAcquire==null?-185:-160);
         }
         public void Hide(){renderEpoch++;menu?.Dispose();menu=null;var prior=context;context=null;if(this!=null)gameObject.SetActive(false);prior?.NotifyHidden();}
         private void RefreshMapGuide(){if(mapGuide!=null)mapGuide.text=GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad)+" / ポーズへ モドる";}
