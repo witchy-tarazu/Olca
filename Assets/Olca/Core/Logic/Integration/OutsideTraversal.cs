@@ -169,6 +169,21 @@ namespace Olca.Core.Logic.Integration
             cell=new OutsideMapCellData{X=checked((int)x),Y=checked((int)y)};return true;
         }
     }
+    /// <summary>正式ストーリーではなく、既存の試用導線を案内する読取専用の目的。</summary>
+    public sealed class OutsideTrialGoalOverview
+    {
+        public string Id {get;}public string Title {get;}public string Detail {get;}public bool Completed {get;}
+        private OutsideTrialGoalOverview(string id,string title,string detail,bool completed){Id=id;Title=title;Detail=detail;Completed=completed;}
+        public static IReadOnlyList<OutsideTrialGoalOverview> Build(ClearReturnProfile profile,string trialRouteId)
+        {
+            if(profile==null)throw new ArgumentNullException(nameof(profile));
+            return Array.AsReadOnly(new[]{
+                new OutsideTrialGoalOverview("trial-find-recovery","カイフクチテンを ハッケンする","ケンショウ エリアの ヒダリへ / ジッサイに チテンを ホウモン",profile.OutsideDiscoveredRecoveryPoints?.Contains(OutsideTrialRoute.RecoveryPointId)==true),
+                new OutsideTrialGoalOverview("trial-visit-annex","ベツマップを オトズレル","ケンショウ エリアの マップイドウグチから イキキを シヨウ",profile.OutsideMapReveals?.Any(m=>m?.MapId==OutsideTrialRoute.AnnexMapId&&m.Cells?.Length>0)==true),
+                new OutsideTrialGoalOverview("trial-clear-two-floors","シヨウ 2カイソウを クリアする",trialRouteId==null?"タイショウルート ミトウロク":"ダンジョン イリグチで シヨウ 2カイソウ（カリ）を エラぶ / キカンホゾンまで",trialRouteId!=null&&profile.ClearedDungeons?.Contains(trialRouteId)==true)
+            });
+        }
+    }
     public enum OutsideTrialObjectiveKind {Chest,RecoveryPoint,UniqueEnemy,Boss,Quest}
     public sealed class OutsideTrialMapObjective
     {

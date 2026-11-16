@@ -10,6 +10,18 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)]
+        public void 試用目的は保存済みの実発見実訪問と対象ルート確定だけを読み進行を変えない(int mode)
+        {
+            var profile=new Olca.Core.Domain.ClearReturnProfile();const string route="trial-two-floor-v1";
+            if(mode==1)profile.OutsideDiscoveredRecoveryPoints=new[]{Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId};
+            if(mode==2)profile.OutsideItemRevealedMaps=new[]{Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId};
+            if(mode==3)profile.OutsideMapReveals=new[]{new Olca.Core.Domain.OutsideMapRevealData{MapId=Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId,Cells=new[]{new Olca.Core.Domain.OutsideMapCellData{X=1,Y=0}}}};
+            if(mode>=4)profile.ClearedDungeons=new[]{mode==4?route:"other-route"};
+            var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile);var rows=Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(profile,route);Assert.AreEqual(3,rows.Count);Assert.AreEqual(mode==1,rows[0].Completed);Assert.AreEqual(mode==3,rows[1].Completed);Assert.AreEqual(mode==4,rows[2].Completed);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(profile));
+            var missing=Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(profile,null);Assert.IsFalse(missing[2].Completed);Assert.AreEqual(3,missing.Count);Assert.Throws<System.ArgumentNullException>(()=>Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(null,route));
+        }
+
         private static OutsideExplorationSession Charge291(){var s=Sword161(175);s.EnableTrialNormalKick();return s;}
         private static bool ChargeStep291(OutsideExplorationSession s,bool held,bool down=false,bool card=false,bool actions=true,bool permit=true)
         {s.TickTraversal(0);return s.ProcessAttackInput(new LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=held,BasicAttackButton=held,BasicAttackButtonDown=down,CardUseButtonDown=card,CardUsePressedAt=card?1:0,BasicAttackPressedAt=down?2:0},false,actions,permit,out _);}

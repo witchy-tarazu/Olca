@@ -466,8 +466,41 @@ namespace Olca.Presentation.Management
 
 namespace Olca.Presentation.Management
 {
-    /// <summary>所持/4枠の表示と操作だけ。保存は既存の進行サービスへ委譲する。</summary>
-    /// <summary>登録済み1地点の移動確認。保存と時間停止はController/Sessionが所有する。</summary>
+    /// <summary>保存済みの試用目的を読む。正式依頼・受注・報酬の状態は生成しない。</summary>
+    public sealed class OutsideObjectivesView : MonoBehaviour
+    {
+        private ManagedScreenContext context;private Func<bool> ownerAlive;private Func<IReadOnlyList<OutsideTrialGoalOverview>> source;private Action close;private Button back;private Text guide;private Font font;private Transform rows;private Olca.Unity.MenuPadScope menu;private long epoch;
+        private bool CanOperate=>this!=null&&context?.IsCurrent==true&&!context.DialogBlocksInput&&gameObject.activeInHierarchy&&ownerAlive?.Invoke()==true;
+        public void Initialize(Font value,Func<IReadOnlyList<OutsideTrialGoalOverview>> read,Action closed,Func<bool> alive)
+        {
+            font=value;source=read;close=closed;ownerAlive=alive;((RectTransform)transform).sizeDelta=new Vector2(1380,900);var panel=GetComponent<Image>()??gameObject.AddComponent<Image>();panel.color=new Color(.015f,.045f,.065f,.98f);panel.raycastTarget=true;
+            Label("ObjectivesTitle","モクテキ・イライ（シヨウ）",new Vector2(0,365),new Vector2(1260,70),34,transform);
+            Label("ObjectivesScope","メインモクテキ: シヨウルートの アンナイ（カリ）\nイライデータ: ミトウロク / ジュチュウ・ホウシュウ・ナビは ミジッソウ",new Vector2(0,275),new Vector2(1260,100),24,transform);
+            rows=new GameObject("ObjectiveRows",typeof(RectTransform)).transform;rows.SetParent(transform,false);
+            var obj=new GameObject("CloseOutsideObjectives",typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);back=obj.GetComponent<Button>();back.navigation=new Navigation{mode=Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.MenuButton(back);back.GetComponent<RectTransform>().anchoredPosition=new Vector2(0,-335);back.GetComponent<RectTransform>().sizeDelta=new Vector2(480,80);Label("ObjectivesBackLabel","ポーズへ モドる",Vector2.zero,new Vector2(450,70),26,obj.transform);
+            guide=Label("ObjectivesInputGuide","",new Vector2(0,-407),new Vector2(1260,50),22,transform);
+        }
+        private Text Label(string name,string value,Vector2 position,Vector2 size,int points,Transform parent)
+        {
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(parent,false);var text=obj.GetComponent<Text>();text.font=font;text.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value);text.fontSize=points;text.color=Color.white;text.alignment=TextAnchor.MiddleCenter;text.raycastTarget=false;text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;
+        }
+        public void Open(ManagedScreenContext owner)
+        {
+            Hide();context=owner;long token=++epoch;for(int n=rows.childCount-1;n>=0;n--){var child=rows.GetChild(n);child.gameObject.SetActive(false);if(Application.isPlaying)Destroy(child.gameObject);else DestroyImmediate(child.gameObject);}
+            var goals=source?.Invoke()??Array.Empty<OutsideTrialGoalOverview>();for(int i=0;i<goals.Count;i++){
+                var goal=goals[i];var obj=new GameObject("Objective_"+goal.Id,typeof(RectTransform),typeof(Image));obj.transform.SetParent(rows,false);var rr=(RectTransform)obj.transform;rr.anchoredPosition=new Vector2(0,145-i*155);rr.sizeDelta=new Vector2(1260,140);var bg=obj.GetComponent<Image>();bg.color=new Color(.035f,.14f,.19f,1);bg.raycastTarget=false;
+                var title=Label("ObjectiveTitle",(goal.Completed?"[タッセイ] ":"[ミタッセイ] ")+goal.Title,new Vector2(0,35),new Vector2(1220,50),26,obj.transform);title.color=goal.Completed?new Color(.55f,1,1):Color.white;
+                Label("ObjectiveDetail",goal.Detail,new Vector2(0,-24),new Vector2(1210,68),22,obj.transform);
+            }
+            back.onClick=new Button.ButtonClickedEvent();back.onClick.AddListener(()=>{if(CanOperate&&epoch==token&&ReferenceEquals(context,owner))close?.Invoke();});gameObject.SetActive(true);transform.SetAsLastSibling();menu=new Olca.Unity.MenuPadScope(()=>CanOperate);menu.Bind(transform,back.name,()=>{if(CanOperate&&epoch==token)close?.Invoke();});RefreshGuide();
+        }
+        private void RefreshGuide(){guide.text=GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad)+" / ポーズへ モドる";}
+        private void LateUpdate(){if(context!=null&&(context.IsCurrent!=true||ownerAlive?.Invoke()!=true)){Hide();return;}menu?.Tick();if(context!=null)RefreshGuide();}
+        public void Hide(){epoch++;menu?.Dispose();menu=null;var prior=context;context=null;if(this!=null)gameObject.SetActive(false);prior?.NotifyHidden();}
+        private void OnDisable(){epoch++;menu?.Dispose();menu=null;var prior=context;context=null;prior?.NotifyHidden();}
+        private void OnDestroy(){OnDisable();source=null;close=null;ownerAlive=null;}
+    }
+    /// <summary>試用地図と登録済み地点の移動確認。保存と時間停止はController/Sessionが所有する。</summary>
     public sealed class OutsideFastTravelView : MonoBehaviour
     {
         private ManagedScreenContext context;private Olca.Unity.MenuPadScope menu;private Button confirm;private Text message;private Func<bool> discovered,ownerAlive;private Action travel,close;private bool busy;private long renderEpoch;private readonly Dictionary<Button,Action> actions=new Dictionary<Button,Action>();
