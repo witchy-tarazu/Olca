@@ -205,6 +205,34 @@ namespace Olca.Tests
         }
         private static void BombPosition289(OutsideExplorationSession s,long x,int side,long height=0)
         {var state=s.Core.CaptureState();state.Position=x;state.Facing=side;state.Height=height;state.SupportId=height==0?"floor":null;state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});}
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)]
+        public void 改善カード非平地の高速ボムは壁足場穴水境界空中を掃引し終端を固定する(int kind)
+        {
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,kind==3?OutsideTraversalProfile.ValidationWater:OutsideTraversalProfile.ValidationPit);
+            long x=kind==0?23*60000:kind==1?10*60000:kind==2?9*60000:kind==3?60000:kind==4?30000:1008000;
+            int side=kind==2||kind==4?-1:1;long height=kind==1?120000:kind==5?240000:0;
+            var terrain=OutsideBombTerrainData.Create(core,x,side,height,OutsideCardPolishTrial.BombDistance,OutsideCardPolishTrial.BombFrames);
+            var plan=new OutsideBombLaunchData{DefinitionId=OutsideBombLaunchData.FastTerrainDefinition,X=x,Facing=side,Power=40,Terrain=terrain};plan.Validate();Assert.IsTrue(plan.MatchesTerrain(core));Assert.AreEqual(kind>=2&&kind<=4,terrain.Dissipates);
+            if(kind==0){Assert.AreEqual(24*60000,terrain.ImpactX);Assert.Less(terrain.ImpactFrame,36);Assert.Greater(terrain.ImpactHeight,0);}
+            if(kind==1){Assert.AreEqual(60000,terrain.ImpactHeight);Assert.That(terrain.ImpactX,Is.InRange(12*60000,16*60000));}
+            if(kind==2){Assert.AreEqual(4*60000,terrain.ImpactX);Assert.AreEqual(36,terrain.ImpactFrame);}
+            if(kind==3)Assert.AreEqual(1,terrain.ImpactFrame);
+            if(kind==4){Assert.AreEqual(0,terrain.ImpactX);Assert.Less(terrain.ImpactFrame,36);}
+            if(kind==5){Assert.AreEqual(x+5*60000,terrain.ImpactX);Assert.AreEqual(0,terrain.ImpactHeight);}
+            Assert.IsTrue(terrain.SameAs(OutsideBombTerrainData.Create(core,x,side,height,300000,36)));
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 改善カード非平地の高速ボムはcold後も同じ終端で一回だけ爆発し水域では消える(int kind)
+        {
+            using(var s=Bomb289(recovery:0))using(var cold=new OutsideExplorationSession()){
+                var profile=OutsideTraversalProfile.ValidationWater;Assert.IsTrue(s.TryConfigureTraversal(profile));s.EnableTrialCardPolish();BombPosition289(s,(kind==0?23:kind==1?10:3)*60000,kind==2?-1:1,kind==1?120000:0);
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out var error),error);s.TickTraversal(0);}
+                var defs=Kick214Definitions(s);var saved=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=saved.Id;var bytes=PortableCheckpointJson.Serialize(saved);var plan=s.Bombs.Single().Launch;
+                Assert.IsTrue(cold.TryConfigureTraversal(profile));Assert.IsTrue(cold.RestoreSavedState(actor,saved,null,defs));CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(saved));Assert.IsFalse(cold.RestoreSavedState(actor,saved,null,defs));Assert.IsTrue(plan.Terrain.SameAs(cold.Bombs.Single().Launch.Terrain));
+                var notices=new System.Collections.Generic.HashSet<long>();using(var lease=cold.AttachPresentation()){for(int n=0;n<80;n++){cold.TickTraversal(0);foreach(var blast in cold.BombBlasts)notices.Add(blast.Frame);}}
+                Assert.AreEqual(plan.Dissipates?0:1,notices.Count);Assert.IsEmpty(cold.Bombs);Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.SecondTrialTarget.CurrentHp);
+            }
+        }
         [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)] [TestCase(5)]
         public void ボム地形v2は壁足場穴水域境界空中の終端を固定する(int kind)
         {
