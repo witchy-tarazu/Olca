@@ -7,6 +7,22 @@ namespace Olca.Tests.Application
 {
     public class GeneratedSpriteAssetsTests
     {
+        [Test] public void 爆風着弾色は輪郭と元素材を保ち同cacheで共有し最後に回収する()
+        {
+            var source=Resources.Load<TextAsset>("OlcaAttackProps/shared_blast");var bytes=(byte[])source.bytes.Clone();
+            Sprite original=null,impact=null;Texture2D originalTexture=null,impactTexture=null;
+            Color32[] Read(Texture texture){var prior=RenderTexture.active;var target=RenderTexture.GetTemporary(texture.width,texture.height,0,RenderTextureFormat.ARGB32,RenderTextureReadWrite.Linear);var copy=new Texture2D(texture.width,texture.height,TextureFormat.RGBA32,false,true);try{Graphics.Blit(texture,target);RenderTexture.active=target;copy.ReadPixels(new Rect(0,0,texture.width,texture.height),0,0);copy.Apply();return copy.GetPixels32();}finally{RenderTexture.active=prior;RenderTexture.ReleaseTemporary(target);UnityEngine.Object.DestroyImmediate(copy);}}
+            using(var scope=GeneratedSpriteAssets.Acquire()){
+                Assert.IsTrue(Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,out original,scope));
+                Assert.IsTrue(Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,out impact,scope));originalTexture=original.texture;impactTexture=impact.texture;
+                Assert.AreNotSame(original,impact);Assert.AreNotSame(originalTexture,impactTexture);Assert.AreEqual(original.rect,impact.rect);Assert.AreEqual(original.pivot,impact.pivot);Assert.AreEqual(original.pixelsPerUnit,impact.pixelsPerUnit);Assert.AreEqual(original.bounds,impact.bounds);Assert.AreEqual(64,impactTexture.width);Assert.AreEqual(32,impactTexture.height);Assert.AreEqual(FilterMode.Point,impactTexture.filterMode);Assert.AreEqual(TextureWrapMode.Clamp,impactTexture.wrapMode);Assert.IsFalse(impactTexture.isReadable);
+                var before=Read(originalTexture);var after=Read(impactTexture);int brighter=0,transparent=0;
+                for(int i=0;i<before.Length;i++){Assert.AreEqual(before[i].a,after[i].a);if(before[i].a==0){transparent++;continue;}Assert.GreaterOrEqual(after[i].r,before[i].r);Assert.GreaterOrEqual(after[i].g,before[i].g);Assert.GreaterOrEqual(after[i].b,before[i].b);if(after[i].r>before[i].r||after[i].g>before[i].g||after[i].b>before[i].b)brighter++;}
+                Assert.Greater(brighter,0);Assert.Greater(transparent,0);for(int n=0;n<20;n++){Assert.IsTrue(Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,out var again,scope));Assert.AreSame(impact,again);Assert.AreSame(impactTexture,again.texture);}
+                Assert.IsTrue(Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,out var unchanged,scope));Assert.AreSame(original,unchanged);CollectionAssert.AreEqual(before,Read(originalTexture));CollectionAssert.AreEqual(bytes,source.bytes);
+            }
+            Assert.IsTrue(original==null&&impact==null&&originalTexture==null&&impactTexture==null);
+        }
         private static void QueueUntilExit(System.Threading.CancellationToken lifetime)
         {typeof(GeneratedSpriteAssets).GetMethod("QueuePruneUntilExit",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).Invoke(null,new object[]{lifetime});}
         private static bool PruneQueued=>(bool)typeof(GeneratedSpriteAssets).GetField("pruneQueued",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static).GetValue(null);

@@ -701,6 +701,8 @@ namespace Olca.Presentation.Exploration
         {
             if(presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null){ClearBombVisuals();return;}
             var flights=presentation.Bombs;var blasts=presentation.BombBlasts;int used=0;long frame=presentation.Core.Frame;
+            // 飛翔開始時に一度だけ用意し、着弾frameで画像decode/画素変換を行わない。
+            if(bombAssets==null&&(flights.Count>0||blasts.Count>0)){bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,out _,bombAssets);}
             Image Part(string key,float x,float y,float visibleWidth,float visibleHeight,float alpha,float angle=0,(long Left,long Right)? clip=null)
             {
                 if(used==bombImages.Count){var wrapper=new GameObject("TrialOutsideBombClip",typeof(RectTransform),typeof(RectMask2D));wrapper.transform.SetParent(transform,false);var wr=wrapper.GetComponent<RectTransform>();wr.anchorMin=wr.anchorMax=new Vector2(0,.21f);var go=new GameObject("TrialOutsideBombVisual",typeof(RectTransform),typeof(Image));go.transform.SetParent(wrapper.transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(.5f,.5f);bombImages.Add(created);}
@@ -719,7 +721,7 @@ namespace Olca.Presentation.Exploration
                 var visible=TrialBombThrowMotion.FlightPosition(flight,frame);
                 Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/OutsideBombLaunchData.FlightFrames);
             }
-            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.Blast,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
+            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)OutsideBombLaunchData.BlastFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();
