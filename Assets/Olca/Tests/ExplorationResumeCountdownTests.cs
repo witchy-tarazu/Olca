@@ -628,6 +628,48 @@ namespace Olca.Tests
                 Assert.IsTrue(OutsideTrialRoute.CanUseDoor(cold.Core));Assert.IsTrue(cold.Cards.TryConsumeSelected(cold.Cards.SelectedCard,cold.Cards.HandRevision,cold.Core.CardGauge,out _));string hand=cold.Cards.CaptureState(defs).Key();long draws=random.Draws;var cards=cold.Cards;Assert.IsFalse(cold.RestoreForPresentation(actor,null,point,defs));Assert.IsTrue(cold.QueueSelectedDeck("reload182",data,Owned(data),new SeededBattleRandom(999),out _));using(var lease=cold.AttachPresentation()){cold.Core.TickFrame(0);Assert.IsFalse(cold.AdvanceDeckLocation());}Assert.AreSame(cards,cold.Cards);Assert.AreEqual(hand,cold.Cards.CaptureState(defs).Key());Assert.AreEqual(draws,random.Draws);Assert.AreEqual(annex?OutsideTrialRoute.AnnexMapId:null,cold.Core.TrialMapId);
             }
         }
+        [TestCase(0,false)][TestCase(1,false)][TestCase(2,false)][TestCase(3,false)][TestCase(0,true)][TestCase(1,true)][TestCase(2,true)][TestCase(3,true)]
+        public void 発見済み回復地点への移動は地上空中別マップ麻痺から原子的に到着しcoldで維持する(int mode,bool failure)
+        {
+            using(var model=Reload182()){
+                var definitions=Door239Definitions(model);var store=new Style231Store();var save=new ClearReturnSession(store);Assert.IsTrue(save.TryDiscoverOutsideRecoveryPoint(OutsideTrialRoute.RecoveryPointId,out _));
+                if(mode==2)model.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=model.AttachPresentation()){
+                    if(mode==1){model.Core.TickFrame(0,true,true);model.AdvancePlayerFrame();Assert.IsFalse(model.Core.IsGrounded);}
+                    if(mode==3){model.Player.ApplyParalysis(60);model.TickTraversal(0);Assert.IsTrue(model.IsMovementLockedForNextFrame);}
+                    var actor=model.Player;var cards=model.Cards;var core=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());string cardKey=cards.CaptureState(definitions).Key();var profile=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(save.Snapshot);store.Fail=failure;
+                    if(failure){Assert.IsFalse(model.TryFastTravelToRecovery(save,definitions,out _));Assert.IsTrue(lease.IsCurrent);Assert.AreSame(actor,model.Player);Assert.AreSame(cards,model.Cards);Assert.AreEqual(cardKey,cards.CaptureState(definitions).Key());CollectionAssert.AreEqual(core,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));CollectionAssert.AreEqual(profile,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(save.Snapshot));Assert.IsFalse(save.HasPendingSave);Assert.IsNull(save.Error);store.Fail=false;}
+                    Assert.IsTrue(model.TryFastTravelToRecovery(save,definitions,out var error),error);Assert.IsFalse(lease.IsCurrent);Assert.AreEqual(OutsideTrialRoute.RecoveryX,model.Core.Position);Assert.IsNull(model.Core.TrialMapId);Assert.IsTrue(model.Core.IsGrounded);Assert.AreEqual(0,model.Core.Frame);Assert.AreEqual(model.Player.MaxHp,model.Player.CurrentHp);Assert.IsFalse(model.IsMovementLockedForNextFrame);Assert.IsEmpty(model.Player.CapturePoisons());Assert.AreEqual(3,model.Cards.Hand.Count);Assert.AreEqual(27,model.Cards.RemainingCount);Assert.AreEqual(0,model.Cards.SelectedIndex);Assert.AreEqual(7,save.Snapshot.Tokens);Assert.AreEqual(OutsideTrialRoute.RecoveryPointId,save.Snapshot.OutsideRecoveryPointId);
+                    var saved=save.Snapshot;using(var cold=new OutsideExplorationSession()){cold.RestoreSavedState(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,saved.OutsideRecoveryPointId,definitions,model.Core.TraversalProfile);Assert.AreEqual(OutsideTrialRoute.RecoveryX,cold.Core.Position);Assert.AreEqual(model.Cards.CaptureState(definitions).Key(),cold.Cards.CaptureState(definitions).Key());Assert.AreEqual(model.Player.CurrentHp,cold.Player.CurrentHp);}
+                }
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)] public void 進行中の弾とタメ蹴りは移動失敗なら維持し成功後だけ到着回復で終了する(int mode)
+        {
+            using(var model=new OutsideExplorationSession()){
+                model.TryInitializePlayer(()=>new PlayerCharacter(100));model.EnableTrialNormalKick();var cards=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();Assert.IsTrue(model.QueueSelectedDeck("ft309-active",cards,Owned(cards),new SeededBattleRandom(309),out _));Walk155(model,10*60000);var defs=Door239Definitions(model);var store=new Style231Store();var save=new ClearReturnSession(store);Assert.IsTrue(save.TryDiscoverOutsideRecoveryPoint(OutsideTrialRoute.RecoveryPointId,out _));
+                using(var lease=model.AttachPresentation()){
+                    if(mode==2){for(int n=0;n<60;n++)ChargeStep291(model,true,n==0);Assert.IsTrue(ChargeStep291(model,false));Assert.IsTrue(model.NormalKick.IsCharged);}
+                    else{string id=mode==0?"bomb":TrialInitialCardDefinitions.Shot;for(int n=0;n<1000&&!model.Cards.Hand.Any(c=>c.Id==id);n++)model.Cards.Reload();model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id==id));Assert.IsTrue(model.TryUseSelectedCard(model.Cards.SelectedCard,model.Cards.HandRevision,out _));for(int n=0;n<30&&(mode==0?model.Bombs.Count:model.InitialShots.Count)==0;n++)Tick160(model);Assert.Greater(mode==0?model.Bombs.Count:model.InitialShots.Count,0);}
+                    OutsideRuntimeSaveData Snapshot()=>(OutsideRuntimeSaveData)typeof(OutsideExplorationSession).GetMethod("CaptureItemRuntime",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(model,new object[]{defs});var before=Snapshot();var actor=model.Player;store.Fail=true;Assert.IsFalse(model.TryFastTravelToRecovery(save,defs,out _));var after=Snapshot();after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(actor,model.Player);Assert.IsTrue(lease.IsCurrent);store.Fail=false;Assert.IsTrue(model.TryFastTravelToRecovery(save,defs,out var error),error);Assert.IsFalse(model.IsAttacking);Assert.AreEqual(0,model.Bombs.Count);Assert.AreEqual(0,model.InitialShots.Count);Assert.AreEqual(0,model.ChargeFrames);Assert.AreEqual(OutsideTrialRoute.RecoveryX,model.Core.Position);
+                }
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)] public void 移動は死亡HP未確定と致死落下確定から回復せず現在世代を守る(int state)
+        {
+            using(var model=new OutsideExplorationSession()){
+                Assert.IsTrue(model.TryConfigureTraversal(OutsideTraversalProfile.ValidationPit));model.TryInitializePlayer(()=>new PlayerCharacter(100));var cards=Deck155();Assert.IsTrue(model.QueueSelectedDeck("ft309-boundary",cards,Owned(cards),new SeededBattleRandom(309),out _));Walk155(model,10*60000);var defs=Door239Definitions(model);var store=new Style231Store();var save=new ClearReturnSession(store);Assert.IsTrue(save.TryDiscoverOutsideRecoveryPoint(OutsideTrialRoute.RecoveryPointId,out _));
+                using(var lease=model.AttachPresentation()){
+                    if(state==0)model.Player.SetHp(0);if(state==1)Hit229(model.Player,"BeginHpFrame");if(state==2){var v=model.Core.CaptureState();v.Position=4*60000;v.Height=-model.Core.TraversalProfile.VoidDepth;v.SupportId=null;v.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(model.Core,new object[]{v});Assert.IsTrue(model.Core.HasFallenOut);Assert.IsFalse(model.Player.IsDead);}
+                    try{var actor=model.Player;var core=PortableCheckpointJson.Serialize(model.Core.CaptureState());string deck=model.Cards.CaptureState(defs).Key();int writes=store.Writes;Assert.IsFalse(model.TryFastTravelToRecovery(save,defs,out _));Assert.AreSame(actor,model.Player);Assert.IsTrue(lease.IsCurrent);CollectionAssert.AreEqual(core,PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.AreEqual(deck,model.Cards.CaptureState(defs).Key());Assert.AreEqual(writes,store.Writes);Assert.IsNull(save.Snapshot.OutsideRecoveryPointId);}
+                    finally{if(state==1){Hit229(model.Player,"CommitHpFrame");Hit229(model.Player,"PublishHpFrame");}}
+                }
+            }
+        }
+        [Test] public void 未発見の回復地点へ移動できず保存も現在状態も変更しない()
+        {
+            using(var model=Reload182()){var store=new Style231Store();var save=new ClearReturnSession(store);var definitions=Door239Definitions(model);var actor=model.Player;using(var lease=model.AttachPresentation()){Assert.IsFalse(model.TryFastTravelToRecovery(save,definitions,out _));Assert.AreSame(actor,model.Player);Assert.IsTrue(lease.IsCurrent);Assert.AreEqual(0,store.Writes);Assert.IsNull(save.Snapshot.OutsideRecoveryPointId);}}
+        }
         [Test] public void 試用扉の保存失敗は個体カード時計と表示世代を維持し再試行後だけ到着する()
         {
             using(var s=Reload182()){

@@ -425,6 +425,26 @@ namespace Olca.Presentation.Management
 namespace Olca.Presentation.Management
 {
     /// <summary>所持/4枠の表示と操作だけ。保存は既存の進行サービスへ委譲する。</summary>
+    /// <summary>登録済み1地点の移動確認。保存と時間停止はController/Sessionが所有する。</summary>
+    public sealed class OutsideFastTravelView : MonoBehaviour
+    {
+        private ManagedScreenContext context;private Olca.Unity.MenuPadScope menu;private Button confirm;private Text message;private Func<bool> discovered,ownerAlive;private Action travel,close;private bool busy;private long renderEpoch;private readonly Dictionary<Button,Action> actions=new Dictionary<Button,Action>();
+        private bool CanOperate=>this!=null&&isActiveAndEnabled&&context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy&&ownerAlive?.Invoke()==true;
+        public void Initialize(Font font,Func<bool> known,Action execute,Action closed,Func<bool> alive=null)
+        {
+            discovered=known;travel=execute;close=closed;ownerAlive=alive??(()=>true);var rect=(RectTransform)transform;rect.sizeDelta=new Vector2(1240,680);gameObject.AddComponent<Image>().color=new Color(.025f,.075f,.105f,.98f);
+            Text Label(string name,string value,float y,int size){var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(transform,false);var t=go.GetComponent<Text>();t.font=font;t.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value);t.color=Color.white;t.fontSize=size;t.alignment=TextAnchor.MiddleCenter;t.raycastTarget=false;t.rectTransform.anchoredPosition=new Vector2(0,y);t.rectTransform.sizeDelta=new Vector2(1140,150);return t;}
+            Label("FastTravelTitle","ファストトラベル / シヨウ カイフクチテン",230,36);message=Label("FastTravelMessage","",50,28);
+            Button Make(string name,string text,float x,Action action){var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(transform,false);var r=(RectTransform)go.transform;r.anchoredPosition=new Vector2(x,-200);r.sizeDelta=new Vector2(480,90);var b=go.GetComponent<Button>();Olca.Presentation.Dungeon.UiLook.MenuButton(b);var t=Label(name+"Label",text,0,28);t.transform.SetParent(go.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;t.rectTransform.sizeDelta=new Vector2(450,80);actions.Add(b,action);return b;}
+            confirm=Make("ConfirmOutsideFastTravel","イドウする",-280,()=>{if(discovered?.Invoke()==true)travel?.Invoke();});Make("CancelOutsideFastTravel","モドる",280,()=>close?.Invoke());
+        }
+        public void Open(ManagedScreenContext owner){context=owner;long epoch=++renderEpoch;foreach(var pair in actions){var action=pair.Value;pair.Key.onClick=new Button.ButtonClickedEvent();pair.Key.onClick.AddListener(()=>{if(CanOperate&&renderEpoch==epoch&&ReferenceEquals(context,owner))action();});}gameObject.SetActive(true);transform.SetAsLastSibling();SetBusy(false,null);menu?.Dispose();menu=new Olca.Unity.MenuPadScope(()=>CanOperate);menu.Bind(transform,confirm.interactable?confirm.name:"CancelOutsideFastTravel",()=>close?.Invoke());}
+        public void SetBusy(bool value,string error){busy=value;bool known=discovered?.Invoke()==true;confirm.interactable=known&&!busy;message.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error??(busy?"ホゾン・イドウチュウ":known?"ヒダリの カイフクチテン（カリ）へ ムリョウで イドウ\nHP・ジョウタイ カイフク / 30マイ サイソウテン・ホゾン":"ミハッケン / カイフクチテンへ ジッサイに ホウモンしてください"));}
+        public void Hide(){renderEpoch++;menu?.Dispose();menu=null;var prior=context;context=null;if(this!=null)gameObject.SetActive(false);prior?.NotifyHidden();}
+        private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
+        private void OnDisable(){renderEpoch++;menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}
+        private void OnDestroy(){OnDisable();discovered=ownerAlive=null;travel=close=null;actions.Clear();}
+    }
     public sealed class OutsideItemRegistrationView : UnityEngine.MonoBehaviour
     {
         private ManagedScreenContext context;

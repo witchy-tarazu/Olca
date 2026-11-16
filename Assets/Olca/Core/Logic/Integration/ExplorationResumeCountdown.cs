@@ -1049,18 +1049,21 @@ namespace Olca.Core.Logic.Integration
         private readonly System.Collections.Generic.Dictionary<string,long> itemCooldowns=new System.Collections.Generic.Dictionary<string,long>();
         private bool usingItem;private string appliedItemStateId;
         /// <summary>扉移動は候補を別Sessionで作り、保存成功後にだけ現在の世代へ反映する。</summary>
-        public bool TryTravelThroughDoor(ClearReturnSession save,CheckpointDefinitions definitions,out string error)
+        public bool TryTravelThroughDoor(ClearReturnSession save,CheckpointDefinitions definitions,out string error)=>TryTravelOutside(save,definitions,false,out error);
+        // 訪問済みの登録回復地点だけ。扉の距離/接地や攻撃可能状態を持ち込まない。
+        public bool TryFastTravelToRecovery(ClearReturnSession save,CheckpointDefinitions definitions,out string error)=>TryTravelOutside(save,definitions,true,out error);
+        private bool TryTravelOutside(ClearReturnSession save,CheckpointDefinitions definitions,bool recovery,out string error)
         {
-            error=null;if(usingItem||save==null||definitions==null||!IsPresented||!CanPerformAttack||!OutsideTrialRoute.CanUseDoor(Core)){error="今はマップ移動できません";return false;}
+            error=null;if(usingItem||save==null||definitions==null||!IsPresented||Player==null||Player.IsDead||(recovery&&(Core.HasFallenOut||Player.HasPendingHpFrame))||(recovery?!save.IsOutsideRecoveryPointDiscovered(OutsideTrialRoute.RecoveryPointId):!CanPerformAttack||!OutsideTrialRoute.CanUseDoor(Core))){error="今はマップ移動できません";return false;}
             usingItem=true;
             try{
                 var cards=Cards?.CaptureState(definitions);if(cards==null||cards.SourceKey==null||cards.Cards.Length!=ExplorationDeckRules.RequiredCards){error="探索用30枚デッキを登録してください";return false;}
-                string point=Core.TrialMapId==null?OutsideTrialRoute.DoorAnnexPoint:OutsideTrialRoute.DoorHomePoint;
+                string point=recovery?OutsideTrialRoute.RecoveryPointId:Core.TrialMapId==null?OutsideTrialRoute.DoorAnnexPoint:OutsideTrialRoute.DoorHomePoint;
                 using(var candidate=new OutsideExplorationSession(trialContactDamageEnabled)){
                     candidate.Core.ConfigureTraversal(Core.TraversalProfile);candidate.Core.CardGauge.Configure(Core.CardGauge.Maximum,Core.CardGauge.RecoveryPerSecond);
                     candidate.TryInitializePlayer(()=>OutsidePlayerSaveData.ForRecovery(Player).Restore());candidate.Cards=OutsideExplorationCards.RestoreState(cards,definitions);candidate.RecoverOutside(point);
                     var actor=OutsidePlayerSaveData.Capture(candidate.Player);var runtime=candidate.CaptureRuntime(definitions);runtime.Id=actor.Id;
-                    if(!save.TryCommitOutsideMapTravel(point,actor,runtime,out error))return false;
+                    if(!(recovery?save.TryCommitOutsideFastTravel(actor,runtime,out error):save.TryCommitOutsideMapTravel(point,actor,runtime,out error)))return false;
                     current?.Dispose();normalKick?.Reset();trialStrike=null;RestoreSavedState(actor,runtime,point,definitions);
                     // 空CDも同世代として受領する。後の再表示で古い時計へ適用しない。
                     appliedItemStateId=actor.Id;return true;

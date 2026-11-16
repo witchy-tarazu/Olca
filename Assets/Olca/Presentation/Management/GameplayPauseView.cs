@@ -25,7 +25,7 @@ namespace Olca.Presentation.Management
         public bool Covered=>covered;
         // 外界Pauseの行・列。ゲーム操作を左、設定を右2列へ配置する。
         private static readonly (string Name,int Row,int First,int Last)[] navigationCells={
-            ("ResumeButton",0,0,0),("OutsideItemsButton",1,0,0),("OutsideEquipmentButton",2,0,0),("OutsideKamuiButton",3,0,0),
+            ("ResumeButton",0,0,0),("OutsideItemsButton",1,0,0),("OutsideEquipmentButton",2,0,0),("OutsideKamuiButton",3,0,0),("OutsideFastTravelButton",3,1,2),
             ("KeyboardSettingsButton",0,1,1),("GamepadSettingsButton",0,2,2),("AudioSettingsButton",1,1,1),("VibrationSetting",1,2,2),
             ("TransformationAnimationSetting",2,1,1),("DialogueTextSpeedButton",2,2,2)};
         public Selectable FindNavigation(Selectable from,Vector2 direction)
@@ -49,6 +49,7 @@ namespace Olca.Presentation.Management
             var equipment=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideEquipmentButton");
             if(equipment!=null){equipment.gameObject.SetActive(value);var rect=(RectTransform)equipment.transform;rect.anchoredPosition=new Vector2(-480,-108);rect.sizeDelta=new Vector2(360,88);}
             var kamui=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideKamuiButton");if(kamui!=null){kamui.gameObject.SetActive(value);((RectTransform)kamui.transform).anchoredPosition=new Vector2(-480,-216);((RectTransform)kamui.transform).sizeDelta=new Vector2(360,88);}
+            var travel=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideFastTravelButton");if(travel!=null)travel.gameObject.SetActive(value);
             if(playHeading!=null)playHeading.text=value?"タンサク":playHeadingText;
         }
         private Text inputGuide;
@@ -269,6 +270,7 @@ namespace Olca.Presentation.Management
             Place("KeyboardSettingsButton", 20, 120, 340); Place("GamepadSettingsButton", 400, 120, 340);
             Place("OutsideItemsButton", 210, -244, 720);
             if(pauseOverlay.transform.Find("OutsideEquipmentButton")!=null)Place("OutsideEquipmentButton", -480, -108, 360);
+            if(pauseOverlay.transform.Find("OutsideFastTravelButton")!=null)Place("OutsideFastTravelButton",210,-240,720);
             Place("AudioSettingsButton", 20, 0, 340); Place("VibrationSetting", 400, 0, 340);
             Place("TransformationAnimationSetting", 20, -120, 340); Place("DialogueTextSpeedButton", 400, -120, 340);
         }
@@ -276,9 +278,9 @@ namespace Olca.Presentation.Management
         public GameObject Pause()
         {
             var panel=Panel("PauseOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
-            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("OutsideEquipmentButton","ソウビ・パーツ"),("OutsideKamuiButton","カムイ キリカエ"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
+            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("OutsideEquipmentButton","ソウビ・パーツ"),("OutsideKamuiButton","カムイ キリカエ"),("OutsideFastTravelButton","ファストトラベル（シヨウ）"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
                 Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero);
-            LayoutPauseMenu(panel);panel.transform.Find("OutsideEquipmentButton").gameObject.SetActive(false);panel.transform.Find("OutsideKamuiButton").gameObject.SetActive(false);return panel;
+            LayoutPauseMenu(panel);panel.transform.Find("OutsideEquipmentButton").gameObject.SetActive(false);panel.transform.Find("OutsideKamuiButton").gameObject.SetActive(false);panel.transform.Find("OutsideFastTravelButton").gameObject.SetActive(false);return panel;
         }
         public Text Label(string name,Transform target,Vector2 anchor,Vector2 position,Vector2 size)
         {

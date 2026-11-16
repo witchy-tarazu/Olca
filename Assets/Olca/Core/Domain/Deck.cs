@@ -1529,13 +1529,15 @@ namespace Olca.Core.Domain
     public sealed partial class ClearReturnSession
     {
         public string LastOutsideMapTravelError {get;private set;}
-        internal bool TryCommitOutsideMapTravel(string point,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,out string error)
+        internal bool TryCommitOutsideMapTravel(string point,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,out string error)=>TryCommitOutsideTravel(point,actor,runtime,false,out error);
+        internal bool TryCommitOutsideFastTravel(OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,out string error)=>TryCommitOutsideTravel(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId,actor,runtime,true,out error);
+        private bool TryCommitOutsideTravel(string point,OutsidePlayerSaveData actor,Olca.Core.Logic.Integration.OutsideRuntimeSaveData runtime,bool recovery,out string error)
         {
             error=null;if(!Available()||customizationRunActive?.Invoke()==true){error="探索の保存完了後に移動してください";return false;}
             try{
-                if(point!=Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint&&point!=Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint)throw new ArgumentException("扉の到着地点が未登録です");
+                if(recovery?point!=Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId||!IsOutsideRecoveryPointDiscovered(point):point!=Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint&&point!=Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint)throw new ArgumentException("移動先が未発見または未登録です");
                 actor.Validate();runtime.Validate();Olca.Core.Logic.Integration.OutsideTrialRoute.ValidateMapRecovery(runtime.Core.TrialMapId,point);
-                var cards=runtime.Cards;var core=runtime.Core;long x=point==Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint?1050000:360000;
+                var cards=runtime.Cards;var core=runtime.Core;long x=recovery?Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryX:point==Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint?1050000:360000;
                 if(actor.Id!=runtime.Id||cards==null||cards.SourceKey==null||cards.Cards.Length!=ExplorationDeckRules.RequiredCards||cards.Hand.Length!=3||cards.Drawn.Length!=3||cards.Returned.Length!=0||cards.Selected!=0||!cards.Hand.SequenceEqual(cards.Drawn)||actor.Player.Hp!=actor.Player.MaxHp||actor.HitState!=null||actor.Player.Poisons?.Length>0||actor.Player.TimedAilments!=null||core.Frame!=0||core.Position!=x||core.Height!=0||core.Velocity!=0||core.SupportId!="floor"||core.Moving||core.GaugeUnits!=(long)core.GaugeMaximum*60||runtime.Attack!=null||runtime.NormalKick!=null||runtime.TrialBarrierHp!=0||runtime.TrialEnemyAttack!=null)throw new ArgumentException("到着状態が全回復/再装填と一致しません");
                 var next=current.Copy();next.OutsideRecoveryPointId=point;next.OutsidePlayerSave=actor.Copy();next.OutsideRuntimeSave=runtime.Copy();next.OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()};next.Revision=checked(current.Revision+1);next.CommitId=commitIdFactory();ClearReturnProfile.Validate(next);
                 writing=true;try{if(!store.TryWrite(current.Revision,next.Copy(),out var failure)){LastOutsideMapTravelError=failure;error="ホゾン シッパイ / オシテ サイシコウ";return false;}current=next;Error=null;LastOutsideMapTravelError=null;return true;}finally{writing=false;}
