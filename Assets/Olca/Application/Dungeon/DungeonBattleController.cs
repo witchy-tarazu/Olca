@@ -201,14 +201,15 @@ namespace Olca.Application.Dungeon
         {
             bool visible = manager?.Dungeon.ActiveVisit==null && (manager?.CurrentPhase == GamePhase.Battle || manager?.CurrentPhase == GamePhase.Dungeon) && !clearReturnVisible && !collectionOpen &&
                 (keyboardSettingsView == null || !keyboardSettingsView.gameObject.activeSelf) && (gamepadSettingsView==null||!gamepadSettingsView.gameObject.activeSelf);
-            if(!visible){if(basicAttackHud!=null)basicAttackHud.gameObject.SetActive(false);return;}
+            if(!visible){gameFieldView?.SetBasicChargePresentation(null,false,0,0);if(basicAttackHud!=null)basicAttackHud.gameObject.SetActive(false);return;}
             // 復帰案内より後に初回HUDを生成して、案内の入力面を覆わない。
             if(basicAttackHud==null&&(awaitingCheckpointChoice||manager.IsSuspended||manager.Dungeon.IsCheckpointBlocked))return;
             if(basicAttackHud==null)hostPanels.Show("basic-attack-hud");
             basicAttackHud.gameObject.SetActive(true);
-            if(manager.CurrentPhase==GamePhase.Dungeon) { basicAttackHud.RenderExploration(ExplorationUiAvailable,GameplayKeyboardProfile); return; }
+            if(manager.CurrentPhase==GamePhase.Dungeon) { gameFieldView?.SetBasicChargePresentation(null,false,0,0);basicAttackHud.RenderExploration(ExplorationUiAvailable,GameplayKeyboardProfile); return; }
             var battle = manager.CurrentBattle;
             int chargeLimit=battle.ResolveBasicChargeFrames(basicAttackChargeFrames);
+            gameFieldView?.SetBasicChargePresentation(battle,basicAttackInput.IsCharging&&!basicAttackInput.IsResumePending,basicAttackInput.ChargeFrames,chargeLimit);
             bool chargeReady=battle.CanPlayerBasicAttack && basicAttackInput.IsCharging && basicAttackInput.ChargeFrames>=chargeLimit;
             string charge=$"タメ {basicAttackInput.ChargeFrames}/{chargeLimit}";
             string held=basicAttackInput.ChargeFrames>0?$" / {charge}保持":"";

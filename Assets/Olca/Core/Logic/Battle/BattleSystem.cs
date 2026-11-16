@@ -193,11 +193,14 @@ namespace Olca.Core.Logic.Battle
         private object playerActionOwner;
         private Action cancelPlayerAction;
         private bool basicAction;
+        private bool basicActionCharged;
         private long recoveryStarted;
         private int? recoveryCancelFrames;
         public PlayerAttackPhase PlayerActionPhase { get; private set; }
         public bool HasPlayerAction => playerActionOwner != null;
         public bool IsPlayerBasicAction => basicAction && HasPlayerAction;
+        /// <summary>現在の固有攻撃の表示用種別。威力から推定せず、開始要求をそのまま読む。</summary>
+        public bool IsPlayerChargedBasicAction => IsPlayerBasicAction && basicActionCharged;
         public long AttackActionSerial { get; private set; }
         public long AttackInputEpoch { get; private set; }
         internal event Action<bool> AttackInputBoundary;
@@ -215,7 +218,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (HasPlayerAction) throw new InvalidOperationException("行動は同時に開始できません");
             AttackActionSerial++;
-            playerActionOwner = new object(); basicAction = basic; cancelPlayerAction = () => { AttackInputEpoch++; AttackInputBoundary?.Invoke(false); cancel(); };
+            playerActionOwner = new object(); basicAction = basic; basicActionCharged = false; cancelPlayerAction = () => { AttackInputEpoch++; AttackInputBoundary?.Invoke(false); cancel(); };
             PlayerActionPhase = PlayerAttackPhase.Startup; return playerActionOwner;
         }
         internal void SetPlayerActionPhase(object owner, PlayerAttackPhase phase, int? cancelAfter = null)
@@ -228,7 +231,7 @@ namespace Olca.Core.Logic.Battle
         {
             if (!ReferenceEquals(owner, playerActionOwner)) return;
             if (ReferenceEquals(PlayerActionVisual?.ActionOwner, owner)) PlayerActionVisual = null;
-            playerActionOwner = null; cancelPlayerAction = null; PlayerActionPhase = PlayerAttackPhase.None; recoveryCancelFrames = null;
+            playerActionOwner = null; basicActionCharged = false; cancelPlayerAction = null; PlayerActionPhase = PlayerAttackPhase.None; recoveryCancelFrames = null;
         }
         public bool TryPreparePlayerAttack()
         {
@@ -247,12 +250,13 @@ namespace Olca.Core.Logic.Battle
             var attack = ActivePlayerAttack;
             long percent = attack != null ? (charged ? attack.ChargedPowerPercent : attack.NormalPowerPercent) : charged ? 100L * fallbackChargeMultiplier : 100;
             var timing = attack?.Timing ?? basicTiming;
-            ResolveBasicActionAsync(percent, timing, Transformations.ActiveId).Forget();
+            ResolveBasicActionAsync(percent, timing, Transformations.ActiveId, charged).Forget();
             return true;
         }
-        private async FrameTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form)
+        private async FrameTask ResolveBasicActionAsync(long percent, PlayerAttackTiming timing, string form, bool charged)
         {
             var cts = new CancellationTokenSource(); var owner = BeginPlayerAction(true, () => cts.Cancel());
+            basicActionCharged = charged;
             try {
                 await WaitForActionFramesAsync(timing.StartupFrames, cts.Token);
                 if (IsGameOver || player.IsActionPrevented || Transformations.ActiveId != form) return;

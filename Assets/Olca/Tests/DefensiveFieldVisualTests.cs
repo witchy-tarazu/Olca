@@ -54,6 +54,18 @@ namespace Olca.Tests
                 var next=BodyBattle(fire);effect.Bind(next);grid.Show(next.Field,0);Assert.IsTrue(next.TryStartPlayerBasicAttack(false));for(int n=0;n<3;n++)next.TickFrame(17);Assert.AreEqual(2,effect.EmissionCount);Assert.AreEqual(0,effect.ObservationErrors);
             }}finally{Object.DestroyImmediate(gridHost);}
         }
+        [TestCase(false)] [TestCase(true)] public void 戦闘タメ進捗arcは攻撃通知やダメージを発生せず取消とowner交替で消える(bool fire)
+        {
+            var gridHost=new GameObject("ChargeGrid295");var grid=gridHost.AddComponent<WorldBattleGridView>();typeof(WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);var b=BodyBattle(fire);grid.Show(b.Field,0);
+            try{using(var effect=new BattleKickVisual(host.transform,()=>body,()=>grid)){
+                effect.Warmup();effect.Bind(b);var text=host.GetComponentsInChildren<TextMesh>(true).Single(t=>t.name=="Text");
+                effect.Tick(0,new BattleChargeVisualState(b,true,1,60));StringAssert.Contains("タメチュウ",text.text);Assert.Greater(effect.ActivePixels,0);int first=effect.ActivePixels;
+                for(int n=0;n<20;n++)effect.Tick(1,new BattleChargeVisualState(b,true,60,60));StringAssert.Contains("カンリョウ",text.text);Assert.GreaterOrEqual(effect.ActivePixels,first);Assert.AreEqual(1000,b.Enemies[0].CurrentHp);Assert.IsFalse(b.HasPlayerAction);Assert.AreEqual(0,effect.EmissionCount);
+                effect.Tick(0);Assert.AreEqual(0,effect.ActivePixels);Assert.IsFalse(text.gameObject.activeInHierarchy);
+                Assert.IsTrue(b.TryStartPlayerBasicAttack(true));for(int n=0;n<3;n++)b.TickFrame(17);effect.Tick(0);StringAssert.Contains("タメ（カリ）",text.text);Assert.AreEqual(1,effect.EmissionCount);Assert.AreEqual(980,b.Enemies[0].CurrentHp);
+                var old=new BattleChargeVisualState(b,true,60,60);var next=BodyBattle(fire);effect.Bind(next);effect.Tick(0,old);Assert.AreEqual(0,effect.ActivePixels);Assert.AreEqual(0,effect.ObservationErrors);
+            }}finally{Object.DestroyImmediate(gridHost);}
+        }
         [TestCase(-1f)][TestCase(1f)] public void World撃破メッシュは百回再利用し非入力で破棄後に資源を残さない(float facing)
         {
             host.transform.localScale=new Vector3(facing*2,3,1);var area=new Rect(2,4,3,2);
@@ -136,6 +148,43 @@ namespace Olca.Tests
                 Assert.IsTrue(b.TryStartPlayerBasicAttack(false));pose.Apply(b);b.Pause(Olca.Core.Logic.Battle.BattlePauseReason.User);b.CancelBasicAction();Assert.IsFalse(pose.Apply(b));Assert.AreSame(original,body.sprite);Assert.AreEqual(enabled,animator.enabled);Assert.IsTrue(b.IsPaused);b.Resume(Olca.Core.Logic.Battle.BattlePauseReason.User);
                 b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{new Card("sword","シヨウ",1,CardRarity.Normal,CardCategory.Attack,ElementType.None,CardSeries.Sword,1,"",startupTime:.1f,recoveryTime:.2f)});var use=b.CardUsage.TryUseCurrentCardAsync();Assert.IsTrue(b.HasPlayerAction);Assert.IsFalse(b.IsPlayerBasicAction);Assert.IsFalse(pose.Apply(b));Assert.AreSame(original,body.sprite);b.CardUsage.Clear();Assert.IsTrue(body.flipX);Assert.AreEqual(position,host.transform.position);Assert.AreEqual(100,b.Player.CurrentHp);
             }
+        }
+        [TestCase(false,false)] [TestCase(false,true)] [TestCase(true,false)] [TestCase(true,true)]
+        public void 戦闘タメ本体は保持完了解放引戻しを区別し時計と位置を進めない(bool fire,bool flip)
+        {
+            var animator=host.AddComponent<Animator>();animator.enabled=true;body.flipX=flip;var original=body.sprite;var position=host.transform.position;var b=BodyBattle(fire);string prefix=fire?"trial_fire_charge_ground_":"trial_charge_ground_";
+            using(var pose=new TrialBasicKickBody(body,animator)){
+                for(int f=1;f<=60;f++){var charge=new BattleChargeVisualState(b,true,f,60);Assert.IsTrue(pose.Apply(b,charge));Assert.AreEqual(prefix+(f==60?1:0),body.sprite.name);Assert.AreEqual(!flip,body.flipX);Assert.IsFalse(b.HasPlayerAction);Assert.IsFalse(animator.enabled);}
+                Assert.IsTrue(b.TryStartPlayerBasicAttack(true));Assert.IsTrue(b.IsPlayerChargedBasicAction);Assert.IsTrue(pose.Apply(b));Assert.AreEqual(prefix+1,body.sprite.name);
+                for(int n=0;n<3;n++)b.TickFrame(17);Assert.AreEqual(980,b.Enemies[0].CurrentHp);Assert.IsTrue(pose.Apply(b));Assert.AreEqual(prefix+2,body.sprite.name);
+                b.Pause(Olca.Core.Logic.Battle.BattlePauseReason.User);for(int n=0;n<4;n++){Assert.IsTrue(pose.Apply(b));b.TickFrame(17);Assert.AreEqual(0,b.RecoveryElapsedFrames);}b.Resume(Olca.Core.Logic.Battle.BattlePauseReason.User);
+                for(int n=0;n<3;n++)b.TickFrame(17);Assert.IsTrue(pose.Apply(b));Assert.AreEqual(prefix+3,body.sprite.name);for(int n=0;n<6;n++)b.TickFrame(17);Assert.IsFalse(b.IsPlayerChargedBasicAction);Assert.IsFalse(pose.Apply(b));Assert.AreSame(original,body.sprite);Assert.AreEqual(flip,body.flipX);Assert.IsTrue(animator.enabled);Assert.AreEqual(position,host.transform.position);
+                Assert.IsTrue(b.TryStartPlayerBasicAttack(false));Assert.IsFalse(b.IsPlayerChargedBasicAction);Assert.IsTrue(pose.Apply(b));Assert.AreEqual("trial_ground_kick_prepare",body.sprite.name);Assert.AreEqual(flip,body.flipX);b.CancelBasicAction();Assert.IsFalse(pose.Apply(b));Assert.AreSame(original,body.sprite);
+            }
+        }
+        [Test] public void 戦闘タメの旧snapshotは別Battleや攻撃開始取消後へ復活しない()
+        {
+            var b=BodyBattle(false);var charge=new BattleChargeVisualState(b,true,60,60);Assert.IsTrue(charge.CanDisplayFor(b));Assert.IsFalse(charge.CanDisplayFor(BodyBattle(false)));Assert.IsFalse(default(BattleChargeVisualState).CanDisplayFor(b));
+            Assert.IsTrue(b.TryStartPlayerBasicAttack(true));Assert.IsFalse(charge.CanDisplayFor(b));b.CancelBasicAction();Assert.IsFalse(b.HasPlayerAction);Assert.IsFalse(b.IsPlayerChargedBasicAction);Assert.IsFalse(charge.CanDisplayFor(b));
+            var updated=new BattleChargeVisualState(b,true,1,60);Assert.IsTrue(updated.CanDisplayFor(b));using(var pose=new TrialBasicKickBody(body,null)){
+                var original=body.sprite;Assert.IsTrue(pose.Apply(b,updated));b.Player.SetHp(0);Assert.IsFalse(pose.Apply(b,updated));Assert.AreSame(original,body.sprite);
+            }
+        }
+        [Test] public void 戦闘タメ素材の欠損は旧姿勢と反転を所有せず共有Spriteを破棄しない()
+        {
+            int loads=0;var b=BodyBattle(false);var original=body.sprite;body.flipX=true;
+            using(var pose=new TrialBasicKickBody(body,null,null,key=>{loads++;return new Sprite[0];})){
+                for(int n=0;n<4;n++)Assert.IsFalse(pose.Apply(b,new BattleChargeVisualState(b,true,60,60)));Assert.AreEqual(1,loads);Assert.AreSame(original,body.sprite);Assert.IsTrue(body.flipX);
+            }
+        }
+        [Test] public void 戦闘タメsnapshotはFieldの停止取消とreleaseで姿勢を残さない()
+        {
+            var b=BodyBattle(false);var animator=host.AddComponent<Animator>();var original=body.sprite;var view=host.AddComponent<GameFieldView>();Set(view,"playerSprite",body);Set(view,"playerAnimator",animator);Set(view,"idlePlayerSprite",original);Set(view,"currentBattle",b);var pauseOwner=new object();
+            try{
+                view.SetBasicChargePresentation(b,true,60,60);Call(view,"UpdatePlayerSprite");Assert.AreEqual("trial_charge_ground_1",body.sprite.name);Assert.IsFalse(animator.enabled);
+                Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);view.SetBasicChargePresentation(b,false,0,60);Call(view,"UpdatePlayerSprite");Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);
+                view.SetBasicChargePresentation(b,true,60,60);Call(view,"UpdatePlayerSprite");view.ReleasePresentation();Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);Set(view,"currentBattle",BodyBattle(false));Call(view,"UpdatePlayerSprite");Assert.AreSame(original,body.sprite);
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);view.ReleasePresentation();}
         }
         [Test] public void 戦闘試用蹴りは素材欠損で元Animatorを所有せず借用Spriteを破棄しない()
         {
