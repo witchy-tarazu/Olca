@@ -301,7 +301,7 @@ namespace Olca.Presentation.Exploration
             }
 
             if(recoveryPoint!=null){recoveryPoint.gameObject.SetActive(recover!=null&&trialRoute?.Invoke()==true);recoveryPoint.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryX/unit)),340-verticalOffset*pixelsPerWorldUnit);recoveryPoint.interactable=canRecover?.Invoke()==true;var label=recoveryPoint.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(recoveryMessage?.Invoke()??"ケンショウ カイフク（カリ）");label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
-            Sprite sprite=TrialSwordSprite()??TrialBombSprite()??TrialKickSprite()??TraversalSprite(core);
+            Sprite sprite=TrialShotSprite()??TrialSwordSprite()??TrialBombSprite()??TrialKickSprite()??TraversalSprite(core);
             if(sprite==null){sprite=idleSprite;
             if(!core.IsGrounded)sprite=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apexSprite:core.VerticalVelocity>0?riseSprite:fallSprite;
             else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null&&motionSample!=null){long frame=core.IsMoving?core.MovementFrame:core.IdleFrame;clip.SampleAnimation(motionSample.gameObject,(float)((frame/60d)%clip.length));sprite=motionSample.sprite;}}
@@ -309,8 +309,8 @@ namespace Olca.Presentation.Exploration
             if(sprite==null)sprite=idleSprite;
             sprite=ResolveBodyCostume(sprite);
             player.sprite=sprite;player.rectTransform.pivot=sprite.pivot/sprite.rect.size;player.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x,sprite.bounds.size.y)*pixelsPerWorldUnit;
-            bool bombPose=trialBombMotion?.Contains(sprite)==true,swordPose=trialSwordMotion?.Contains(sprite)==true;
-            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3((swordPose||bombPose||trialGroundCombo?.Contains(sprite)==true||trialChargeMotion?.Contains(sprite)==true?1:-1)*(swordPose?core.Facing:bombPose?(presentation.IsSwingingSword?core.Facing:presentation.BombThrowFacing):presentation.NormalKickFacing??core.Facing),1,1);PlaceEntranceTitle(core.IsGrounded);PlaceRecoveryPanel(core.IsGrounded);PlaceSupplyPanels(core.IsGrounded);
+            bool shotPose=trialShotBody?.Contains(sprite)==true,bombPose=trialBombMotion?.Contains(sprite)==true,swordPose=trialSwordMotion?.Contains(sprite)==true;
+            player.rectTransform.anchoredPosition=new Vector2(Origin(worldX),(float)(core.Height/unit-verticalOffset)*pixelsPerWorldUnit);player.rectTransform.localScale=new Vector3((shotPose||swordPose||bombPose||trialGroundCombo?.Contains(sprite)==true||trialChargeMotion?.Contains(sprite)==true?1:-1)*(shotPose||swordPose?core.Facing:bombPose?(presentation.IsSwingingSword?core.Facing:presentation.BombThrowFacing):presentation.NormalKickFacing??core.Facing),1,1);PlaceEntranceTitle(core.IsGrounded);PlaceRecoveryPanel(core.IsGrounded);PlaceSupplyPanels(core.IsGrounded);
             RenderOutsideDefensiveField(presentation.Player?.HasBarrier==true,presentation.Player?.HasAura==true);RenderOutsideKamui();RenderMapDoor(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorPosition(core)/unit)),verticalOffset);RenderTraversal(core,camera,viewport,verticalOffset);RenderTrialSword(camera,viewport,verticalOffset);RenderKickEffects(camera,viewport,verticalOffset);RenderTargetBursts(camera,viewport,verticalOffset);RenderMapName();
             float viewportPixels=((RectTransform)transform).rect.width;
             void Boundary(Text label,float x,bool left)

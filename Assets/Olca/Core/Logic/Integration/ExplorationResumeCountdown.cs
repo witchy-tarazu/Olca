@@ -196,6 +196,11 @@ namespace Olca.Core.Logic.Integration
             public int SwordSwingRecovery=>IsSwingingSword?owner.attackState.RecoveryFrames:0;
             public long SwordSwingReach=>IsSwingingSword?(owner.Cards.ActionCard(owner.attackState.CardIndex).Id==TrialInitialCardDefinitions.Spear?OutsideCardPolishTrial.SwordReach*3/2:OutsideCardPolishTrial.SwordReach):0;
             public float SwordSwingVerticalScale=>IsSwingingSword&&owner.Cards.ActionCard(owner.attackState.CardIndex).Id==TrialInitialCardDefinitions.WideSword?1.5f:1f;
+            // 発射姿勢は保存済み行動の時計を読む。飛翔弾の寿命では身体を拘束しない。
+            public bool IsFiringShot=>IsCurrent&&owner.attackState!=null&&ShotDefinition(owner.Cards.ActionCard(owner.attackState.CardIndex));
+            public long ShotFiringElapsed=>IsFiringShot?owner.Core.Frame-owner.attackState.StartedAt:-1;
+            public int ShotFiringStartup=>IsFiringShot?owner.attackState.StartupFrames:0;
+            public int ShotFiringRecovery=>IsFiringShot?owner.attackState.RecoveryFrames:0;
             public bool IsThrowingBomb=>IsCurrent&&owner.attackState?.BombLaunch!=null;
             public long BombThrowElapsedFrames=>IsThrowingBomb?owner.Core.Frame-owner.attackState.StartedAt:-1;
             public int BombThrowStartupFrames=>IsThrowingBomb?owner.attackState.StartupFrames:0;
