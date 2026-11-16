@@ -20,11 +20,20 @@ namespace Olca.Tests.Application
     {
         [TestCase(-1,-1)][TestCase(0,0)][TestCase(2,0)][TestCase(3,1)][TestCase(5,1)][TestCase(6,2)][TestCase(7,2)][TestCase(8,3)][TestCase(11,3)][TestCase(12,4)][TestCase(15,4)][TestCase(16,5)][TestCase(19,5)][TestCase(20,-1)]
         public void 専用ソード連番は前隙と命中後の六姿勢を境界で切り替える(int elapsed,int expected){Assert.AreEqual(expected,Olca.Presentation.Exploration.TrialSwordSwingMotion.FrameIndex(elapsed,8,12));}
-        [TestCase(false)][TestCase(true)] public void 専用ソード連番は衣装別六枚と共通足元を登録し欠損を代用しない(bool fire)
+        [TestCase(false,true)][TestCase(true,true)][TestCase(false,false)][TestCase(true,false)] public void 専用ソード連番は衣装別六枚と共通足元を登録し欠損を代用しない(bool fire,bool grounded)
         {
             using(var clip=new Olca.Presentation.Exploration.TrialSwordSwingMotion()){
-                var seen=new System.Collections.Generic.HashSet<Sprite>();foreach(int elapsed in new[]{0,3,6,8,12,16}){var sprite=clip.Resolve(elapsed,8,12,fire);Assert.NotNull(sprite);StringAssert.StartsWith(fire?"trial_fire_sword_swing_":"trial_sword_swing_",sprite.name);Assert.AreEqual(new Vector2(128,14),sprite.pivot);Assert.AreEqual(256,sprite.rect.width);Assert.AreEqual(256,sprite.rect.height);Assert.IsTrue(clip.Contains(sprite));seen.Add(sprite);}Assert.AreEqual(6,seen.Count);Assert.IsNull(clip.Resolve(20,8,12,fire));
-            }using(var missing=new Olca.Presentation.Exploration.TrialSwordSwingMotion(_=>Array.Empty<Sprite>()))Assert.IsNull(missing.Resolve(0,8,12,fire));
+                var seen=new System.Collections.Generic.HashSet<Sprite>();foreach(int elapsed in new[]{0,3,6,8,12,16}){var sprite=clip.Resolve(elapsed,8,12,fire,grounded);Assert.NotNull(sprite);StringAssert.StartsWith((fire?"trial_fire_":"trial_")+(grounded?"sword_swing_":"air_sword_swing_"),sprite.name);Assert.AreEqual(new Vector2(128,14),sprite.pivot);Assert.AreEqual(256,sprite.rect.width);Assert.AreEqual(256,sprite.rect.height);Assert.IsTrue(clip.Contains(sprite));seen.Add(sprite);}Assert.AreEqual(6,seen.Count);Assert.IsNull(clip.Resolve(20,8,12,fire,grounded));
+            }using(var missing=new Olca.Presentation.Exploration.TrialSwordSwingMotion(_=>Array.Empty<Sprite>()))Assert.IsNull(missing.Resolve(0,8,12,fire,grounded));
+        }
+        [TestCase(false)][TestCase(true)] public async Task 専用ソード空中連番は跳躍中の六姿勢と剣の重複抑止を保ち終了で戻る(bool fire)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            var source=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(model.TryInitializeCards(source,source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(319),out _));for(int n=0;n<100&&!model.Cards.Hand.Any(c=>c.Id=="sword");n++)model.Cards.Reload();model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword"));model.EnableTrialCardPolish();
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);while(model.Core.Position<15*60000)model.TickTraversal(1);model.TickTraversal(0,true,true);Assert.IsFalse(model.Core.IsGrounded);Assert.IsTrue(model.TryUseSelectedCard(model.Cards.SelectedCard,model.Cards.HandRevision,out var error),error);
+                var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();for(int n=0;n<20;n++){if(n>0)model.TickTraversal(0);view.Render();Assert.IsFalse(model.Core.IsGrounded);StringAssert.StartsWith(fire?"trial_fire_air_sword_swing_":"trial_air_sword_swing_",body.sprite.name);Assert.IsFalse(view.transform.Find("OutsideTrialSword").GetComponent<Image>().enabled);var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.Render();CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));}model.TickTraversal(0);view.Render();Assert.IsFalse(body.sprite.name.Contains("air_sword_swing"));
+            }
         }
         [TestCase(false)][TestCase(true)] public async Task 改善カードのソード表示は振りかぶり連番と独立した四コマ斬撃を論理時計で切り替える(bool otherStyle)
         {

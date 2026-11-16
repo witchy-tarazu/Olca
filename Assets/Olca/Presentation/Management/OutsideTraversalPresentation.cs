@@ -136,8 +136,8 @@ namespace Olca.Presentation.Exploration
         private Sprite TrialSwordSprite()
         {
             if(presentation?.IsSwingingSword!=true||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
-            // 地上は専用6コマ。空中の専用連番は未完成なので既存の試用空中姿勢を維持する。
-            if(presentation.Core.IsGrounded){var dedicated=(trialSwordMotion??(trialSwordMotion=new TrialSwordSwingMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);if(dedicated!=null)return dedicated;}
+            // 地上/空中と衣装に合う専用6コマを表示し、欠損時だけ既存の試用姿勢へ戻す。
+            var dedicated=(trialSwordMotion??(trialSwordMotion=new TrialSwordSwingMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id,presentation.Core.IsGrounded);if(dedicated!=null)return dedicated;
             return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Core.IsGrounded,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
         }
         private Sprite TrialBombSprite()
@@ -1121,16 +1121,30 @@ namespace Olca.Presentation.Exploration
     /// <summary>地上三段の試用連番。Sessionの論理時刻を読み、判定・移動・保存は変更しない。</summary>
     /// <summary>探索タメ専用の試用本体。共有Spriteを借り、破棄・ゲーム更新は行わない。</summary>
     /// <summary>地上ボムの試用4姿勢。Sessionの前後隙を表示へ写すだけで、独自時計を持たない。</summary>
-    /// <summary>地上ソード専用の試用6コマ。前隙を構え/振りかぶり/加速、後隙を接触/振り抜き/戻りへ分ける。</summary>
+    /// <summary>地上/空中ソード専用の試用6コマ。判定・移動・時計を変更せず共有Spriteだけを借りる。</summary>
     public sealed class TrialSwordSwingMotion : System.IDisposable
     {
-        private readonly System.Func<string,Sprite[]> load;private Sprite[] basic,fire;private bool triedBasic,triedFire,disposed;
+        private readonly System.Func<string,Sprite[]> load;
+        private readonly Sprite[][] clips=new Sprite[4][];
+        private readonly bool[] tried=new bool[4];
+        private bool disposed;
         public TrialSwordSwingMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
         public static int FrameIndex(long elapsed,int startup,int recovery){if(elapsed<0||startup<0||recovery<0||elapsed>=startup+(long)recovery)return -1;return elapsed<startup?(int)(elapsed*3/startup):3+Math.Min(2,(int)((elapsed-startup)*3/Math.Max(1,recovery)));}
-        public Sprite Resolve(long elapsed,int startup,int recovery,bool isFire=false){int n=FrameIndex(elapsed,startup,recovery);if(disposed||n<0)return null;if(isFire){if(!triedFire){triedFire=true;fire=Read(true);}return fire?[n];}if(!triedBasic){triedBasic=true;basic=Read(false);}return basic?[n];}
-        private Sprite[] Read(bool isFire){string stem=isFire?"trial_fire_sword_swing":"trial_sword_swing";var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all==null||all.Length!=6)return null;var frames=new Sprite[6];for(int n=0;n<6;n++){var found=Array.FindAll(all,s=>s!=null&&s.name==stem+"_"+n);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||Mathf.Abs(found[0].pivot.x-128)>.001f||Mathf.Abs(found[0].pivot.y-14)>.001f)return null;frames[n]=found[0];}return frames;}
-        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&(basic!=null&&Array.IndexOf(basic,sprite)>=0||fire!=null&&Array.IndexOf(fire,sprite)>=0);
-        public void Dispose(){disposed=true;basic=fire=null;}
+        public Sprite Resolve(long elapsed,int startup,int recovery,bool isFire=false,bool grounded=true)
+        {
+            int n=FrameIndex(elapsed,startup,recovery);if(disposed||n<0)return null;
+            int key=(grounded?0:2)+(isFire?1:0);
+            if(!tried[key]){tried[key]=true;clips[key]=Read(isFire,grounded);}
+            return clips[key]?[n];
+        }
+        private Sprite[] Read(bool isFire,bool grounded)
+        {
+            string stem=(isFire?"trial_fire_":"trial_")+(grounded?"sword_swing":"air_sword_swing");
+            var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all==null||all.Length!=6)return null;
+            var frames=new Sprite[6];for(int n=0;n<6;n++){var found=Array.FindAll(all,s=>s!=null&&s.name==stem+"_"+n);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||Mathf.Abs(found[0].pivot.x-128)>.001f||Mathf.Abs(found[0].pivot.y-14)>.001f)return null;frames[n]=found[0];}return frames;
+        }
+        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&Array.Exists(clips,c=>c!=null&&Array.IndexOf(c,sprite)>=0);
+        public void Dispose(){disposed=true;Array.Clear(clips,0,clips.Length);}
     }
     public sealed class TrialBombThrowMotion : System.IDisposable
     {
