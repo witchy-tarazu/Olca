@@ -430,9 +430,9 @@ namespace Olca.Presentation.Management
     {
         private ManagedScreenContext context;private Olca.Unity.MenuPadScope menu;private Button confirm;private Text message;private Func<bool> discovered,ownerAlive;private Action travel,close;private bool busy;private long renderEpoch;private readonly Dictionary<Button,Action> actions=new Dictionary<Button,Action>();
         private bool CanOperate=>this!=null&&isActiveAndEnabled&&context?.IsCurrent==true&&!context.DialogBlocksInput&&!busy&&ownerAlive?.Invoke()==true;
-        public void Initialize(Font font,Func<bool> known,Action execute,Action closed,Func<bool> alive=null,Func<OutsideTrialMapOverview[]> maps=null)
+        public void Initialize(Font font,Func<bool> known,Action execute,Action closed,Func<bool> alive=null,Func<OutsideTrialMapOverview[]> maps=null,Action<string> acquire=null)
         {
-            mapSource=maps;mapFont=font;discovered=known;travel=execute;close=closed;ownerAlive=alive??(()=>true);var rect=(RectTransform)transform;rect.sizeDelta=new Vector2(1240,680);gameObject.AddComponent<Image>().color=new Color(.025f,.075f,.105f,.98f);
+            mapAcquire=acquire;mapSource=maps;mapFont=font;discovered=known;travel=execute;close=closed;ownerAlive=alive??(()=>true);var rect=(RectTransform)transform;rect.sizeDelta=new Vector2(1240,680);gameObject.AddComponent<Image>().color=new Color(.025f,.075f,.105f,.98f);
             Text Label(string name,string value,float y,int size){var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(transform,false);var t=go.GetComponent<Text>();t.font=font;t.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value);t.color=Color.white;t.fontSize=size;t.alignment=TextAnchor.MiddleCenter;t.raycastTarget=false;t.rectTransform.anchoredPosition=new Vector2(0,y);t.rectTransform.sizeDelta=new Vector2(1140,150);return t;}
             Label("FastTravelTitle","ファストトラベル / シヨウ カイフクチテン",230,36);message=Label("FastTravelMessage","",50,28);
             Button Make(string name,string text,float x,Action action){var go=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));go.transform.SetParent(transform,false);var r=(RectTransform)go.transform;r.anchoredPosition=new Vector2(x,-200);r.sizeDelta=new Vector2(480,90);var b=go.GetComponent<Button>();Olca.Presentation.Dungeon.UiLook.MenuButton(b);var t=Label(name+"Label",text,0,28);t.transform.SetParent(go.transform,false);t.rectTransform.anchoredPosition=Vector2.zero;t.rectTransform.sizeDelta=new Vector2(450,80);actions.Add(b,action);return b;}
@@ -445,10 +445,18 @@ namespace Olca.Presentation.Management
                 mapRate=Label("MapExplorationRate","",245,30);mapRate.rectTransform.sizeDelta=new Vector2(1240,60);
                 var guide=Label("MapInputGuide","",-423,20);guide.rectTransform.sizeDelta=new Vector2(1250,40);mapGuide=guide;
                 for(int index=0;index<2;index++){int captured=index;var b=Make("MapChoice_"+index,"",0,()=>SelectMap(captured));((RectTransform)b.transform).anchoredPosition=new Vector2(index==0?-300:300,310);((RectTransform)b.transform).sizeDelta=new Vector2(560,62);b.GetComponentInChildren<Text>().fontSize=22;mapChoices.Add(b);}
+                if(mapAcquire!=null){acquireButton=Make("AcquireTrialMapItem","",0,()=>{var map=SelectedMap;if(map!=null&&!map.ItemRevealed)mapAcquire(map.MapId);});((RectTransform)acquireButton.transform).anchoredPosition=new Vector2(0,-150);((RectTransform)acquireButton.transform).sizeDelta=new Vector2(720,62);var label=acquireButton.GetComponentInChildren<Text>();label.fontSize=22;label.rectTransform.sizeDelta=new Vector2(700,56);}
+
             }
         }
         public void Open(ManagedScreenContext owner){context=owner;if(mapSource!=null){mapData=mapSource()??Array.Empty<OutsideTrialMapOverview>();selectedMap=Math.Max(0,Array.FindIndex(mapData,m=>m.IsCurrent));RenderMap();}long epoch=++renderEpoch;foreach(var pair in actions){var action=pair.Value;pair.Key.onClick=new Button.ButtonClickedEvent();pair.Key.onClick.AddListener(()=>{if(CanOperate&&renderEpoch==epoch&&ReferenceEquals(context,owner))action();});}gameObject.SetActive(true);transform.SetAsLastSibling();SetBusy(false,null);menu?.Dispose();menu=new Olca.Unity.MenuPadScope(()=>CanOperate);menu.Bind(transform,confirm.interactable?confirm.name:"CancelOutsideFastTravel",()=>close?.Invoke());}
-        public void SetBusy(bool value,string error){busy=value;bool known=discovered?.Invoke()==true&&(mapSource==null||SelectedMap?.MapId==OutsideMapRevealTrial.HomeMapId);confirm.interactable=known&&!busy;foreach(var button in mapChoices)button.interactable=!busy;message.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error??(busy?"ホゾン・イドウチュウ":mapSource!=null&&SelectedMap?.MapId!=OutsideMapRevealTrial.HomeMapId?"このチズの イドウサキは ミトウロク / モドるで ポーズへ":known?"ヒダリの カイフクチテン（カリ）へ ムリョウで イドウ\nHP・ジョウタイ カイフク / 30マイ サイソウテン・ホゾン":"ミハッケン / カイフクチテンへ ジッサイに ホウモンしてください"));}
+        public void SetBusy(bool value,string error){busy=value;bool known=discovered?.Invoke()==true&&(mapSource==null||SelectedMap?.MapId==OutsideMapRevealTrial.HomeMapId);confirm.interactable=known&&!busy;foreach(var button in mapChoices)button.interactable=!busy;if(acquireButton!=null){acquireButton.interactable=!busy&&SelectedMap!=null&&!SelectedMap.ItemRevealed;acquireButton.GetComponentInChildren<Text>().text=SelectedMap?.ItemRevealed==true?"マップ シュトクずみ / ゼンイキ カイジ":"シヨウ マップアイテムを ウケトル（ムリョウ）";}message.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(error??(busy?"ホゾン・イドウチュウ":mapSource!=null&&SelectedMap?.MapId!=OutsideMapRevealTrial.HomeMapId?"このチズの イドウサキは ミトウロク / モドるで ポーズへ":known?"ヒダリの カイフクチテン（カリ）へ ムリョウで イドウ\nHP・ジョウタイ カイフク / 30マイ サイソウテン・ホゾン":"ミハッケン / カイフクチテンへ ジッサイに ホウモンしてください"));}
+        private Action<string> mapAcquire;private Button acquireButton;
+        public void RefreshMapSnapshot(string message)
+        {
+            if(this==null||context?.IsCurrent!=true||ownerAlive?.Invoke()!=true)return;
+            string selected=SelectedMap?.MapId;mapData=mapSource?.Invoke()??Array.Empty<OutsideTrialMapOverview>();selectedMap=Math.Max(0,Array.FindIndex(mapData,m=>m.MapId==selected));RenderMap();SetBusy(false,message);
+        }
         private Func<OutsideTrialMapOverview[]> mapSource;private Font mapFont;private Text mapRate,mapGuide;private Transform mapGrid;
         private OutsideTrialMapOverview[] mapData=Array.Empty<OutsideTrialMapOverview>();private readonly List<Button> mapChoices=new List<Button>();private int selectedMap;
         private OutsideTrialMapOverview SelectedMap=>selectedMap>=0&&selectedMap<mapData.Length?mapData[selectedMap]:null;
@@ -459,21 +467,27 @@ namespace Olca.Presentation.Management
             var map=SelectedMap;mapRate.text=map==null?"チズ ミトウロク":"シヨウ タンサクリツ  "+(map.ExplorationPercent.HasValue?map.ExplorationPercent.Value+"%":"--%（タイショウ ミトウロク）");
             RefreshMapGuide();
             if(mapGrid!=null){var old=mapGrid.gameObject;old.SetActive(false);if(Application.isPlaying)Destroy(old);else DestroyImmediate(old);}
-            var root=new GameObject("MapGrid",typeof(RectTransform),typeof(Image));root.transform.SetParent(transform,false);mapGrid=root.transform;var panel=root.GetComponent<Image>();panel.color=new Color(.02f,.055f,.08f,1);panel.raycastTarget=false;var area=(RectTransform)root.transform;area.sizeDelta=new Vector2(1240,300);area.anchoredPosition=new Vector2(0,55);if(map==null)return;
+            var root=new GameObject("MapGrid",typeof(RectTransform),typeof(Image));root.transform.SetParent(transform,false);mapGrid=root.transform;var panel=root.GetComponent<Image>();panel.color=new Color(.02f,.055f,.08f,1);panel.raycastTarget=false;var area=(RectTransform)root.transform;area.sizeDelta=new Vector2(1240,mapAcquire==null?300:240);area.anchoredPosition=new Vector2(0,mapAcquire==null?55:85);if(map==null)return;
             var cells=map.Cells.Where(c=>c.X>=0&&c.X<8).ToArray();int low=Math.Min(-1,cells.Length==0?0:cells.Min(c=>c.Y)),high=Math.Max(1,cells.Length==0?0:cells.Max(c=>c.Y));if(map.IsCurrent){low=Math.Min(low,(int)Math.Floor(map.PlayerY/4));high=Math.Max(high,(int)Math.Floor(map.PlayerY/4));}
             // 形式上の大きな座標があってもUIオブジェクト数を増やさない。開示セルだけを描画する。
-            double rows=high-(double)low+1;float size=(float)Math.Min(140,270/rows);float left=-4*size,bottom=(float)(-rows*size/2);
+            double rows=high-(double)low+1;float size=(float)Math.Min(140,(mapAcquire==null?270:210)/rows);float left=-4*size,bottom=(float)(-rows*size/2);
             void Tile(string name,float x,float y,float width,float height,Color color,string label=null){var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(root.transform,false);var im=go.GetComponent<Image>();im.color=color;im.raycastTarget=false;var rr=(RectTransform)go.transform;rr.anchoredPosition=new Vector2(x,y);rr.sizeDelta=new Vector2(width,height);if(label!=null){var text=new GameObject("Label",typeof(RectTransform),typeof(Text)).GetComponent<Text>();text.transform.SetParent(go.transform,false);text.font=mapFont;text.text=label;text.fontSize=24;text.color=Color.white;text.alignment=TextAnchor.MiddleCenter;text.raycastTarget=false;text.rectTransform.sizeDelta=new Vector2(35,35);}}
-            foreach(var cell in cells)Tile("Visited_"+cell.X+"_"+cell.Y,left+(cell.X+.5f)*size,(float)(bottom+(cell.Y-(double)low+.5)*size),Mathf.Max(1,size-2),Mathf.Max(1,size-2),new Color(.1f,.42f,.56f,1));
-            if(map.RecoveryKnown)Tile("DiscoveredRecovery",left+1.5f*size,(float)(bottom+(0-(double)low)*size)+38,32,32,new Color(.02f,.4f,.42f,1),"R");
+            var revealed=new Color(.1f,.42f,.56f,1);
+            void Cell(int x,int y,string prefix)=>Tile(prefix+x+"_"+y,left+(x+.5f)*size,(float)(bottom+(y-(double)low+.5)*size),Mathf.Max(1,size-2),Mathf.Max(1,size-2),revealed);
+            if(map.ItemRevealed){
+                // 開示と実訪問は同じ色。高い試走壁などでもオブジェクト数を表示範囲で抑える。
+                if(rows<=128)for(int y=low;y<=high;y++)for(int x=0;x<8;x++)Cell(x,y,"Revealed_");
+                else Tile("FullyRevealedArea",0,0,8*size,(float)(rows*size),revealed);
+            }else foreach(var cell in cells)Cell(cell.X,cell.Y,"Visited_");
+            if(map.RecoveryVisible)Tile(map.RecoveryKnown?"DiscoveredRecovery":"UnvisitedRecovery",left+1.5f*size,(float)(bottom+(0-(double)low)*size)+38,32,32,map.RecoveryKnown?new Color(.02f,.4f,.42f,1):new Color(.22f,.27f,.32f,1),"R");
             if(map.IsCurrent)Tile("CurrentPosition",left+(float)(map.PlayerX/4)*size,(float)(bottom+(map.PlayerY/4-low)*size),28,28,new Color(.6f,.34f,.08f,1),"P");
-            var legend=new GameObject("MapLegend",typeof(RectTransform),typeof(Text)).GetComponent<Text>();legend.transform.SetParent(root.transform,false);legend.font=mapFont;legend.fontSize=18;legend.color=new Color(.8f,.96f,1);legend.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("P: ゲンザイチ / R: ハッケンずみカイフク / アカルいクカク: ホゾンずみホウモン\n4worldグリッド（カリ） / シヨウリツ: タカラバコ・カイフクチテンの カイホウ");legend.alignment=TextAnchor.MiddleCenter;legend.raycastTarget=false;legend.rectTransform.sizeDelta=new Vector2(1220,70);legend.rectTransform.anchoredPosition=new Vector2(0,-185);
+            var legend=new GameObject("MapLegend",typeof(RectTransform),typeof(Text)).GetComponent<Text>();legend.transform.SetParent(root.transform,false);legend.font=mapFont;legend.fontSize=18;legend.color=new Color(.8f,.96f,1);legend.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana("P: ゲンザイチ / R: カイフクチテン（イドウは ジッホウモンご） / アカルいクカク: カイジずみ\n4worldグリッド（カリ） / シヨウリツ: タカラバコ・カイフクチテンの カイホウ");legend.alignment=TextAnchor.MiddleCenter;legend.raycastTarget=false;legend.rectTransform.sizeDelta=new Vector2(1220,70);legend.rectTransform.anchoredPosition=new Vector2(0,mapAcquire==null?-185:-160);
         }
         public void Hide(){renderEpoch++;menu?.Dispose();menu=null;var prior=context;context=null;if(this!=null)gameObject.SetActive(false);prior?.NotifyHidden();}
         private void RefreshMapGuide(){if(mapGuide!=null)mapGuide.text=GameplayPauseView.InputGuideText(Olca.Unity.UnityInputProvider.ActiveGamepadProfile,Olca.Unity.InputGuideActivity.Current==Olca.Unity.InputGuideDevice.Gamepad)+" / ポーズへ モドる";}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}RefreshMapGuide();menu?.Tick();}
         private void OnDisable(){renderEpoch++;menu?.Dispose();menu=null;context?.NotifyHidden();context=null;}
-        private void OnDestroy(){OnDisable();discovered=ownerAlive=null;travel=close=null;mapSource=null;mapData=Array.Empty<OutsideTrialMapOverview>();actions.Clear();}
+        private void OnDestroy(){OnDisable();discovered=ownerAlive=null;travel=close=null;mapAcquire=null;mapSource=null;mapData=Array.Empty<OutsideTrialMapOverview>();actions.Clear();}
     }
     public sealed class OutsideItemRegistrationView : UnityEngine.MonoBehaviour
     {

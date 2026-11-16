@@ -1423,6 +1423,12 @@ namespace Olca.Application.Dungeon
             finally{if(ReferenceEquals(cancellation,outsideFastTravelCancellation)){outsideFastTravelCancellation=null;cancellation.Dispose();}}
         }
         private void AbortOutsideFastTravel(){outsideFastTravelEpoch++;outsideFastTravelActive=outsideFastTravelOpening=false;var pending=outsideFastTravelCancellation;outsideFastTravelCancellation=null;pending?.Cancel();pending?.Dispose();if(gameSystem?.Views.CurrentKey==ManagedOutsideFastTravel)gameSystem.Views.CloseCurrent();}
+        private void AcquireOutsideTrialMapItem(string mapId)
+        {
+            if(!OutsideFastTravelOwnerLive||!OutsideFastTravelReady||outsideFastTravelView==null||gameSystem?.Views.CurrentKey!=ManagedOutsideFastTravel)return;
+            outsideFastTravelView.SetBusy(true,null);bool saved=clearReturnSession.TryAcquireTrialOutsideMapItem(mapId,out var error);
+            outsideFastTravelView.RefreshMapSnapshot(saved?"マップを ウケトリ・ホゾン / タイオウマップを ゼンイキ カイジ\nイドウサキの カイホウは ジッサイの ホウモンが ヒツヨウ":error??"マップの ホゾンに シッパイ / オシテ サイシコウ");
+        }
         private void CloseOutsideFastTravel(){if(!OutsideFastTravelOwnerLive||outsideMapTravelBusy||gameSystem?.Views.CurrentKey!=ManagedOutsideFastTravel)return;AbortOutsideFastTravel();pauseFocus="OutsideFastTravelButton";SetPausePanelVisible(IsUserPaused);}
         private const string ManagedOutsideItems="outside-item-registration";
         private Olca.Presentation.Management.OutsideItemRegistrationView outsideItemRegistrationView;
@@ -1503,7 +1509,7 @@ namespace Olca.Application.Dungeon
                 (panel,context)=>{if(!IsUserPaused||outsideExploration?.IsOpen!=true)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideItemRegistrationView>().Hide();});
             if(gameSystem!=null)gameSystem.Views.Register(this,ManagedOutsideFastTravel,
-                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideFastTravelView>("OutsideFastTravelView",view=>{outsideFastTravelView=view;view.Initialize(panelFactory.Font,()=>clearReturnSession.IsOutsideRecoveryPointDiscovered(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId),()=>TravelOutsideMapCore(true).Forget(),CloseOutsideFastTravel,()=>OutsideFastTravelOwnerLive,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(clearReturnSession.Snapshot,gameSystem.OutsideExploration.Core));}).gameObject);},
+                ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(panelFactory.Component<Olca.Presentation.Management.OutsideFastTravelView>("OutsideFastTravelView",view=>{outsideFastTravelView=view;view.Initialize(panelFactory.Font,()=>clearReturnSession.IsOutsideRecoveryPointDiscovered(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryPointId),()=>TravelOutsideMapCore(true).Forget(),CloseOutsideFastTravel,()=>OutsideFastTravelOwnerLive,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(clearReturnSession.Snapshot,gameSystem.OutsideExploration.Core),AcquireOutsideTrialMapItem);}).gameObject);},
                 (panel,context)=>{if(!OutsideFastTravelReady||!outsideFastTravelActive)throw new System.OperationCanceledException();SetPausePanelVisible(false);panel.GetComponent<Olca.Presentation.Management.OutsideFastTravelView>().Open(context);},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.OutsideFastTravelView>().Hide();});
             RegisterOutsideShop();RegisterOutsideEquipment();RegisterPauseView();RegisterCheckpointView();RegisterReturnViews();RegisterCustomizationViews();RegisterResourceRewardViews();

@@ -155,6 +155,9 @@ namespace Olca.Core.Logic.Integration
     {
         public const string HomeMapId="trial-home-v1";
         public const long CellSize=4*OutsideMovementDefinition.UnitsPerWorldUnit;
+        // 全域フラグは現在の描画矩形に限定しない。座標の有効性はマップ定義の呼出側が判断する。
+        public static bool IsRevealed(ClearReturnProfile profile,string mapId,int x,int y)
+            =>profile?.OutsideItemRevealedMaps?.Contains(mapId)==true||profile?.OutsideMapReveals?.Any(m=>m.MapId==mapId&&m.Cells.Any(c=>c.X==x&&c.Y==y))==true;
         public static bool KnownMap(string id)=>id==HomeMapId||id==OutsideTrialRoute.AnnexMapId;
         public static bool TryCell(OutsideExplorationCore core,out string map,out OutsideMapCellData cell)
         {
@@ -177,6 +180,7 @@ namespace Olca.Core.Logic.Integration
     {
         public string MapId {get;private set;}public string Name {get;private set;}
         public IReadOnlyList<OutsideMapCellData> Cells {get;private set;}
+        public bool ItemRevealed {get;private set;}public bool RecoveryVisible {get;private set;}
         public bool IsCurrent {get;private set;}public double PlayerX {get;private set;}public double PlayerY {get;private set;}
         public bool RecoveryKnown {get;private set;}public int? ExplorationPercent {get;private set;}
         // 対象種類の全一覧は未決。試用カタログでは種類で自動対象化し、要素ごとの参加flagを持たない。
@@ -199,8 +203,9 @@ namespace Olca.Core.Logic.Integration
             string current=core.TrialMapId??OutsideMapRevealTrial.HomeMapId;bool recovery=profile.OutsideDiscoveredRecoveryPoints?.Contains(OutsideTrialRoute.RecoveryPointId)==true;
             var result=new List<OutsideTrialMapOverview>();foreach(var id in new[]{OutsideMapRevealTrial.HomeMapId,OutsideTrialRoute.AnnexMapId}){
                 var saved=profile.OutsideMapReveals?.FirstOrDefault(v=>v.MapId==id);bool home=id==OutsideMapRevealTrial.HomeMapId;
-                if(id!=current&&saved==null&&!(home&&recovery))continue;
-                result.Add(new OutsideTrialMapOverview{MapId=id,Name=home?"ケンショウ エリア（カリ）":"シヨウ ベツマップ（カリ）",Cells=Array.AsReadOnly(saved?.Cells.Select(c=>c.Copy()).ToArray()??Array.Empty<OutsideMapCellData>()),IsCurrent=id==current,PlayerX=core.Position/(double)OutsideMovementDefinition.UnitsPerWorldUnit,PlayerY=core.Height/(double)OutsideMovementDefinition.UnitsPerWorldUnit,RecoveryKnown=home&&recovery,ExplorationPercent=home?HomePercent(profile):null});
+                bool item=profile.OutsideItemRevealedMaps?.Contains(id)==true;
+                if(id!=current&&saved==null&&!item&&!(home&&recovery))continue;
+                result.Add(new OutsideTrialMapOverview{MapId=id,Name=home?"ケンショウ エリア（カリ）":"シヨウ ベツマップ（カリ）",ItemRevealed=item,RecoveryVisible=home&&(recovery||item),Cells=Array.AsReadOnly(saved?.Cells.Select(c=>c.Copy()).ToArray()??Array.Empty<OutsideMapCellData>()),IsCurrent=id==current,PlayerX=core.Position/(double)OutsideMovementDefinition.UnitsPerWorldUnit,PlayerY=core.Height/(double)OutsideMovementDefinition.UnitsPerWorldUnit,RecoveryKnown=home&&recovery,ExplorationPercent=home?HomePercent(profile):null});
             }return result.ToArray();
         }
     }
