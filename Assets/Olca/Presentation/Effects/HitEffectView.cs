@@ -219,6 +219,50 @@ namespace Olca.Presentation.Effects
 
 namespace Olca.Presentation.Effects
 {
+    /// <summary>独立した斬撃の試用連番。判定やキャラ素材を変更せず、論理phaseから参照する。</summary>
+    public sealed class TrialSlashSprites : System.IDisposable
+    {
+        private readonly System.Func<string,Sprite[]> load;
+        private Sprite[] frames;private bool attempted,disposed;
+        public TrialSlashSprites(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(int activeAge,int activeFrames,int recoveryAge,int recoveryFrames)
+        {
+            if(activeFrames<=0||recoveryFrames<0)return -1;
+            if(activeAge>=0&&activeAge<activeFrames)return activeAge<Mathf.Max(1,activeFrames/2)?0:1;
+            int tail=Mathf.Min(9,recoveryFrames);
+            return recoveryAge<0||recoveryAge>=tail?-1:recoveryAge<Mathf.Max(1,tail/2)?2:3;
+        }
+        public Sprite Resolve(int row,int frame)
+        {
+            if(disposed||row<0||row>3||frame<0||frame>3)return null;
+            if(!attempted){attempted=true;var all=load("OlcaCharacterMotion/trial_slash_effect_sheet");
+                if(all!=null&&all.Length==16){var candidate=new Sprite[16];for(int r=0;r<4;r++)for(int f=0;f<4;f++){
+                    var found=System.Array.FindAll(all,s=>s!=null&&s.name=="trial_slash_"+r+"_"+f);
+                    if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f)return null;
+                    candidate[r*4+f]=found[0];
+                }frames=candidate;}
+            }
+            return frames==null?null:frames[row*4+frame];
+        }
+        public void Dispose(){disposed=true;frames=null;}
+    }
+    /// <summary>借用スプライトを一枚だけ重ねる。初回以外にGameObjectやSpriteを生成しない。</summary>
+    public sealed class SlashSpriteWorld : System.IDisposable
+    {
+        private readonly Transform parent;private GameObject root;private SpriteRenderer renderer;private bool disposed;
+        public bool IsVisible=>renderer!=null&&renderer.enabled;
+        public SlashSpriteWorld(Transform parent){this.parent=parent;}
+        public void Warmup(){if(disposed||parent==null||root!=null)return;root=new GameObject("TrialSlashAnimation",typeof(SpriteRenderer));root.transform.SetParent(parent,false);renderer=root.GetComponent<SpriteRenderer>();renderer.enabled=false;}
+        public void Show(Rect bounds,Sprite sprite,float alpha,SpriteRenderer reference,bool mirror=false)
+        {
+            if(disposed||parent==null||sprite==null||reference==null||reference.forceRenderingOff||bounds.width<=0||bounds.height<=0||alpha<=0){Clear();return;}Warmup();
+            renderer.sprite=sprite;renderer.color=new Color(1,1,1,Mathf.Clamp01(alpha));renderer.flipX=mirror;renderer.sortingLayerID=reference.sortingLayerID;renderer.sortingOrder=reference.sortingOrder+5;
+            root.transform.SetPositionAndRotation(new Vector3(bounds.center.x,bounds.center.y,reference.transform.position.z-.05f),Quaternion.identity);var scale=parent.lossyScale;
+            root.transform.localScale=new Vector3(bounds.width/sprite.bounds.size.x/(Mathf.Abs(scale.x)<.0001f?.0001f:scale.x),bounds.height/sprite.bounds.size.y/(Mathf.Abs(scale.y)<.0001f?.0001f:scale.y),1);renderer.enabled=true;
+        }
+        public void Clear(){if(renderer!=null){renderer.enabled=false;renderer.sprite=null;}}
+        public void Dispose(){if(disposed)return;disposed=true;Clear();if(root!=null){if(UnityEngine.Application.isPlaying)Object.Destroy(root);else Object.DestroyImmediate(root);}root=null;renderer=null;}
+    }
     /// <summary>独自の四角い粒で描く仮演出。乱数・ゲーム時計・命中処理を所有しない。</summary>
     public static class ProvisionalPixelPattern
     {

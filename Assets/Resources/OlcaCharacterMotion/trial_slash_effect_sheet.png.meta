@@ -1,0 +1,861 @@
+fileFormatVersion: 2
+guid: d2727489737a3ad8e98c11af285cd1db
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2958246121335976320
+    second: trial_slash_effect_sheet_0
+  - first:
+      213: 3712758554571178240
+    second: trial_slash_effect_sheet_1
+  - first:
+      213: 2267077630702290826
+    second: trial_slash_effect_sheet_2
+  - first:
+      213: 477655299656411777
+    second: trial_slash_effect_sheet_3
+  - first:
+      213: -1823912100214883779
+    second: trial_slash_effect_sheet_4
+  - first:
+      213: 2813462415962373761
+    second: trial_slash_effect_sheet_5
+  - first:
+      213: -4329511237377398261
+    second: trial_slash_effect_sheet_6
+  - first:
+      213: -6103845728329207133
+    second: trial_slash_effect_sheet_7
+  - first:
+      213: -8402023222783562984
+    second: trial_slash_effect_sheet_8
+  - first:
+      213: 6379280042600125353
+    second: trial_slash_effect_sheet_9
+  - first:
+      213: -6984559600818965842
+    second: trial_slash_effect_sheet_10
+  - first:
+      213: -1590223796714043104
+    second: trial_slash_effect_sheet_11
+  - first:
+      213: -5934180602087119282
+    second: trial_slash_effect_sheet_12
+  - first:
+      213: 988050857859584561
+    second: trial_slash_effect_sheet_13
+  - first:
+      213: 7591431452343797577
+    second: trial_slash_effect_sheet_14
+  - first:
+      213: 8742062887280096563
+    second: trial_slash_effect_sheet_15
+  - first:
+      213: -5913167287094647360
+    second: trial_slash_effect_sheet_16
+  - first:
+      213: -7896714510148050030
+    second: trial_slash_effect_sheet_17
+  - first:
+      213: -8344651550315888135
+    second: trial_slash_effect_sheet_18
+  - first:
+      213: 2152149794489066907
+    second: trial_slash_effect_sheet_19
+  - first:
+      213: 5222706328335965442
+    second: trial_slash_effect_sheet_20
+  - first:
+      213: 9077854254386881903
+    second: trial_slash_effect_sheet_21
+  - first:
+      213: -7394204180711203889
+    second: trial_slash_effect_sheet_22
+  - first:
+      213: -3660909570300318177
+    second: trial_slash_effect_sheet_23
+  - first:
+      213: 3968753109664866268
+    second: trial_slash_effect_sheet_24
+  - first:
+      213: -6057636525928684152
+    second: trial_slash_effect_sheet_25
+  - first:
+      213: 7213165429717656693
+    second: trial_slash_effect_sheet_26
+  - first:
+      213: 4229145480222887659
+    second: trial_slash_effect_sheet_27
+  - first:
+      213: -2160593732606673181
+    second: trial_slash_effect_sheet_28
+  - first:
+      213: -4793470158166429509
+    second: trial_slash_effect_sheet_29
+  - first:
+      213: -3564522086036173812
+    second: trial_slash_effect_sheet_30
+  - first:
+      213: -9024076128165485365
+    second: trial_slash_effect_sheet_31
+  - first:
+      213: -4797382653187678160
+    second: trial_slash_effect_sheet_32
+  - first:
+      213: -4715432839317773706
+    second: trial_slash_effect_sheet_33
+  - first:
+      213: 260614221418732545
+    second: trial_slash_effect_sheet_34
+  - first:
+      213: -423632922396237974
+    second: trial_slash_effect_sheet_35
+  - first:
+      213: 4065864796082128815
+    second: trial_slash_effect_sheet_36
+  - first:
+      213: -3367192225067732613
+    second: trial_slash_effect_sheet_37
+  - first:
+      213: -8449833186652292951
+    second: trial_slash_effect_sheet_38
+  - first:
+      213: -6889461011817405364
+    second: trial_slash_effect_sheet_39
+  - first:
+      213: -2209548137696318991
+    second: trial_slash_effect_sheet_40
+  - first:
+      213: 3711595238139043636
+    second: trial_slash_effect_sheet_41
+  - first:
+      213: 3266590927015269904
+    second: trial_slash_effect_sheet_42
+  - first:
+      213: -88962563070732201
+    second: trial_slash_effect_sheet_43
+  - first:
+      213: -5423216261522604412
+    second: trial_slash_effect_sheet_44
+  - first:
+      213: -9129477647707166356
+    second: trial_slash_effect_sheet_45
+  - first:
+      213: 3611026181380646752
+    second: trial_slash_effect_sheet_46
+  - first:
+      213: -3753081931401212246
+    second: trial_slash_effect_sheet_47
+  - first:
+      213: -6325476182593131365
+    second: trial_slash_effect_sheet_48
+  - first:
+      213: 3473137486736569403
+    second: trial_slash_effect_sheet_49
+  - first:
+      213: -2791016502567366588
+    second: trial_slash_effect_sheet_50
+  - first:
+      213: -3125903324491994939
+    second: trial_slash_effect_sheet_51
+  - first:
+      213: 9192621431308614360
+    second: trial_slash_effect_sheet_52
+  - first:
+      213: -2313369780246740487
+    second: trial_slash_effect_sheet_53
+  - first:
+      213: 6579946079681638402
+    second: trial_slash_effect_sheet_54
+  - first:
+      213: 7946170373084772483
+    second: trial_slash_effect_sheet_55
+  - first:
+      213: 2041029848904139495
+    second: trial_slash_effect_sheet_56
+  - first:
+      213: -8994548176353714737
+    second: trial_slash_effect_sheet_57
+  - first:
+      213: 8735700874443160285
+    second: trial_slash_effect_sheet_58
+  - first:
+      213: 421595048382306987
+    second: trial_slash_effect_sheet_59
+  - first:
+      213: 5302525618206716137
+    second: trial_slash_effect_sheet_60
+  - first:
+      213: -1478550539129280455
+    second: trial_slash_effect_sheet_61
+  - first:
+      213: -8500407478199756944
+    second: trial_slash_effect_sheet_62
+  - first:
+      213: 8503052719454948021
+    second: trial_slash_effect_sheet_63
+  - first:
+      213: -12959475805975812
+    second: trial_slash_effect_sheet_64
+  - first:
+      213: -7490275540031656566
+    second: trial_slash_effect_sheet_65
+  - first:
+      213: 7660516812764509955
+    second: trial_slash_effect_sheet_66
+  - first:
+      213: -8578486033219768016
+    second: trial_slash_effect_sheet_67
+  - first:
+      213: -1265934124228657489
+    second: trial_slash_effect_sheet_68
+  - first:
+      213: -2102954055408656859
+    second: trial_slash_effect_sheet_69
+  - first:
+      213: -3162580485751188292
+    second: trial_slash_effect_sheet_70
+  - first:
+      213: 3321740577702057478
+    second: trial_slash_effect_sheet_71
+  - first:
+      213: 7091338060160026210
+    second: trial_slash_effect_sheet_72
+  - first:
+      213: 7804723290827299052
+    second: trial_slash_effect_sheet_73
+  - first:
+      213: -5621393225161282822
+    second: trial_slash_effect_sheet_74
+  - first:
+      213: -3755918583028663254
+    second: trial_slash_effect_sheet_75
+  - first:
+      213: 1857903531088334465
+    second: trial_slash_effect_sheet_76
+  - first:
+      213: 706538290977927640
+    second: trial_slash_effect_sheet_77
+  - first:
+      213: -4285872031345374729
+    second: trial_slash_effect_sheet_78
+  - first:
+      213: -7290914615934401819
+    second: trial_slash_effect_sheet_79
+  - first:
+      213: -7563540598555732556
+    second: trial_slash_effect_sheet_80
+  - first:
+      213: 6830870940393695271
+    second: trial_slash_effect_sheet_81
+  - first:
+      213: 5949045137331134333
+    second: trial_slash_0_0
+  - first:
+      213: -7104302656934672308
+    second: trial_slash_0_1
+  - first:
+      213: -8665579302838034837
+    second: trial_slash_0_2
+  - first:
+      213: -1618833454242104041
+    second: trial_slash_0_3
+  - first:
+      213: -2170020894903679003
+    second: trial_slash_1_0
+  - first:
+      213: 4258149457646414945
+    second: trial_slash_1_1
+  - first:
+      213: -796377332569327784
+    second: trial_slash_1_2
+  - first:
+      213: -7547372274543362012
+    second: trial_slash_1_3
+  - first:
+      213: 5159459241352667071
+    second: trial_slash_2_0
+  - first:
+      213: -77705590271513605
+    second: trial_slash_2_1
+  - first:
+      213: -6111274401808892150
+    second: trial_slash_2_2
+  - first:
+      213: -3553811558262179041
+    second: trial_slash_2_3
+  - first:
+      213: 8444050469974746795
+    second: trial_slash_3_0
+  - first:
+      213: -3369103003075985032
+    second: trial_slash_3_1
+  - first:
+      213: 5483459375546410381
+    second: trial_slash_3_2
+  - first:
+      213: 5754059723956338672
+    second: trial_slash_3_3
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_slash_0_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d7f136378014f8250800000000000000
+      internalID: 5949045137331134333
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_0_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c488b8caf52786d90800000000000000
+      internalID: -7104302656934672308
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_0_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b6e9c59498dadb780800000000000000
+      internalID: -8665579302838034837
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_0_3
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 71d7161ec8fb889e0800000000000000
+      internalID: -1618833454242104041
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_1_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e7471c4e7982e1e0800000000000000
+      internalID: -2170020894903679003
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_1_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 16c698ffe5cf71b30800000000000000
+      internalID: 4258149457646414945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_1_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 85738011903b2f4f0800000000000000
+      internalID: -796377332569327784
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_1_3
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 420063c67e8524790800000000000000
+      internalID: -7547372274543362012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_2_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbf9ee118d41a9740800000000000000
+      internalID: 5159459241352667071
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_2_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bfbedc66d2febeef0800000000000000
+      internalID: -77705590271513605
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_2_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a0f3e3b7f44603ba0800000000000000
+      internalID: -6111274401808892150
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_2_3
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1bfa1777335eaec0800000000000000
+      internalID: -3553811558262179041
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_3_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba6a058f92b4f2570800000000000000
+      internalID: 8444050469974746795
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_3_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87144f14baa8e31d0800000000000000
+      internalID: -3369103003075985032
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_3_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d85aabbdf39291c40800000000000000
+      internalID: 5483459375546410381
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_slash_3_3
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ffbcc625d68adf40800000000000000
+      internalID: 5754059723956338672
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_slash_0_0: 5949045137331134333
+      trial_slash_0_1: -7104302656934672308
+      trial_slash_0_2: -8665579302838034837
+      trial_slash_0_3: -1618833454242104041
+      trial_slash_1_0: -2170020894903679003
+      trial_slash_1_1: 4258149457646414945
+      trial_slash_1_2: -796377332569327784
+      trial_slash_1_3: -7547372274543362012
+      trial_slash_2_0: 5159459241352667071
+      trial_slash_2_1: -77705590271513605
+      trial_slash_2_2: -6111274401808892150
+      trial_slash_2_3: -3553811558262179041
+      trial_slash_3_0: 8444050469974746795
+      trial_slash_3_1: -3369103003075985032
+      trial_slash_3_2: 5483459375546410381
+      trial_slash_3_3: 5754059723956338672
+      trial_slash_effect_sheet_0: -2958246121335976320
+      trial_slash_effect_sheet_1: 3712758554571178240
+      trial_slash_effect_sheet_10: -6984559600818965842
+      trial_slash_effect_sheet_11: -1590223796714043104
+      trial_slash_effect_sheet_12: -5934180602087119282
+      trial_slash_effect_sheet_13: 988050857859584561
+      trial_slash_effect_sheet_14: 7591431452343797577
+      trial_slash_effect_sheet_15: 8742062887280096563
+      trial_slash_effect_sheet_16: -5913167287094647360
+      trial_slash_effect_sheet_17: -7896714510148050030
+      trial_slash_effect_sheet_18: -8344651550315888135
+      trial_slash_effect_sheet_19: 2152149794489066907
+      trial_slash_effect_sheet_2: 2267077630702290826
+      trial_slash_effect_sheet_20: 5222706328335965442
+      trial_slash_effect_sheet_21: 9077854254386881903
+      trial_slash_effect_sheet_22: -7394204180711203889
+      trial_slash_effect_sheet_23: -3660909570300318177
+      trial_slash_effect_sheet_24: 3968753109664866268
+      trial_slash_effect_sheet_25: -6057636525928684152
+      trial_slash_effect_sheet_26: 7213165429717656693
+      trial_slash_effect_sheet_27: 4229145480222887659
+      trial_slash_effect_sheet_28: -2160593732606673181
+      trial_slash_effect_sheet_29: -4793470158166429509
+      trial_slash_effect_sheet_3: 477655299656411777
+      trial_slash_effect_sheet_30: -3564522086036173812
+      trial_slash_effect_sheet_31: -9024076128165485365
+      trial_slash_effect_sheet_32: -4797382653187678160
+      trial_slash_effect_sheet_33: -4715432839317773706
+      trial_slash_effect_sheet_34: 260614221418732545
+      trial_slash_effect_sheet_35: -423632922396237974
+      trial_slash_effect_sheet_36: 4065864796082128815
+      trial_slash_effect_sheet_37: -3367192225067732613
+      trial_slash_effect_sheet_38: -8449833186652292951
+      trial_slash_effect_sheet_39: -6889461011817405364
+      trial_slash_effect_sheet_4: -1823912100214883779
+      trial_slash_effect_sheet_40: -2209548137696318991
+      trial_slash_effect_sheet_41: 3711595238139043636
+      trial_slash_effect_sheet_42: 3266590927015269904
+      trial_slash_effect_sheet_43: -88962563070732201
+      trial_slash_effect_sheet_44: -5423216261522604412
+      trial_slash_effect_sheet_45: -9129477647707166356
+      trial_slash_effect_sheet_46: 3611026181380646752
+      trial_slash_effect_sheet_47: -3753081931401212246
+      trial_slash_effect_sheet_48: -6325476182593131365
+      trial_slash_effect_sheet_49: 3473137486736569403
+      trial_slash_effect_sheet_5: 2813462415962373761
+      trial_slash_effect_sheet_50: -2791016502567366588
+      trial_slash_effect_sheet_51: -3125903324491994939
+      trial_slash_effect_sheet_52: 9192621431308614360
+      trial_slash_effect_sheet_53: -2313369780246740487
+      trial_slash_effect_sheet_54: 6579946079681638402
+      trial_slash_effect_sheet_55: 7946170373084772483
+      trial_slash_effect_sheet_56: 2041029848904139495
+      trial_slash_effect_sheet_57: -8994548176353714737
+      trial_slash_effect_sheet_58: 8735700874443160285
+      trial_slash_effect_sheet_59: 421595048382306987
+      trial_slash_effect_sheet_6: -4329511237377398261
+      trial_slash_effect_sheet_60: 5302525618206716137
+      trial_slash_effect_sheet_61: -1478550539129280455
+      trial_slash_effect_sheet_62: -8500407478199756944
+      trial_slash_effect_sheet_63: 8503052719454948021
+      trial_slash_effect_sheet_64: -12959475805975812
+      trial_slash_effect_sheet_65: -7490275540031656566
+      trial_slash_effect_sheet_66: 7660516812764509955
+      trial_slash_effect_sheet_67: -8578486033219768016
+      trial_slash_effect_sheet_68: -1265934124228657489
+      trial_slash_effect_sheet_69: -2102954055408656859
+      trial_slash_effect_sheet_7: -6103845728329207133
+      trial_slash_effect_sheet_70: -3162580485751188292
+      trial_slash_effect_sheet_71: 3321740577702057478
+      trial_slash_effect_sheet_72: 7091338060160026210
+      trial_slash_effect_sheet_73: 7804723290827299052
+      trial_slash_effect_sheet_74: -5621393225161282822
+      trial_slash_effect_sheet_75: -3755918583028663254
+      trial_slash_effect_sheet_76: 1857903531088334465
+      trial_slash_effect_sheet_77: 706538290977927640
+      trial_slash_effect_sheet_78: -4285872031345374729
+      trial_slash_effect_sheet_79: -7290914615934401819
+      trial_slash_effect_sheet_8: -8402023222783562984
+      trial_slash_effect_sheet_80: -7563540598555732556
+      trial_slash_effect_sheet_81: 6830870940393695271
+      trial_slash_effect_sheet_9: 6379280042600125353
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

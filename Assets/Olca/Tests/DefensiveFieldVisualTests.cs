@@ -360,3 +360,27 @@ namespace Olca.Tests {
   [NUnit.Framework.Test]public void 不完全なタメ連番を部分採用せず毎描画で再読込しない(){int loads=0;using(var m=new Olca.Presentation.Exploration.TrialChargeMotion(k=>{loads++;return new UnityEngine.Sprite[7];})){for(int n=0;n<10;n++)NUnit.Framework.Assert.IsNull(m.Resolve(true,true,false,n,null,false));NUnit.Framework.Assert.AreEqual(1,loads);}}
  }
 }
+
+namespace Olca.Tests {
+ public class TrialSlashSpriteTests {
+  [NUnit.Framework.TestCase(-1,6,-1,9,-1)] [NUnit.Framework.TestCase(0,6,-1,9,0)] [NUnit.Framework.TestCase(2,6,-1,9,0)]
+  [NUnit.Framework.TestCase(3,6,-1,9,1)] [NUnit.Framework.TestCase(5,6,-1,9,1)] [NUnit.Framework.TestCase(-1,6,0,9,2)]
+  [NUnit.Framework.TestCase(-1,6,4,9,3)] [NUnit.Framework.TestCase(-1,6,9,60,-1)] [NUnit.Framework.TestCase(0,0,0,9,-1)]
+  public void 斬撃連番は命中窓後九frame以内の消失へ進み前隙には出ない(int active,int length,int tail,int recovery,int expected){NUnit.Framework.Assert.AreEqual(expected,Olca.Presentation.Effects.TrialSlashSprites.FrameIndex(active,length,tail,recovery));}
+  [NUnit.Framework.Test]public void 斬撃は四種四コマの独立256資産でキャラを借りず共有参照を壊さない(){
+   var seen=new System.Collections.Generic.HashSet<UnityEngine.Sprite>();using(var m=new Olca.Presentation.Effects.TrialSlashSprites()){
+    for(int row=0;row<4;row++)for(int frame=0;frame<4;frame++){var p=m.Resolve(row,frame);NUnit.Framework.Assert.IsNotNull(p);NUnit.Framework.Assert.IsTrue(seen.Add(p));NUnit.Framework.Assert.AreEqual(256,p.rect.width);NUnit.Framework.Assert.AreEqual(256,p.rect.height);NUnit.Framework.Assert.AreEqual(100,p.pixelsPerUnit,.001f);}
+    NUnit.Framework.Assert.IsNull(m.Resolve(-1,0));NUnit.Framework.Assert.IsNull(m.Resolve(0,4));m.Dispose();NUnit.Framework.Assert.IsNull(m.Resolve(0,0));foreach(var p in seen)NUnit.Framework.Assert.IsTrue(p!=null);
+   }
+  }
+  [NUnit.Framework.Test]public void 欠けた斬撃は部分採用せず一度だけロードする(){int calls=0;using(var m=new Olca.Presentation.Effects.TrialSlashSprites(k=>{calls++;return new UnityEngine.Sprite[15];})){for(int n=0;n<10;n++)NUnit.Framework.Assert.IsNull(m.Resolve(0,1));NUnit.Framework.Assert.AreEqual(1,calls);}}
+  [NUnit.Framework.TestCase(false)] [NUnit.Framework.TestCase(true)] public void World斬撃は判定矩形内で左右反転し百回再利用して共有画像を残す(bool mirror){
+   var host=new UnityEngine.GameObject("SlashTest298");var reference=host.AddComponent<UnityEngine.SpriteRenderer>();var texture=new UnityEngine.Texture2D(2,2);var sprite=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,2,2),UnityEngine.Vector2.one*.5f,1);reference.sprite=sprite;host.transform.localScale=new UnityEngine.Vector3(-2,3,1);
+   try{using(var assets=new Olca.Presentation.Effects.TrialSlashSprites())using(var effect=new Olca.Presentation.Effects.SlashSpriteWorld(host.transform)){
+    effect.Warmup();var retained=assets.Resolve(0,1);var before=host.GetComponentsInChildren<UnityEngine.Transform>(true);var bounds=new UnityEngine.Rect(2,4,3,2);
+    for(int n=0;n<100;n++){effect.Show(bounds,retained,1,reference,mirror);NUnit.Framework.Assert.IsTrue(effect.IsVisible);var view=host.GetComponentsInChildren<UnityEngine.SpriteRenderer>(true).Single(v=>v!=reference);NUnit.Framework.Assert.AreSame(retained,view.sprite);NUnit.Framework.Assert.AreEqual(mirror,view.flipX);NUnit.Framework.Assert.Greater(view.transform.TransformVector(UnityEngine.Vector3.right).x,0,"親の負scaleを相殺しmirrorだけで実向きを変える");NUnit.Framework.Assert.AreEqual(bounds.xMin,view.bounds.min.x,.001f);NUnit.Framework.Assert.AreEqual(bounds.xMax,view.bounds.max.x,.001f);NUnit.Framework.Assert.AreEqual(bounds.yMin,view.bounds.min.y,.001f);NUnit.Framework.Assert.AreEqual(bounds.yMax,view.bounds.max.y,.001f);effect.Clear();NUnit.Framework.Assert.IsFalse(effect.IsVisible);}
+    NUnit.Framework.CollectionAssert.AreEqual(before,host.GetComponentsInChildren<UnityEngine.Transform>(true));effect.Show(bounds,null,1,reference);NUnit.Framework.Assert.IsFalse(effect.IsVisible);effect.Dispose();NUnit.Framework.Assert.IsTrue(retained!=null);
+   }}finally{UnityEngine.Object.DestroyImmediate(host);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(texture);}
+  }
+ }
+}
