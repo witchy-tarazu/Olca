@@ -1,0 +1,581 @@
+fileFormatVersion: 2
+guid: d3faef6c653bcd7b995a470400523d3b
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 7782442446819473760
+    second: trial_wide_sword_effect_sheet_0
+  - first:
+      213: -3262155152151701328
+    second: trial_wide_sword_effect_sheet_1
+  - first:
+      213: 2452907351240018788
+    second: trial_wide_sword_effect_sheet_2
+  - first:
+      213: -7107810036687129152
+    second: trial_wide_sword_effect_sheet_3
+  - first:
+      213: 8311022155238771547
+    second: trial_wide_sword_effect_sheet_4
+  - first:
+      213: 8935158920645111836
+    second: trial_wide_sword_effect_sheet_5
+  - first:
+      213: -6256829255605436107
+    second: trial_wide_sword_effect_sheet_6
+  - first:
+      213: -3425554094231619431
+    second: trial_wide_sword_effect_sheet_7
+  - first:
+      213: 1080028362941253754
+    second: trial_wide_sword_effect_sheet_8
+  - first:
+      213: -2604455106993261682
+    second: trial_wide_sword_effect_sheet_9
+  - first:
+      213: -3724503477856272428
+    second: trial_wide_sword_effect_sheet_10
+  - first:
+      213: 1740755730743625707
+    second: trial_wide_sword_effect_sheet_11
+  - first:
+      213: 8669734858530713202
+    second: trial_wide_sword_effect_sheet_12
+  - first:
+      213: -4144781301974600118
+    second: trial_wide_sword_effect_sheet_13
+  - first:
+      213: -7788538599134141800
+    second: trial_wide_sword_effect_sheet_14
+  - first:
+      213: 4760575392541855436
+    second: trial_wide_sword_effect_sheet_15
+  - first:
+      213: 2867217513251440597
+    second: trial_wide_sword_effect_sheet_16
+  - first:
+      213: 542161687986932663
+    second: trial_wide_sword_effect_sheet_17
+  - first:
+      213: 5440053230609899905
+    second: trial_wide_sword_effect_sheet_18
+  - first:
+      213: -8497862596733250999
+    second: trial_wide_sword_effect_sheet_19
+  - first:
+      213: 522826989157416255
+    second: trial_wide_sword_effect_sheet_20
+  - first:
+      213: -8939335191773004909
+    second: trial_wide_sword_effect_sheet_21
+  - first:
+      213: -229591216560921036
+    second: trial_wide_sword_effect_sheet_22
+  - first:
+      213: 2368612465764616154
+    second: trial_wide_sword_effect_sheet_23
+  - first:
+      213: 291017940970063565
+    second: trial_wide_sword_effect_sheet_24
+  - first:
+      213: -851999588819694326
+    second: trial_wide_sword_effect_sheet_25
+  - first:
+      213: 5583641256052760430
+    second: trial_wide_sword_effect_sheet_26
+  - first:
+      213: -6511188852155214206
+    second: trial_wide_sword_effect_sheet_27
+  - first:
+      213: -3264529336737801540
+    second: trial_wide_sword_effect_sheet_28
+  - first:
+      213: 2213764994751902843
+    second: trial_wide_sword_effect_sheet_29
+  - first:
+      213: -7680188990935673295
+    second: trial_wide_sword_effect_sheet_30
+  - first:
+      213: 6772298906958745883
+    second: trial_wide_sword_effect_sheet_31
+  - first:
+      213: -1975490257339022325
+    second: trial_wide_sword_effect_sheet_32
+  - first:
+      213: 7812989952202612584
+    second: trial_wide_sword_effect_sheet_33
+  - first:
+      213: -2015827939813070800
+    second: trial_wide_sword_effect_sheet_34
+  - first:
+      213: 7076941756589632108
+    second: trial_wide_sword_effect_sheet_35
+  - first:
+      213: 8076243107266041646
+    second: trial_wide_sword_effect_sheet_36
+  - first:
+      213: 830809377463660999
+    second: trial_wide_sword_effect_sheet_37
+  - first:
+      213: -2616851719726843334
+    second: trial_wide_sword_effect_sheet_38
+  - first:
+      213: 1552236917094968390
+    second: trial_wide_sword_effect_sheet_39
+  - first:
+      213: 6850339589530790771
+    second: trial_wide_sword_effect_sheet_40
+  - first:
+      213: -8766239355470198018
+    second: trial_wide_sword_effect_sheet_41
+  - first:
+      213: -946415173614637672
+    second: trial_wide_sword_effect_sheet_42
+  - first:
+      213: -2397534377834174346
+    second: trial_wide_sword_effect_sheet_43
+  - first:
+      213: -5565949878104636914
+    second: trial_wide_sword_effect_sheet_44
+  - first:
+      213: -1257710344821979941
+    second: trial_wide_sword_effect_sheet_45
+  - first:
+      213: -5211072295437404025
+    second: trial_wide_sword_effect_sheet_46
+  - first:
+      213: 5189016131589969197
+    second: trial_wide_sword_effect_sheet_47
+  - first:
+      213: -6126436826907940013
+    second: trial_wide_sword_effect_sheet_48
+  - first:
+      213: 4841972733401488240
+    second: trial_wide_sword_effect_sheet_49
+  - first:
+      213: -2007684140949373951
+    second: trial_wide_sword_effect_sheet_50
+  - first:
+      213: -2156105535194278946
+    second: trial_wide_sword_effect_sheet_51
+  - first:
+      213: -838195621352974116
+    second: trial_wide_sword_effect_sheet_52
+  - first:
+      213: -6672346683462978700
+    second: trial_wide_sword_effect_sheet_53
+  - first:
+      213: 1073309779677448563
+    second: trial_wide_sword_effect_sheet_54
+  - first:
+      213: -1454461264815441186
+    second: trial_wide_sword_effect_sheet_55
+  - first:
+      213: 243259245779471331
+    second: trial_wide_sword_effect_sheet_56
+  - first:
+      213: -6425637009804788754
+    second: trial_wide_sword_effect_sheet_57
+  - first:
+      213: -5333997992667143541
+    second: trial_wide_sword_effect_sheet_58
+  - first:
+      213: -4952477723560099545
+    second: trial_wide_sword_effect_sheet_59
+  - first:
+      213: -1246886267279622429
+    second: trial_wide_sword_effect_sheet_60
+  - first:
+      213: 8500583159129649317
+    second: trial_wide_sword_effect_sheet_61
+  - first:
+      213: -828179359483406213
+    second: trial_wide_sword_effect_sheet_62
+  - first:
+      213: -4866662068362964656
+    second: trial_wide_sword_effect_sheet_63
+  - first:
+      213: 3462930476259409853
+    second: trial_wide_sword_effect_sheet_64
+  - first:
+      213: -2152255904682890511
+    second: trial_wide_sword_effect_sheet_65
+  - first:
+      213: -7183678934273574761
+    second: trial_wide_sword_effect_sheet_66
+  - first:
+      213: 611208637921432491
+    second: trial_wide_sword_effect_sheet_67
+  - first:
+      213: -1780622278024026634
+    second: trial_wide_sword_effect_sheet_68
+  - first:
+      213: -5019336541565538424
+    second: trial_wide_sword_effect_sheet_69
+  - first:
+      213: -7007224390551967520
+    second: trial_wide_sword_effect_sheet_70
+  - first:
+      213: 313406503404387931
+    second: trial_wide_sword_effect_sheet_71
+  - first:
+      213: -7795836644440953490
+    second: trial_wide_sword_effect_sheet_72
+  - first:
+      213: -702182141548322734
+    second: trial_wide_sword_effect_sheet_73
+  - first:
+      213: 4729461192905482673
+    second: trial_wide_sword_effect_sheet_74
+  - first:
+      213: 2686816737427804163
+    second: trial_wide_sword_effect_sheet_75
+  - first:
+      213: -8357917900755287784
+    second: trial_wide_sword_effect_sheet_76
+  - first:
+      213: 1700908624914979971
+    second: trial_wide_sword_effect_0
+  - first:
+      213: -3281403072825972338
+    second: trial_wide_sword_effect_1
+  - first:
+      213: 1945348912333850900
+    second: trial_wide_sword_effect_2
+  - first:
+      213: -5979707733378961921
+    second: trial_wide_sword_effect_3
+  - first:
+      213: -6123179523734598541
+    second: trial_wide_sword_effect_4
+  - first:
+      213: -8876385225789125701
+    second: trial_wide_sword_effect_5
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_wide_sword_effect_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 38c947fe167da9710800000000000000
+      internalID: 1700908624914979971
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_wide_sword_effect_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e8925577a4d1672d0800000000000000
+      internalID: -3281403072825972338
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_wide_sword_effect_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4190ad367844ffa10800000000000000
+      internalID: 1945348912333850900
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_wide_sword_effect_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ffd6a439f7fc30da0800000000000000
+      internalID: -5979707733378961921
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_wide_sword_effect_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 37c8ad74aa8160ba0800000000000000
+      internalID: -6123179523734598541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_wide_sword_effect_5
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bbb405f8aaeb0d480800000000000000
+      internalID: -8876385225789125701
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_wide_sword_effect_0: 1700908624914979971
+      trial_wide_sword_effect_1: -3281403072825972338
+      trial_wide_sword_effect_2: 1945348912333850900
+      trial_wide_sword_effect_3: -5979707733378961921
+      trial_wide_sword_effect_4: -6123179523734598541
+      trial_wide_sword_effect_5: -8876385225789125701
+      trial_wide_sword_effect_sheet_0: 7782442446819473760
+      trial_wide_sword_effect_sheet_1: -3262155152151701328
+      trial_wide_sword_effect_sheet_10: -3724503477856272428
+      trial_wide_sword_effect_sheet_11: 1740755730743625707
+      trial_wide_sword_effect_sheet_12: 8669734858530713202
+      trial_wide_sword_effect_sheet_13: -4144781301974600118
+      trial_wide_sword_effect_sheet_14: -7788538599134141800
+      trial_wide_sword_effect_sheet_15: 4760575392541855436
+      trial_wide_sword_effect_sheet_16: 2867217513251440597
+      trial_wide_sword_effect_sheet_17: 542161687986932663
+      trial_wide_sword_effect_sheet_18: 5440053230609899905
+      trial_wide_sword_effect_sheet_19: -8497862596733250999
+      trial_wide_sword_effect_sheet_2: 2452907351240018788
+      trial_wide_sword_effect_sheet_20: 522826989157416255
+      trial_wide_sword_effect_sheet_21: -8939335191773004909
+      trial_wide_sword_effect_sheet_22: -229591216560921036
+      trial_wide_sword_effect_sheet_23: 2368612465764616154
+      trial_wide_sword_effect_sheet_24: 291017940970063565
+      trial_wide_sword_effect_sheet_25: -851999588819694326
+      trial_wide_sword_effect_sheet_26: 5583641256052760430
+      trial_wide_sword_effect_sheet_27: -6511188852155214206
+      trial_wide_sword_effect_sheet_28: -3264529336737801540
+      trial_wide_sword_effect_sheet_29: 2213764994751902843
+      trial_wide_sword_effect_sheet_3: -7107810036687129152
+      trial_wide_sword_effect_sheet_30: -7680188990935673295
+      trial_wide_sword_effect_sheet_31: 6772298906958745883
+      trial_wide_sword_effect_sheet_32: -1975490257339022325
+      trial_wide_sword_effect_sheet_33: 7812989952202612584
+      trial_wide_sword_effect_sheet_34: -2015827939813070800
+      trial_wide_sword_effect_sheet_35: 7076941756589632108
+      trial_wide_sword_effect_sheet_36: 8076243107266041646
+      trial_wide_sword_effect_sheet_37: 830809377463660999
+      trial_wide_sword_effect_sheet_38: -2616851719726843334
+      trial_wide_sword_effect_sheet_39: 1552236917094968390
+      trial_wide_sword_effect_sheet_4: 8311022155238771547
+      trial_wide_sword_effect_sheet_40: 6850339589530790771
+      trial_wide_sword_effect_sheet_41: -8766239355470198018
+      trial_wide_sword_effect_sheet_42: -946415173614637672
+      trial_wide_sword_effect_sheet_43: -2397534377834174346
+      trial_wide_sword_effect_sheet_44: -5565949878104636914
+      trial_wide_sword_effect_sheet_45: -1257710344821979941
+      trial_wide_sword_effect_sheet_46: -5211072295437404025
+      trial_wide_sword_effect_sheet_47: 5189016131589969197
+      trial_wide_sword_effect_sheet_48: -6126436826907940013
+      trial_wide_sword_effect_sheet_49: 4841972733401488240
+      trial_wide_sword_effect_sheet_5: 8935158920645111836
+      trial_wide_sword_effect_sheet_50: -2007684140949373951
+      trial_wide_sword_effect_sheet_51: -2156105535194278946
+      trial_wide_sword_effect_sheet_52: -838195621352974116
+      trial_wide_sword_effect_sheet_53: -6672346683462978700
+      trial_wide_sword_effect_sheet_54: 1073309779677448563
+      trial_wide_sword_effect_sheet_55: -1454461264815441186
+      trial_wide_sword_effect_sheet_56: 243259245779471331
+      trial_wide_sword_effect_sheet_57: -6425637009804788754
+      trial_wide_sword_effect_sheet_58: -5333997992667143541
+      trial_wide_sword_effect_sheet_59: -4952477723560099545
+      trial_wide_sword_effect_sheet_6: -6256829255605436107
+      trial_wide_sword_effect_sheet_60: -1246886267279622429
+      trial_wide_sword_effect_sheet_61: 8500583159129649317
+      trial_wide_sword_effect_sheet_62: -828179359483406213
+      trial_wide_sword_effect_sheet_63: -4866662068362964656
+      trial_wide_sword_effect_sheet_64: 3462930476259409853
+      trial_wide_sword_effect_sheet_65: -2152255904682890511
+      trial_wide_sword_effect_sheet_66: -7183678934273574761
+      trial_wide_sword_effect_sheet_67: 611208637921432491
+      trial_wide_sword_effect_sheet_68: -1780622278024026634
+      trial_wide_sword_effect_sheet_69: -5019336541565538424
+      trial_wide_sword_effect_sheet_7: -3425554094231619431
+      trial_wide_sword_effect_sheet_70: -7007224390551967520
+      trial_wide_sword_effect_sheet_71: 313406503404387931
+      trial_wide_sword_effect_sheet_72: -7795836644440953490
+      trial_wide_sword_effect_sheet_73: -702182141548322734
+      trial_wide_sword_effect_sheet_74: 4729461192905482673
+      trial_wide_sword_effect_sheet_75: 2686816737427804163
+      trial_wide_sword_effect_sheet_76: -8357917900755287784
+      trial_wide_sword_effect_sheet_8: 1080028362941253754
+      trial_wide_sword_effect_sheet_9: -2604455106993261682
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

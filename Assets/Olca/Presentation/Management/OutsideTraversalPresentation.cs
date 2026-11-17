@@ -135,6 +135,7 @@ namespace Olca.Presentation.Exploration
         private TrialSwordSwingMotion trialSwordMotion;
         private TrialShotBodyMotion trialShotBody;
         private TrialSpearBodyMotion trialSpearBody;
+        private TrialWideSwordEffect trialWideSwordEffect;
         private Sprite TrialShotSprite()
         {
             if(presentation?.IsFiringShot!=true||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
@@ -323,7 +324,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialSpearBody?.Dispose();trialSpearBody=null;trialShotBody?.Dispose();trialShotBody=null;initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialWideSwordEffect?.Dispose();trialWideSwordEffect=null;trialSpearBody?.Dispose();trialSpearBody=null;trialShotBody?.Dispose();trialShotBody=null;initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -925,7 +926,7 @@ namespace Olca.Presentation.Exploration
             var blade=trialSwordImage.rectTransform;blade.sizeDelta=trialSwordImage.sprite.bounds.size*pixelsPerWorldUnit;blade.anchoredPosition=new Vector2((core.Position/unit-camera+viewport*.5f+.35f*facing)*pixelsPerWorldUnit,(core.Height/unit+1.3f-verticalOffset)*pixelsPerWorldUnit);float scale=(reach-.35f)/trialSwordImage.sprite.bounds.max.x;blade.localScale=new Vector3(facing*scale,scale,1);float angle=windup?45+55*(presentation.SwordSwingElapsed/(float)Math.Max(1,presentation.SwordSwingStartup)):20-Math.Min(5,(int)age)*18;blade.localRotation=Quaternion.Euler(0,0,angle*facing);trialSwordImage.color=Color.white;trialSwordImage.enabled=true;
             }
             int frame=OutsideSwordSwingVisual.FrameIndex(age);polishedSwordTrail.enabled=frame>=0;
-            if(frame>=0){polishedSwordTrail.sprite=(slashSprites??(slashSprites=new Olca.Presentation.Effects.TrialSlashSprites())).Resolve(OutsideSwordSwingVisual.TrailRow(action?presentation.SwordSwingCardId:strike.CardId),frame);polishedSwordTrail.color=Color.white;var rr=polishedSwordTrail.rectTransform;long expectedFired=action?core.Frame-presentation.SwordSwingElapsed+presentation.SwordSwingStartup:strike.Frame;bool useStrike=strike?.SpriteSwing==true&&strike.Frame==expectedFired;float x=useStrike?strike.X/unit:core.Position/unit,y=useStrike?strike.Y/unit:core.Height/unit;rr.anchoredPosition=new Vector2((x-camera+viewport*.5f+facing*reach*.5f)*pixelsPerWorldUnit,(y+1.2f-verticalOffset)*pixelsPerWorldUnit);rr.sizeDelta=new Vector2(reach,1.8f*vertical)*pixelsPerWorldUnit;rr.localScale=new Vector3(facing,1,1);}
+            if(frame>=0){string cardId=action?presentation.SwordSwingCardId:strike.CardId;polishedSwordTrail.sprite=(cardId==Olca.Core.Domain.TrialInitialCardDefinitions.WideSword?(trialWideSwordEffect??(trialWideSwordEffect=new TrialWideSwordEffect())).Resolve(age):null)??(slashSprites??(slashSprites=new Olca.Presentation.Effects.TrialSlashSprites())).Resolve(OutsideSwordSwingVisual.TrailRow(cardId),frame);polishedSwordTrail.color=Color.white;var rr=polishedSwordTrail.rectTransform;long expectedFired=action?core.Frame-presentation.SwordSwingElapsed+presentation.SwordSwingStartup:strike.Frame;bool useStrike=strike?.SpriteSwing==true&&strike.Frame==expectedFired;float x=useStrike?strike.X/unit:core.Position/unit,y=useStrike?strike.Y/unit:core.Height/unit;rr.anchoredPosition=new Vector2((x-camera+viewport*.5f+facing*reach*.5f)*pixelsPerWorldUnit,(y+1.2f-verticalOffset)*pixelsPerWorldUnit);rr.sizeDelta=new Vector2(reach,1.8f*vertical)*pixelsPerWorldUnit;rr.localScale=new Vector3(facing,1,1);}
             return true;
         }
         private void RenderBombs(float camera,float viewport,float verticalOffset)
@@ -1170,6 +1171,20 @@ namespace Olca.Presentation.Exploration
         }
         public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&Array.Exists(clips,c=>c!=null&&Array.IndexOf(c,sprite)>=0);
         public void Dispose(){disposed=true;Array.Clear(clips,0,clips.Length);}
+    }
+    /// <summary>ワイドソードの試用6コマ。従来の予兆2/命中後12フレームと表示領域を維持する。</summary>
+    public sealed class TrialWideSwordEffect : System.IDisposable
+    {
+        private readonly Func<string,Sprite[]> load;private Sprite[] frames;private bool tried,disposed;
+        public TrialWideSwordEffect(Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(long age)=>age< -2||age>=12?-1:age<0?0:age<2?1:age<4?2:age<7?3:age<10?4:5;
+        public Sprite Resolve(long age)
+        {
+            int n=FrameIndex(age);if(disposed||n<0)return null;
+            if(!tried){tried=true;var all=load("OlcaCharacterMotion/trial_wide_sword_effect_sheet");if(all!=null&&all.Length==6){var ordered=new Sprite[6];for(int k=0;k<6;k++){var matches=Array.FindAll(all,v=>v!=null&&v.name=="trial_wide_sword_effect_"+k);if(matches.Length!=1||matches[0].rect.width!=256||matches[0].rect.height!=256||Mathf.Abs(matches[0].pixelsPerUnit-100)>.001f||Vector2.Distance(matches[0].pivot,new Vector2(128,128))>.001f)return null;ordered[k]=matches[0];}frames=ordered;}}
+            return frames?[n];
+        }
+        public void Dispose(){disposed=true;frames=null;}
     }
     /// <summary>スピアの試用3姿勢×地上/空中。行動時計を参照し、命中・保存を所有しない。</summary>
     public sealed class TrialSpearBodyMotion : System.IDisposable
