@@ -910,7 +910,8 @@ namespace Olca.Presentation.Exploration
         private void BindTrialTargetFeedback(){if(trialTargetFeedback==null||trialNumberStyle==null||presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null)return;var lease=presentation;var target=lease.TrialTarget;if(ReferenceEquals(feedbackTarget,target)&&ReferenceEquals(secondFeedbackTarget,lease.SecondTrialTarget)&&ReferenceEquals(feedbackLease,lease))return;feedbackTarget=target;feedbackLease=lease;trialEnemyAttackButton.onClick=new Button.ButtonClickedEvent();trialEnemyAttackButton.onClick.AddListener(()=>{if(this!=null&&IsOpen&&CanPlay&&ReferenceEquals(presentation,lease)&&lease.IsCurrent){lease.ToggleTrialEnemyAttack();var es=UnityEngine.EventSystems.EventSystem.current;if(es!=null&&es.currentSelectedGameObject==trialEnemyAttackButton.gameObject)es.SetSelectedGameObject(null);}});secondFeedbackTarget=lease.SecondTrialTarget;secondTrialFeedback.BindEnemy(secondFeedbackTarget,trialNumberStyle,()=>this!=null&&IsOpen&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)OutsideKickTrialDefinition.SecondTargetX/OutsideMovementDefinition.UnitsPerWorldUnit,TrialTargetTop()/pixelsPerWorldUnit+.5f),pixelsPerWorldUnit);trialTargetFeedback.BindEnemy(target,trialNumberStyle,()=>this!=null&&IsOpen&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)OutsideExplorationSession.TrialTargetX/OutsideMovementDefinition.UnitsPerWorldUnit,TrialTargetTop()/pixelsPerWorldUnit+.5f),pixelsPerWorldUnit);}
         private readonly List<Image> bombImages=new List<Image>();
         private Olca.Unity.GeneratedSpriteAssets.Lease bombAssets;
-        private void ClearBombVisuals(){foreach(var image in bombImages)if(image!=null){image.enabled=false;image.sprite=null;}bombAssets?.Dispose();bombAssets=null;}
+        private TrialBombBlastMotion bombBlastMotion;
+        private void ClearBombVisuals(){foreach(var image in bombImages)if(image!=null){image.enabled=false;image.sprite=null;}bombBlastMotion?.Dispose();bombBlastMotion=null;bombAssets?.Dispose();bombAssets=null;}
         private Image polishedSwordTrail;
         private bool RenderPolishedSword(float camera,float viewport,float verticalOffset)
         {
@@ -939,12 +940,12 @@ namespace Olca.Presentation.Exploration
             if(presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null){ClearBombVisuals();return;}
             var flights=presentation.Bombs;var blasts=presentation.BombBlasts;int used=0;long frame=presentation.Core.Frame;
             // 飛翔開始時に一度だけ用意し、着弾frameで画像decode/画素変換を行わない。
-            if(bombAssets==null&&(flights.Count>0||blasts.Count>0)){bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,out _,bombAssets);}
-            Image Part(string key,float x,float y,float visibleWidth,float visibleHeight,float alpha,float angle=0,(long Left,long Right)? clip=null)
+            if(bombAssets==null&&(flights.Count>0||blasts.Count>0)){bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,out _,bombAssets);(bombBlastMotion??(bombBlastMotion=new TrialBombBlastMotion())).Resolve(0,18);}
+            Image Part(string key,float x,float y,float visibleWidth,float visibleHeight,float alpha,float angle=0,(long Left,long Right)? clip=null,Sprite animation=null)
             {
                 if(used==bombImages.Count){var wrapper=new GameObject("TrialOutsideBombClip",typeof(RectTransform),typeof(RectMask2D));wrapper.transform.SetParent(transform,false);var wr=wrapper.GetComponent<RectTransform>();wr.anchorMin=wr.anchorMax=new Vector2(0,.21f);var go=new GameObject("TrialOutsideBombVisual",typeof(RectTransform),typeof(Image));go.transform.SetParent(wrapper.transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(.5f,.5f);bombImages.Add(created);}
-                var image=bombImages[used++];Sprite sprite;bool found=Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(key,out sprite,bombAssets??(bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));image.sprite=found?sprite:null;image.enabled=found;image.color=new Color(1,1,1,alpha);
-                if(found){float aw=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleWidth;float ah=key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleHeight;image.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x*visibleWidth/aw,sprite.bounds.size.y*visibleHeight/ah)*pixelsPerWorldUnit;}
+                var image=bombImages[used++];Sprite sprite=animation;bool animated=sprite!=null;bool found=animated||Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(key,out sprite,bombAssets??(bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));image.sprite=found?sprite:null;image.enabled=found;image.color=new Color(1,1,1,alpha);
+                if(found){float aw=animated?TrialBombBlastMotion.VisibleWidth:key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleWidth;float ah=animated?TrialBombBlastMotion.VisibleHeight:key==Olca.Presentation.Field.SharedAttackPropCatalog.Bomb?Olca.Presentation.Field.SharedAttackPropCatalog.BombVisibleHeight:Olca.Presentation.Field.SharedAttackPropCatalog.BlastVisibleHeight;image.rectTransform.sizeDelta=new Vector2(sprite.bounds.size.x*visibleWidth/aw,sprite.bounds.size.y*visibleHeight/ah)*pixelsPerWorldUnit;}
                 var parent=(RectTransform)image.transform.parent;var mask=parent.GetComponent<RectMask2D>();mask.enabled=clip.HasValue;
                 float half=image.rectTransform.sizeDelta.x/(2*pixelsPerWorldUnit),left=x-half,right=x+half;
                 if(clip.HasValue){left=Mathf.Max(left,clip.Value.Left/(float)OutsideMovementDefinition.UnitsPerWorldUnit);right=Mathf.Min(right,clip.Value.Right/(float)OutsideMovementDefinition.UnitsPerWorldUnit);}
@@ -957,7 +958,7 @@ namespace Olca.Presentation.Exploration
                 var visible=TrialBombThrowMotion.FlightPosition(flight,frame);
                 Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/flight.Launch.FlightDuration);
             }
-            foreach(var blast in blasts){float alpha=.9f*(1f-(frame-blast.Frame)/(float)blast.VisualFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
+            foreach(var blast in blasts){long age=frame-blast.Frame;if(age<0||age>=blast.VisualFrames)continue;var animation=(bombBlastMotion??(bombBlastMotion=new TrialBombBlastMotion())).Resolve(age,blast.VisualFrames);float alpha=.9f*(1f-(frame-blast.Frame)/(float)blast.VisualFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip,animation:animation);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();
@@ -1161,6 +1162,21 @@ namespace Olca.Presentation.Exploration
             var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all==null||all.Length!=6)return null;var ordered=new Sprite[6];for(int i=0;i<6;i++){var found=Array.FindAll(all,s=>s!=null&&s.name==stem+"_"+i);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||found[0].pivot!=new Vector2(128,128))return null;ordered[i]=found[0];}return ordered;
         }
         public void Dispose(){disposed=true;frames=airFrames=null;}
+    }
+    /// <summary>実着弾の既存表示期間へ6コマを配分する。飛翔・命中・保存は所有しない。</summary>
+    public sealed class TrialBombBlastMotion : System.IDisposable
+    {
+        public const float VisibleWidth=230f/100f,VisibleHeight=90f/100f;
+        private readonly System.Func<string,Sprite[]> load;private Sprite[] frames;private bool tried,disposed;
+        public TrialBombBlastMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(long age,int duration)=>duration<=0||age<0||age>=duration?-1:(int)(age*6/duration);
+        public Sprite Resolve(long age,int duration)
+        {
+            int frame=FrameIndex(age,duration);if(disposed||frame<0)return null;
+            if(!tried){tried=true;var all=load("OlcaCharacterMotion/trial_bomb_blast_sheet");if(all!=null&&all.Length==6){var ordered=new Sprite[6];for(int i=0;i<6;i++){var found=Array.FindAll(all,s=>s!=null&&s.name=="trial_bomb_blast_"+i);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||found[0].pivot!=new Vector2(128,128))return null;ordered[i]=found[0];}frames=ordered;}}
+            return frames?[frame];
+        }
+        public void Dispose(){disposed=true;frames=null;}
     }
     /// <summary>地上/空中射撃の試用姿勢。既存の行動時計だけを読む。</summary>
     public sealed class TrialShotBodyMotion : System.IDisposable

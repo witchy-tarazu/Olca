@@ -1,0 +1,445 @@
+fileFormatVersion: 2
+guid: 05b7308422e4c9dae98a521301f45d9f
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1129689517621543188
+    second: trial_bomb_blast_sheet_0
+  - first:
+      213: 66358591321807452
+    second: trial_bomb_blast_sheet_1
+  - first:
+      213: 8188374712157943658
+    second: trial_bomb_blast_sheet_2
+  - first:
+      213: 3180691474823301866
+    second: trial_bomb_blast_sheet_3
+  - first:
+      213: -6535136494352641339
+    second: trial_bomb_blast_sheet_4
+  - first:
+      213: 7070246023910364306
+    second: trial_bomb_blast_sheet_5
+  - first:
+      213: 7929235828581208211
+    second: trial_bomb_blast_sheet_6
+  - first:
+      213: -8172102817541875854
+    second: trial_bomb_blast_sheet_7
+  - first:
+      213: -4935147177813603460
+    second: trial_bomb_blast_sheet_8
+  - first:
+      213: -4139559070979679881
+    second: trial_bomb_blast_sheet_9
+  - first:
+      213: -2679617309916082410
+    second: trial_bomb_blast_sheet_10
+  - first:
+      213: -2465504510642036288
+    second: trial_bomb_blast_sheet_11
+  - first:
+      213: -1722875994165660149
+    second: trial_bomb_blast_sheet_12
+  - first:
+      213: -3737766935005604138
+    second: trial_bomb_blast_sheet_13
+  - first:
+      213: 3266132663866305164
+    second: trial_bomb_blast_sheet_14
+  - first:
+      213: 2862925234340594932
+    second: trial_bomb_blast_sheet_15
+  - first:
+      213: 4076811384381489892
+    second: trial_bomb_blast_sheet_16
+  - first:
+      213: -6737454327685667147
+    second: trial_bomb_blast_sheet_17
+  - first:
+      213: 7739757152845043542
+    second: trial_bomb_blast_sheet_18
+  - first:
+      213: 4147940040007076222
+    second: trial_bomb_blast_sheet_19
+  - first:
+      213: -6387351276446813338
+    second: trial_bomb_blast_sheet_20
+  - first:
+      213: 9185925626560923331
+    second: trial_bomb_blast_sheet_21
+  - first:
+      213: -5778182310517529760
+    second: trial_bomb_blast_sheet_22
+  - first:
+      213: -7520461197002180369
+    second: trial_bomb_blast_sheet_23
+  - first:
+      213: -6090840003452530557
+    second: trial_bomb_blast_sheet_24
+  - first:
+      213: 6245353941791096556
+    second: trial_bomb_blast_sheet_25
+  - first:
+      213: 4218036157369829059
+    second: trial_bomb_blast_sheet_26
+  - first:
+      213: -7009852910065304682
+    second: trial_bomb_blast_sheet_27
+  - first:
+      213: 4001328515851227643
+    second: trial_bomb_blast_sheet_28
+  - first:
+      213: -668834367626874488
+    second: trial_bomb_blast_sheet_29
+  - first:
+      213: -7538134030161626329
+    second: trial_bomb_blast_sheet_30
+  - first:
+      213: 2306766457548682277
+    second: trial_bomb_blast_sheet_31
+  - first:
+      213: 6662951103924653136
+    second: trial_bomb_blast_sheet_32
+  - first:
+      213: -1604023188685308715
+    second: trial_bomb_blast_sheet_33
+  - first:
+      213: -6139976836973265806
+    second: trial_bomb_blast_sheet_34
+  - first:
+      213: -5423427917892132641
+    second: trial_bomb_blast_sheet_35
+  - first:
+      213: -5197997298040218110
+    second: trial_bomb_blast_sheet_36
+  - first:
+      213: -8574552755869934916
+    second: trial_bomb_blast_sheet_37
+  - first:
+      213: 5674256661847632927
+    second: trial_bomb_blast_sheet_38
+  - first:
+      213: -2332438563261008633
+    second: trial_bomb_blast_sheet_39
+  - first:
+      213: 4081761623181375234
+    second: trial_bomb_blast_sheet_40
+  - first:
+      213: -8450445106242412884
+    second: trial_bomb_blast_sheet_41
+  - first:
+      213: -4088225990630217157
+    second: trial_bomb_blast_sheet_42
+  - first:
+      213: -8495682387075427823
+    second: trial_bomb_blast_0
+  - first:
+      213: 409033745253160607
+    second: trial_bomb_blast_1
+  - first:
+      213: -7022630153282608880
+    second: trial_bomb_blast_2
+  - first:
+      213: 8382109289457059474
+    second: trial_bomb_blast_3
+  - first:
+      213: -2985558006368222999
+    second: trial_bomb_blast_4
+  - first:
+      213: 7099962557401879388
+    second: trial_bomb_blast_5
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_bomb_blast_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11293d981e5491a80800000000000000
+      internalID: -8495682387075427823
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_blast_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f9656fe260e2da500800000000000000
+      internalID: 409033745253160607
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_blast_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 011a4a4451b9a8e90800000000000000
+      internalID: -7022630153282608880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_blast_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 296079a0dfb335470800000000000000
+      internalID: 8382109289457059474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_blast_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e04916bfca2196d0800000000000000
+      internalID: -2985558006368222999
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_bomb_blast_5
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5353882452288260800000000000000
+      internalID: 7099962557401879388
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_bomb_blast_0: -8495682387075427823
+      trial_bomb_blast_1: 409033745253160607
+      trial_bomb_blast_2: -7022630153282608880
+      trial_bomb_blast_3: 8382109289457059474
+      trial_bomb_blast_4: -2985558006368222999
+      trial_bomb_blast_5: 7099962557401879388
+      trial_bomb_blast_sheet_0: -1129689517621543188
+      trial_bomb_blast_sheet_1: 66358591321807452
+      trial_bomb_blast_sheet_10: -2679617309916082410
+      trial_bomb_blast_sheet_11: -2465504510642036288
+      trial_bomb_blast_sheet_12: -1722875994165660149
+      trial_bomb_blast_sheet_13: -3737766935005604138
+      trial_bomb_blast_sheet_14: 3266132663866305164
+      trial_bomb_blast_sheet_15: 2862925234340594932
+      trial_bomb_blast_sheet_16: 4076811384381489892
+      trial_bomb_blast_sheet_17: -6737454327685667147
+      trial_bomb_blast_sheet_18: 7739757152845043542
+      trial_bomb_blast_sheet_19: 4147940040007076222
+      trial_bomb_blast_sheet_2: 8188374712157943658
+      trial_bomb_blast_sheet_20: -6387351276446813338
+      trial_bomb_blast_sheet_21: 9185925626560923331
+      trial_bomb_blast_sheet_22: -5778182310517529760
+      trial_bomb_blast_sheet_23: -7520461197002180369
+      trial_bomb_blast_sheet_24: -6090840003452530557
+      trial_bomb_blast_sheet_25: 6245353941791096556
+      trial_bomb_blast_sheet_26: 4218036157369829059
+      trial_bomb_blast_sheet_27: -7009852910065304682
+      trial_bomb_blast_sheet_28: 4001328515851227643
+      trial_bomb_blast_sheet_29: -668834367626874488
+      trial_bomb_blast_sheet_3: 3180691474823301866
+      trial_bomb_blast_sheet_30: -7538134030161626329
+      trial_bomb_blast_sheet_31: 2306766457548682277
+      trial_bomb_blast_sheet_32: 6662951103924653136
+      trial_bomb_blast_sheet_33: -1604023188685308715
+      trial_bomb_blast_sheet_34: -6139976836973265806
+      trial_bomb_blast_sheet_35: -5423427917892132641
+      trial_bomb_blast_sheet_36: -5197997298040218110
+      trial_bomb_blast_sheet_37: -8574552755869934916
+      trial_bomb_blast_sheet_38: 5674256661847632927
+      trial_bomb_blast_sheet_39: -2332438563261008633
+      trial_bomb_blast_sheet_4: -6535136494352641339
+      trial_bomb_blast_sheet_40: 4081761623181375234
+      trial_bomb_blast_sheet_41: -8450445106242412884
+      trial_bomb_blast_sheet_42: -4088225990630217157
+      trial_bomb_blast_sheet_5: 7070246023910364306
+      trial_bomb_blast_sheet_6: 7929235828581208211
+      trial_bomb_blast_sheet_7: -8172102817541875854
+      trial_bomb_blast_sheet_8: -4935147177813603460
+      trial_bomb_blast_sheet_9: -4139559070979679881
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
