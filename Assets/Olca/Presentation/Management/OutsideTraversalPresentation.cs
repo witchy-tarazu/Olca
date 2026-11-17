@@ -136,6 +136,18 @@ namespace Olca.Presentation.Exploration
         private TrialShotBodyMotion trialShotBody;
         private TrialSpearBodyMotion trialSpearBody;
         private TrialWideSwordEffect trialWideSwordEffect;
+        private TrialSupportBodyMotion trialSupportBody;private long supportPulseSeen,supportPulseSuppressed;private int supportPulseFacing;private string supportPulseStyle;
+        private void PaintSupportFeedback(){healingCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);shieldActivationCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);}
+        private Sprite TrialSupportSprite()
+        {
+            long heal=healingCanvas?.PulseOrder??0,shield=shieldActivationCanvas?.PulseOrder??0,order=Math.Max(heal,shield);if(order==0||order<supportPulseSeen||order<=supportPulseSuppressed)return null;
+            var actor=presentation?.Player;var core=presentation?.Core;if(order>supportPulseSeen){supportPulseSeen=order;supportPulseFacing=core?.Facing??1;supportPulseStyle=actor?.DepartureStyle.Id;}
+            bool costume=actor!=null&&(actor.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.BasicId||actor.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
+            bool bomb=presentation?.InstantBombReleasedAt>=0&&core!=null&&core.Frame-presentation.InstantBombReleasedAt<TrialBombThrowMotion.InstantReleaseVisualFrames;
+            if(presentation?.IsCurrent!=true||actor==null||core==null||!costume||actor.IsDead||actor.IsStaggered||actor.IsParalyzed||!core.IsGrounded||core.IsMoving||core.IsDashing||presentation.IsDeckEditingLocation||presentation.HasAttackAction||presentation.NormalKickKind.HasValue||presentation.IsCharging||bomb||core.Facing!=supportPulseFacing||actor.DepartureStyle.Id!=supportPulseStyle){supportPulseSuppressed=Math.Max(supportPulseSuppressed,order);return null;}
+            bool isShield=shield>heal;float age=isShield?shieldActivationCanvas.AnimationAge:healingCanvas.AnimationAge;return (trialSupportBody??(trialSupportBody=new TrialSupportBodyMotion())).Resolve(isShield,age,actor.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
+        }
+
         private Sprite TrialShotSprite()
         {
             if(presentation?.IsFiringShot!=true||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
@@ -855,7 +867,7 @@ namespace Olca.Presentation.Exploration
             if(feedbackCanvas==null&&style!=null)feedbackCanvas=gameObject.AddComponent<OutsideCombatFeedbackCanvas>();if(feedbackCanvas==null)return;var owner=context;var lease=presentation;
             feedbackCanvas.Bind(lease?.Player,style,()=>this!=null&&ReferenceEquals(context,owner)&&owner?.IsCurrent==true&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)lease.Core.Position/OutsideMovementDefinition.UnitsPerWorldUnit,(float)lease.Core.Height/OutsideMovementDefinition.UnitsPerWorldUnit+player.rectTransform.rect.height/pixelsPerWorldUnit+.2f),pixelsPerWorldUnit);
         }
-        private void ClearCombatFeedback(){shieldActivationCanvas?.Unbind();shieldHitCanvas?.Unbind();healingCanvas?.Unbind();feedbackCanvas?.Unbind();feedbackObstacles.Clear();}
+        private void ClearCombatFeedback(){trialSupportBody?.Dispose();trialSupportBody=null;supportPulseSeen=supportPulseSuppressed=0;supportPulseStyle=null;shieldActivationCanvas?.Unbind();shieldHitCanvas?.Unbind();healingCanvas?.Unbind();feedbackCanvas?.Unbind();feedbackObstacles.Clear();}
         private void RenderCombatFeedback(float camera,float verticalOffset)
         {
             shieldActivationCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);healingCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);shieldHitCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);
@@ -1201,6 +1213,19 @@ namespace Olca.Presentation.Exploration
         public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&Array.Exists(clips,c=>c!=null&&Array.IndexOf(c,sprite)>=0);
         public void Dispose(){disposed=true;Array.Clear(clips,0,clips.Length);}
     }
+    /// <summary>回復・防御の成立後の試用身振り。既存エフェクトの時計を読むだけで行動を拘束しない。</summary>
+    public sealed class TrialSupportBodyMotion:System.IDisposable
+    {
+        private readonly System.Func<string,Sprite[]> load;private readonly Sprite[][] clips=new Sprite[2][];private readonly bool[] tried=new bool[2];private bool disposed;
+        public TrialSupportBodyMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        public static int FrameIndex(bool shield,float age){float duration=shield?OutsideShieldActivationSpriteCanvas.Duration:OutsideHealingSpriteCanvas.Duration;return age<0||age>=duration?-1:(shield?3:0)+Mathf.Min(2,Mathf.FloorToInt(age*3/duration));}
+        public Sprite Resolve(bool shield,float age,bool fire=false)
+        {
+            int frame=FrameIndex(shield,age);if(disposed||frame<0)return null;int key=fire?1:0;if(!tried[key]){tried[key]=true;string stem=fire?"trial_fire_support_body":"trial_support_body";var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all!=null&&all.Length==6){var ordered=new Sprite[6];for(int n=0;n<6;n++){var found=Array.FindAll(all,x=>x!=null&&x.name==stem+"_"+n);if(found.Length!=1||found[0].rect.size!=new Vector2(256,256)||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||found[0].pivot!=new Vector2(128,14))return null;ordered[n]=found[0];}clips[key]=ordered;}}return clips[key]?[frame];
+        }
+        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&Array.Exists(clips,c=>c!=null&&Array.IndexOf(c,sprite)>=0);
+        public void Dispose(){disposed=true;Array.Clear(clips,0,clips.Length);}
+    }
     /// <summary>ワイドソードの試用6コマ。従来の予兆2/命中後12フレームと表示領域を維持する。</summary>
     public sealed class TrialWideSwordEffect : System.IDisposable
     {
@@ -1381,6 +1406,10 @@ namespace Olca.Presentation.Exploration
         protected abstract float PulseDuration{get;}
         private Olca.Core.Domain.PlayerCharacter actor;private Func<bool> live;private Image body,effect;private Sprite[] frames;private float age,scale;private int lastDraw=-1;
         public bool IsAnimating=>effect!=null&&effect.enabled;
+        private static long nextPulseOrder;private long pulseOrder;
+        public long PulseOrder=>IsAnimating?pulseOrder:0;
+        public float AnimationAge=>IsAnimating?age:-1;
+
         protected static int ResolveFrame(float elapsed,float duration)=>elapsed<0||elapsed>=duration?-1:Mathf.Min(5,Mathf.FloorToInt(elapsed*(6f/duration)));
         public void Bind(Olca.Core.Domain.PlayerCharacter value,Func<bool> isLive,Image anchor,float pixelsPerUnit)
         {Unbind();if(value==null||isLive==null||anchor==null||pixelsPerUnit<=0)return;actor=value;live=isLive;body=anchor;scale=pixelsPerUnit;Subscribe(actor);}
@@ -1392,7 +1421,7 @@ namespace Olca.Presentation.Exploration
             if(frames==null){var source=Resources.LoadAll<Sprite>("OlcaCharacterMotion/"+SheetStem+"_sheet");frames=Enumerable.Range(0,6).Select(n=>source.FirstOrDefault(s=>s.name==SheetStem+"_"+n&&s.rect.size==new Vector2(256,256)&&Mathf.Approximately(s.pixelsPerUnit,100)&&s.pivot==new Vector2(128,128))).ToArray();}
             if(frames.Any(s=>s==null))return;
             if(effect==null){var go=new GameObject(EffectName,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);effect=go.GetComponent<Image>();effect.raycastTarget=false;}
-            age=0;lastDraw=-1;effect.sprite=frames[0];effect.color=Color.white;effect.enabled=true;Place();
+            age=0;lastDraw=-1;pulseOrder=System.Threading.Interlocked.Increment(ref nextPulseOrder);effect.sprite=frames[0];effect.color=Color.white;effect.enabled=true;Place();
         }
         private void Place()
         {
@@ -1406,7 +1435,7 @@ namespace Olca.Presentation.Exploration
             if(lastDraw!=drawFrame){if(lastDraw!=-1)age+=Mathf.Max(0,delta);lastDraw=drawFrame;}
             int n=ResolveFrame(age,PulseDuration);if(n<0){effect.enabled=false;effect.sprite=null;return;}effect.sprite=frames[n];Place();
         }
-        public void Unbind(){if(actor!=null)Unsubscribe(actor);actor=null;live=null;body=null;frames=null;age=0;lastDraw=-1;if(effect!=null){effect.enabled=false;effect.sprite=null;}}
+        public void Unbind(){if(actor!=null)Unsubscribe(actor);actor=null;live=null;body=null;frames=null;age=0;pulseOrder=0;lastDraw=-1;if(effect!=null){effect.enabled=false;effect.sprite=null;}}
         protected virtual void OnDisable()=>Unbind();
         protected virtual void OnDestroy()=>Unbind();
     }
