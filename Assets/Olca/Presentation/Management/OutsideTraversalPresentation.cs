@@ -134,6 +134,7 @@ namespace Olca.Presentation.Exploration
         private TrialBombThrowMotion trialBombMotion;
         private TrialSwordSwingMotion trialSwordMotion;
         private TrialShotBodyMotion trialShotBody;
+        private TrialSpearBodyMotion trialSpearBody;
         private Sprite TrialShotSprite()
         {
             if(presentation?.IsFiringShot!=true||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
@@ -142,6 +143,8 @@ namespace Olca.Presentation.Exploration
         private Sprite TrialSwordSprite()
         {
             if(presentation?.IsSwingingSword!=true||presentation.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed||presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.BasicId&&presentation.Player.DepartureStyle.Id!=Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id)return null;
+            // スピアだけ水平な構え・突き・復帰へ接続し、欠損時は既存の表示を保つ。
+            if(presentation.SwordSwingCardId==Olca.Core.Domain.TrialInitialCardDefinitions.Spear){var spear=(trialSpearBody??(trialSpearBody=new TrialSpearBodyMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id,presentation.Core.IsGrounded);if(spear!=null)return spear;}
             // 地上/空中と衣装に合う専用6コマを表示し、欠損時だけ既存の試用姿勢へ戻す。
             var dedicated=(trialSwordMotion??(trialSwordMotion=new TrialSwordSwingMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id,presentation.Core.IsGrounded);if(dedicated!=null)return dedicated;
             return (trialBombMotion??(trialBombMotion=new TrialBombThrowMotion())).Resolve(presentation.SwordSwingElapsed,presentation.SwordSwingStartup,presentation.SwordSwingRecovery,presentation.Core.IsGrounded,presentation.Player.DepartureStyle.Id==Olca.Core.Domain.DepartureStyleDefinition.TrialFire.Id);
@@ -320,7 +323,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialShotBody?.Dispose();trialShotBody=null;initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){trialSpearBody?.Dispose();trialSpearBody=null;trialShotBody?.Dispose();trialShotBody=null;initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -913,9 +916,9 @@ namespace Olca.Presentation.Exploration
             if(polishedSwordTrail==null){var go=new GameObject("OutsideSwordSpriteTrail",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);polishedSwordTrail=go.GetComponent<Image>();polishedSwordTrail.raycastTarget=false;polishedSwordTrail.rectTransform.anchorMin=polishedSwordTrail.rectTransform.anchorMax=new Vector2(0,.21f);}
             bool windup=age<0;int facing=action?core.Facing:strike.Facing;float unit=OutsideMovementDefinition.UnitsPerWorldUnit;
             float reach=(action?presentation.SwordSwingReach:strike.Reach)/unit,vertical=action?presentation.SwordSwingVerticalScale:strike.VerticalScale;
-            // 専用本体には剣が描き込まれているため、共用propを二重表示しない。
-            bool bodyHasSword=trialSwordMotion?.Contains(player.sprite)==true;
-            if(bodyHasSword)trialSwordImage.enabled=false;
+            // 専用武器とスピアの中断後の末尾には、共用の剣propを重ねない。
+            bool bodyHasWeapon=trialSwordMotion?.Contains(player.sprite)==true||trialSpearBody?.Contains(player.sprite)==true||(action?presentation.SwordSwingCardId:strike.CardId)==Olca.Core.Domain.TrialInitialCardDefinitions.Spear;
+            if(bodyHasWeapon)trialSwordImage.enabled=false;
             else{
             if(trialSwordAssets==null)trialSwordAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
             if(trialSwordImage.sprite==null){if(!Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Sword,out var sprite,trialSwordAssets))throw new InvalidOperationException("共用ソード素材がありません");trialSwordImage.sprite=sprite;trialSwordImage.rectTransform.pivot=sprite.pivot/sprite.rect.size;}
@@ -1163,6 +1166,24 @@ namespace Olca.Presentation.Exploration
         {
             int n=FrameIndex(elapsed,startup,recovery,grounded);if(disposed||n<0)return null;int key=fire?1:0;
             if(!tried[key]){tried[key]=true;string stem=fire?"trial_fire_shot_body":"trial_shot_body";var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all!=null&&all.Length==6){var found=new Sprite[6];for(int k=0;k<6;k++){var matches=Array.FindAll(all,v=>v!=null&&v.name==stem+"_"+k);if(matches.Length!=1||matches[0].rect.width!=256||matches[0].rect.height!=256||Mathf.Abs(matches[0].pixelsPerUnit-100)>.001f||Vector2.Distance(matches[0].pivot,new Vector2(128,14))>.001f)return null;found[k]=matches[0];}clips[key]=found;}}
+            return clips[key]?[n];
+        }
+        public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&Array.Exists(clips,c=>c!=null&&Array.IndexOf(c,sprite)>=0);
+        public void Dispose(){disposed=true;Array.Clear(clips,0,clips.Length);}
+    }
+    /// <summary>スピアの試用3姿勢×地上/空中。行動時計を参照し、命中・保存を所有しない。</summary>
+    public sealed class TrialSpearBodyMotion : System.IDisposable
+    {
+        private readonly System.Func<string,Sprite[]> load;
+        private readonly Sprite[][] clips=new Sprite[2][];
+        private readonly bool[] tried=new bool[2];private bool disposed;
+        public TrialSpearBodyMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
+        // 構えは前隙全体、突きは既存の命中開始から後隙前半、後半で復帰する。
+        public static int FrameIndex(long elapsed,int startup,int recovery,bool grounded=true){if(elapsed<0||startup<0||recovery<0||elapsed>=startup+(long)recovery)return -1;return (grounded?0:3)+(elapsed<startup?0:elapsed-startup<Math.Max(1,recovery/2)?1:2);}
+        public Sprite Resolve(long elapsed,int startup,int recovery,bool fire=false,bool grounded=true)
+        {
+            int n=FrameIndex(elapsed,startup,recovery,grounded);if(disposed||n<0)return null;int key=fire?1:0;
+            if(!tried[key]){tried[key]=true;string stem=fire?"trial_fire_spear_body":"trial_spear_body";var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all!=null&&all.Length==6){var found=new Sprite[6];for(int k=0;k<6;k++){var matches=Array.FindAll(all,v=>v!=null&&v.name==stem+"_"+k);if(matches.Length!=1||matches[0].rect.width!=256||matches[0].rect.height!=256||Mathf.Abs(matches[0].pixelsPerUnit-100)>.001f||Vector2.Distance(matches[0].pivot,new Vector2(128,14))>.001f)return null;found[k]=matches[0];}clips[key]=found;}}
             return clips[key]?[n];
         }
         public bool Contains(Sprite sprite)=>!disposed&&sprite!=null&&Array.Exists(clips,c=>c!=null&&Array.IndexOf(c,sprite)>=0);
