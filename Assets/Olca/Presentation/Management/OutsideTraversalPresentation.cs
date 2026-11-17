@@ -972,7 +972,12 @@ namespace Olca.Presentation.Exploration
                 var visible=TrialBombThrowMotion.FlightPosition(flight,frame);
                 Part(Olca.Presentation.Field.SharedAttackPropCatalog.Bomb,visible.x,visible.y,.5f,.5f,1f,-flight.Launch.Facing*360f*age/flight.Launch.FlightDuration);
             }
-            foreach(var blast in blasts){long age=frame-blast.Frame;if(age<0||age>=blast.VisualFrames)continue;var animation=(bombBlastMotion??(bombBlastMotion=new TrialBombBlastMotion())).Resolve(age,blast.VisualFrames);float alpha=.9f*(1f-(frame-blast.Frame)/(float)blast.VisualFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip,animation:animation);}
+            foreach(var blast in blasts){long age=frame-blast.Frame;if(age<0||age>=blast.VisualFrames)continue;var animation=(bombBlastMotion??(bombBlastMotion=new TrialBombBlastMotion())).Resolve(age,blast.VisualFrames);float alpha=.9f*(1f-(frame-blast.Frame)/(float)blast.VisualFrames);var clip=OutsideBombOcclusion.HorizontalBounds(presentation.Core.TraversalProfile?.Walls,blast.SourceX,blast.X,blast.Height);if(animation!=null){
+                // 三つの細い火花ではなく、既存の連番を比率を保って一つの爆発として見せる。
+                float width=2f*OutsideBombLaunchData.Radius/OutsideMovementDefinition.UnitsPerWorldUnit;
+                float height=width*TrialBombBlastMotion.VisibleHeight/TrialBombBlastMotion.VisibleWidth;
+                Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+height*.5f,width,height,alpha,clip:clip,animation:animation);
+            }else for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
         private readonly List<Image> initialShotImages=new List<Image>();
