@@ -10,6 +10,35 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)]
+        public void 通常マップ帰着と操作範囲の右端は登録済み全地形で待機しても被弾しない(int profileIndex)
+        {
+            var profiles=new[]{OutsideTraversalProfile.ValidationWater,OutsideTraversalProfile.ValidationDoubleJump,OutsideTraversalProfile.ValidationPit,OutsideTraversalProfile.ValidationWall(true),OutsideTraversalProfile.ValidationWall(false),OutsideTraversalProfile.ValidationDash};
+            foreach(long offset in new[]{0L,OutsideTrialRoute.DoorRadius})using(var s=new OutsideExplorationSession(true)){
+                Assert.IsTrue(s.TryConfigureTraversal(profiles[profileIndex]));s.TryInitializePlayer(()=>new PlayerCharacter(100));s.RecoverOutside(OutsideTrialRoute.DoorHomePoint);var state=s.Core.CaptureState();state.Position+=offset;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+                Assert.Greater(OutsideExplorationSession.TrialTargetX-s.Core.Position,OutsideExplorationSession.TrialContactHalfWidth+s.Core.TraversalProfile.BodyHalfWidth);Assert.IsTrue(OutsideTrialRoute.CanUseDoor(s.Core));
+                using(var lease=s.AttachPresentation()){for(int n=0;n<600;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsTrue(OutsideTrialRoute.CanUseDoor(s.Core));for(int n=0;n<20;n++)s.TickTraversal(1);Assert.Less(s.Player.CurrentHp,100,"敵へ近づく既存接触ダメージは維持");}
+            }
+        }
+        [TestCase(false)][TestCase(true)] public void 通常マップ帰着の旧十七半world保存は厳密復元で維持し通常再開だけ安全地点へ戻す(bool normalContinue)
+        {
+            using(var source=new OutsideExplorationSession(true))using(var cold=new OutsideExplorationSession(true)){
+                source.TryInitializePlayer(()=>new PlayerCharacter(100));source.RecoverOutside(OutsideTrialRoute.DoorHomePoint);var state=source.Core.CaptureState();state.Position=1050000;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(source.Core,new object[]{state});source.Player.SetHp(37);
+                var runtime=source.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(source.Player);actor.Id=runtime.Id;var before=PortableCheckpointJson.Serialize(runtime);cold.ClassifyStartupRestore(normalContinue);Assert.IsTrue(cold.RestoreForPresentation(actor,runtime,OutsideTrialRoute.DoorHomePoint));Assert.AreEqual(normalContinue?OutsideTrialRoute.HomeDoorX:1050000,cold.Core.Position);Assert.AreEqual(normalContinue?100:37,cold.Player.CurrentHp);
+                using(var lease=cold.AttachPresentation()){cold.TickTraversal(0);Assert.AreEqual(normalContinue?100:27,cold.Player.CurrentHp);}
+                CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(runtime));Assert.AreEqual(37,actor.Player.Hp);
+            }
+        }
+        [Test] public void 通常マップ帰着の扉保存失敗と再試行は元の別マップを維持し成功後だけ安全に帰る()
+        {
+            using(var s=new OutsideExplorationSession(true)){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));var cards=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();Assert.IsTrue(s.QueueSelectedDeck("arrival337",cards,Owned(cards),new SeededBattleRandom(337),out _));Walk155(s,10*OutsideMovementDefinition.UnitsPerWorldUnit);s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);var defs=Door239Definitions(s);var store=new Style231Store{Fail=true};var save=new ClearReturnSession(store);
+                using(var lease=s.AttachPresentation()){var actor=s.Player;long frame=s.Core.Frame;Assert.IsFalse(s.TryTravelThroughDoor(save,defs,out _));Assert.AreSame(actor,s.Player);Assert.IsTrue(lease.IsCurrent);Assert.AreEqual(OutsideTrialRoute.AnnexMapId,s.Core.TrialMapId);Assert.AreEqual(frame,s.Core.Frame);store.Fail=false;Assert.IsTrue(s.TryTravelThroughDoor(save,defs,out var error),error);Assert.IsFalse(lease.IsCurrent);}
+                Assert.IsNull(s.Core.TrialMapId);Assert.AreEqual(OutsideTrialRoute.HomeDoorX,s.Core.Position);Assert.AreEqual(OutsideTrialRoute.HomeDoorX,save.Snapshot.OutsideRuntimeSave.Core.Position);Assert.AreEqual(OutsideTrialRoute.DoorHomePoint,save.Snapshot.OutsideRecoveryPointId);
+                using(var lease=s.AttachPresentation())for(int n=0;n<600;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
+
         [Test] public void 試用別マップへ偽装したソード途中保存は元Sessionを変えず拒否する()
         {
             using(var s=Sword161(startup:3,recovery:8))using(var cold=Heal158()){
@@ -94,7 +123,7 @@ namespace Olca.Tests
             var missing=Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(profile,null);Assert.IsFalse(missing[2].Completed);Assert.AreEqual(3,missing.Count);Assert.Throws<System.ArgumentNullException>(()=>Olca.Core.Logic.Integration.OutsideTrialGoalOverview.Build(null,route));
         }
 
-        [TestCase("trial-find-recovery",false,6d)][TestCase("trial-clear-two-floors",false,20d)][TestCase("trial-visit-annex",true,17.5d)]
+        [TestCase("trial-find-recovery",false,6d)][TestCase("trial-clear-two-floors",false,20d)][TestCase("trial-visit-annex",true,16.5d)]
         public void 試用ナビは同一マップの目的地と別マップの出口を区別する(string id,bool exit,double x)
         {
             var nav=new OutsideTrialNavigation();Assert.IsTrue(nav.Select(id));var t=nav.Resolve(OutsideMapRevealTrial.HomeMapId);Assert.AreEqual(exit,t.ViaExit);Assert.AreEqual(x*OutsideMovementDefinition.UnitsPerWorldUnit,t.GuidePosition);

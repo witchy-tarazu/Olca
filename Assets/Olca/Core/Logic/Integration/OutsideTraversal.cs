@@ -125,7 +125,8 @@ namespace Olca.Core.Logic.Integration
         public static bool CanRecover(OutsideExplorationCore core)=>core!=null&&core.TrialMapId==null&&core.Definition.Id=="validation-landing-32"&&core.IsGrounded&&core.Height==0&&Math.Abs(core.Position-RecoveryX)<=OutsideMovementDefinition.UnitsPerWorldUnit;
         // A/Bは既存地形を使った往復確認用。正式マップや解放条件ではない。
         public const string AnnexMapId="trial-annex-v1",DoorHomePoint="trial-door-home-v1",DoorAnnexPoint="trial-door-annex-v1";
-        public const long HomeDoorX=1050000,AnnexDoorX=360000,DoorRadius=30000;
+        // 帰着中心と右端の操作範囲を試用敵18worldの接触幅から離す。地点ID/旧Runtime座標は変換しない。
+        public const long HomeDoorX=990000,AnnexDoorX=360000,DoorRadius=30000;
         public static bool KnownMap(string id)=>id==null||id==AnnexMapId;
         public static bool KnownRecovery(string point)=>point==null||point==RecoveryPointId||point==DoorHomePoint||point==DoorAnnexPoint;
         public static string MapForRecovery(string point){if(!KnownRecovery(point))throw new ArgumentException("復帰先が未登録です");return point==DoorAnnexPoint?AnnexMapId:null;}
