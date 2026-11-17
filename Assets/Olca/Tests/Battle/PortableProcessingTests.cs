@@ -525,6 +525,61 @@ namespace Olca.Tests.Battle
 {
     public sealed class TrialInitialCardOutsideTests
     {
+        [TestCase(TrialInitialCardDefinitions.Shot,1,false)]
+        [TestCase(TrialInitialCardDefinitions.Shot,-1,false)]
+        [TestCase(TrialInitialCardDefinitions.AirShot,1,false)]
+        [TestCase(TrialInitialCardDefinitions.AirShot,-1,true)]
+        public void 別マップ直進弾は通常発動し見えない元マップ標的へ命中せず六十frameで消える(string id,int facing,bool air)
+        {
+            using(var s=Outside271(id,out var defs)){
+                s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Go(s,14*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==id);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==id));s.TickTraversal(facing);if(air)s.TickTraversal(0,true,true);
+                    long rev=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;var card=s.Cards.SelectedCard;
+                    Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.AreEqual(gauge-card.GetFinalCost()*OutsideCardGauge.UnitsPerPoint,s.Core.CardGauge.CurrentUnits);
+                    Frames(s,6);Assert.AreEqual(1,s.InitialShots.Count);var shot=s.InitialShots.Single();Assert.AreEqual(facing,shot.Facing);long frame=s.Core.Frame;for(int n=0;n<20;n++)Assert.IsFalse(s.AdvancePlayerFrame());Assert.AreEqual(frame,s.Core.Frame);
+                    Frames(s,59);Assert.AreEqual(1,s.InitialShots.Count);Frames(s,1);Assert.IsEmpty(s.InitialShots);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);
+                }
+                var data=s.CaptureRuntime(defs);Assert.IsNull(data.TrialTarget);Assert.IsNull(data.SecondTrialTarget);
+            }
+        }
+        [TestCase(1)][TestCase(6)][TestCase(18)][TestCase(65)]
+        public void 別マップ直進弾の前隙飛翔寿命直前のcoldは消費と発射を重複しない(int age)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.AirShot,out var defs))using(var cold=new OutsideExplorationSession()){
+                s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Go(s,14*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==TrialInitialCardDefinitions.AirShot);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==TrialInitialCardDefinitions.AirShot));Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,age);
+                }
+                var data=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;long rev=s.Cards.HandRevision;var bytes=PortableCheckpointJson.Serialize(data);
+                Assert.IsTrue(cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes),OutsideTrialRoute.DoorAnnexPoint,defs));Assert.IsFalse(cold.RestoreSavedState(actor,data,OutsideTrialRoute.DoorAnnexPoint,defs));
+                using(var lease=cold.AttachPresentation()){Frames(cold,90);Assert.IsEmpty(cold.InitialShots);Assert.AreEqual(rev,cold.Cards.HandRevision);Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.SecondTrialTarget.CurrentHp);}
+                CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(data));Assert.IsNull(cold.CaptureRuntime(defs).TrialTarget);
+            }
+        }
+        [Test] public void 別マップ直進弾の保存失敗再試行は弾と消費を保持しcold後も見えない命中を作らない()
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out var defs))using(var cold=new OutsideExplorationSession()){
+                s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Go(s,14*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==TrialInitialCardDefinitions.Shot);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==TrialInitialCardDefinitions.Shot));s.Player.SetHp(50);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,18);
+                    var before=PortableCheckpointJson.Serialize(s.InitialShots.ToArray());long rev=s.Cards.HandRevision;var store=new FlyingItemStore();store.Value.OutsideRecoveryPointId=OutsideTrialRoute.DoorAnnexPoint;var save=new ClearReturnSession(store);var item=OutsideRecoveryItemDefinition.Provisional;
+                    Assert.IsFalse(s.TryUseRecoveryItem(save,item,defs,out _));Assert.AreEqual(50,s.Player.CurrentHp);Assert.AreEqual(2,store.Value.OutsideInventory.Items[0].Count);Assert.AreEqual(0,s.ItemCooldownRemaining(item.Id));CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(s.InitialShots.ToArray()));Assert.AreEqual(rev,s.Cards.HandRevision);
+                    store.Fail=false;Assert.IsTrue(s.TryUseRecoveryItem(save,item,defs,out var error),error);Assert.AreEqual(75,s.Player.CurrentHp);Assert.AreEqual(1,store.Value.OutsideInventory.Items[0].Count);Assert.IsTrue(cold.RestoreSavedState(store.Value.OutsidePlayerSave,store.Value.OutsideRuntimeSave,OutsideTrialRoute.DoorAnnexPoint,defs));
+                }
+                using(var lease=cold.AttachPresentation()){Frames(cold,90);Assert.AreEqual(120,cold.TrialTarget.CurrentHp);Assert.IsEmpty(cold.InitialShots);}Assert.IsNull(cold.CaptureRuntime(defs).TrialTarget);
+            }
+        }
+        [Test] public void 別マップ直進弾は回復によるマップ移動で消え元マップへ持ち越さない()
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out var defs)){
+                s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Go(s,14*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==TrialInitialCardDefinitions.Shot);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==TrialInitialCardDefinitions.Shot));Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,6);Assert.AreEqual(1,s.InitialShots.Count);
+                }
+                s.RecoverOutside(OutsideTrialRoute.DoorHomePoint);Assert.IsEmpty(s.InitialShots);Assert.IsFalse(s.IsAttacking);Assert.IsNull(s.Core.TrialMapId);Assert.IsNull(s.CaptureRuntime(defs).InitialShots);
+            }
+        }
         [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.Spear)]
         [TestCase(TrialInitialCardDefinitions.WideSword)] [TestCase(TrialInitialCardDefinitions.AirShot)]
         public void 探索の新四品も実命中でヒットストップし弾と攻撃の時計を止める(string id)
