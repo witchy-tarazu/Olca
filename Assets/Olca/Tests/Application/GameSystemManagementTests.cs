@@ -2100,5 +2100,68 @@ namespace Olca.Tests.Application
             chrome.SetCovered(false);Assert.AreEqual(.4f,original.alpha);Assert.IsFalse(original.interactable);Assert.IsTrue(original.blocksRaycasts);Assert.IsFalse(original.enabled);Assert.AreEqual(collectionActive,chrome.Collection.gameObject.activeSelf);
             var added=chrome.Pause.GetComponent<CanvasGroup>();Assert.AreEqual(1,added.alpha);Assert.IsTrue(added.blocksRaycasts);Assert.IsTrue(added.interactable);chrome.SetCovered(false);
         }
+
+        [TestCase(-.01f,-1)] [TestCase(0f,0)] [TestCase(.099f,0)] [TestCase(.1f,1)] [TestCase(.3f,3)] [TestCase(.599f,5)] [TestCase(.6f,-1)]
+        public void 回復光粒は六枚の短い表示だけを持つ(float elapsed,int expected){Assert.AreEqual(expected,Olca.Presentation.Exploration.OutsideHealingSpriteCanvas.FrameIndex(elapsed));}
+        [Test] public void 回復光粒は正の実回復だけに反応し停止と重複描画と解除を守る()
+        {
+            var root=new GameObject("HealingTest",typeof(RectTransform));var bodyGo=new GameObject("Body",typeof(RectTransform),typeof(Image));bodyGo.transform.SetParent(root.transform,false);var body=bodyGo.GetComponent<Image>();body.rectTransform.anchoredPosition=new Vector2(20,30);body.rectTransform.localScale=new Vector3(-1,1,1);var canvas=root.AddComponent<Olca.Presentation.Exploration.OutsideHealingSpriteCanvas>();var actor=new Olca.Core.Domain.PlayerCharacter(100);bool live=true;
+            try{canvas.Bind(actor,()=>live,body,100);
+            actor.Heal(10);
+            Assert.IsFalse(canvas.IsAnimating);
+            actor.TakeDamage(30);
+            Assert.IsFalse(canvas.IsAnimating);
+            actor.Heal(10);
+            Assert.AreEqual(80,actor.CurrentHp);
+            Assert.IsTrue(canvas.IsAnimating);
+            var fx=root.transform.Find("OutsideHealingEffect").GetComponent<Image>();
+            Assert.IsFalse(fx.raycastTarget);
+            Assert.Less(fx.transform.GetSiblingIndex(),body.transform.GetSiblingIndex());
+            Assert.AreEqual(new Vector2(20,155),fx.rectTransform.anchoredPosition);
+            Assert.AreEqual(Vector3.one,fx.rectTransform.localScale);
+            canvas.Paint(0,1);
+            Assert.AreEqual("trial_healing_effect_0",fx.sprite.name);
+            canvas.Paint(.2f,1);
+            Assert.AreEqual("trial_healing_effect_0",fx.sprite.name);
+            canvas.Paint(0,2);
+            Assert.AreEqual("trial_healing_effect_0",fx.sprite.name);
+            canvas.Paint(.2f,3);
+            Assert.AreEqual("trial_healing_effect_2",fx.sprite.name);
+            body.rectTransform.anchoredPosition=new Vector2(40,60);
+            canvas.Paint(0,4);
+            Assert.AreEqual(new Vector2(40,185),fx.rectTransform.anchoredPosition);
+            actor.Heal(5);
+            Assert.AreEqual("trial_healing_effect_0",fx.sprite.name);
+            canvas.Paint(0,5);
+            canvas.Paint(.6f,6);
+            Assert.IsFalse(canvas.IsAnimating);
+            Assert.IsNull(fx.sprite);
+            live=false;
+            actor.Heal(5);
+            Assert.IsFalse(canvas.IsAnimating);
+            live=true;
+            canvas.Unbind();
+            actor.Heal(5);
+            Assert.IsFalse(canvas.IsAnimating);
+            canvas.Bind(actor,()=>true,body,100);
+            actor.Heal(1);
+            Assert.IsTrue(canvas.IsAnimating);
+            root.SetActive(false);
+            // EditModeでは非ExecuteAlwaysのUnityメッセージは自動配信されないため、解除ハンドラを明示検証する。
+            typeof(Olca.Presentation.Exploration.OutsideHealingSpriteCanvas).GetMethod("OnDisable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(canvas,null);
+            Assert.IsFalse(canvas.IsAnimating);
+            root.SetActive(true);
+            actor.Heal(1);
+            Assert.IsFalse(canvas.IsAnimating);
+            Assert.NotNull(Resources.LoadAll<Sprite>("OlcaCharacterMotion/trial_healing_effect_sheet").First().texture);
+            }
+            finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public void 回復光粒の連番は透過と中心規格を保つ()
+        {
+            var frames=Resources.LoadAll<Sprite>("OlcaCharacterMotion/trial_healing_effect_sheet");Assert.AreEqual(6,frames.Length);for(int n=0;n<6;n++){var frame=frames.Single(x=>x.name=="trial_healing_effect_"+n);Assert.AreEqual(new Vector2(256,256),frame.rect.size);Assert.AreEqual(new Vector2(128,128),frame.pivot);Assert.AreEqual(100,frame.pixelsPerUnit);}
+            var texture=new Texture2D(2,2);try{Assert.IsTrue(texture.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(UnityEngine.Application.dataPath,"Resources/OlcaCharacterMotion/trial_healing_effect_sheet.png"))));Assert.AreEqual(768,texture.width);Assert.AreEqual(512,texture.height);var pixels=texture.GetPixels32();Assert.IsTrue(pixels.All(x=>x.a==0||x.a==255));for(int n=0;n<6;n++){int ox=n%3*256,oy=(1-n/3)*256;int count=0;for(int y=0;y<256;y++)for(int x=0;x<256;x++){var c=pixels[(oy+y)*768+ox+x];if(c.a==0)continue;count++;Assert.IsTrue(x>0&&x<255&&y>0&&y<255);}Assert.Greater(count,0);}}
+            finally{UnityEngine.Object.DestroyImmediate(texture);}
+        }
     }
 }
