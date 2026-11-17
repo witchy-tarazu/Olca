@@ -681,6 +681,7 @@ namespace Olca.Core.Domain
         public void SetBarrier(int hp, int? durationFrames = null)
         {
             protection.Set(Math.Max(0, hp), false, durationFrames);
+            if(HasBarrier)OnBarrierApplied?.Invoke(BarrierHp);
         }
 
         /// <summary>
@@ -812,6 +813,8 @@ namespace Olca.Core.Domain
         private void ReportCombatFeedback(CombatFeedbackKind kind,int amount=0)
         { if((kind==CombatFeedbackKind.Damage||kind==CombatFeedbackKind.Healing)&&amount<=0)return;OnCombatFeedback?.Invoke(new CombatFeedback(kind,amount)); }
 
+        /// <summary>実際の防御付与の表示通知。防御量・寿命や保存を所有しない。</summary>
+        public event Action<int> OnBarrierApplied;
         public event Action<int, int> OnHpChanged; // (currentHp, maxHp)
 
         /// <summary>

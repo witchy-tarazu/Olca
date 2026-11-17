@@ -1,0 +1,545 @@
+fileFormatVersion: 2
+guid: ba7690823795e7ae7a019db1ffeb13d5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1606207686401983696
+    second: trial_shield_activation_sheet_0
+  - first:
+      213: -1221847285143752018
+    second: trial_shield_activation_sheet_1
+  - first:
+      213: -1598111715432500697
+    second: trial_shield_activation_sheet_2
+  - first:
+      213: -9157628169117339817
+    second: trial_shield_activation_sheet_3
+  - first:
+      213: -103588753908227442
+    second: trial_shield_activation_sheet_4
+  - first:
+      213: 257034947120150957
+    second: trial_shield_activation_sheet_5
+  - first:
+      213: 5849701214161784914
+    second: trial_shield_activation_sheet_6
+  - first:
+      213: 852301275963878042
+    second: trial_shield_activation_sheet_7
+  - first:
+      213: 2375316576673617442
+    second: trial_shield_activation_sheet_8
+  - first:
+      213: -1106885963520731506
+    second: trial_shield_activation_sheet_9
+  - first:
+      213: 7664527103542517721
+    second: trial_shield_activation_sheet_10
+  - first:
+      213: 4328034237536251385
+    second: trial_shield_activation_sheet_11
+  - first:
+      213: 3635514539080605877
+    second: trial_shield_activation_sheet_12
+  - first:
+      213: 3389035022026218056
+    second: trial_shield_activation_sheet_13
+  - first:
+      213: -4934247592769687399
+    second: trial_shield_activation_sheet_14
+  - first:
+      213: -7044454755635031340
+    second: trial_shield_activation_sheet_15
+  - first:
+      213: -3369264368521465690
+    second: trial_shield_activation_sheet_16
+  - first:
+      213: 7371329890772810291
+    second: trial_shield_activation_sheet_17
+  - first:
+      213: -2564563866015308148
+    second: trial_shield_activation_sheet_18
+  - first:
+      213: 4251663710760988368
+    second: trial_shield_activation_sheet_19
+  - first:
+      213: -1196671041351173205
+    second: trial_shield_activation_sheet_20
+  - first:
+      213: 151804347423918477
+    second: trial_shield_activation_sheet_21
+  - first:
+      213: 1908402358183094204
+    second: trial_shield_activation_sheet_22
+  - first:
+      213: -8964981496696178775
+    second: trial_shield_activation_sheet_23
+  - first:
+      213: -4599335243862580545
+    second: trial_shield_activation_sheet_24
+  - first:
+      213: -6617791482651192644
+    second: trial_shield_activation_sheet_25
+  - first:
+      213: -8366390147610402471
+    second: trial_shield_activation_sheet_26
+  - first:
+      213: -3036998875469918100
+    second: trial_shield_activation_sheet_27
+  - first:
+      213: 4960690229386435159
+    second: trial_shield_activation_sheet_28
+  - first:
+      213: 5341998569760382077
+    second: trial_shield_activation_sheet_29
+  - first:
+      213: 1293636706820980926
+    second: trial_shield_activation_sheet_30
+  - first:
+      213: 134431895597440851
+    second: trial_shield_activation_sheet_31
+  - first:
+      213: -6936326838475016151
+    second: trial_shield_activation_sheet_32
+  - first:
+      213: 4194439735446161774
+    second: trial_shield_activation_sheet_33
+  - first:
+      213: 4393858951875221994
+    second: trial_shield_activation_sheet_34
+  - first:
+      213: 2741151080604313133
+    second: trial_shield_activation_sheet_35
+  - first:
+      213: 2928695139311651969
+    second: trial_shield_activation_sheet_36
+  - first:
+      213: 808015068173321524
+    second: trial_shield_activation_sheet_37
+  - first:
+      213: 5346513584211600805
+    second: trial_shield_activation_sheet_38
+  - first:
+      213: 5371418433188326314
+    second: trial_shield_activation_sheet_39
+  - first:
+      213: 5379255686839949843
+    second: trial_shield_activation_sheet_40
+  - first:
+      213: 1905969382723583425
+    second: trial_shield_activation_sheet_41
+  - first:
+      213: 1341336428876607665
+    second: trial_shield_activation_sheet_42
+  - first:
+      213: -1460093589594168111
+    second: trial_shield_activation_sheet_43
+  - first:
+      213: -8266011392872996079
+    second: trial_shield_activation_sheet_44
+  - first:
+      213: -4034163584182144004
+    second: trial_shield_activation_sheet_45
+  - first:
+      213: 7704443980778468348
+    second: trial_shield_activation_sheet_46
+  - first:
+      213: -9221480394060859829
+    second: trial_shield_activation_sheet_47
+  - first:
+      213: -7386621772810968992
+    second: trial_shield_activation_sheet_48
+  - first:
+      213: -5540792293525346893
+    second: trial_shield_activation_sheet_49
+  - first:
+      213: 2957138665969338887
+    second: trial_shield_activation_sheet_50
+  - first:
+      213: -2279393822944354690
+    second: trial_shield_activation_sheet_51
+  - first:
+      213: 8437321605282722552
+    second: trial_shield_activation_sheet_52
+  - first:
+      213: -1918280873790100986
+    second: trial_shield_activation_sheet_53
+  - first:
+      213: 5793867581935771453
+    second: trial_shield_activation_sheet_54
+  - first:
+      213: -8507538368491764792
+    second: trial_shield_activation_sheet_55
+  - first:
+      213: -7556737402407474560
+    second: trial_shield_activation_sheet_56
+  - first:
+      213: -698035775594528453
+    second: trial_shield_activation_sheet_57
+  - first:
+      213: -4409057250336463960
+    second: trial_shield_activation_sheet_58
+  - first:
+      213: 2508103451329987997
+    second: trial_shield_activation_sheet_59
+  - first:
+      213: 6497521306427383911
+    second: trial_shield_activation_sheet_60
+  - first:
+      213: -7422614846460188193
+    second: trial_shield_activation_sheet_61
+  - first:
+      213: -6303472662205347581
+    second: trial_shield_activation_sheet_62
+  - first:
+      213: 6870431052612842906
+    second: trial_shield_activation_sheet_63
+  - first:
+      213: 8534881336970165139
+    second: trial_shield_activation_sheet_64
+  - first:
+      213: 576433966013319327
+    second: trial_shield_activation_sheet_65
+  - first:
+      213: -1992993958773215588
+    second: trial_shield_activation_sheet_66
+  - first:
+      213: 3260321655085817975
+    second: trial_shield_activation_sheet_67
+  - first:
+      213: 8271782147008905099
+    second: trial_shield_activation_0
+  - first:
+      213: -1846195842456088263
+    second: trial_shield_activation_1
+  - first:
+      213: 7348389017868661179
+    second: trial_shield_activation_2
+  - first:
+      213: 9019333471961984896
+    second: trial_shield_activation_3
+  - first:
+      213: 7341413850233987207
+    second: trial_shield_activation_4
+  - first:
+      213: 3314073356867190623
+    second: trial_shield_activation_5
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_shield_activation_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8f32e379064bc270800000000000000
+      internalID: 8271782147008905099
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_activation_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9311a90b9aef066e0800000000000000
+      internalID: -1846195842456088263
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_activation_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb17179d0e8baf560800000000000000
+      internalID: 7348389017868661179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_activation_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 08fa51b910c1b2d70800000000000000
+      internalID: 9019333471961984896
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_activation_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78064541001f1e560800000000000000
+      internalID: 7341413850233987207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_activation_5
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5fb7abc824fdfd20800000000000000
+      internalID: 3314073356867190623
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_shield_activation_0: 8271782147008905099
+      trial_shield_activation_1: -1846195842456088263
+      trial_shield_activation_2: 7348389017868661179
+      trial_shield_activation_3: 9019333471961984896
+      trial_shield_activation_4: 7341413850233987207
+      trial_shield_activation_5: 3314073356867190623
+      trial_shield_activation_sheet_0: 1606207686401983696
+      trial_shield_activation_sheet_1: -1221847285143752018
+      trial_shield_activation_sheet_10: 7664527103542517721
+      trial_shield_activation_sheet_11: 4328034237536251385
+      trial_shield_activation_sheet_12: 3635514539080605877
+      trial_shield_activation_sheet_13: 3389035022026218056
+      trial_shield_activation_sheet_14: -4934247592769687399
+      trial_shield_activation_sheet_15: -7044454755635031340
+      trial_shield_activation_sheet_16: -3369264368521465690
+      trial_shield_activation_sheet_17: 7371329890772810291
+      trial_shield_activation_sheet_18: -2564563866015308148
+      trial_shield_activation_sheet_19: 4251663710760988368
+      trial_shield_activation_sheet_2: -1598111715432500697
+      trial_shield_activation_sheet_20: -1196671041351173205
+      trial_shield_activation_sheet_21: 151804347423918477
+      trial_shield_activation_sheet_22: 1908402358183094204
+      trial_shield_activation_sheet_23: -8964981496696178775
+      trial_shield_activation_sheet_24: -4599335243862580545
+      trial_shield_activation_sheet_25: -6617791482651192644
+      trial_shield_activation_sheet_26: -8366390147610402471
+      trial_shield_activation_sheet_27: -3036998875469918100
+      trial_shield_activation_sheet_28: 4960690229386435159
+      trial_shield_activation_sheet_29: 5341998569760382077
+      trial_shield_activation_sheet_3: -9157628169117339817
+      trial_shield_activation_sheet_30: 1293636706820980926
+      trial_shield_activation_sheet_31: 134431895597440851
+      trial_shield_activation_sheet_32: -6936326838475016151
+      trial_shield_activation_sheet_33: 4194439735446161774
+      trial_shield_activation_sheet_34: 4393858951875221994
+      trial_shield_activation_sheet_35: 2741151080604313133
+      trial_shield_activation_sheet_36: 2928695139311651969
+      trial_shield_activation_sheet_37: 808015068173321524
+      trial_shield_activation_sheet_38: 5346513584211600805
+      trial_shield_activation_sheet_39: 5371418433188326314
+      trial_shield_activation_sheet_4: -103588753908227442
+      trial_shield_activation_sheet_40: 5379255686839949843
+      trial_shield_activation_sheet_41: 1905969382723583425
+      trial_shield_activation_sheet_42: 1341336428876607665
+      trial_shield_activation_sheet_43: -1460093589594168111
+      trial_shield_activation_sheet_44: -8266011392872996079
+      trial_shield_activation_sheet_45: -4034163584182144004
+      trial_shield_activation_sheet_46: 7704443980778468348
+      trial_shield_activation_sheet_47: -9221480394060859829
+      trial_shield_activation_sheet_48: -7386621772810968992
+      trial_shield_activation_sheet_49: -5540792293525346893
+      trial_shield_activation_sheet_5: 257034947120150957
+      trial_shield_activation_sheet_50: 2957138665969338887
+      trial_shield_activation_sheet_51: -2279393822944354690
+      trial_shield_activation_sheet_52: 8437321605282722552
+      trial_shield_activation_sheet_53: -1918280873790100986
+      trial_shield_activation_sheet_54: 5793867581935771453
+      trial_shield_activation_sheet_55: -8507538368491764792
+      trial_shield_activation_sheet_56: -7556737402407474560
+      trial_shield_activation_sheet_57: -698035775594528453
+      trial_shield_activation_sheet_58: -4409057250336463960
+      trial_shield_activation_sheet_59: 2508103451329987997
+      trial_shield_activation_sheet_6: 5849701214161784914
+      trial_shield_activation_sheet_60: 6497521306427383911
+      trial_shield_activation_sheet_61: -7422614846460188193
+      trial_shield_activation_sheet_62: -6303472662205347581
+      trial_shield_activation_sheet_63: 6870431052612842906
+      trial_shield_activation_sheet_64: 8534881336970165139
+      trial_shield_activation_sheet_65: 576433966013319327
+      trial_shield_activation_sheet_66: -1992993958773215588
+      trial_shield_activation_sheet_67: 3260321655085817975
+      trial_shield_activation_sheet_7: 852301275963878042
+      trial_shield_activation_sheet_8: 2375316576673617442
+      trial_shield_activation_sheet_9: -1106885963520731506
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
