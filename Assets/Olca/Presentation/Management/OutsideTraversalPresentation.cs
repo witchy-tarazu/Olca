@@ -843,18 +843,20 @@ namespace Olca.Presentation.Exploration
     {
         private OutsideCombatFeedbackCanvas feedbackCanvas;
         private OutsideHealingSpriteCanvas healingCanvas;
+        private OutsideShieldHitSpriteCanvas shieldHitCanvas;
         private readonly List<RectTransform> feedbackObstacles=new List<RectTransform>();
         public void ConfigureCombatFeedback(Olca.Presentation.Effects.CombatNumberStyle style)
         {
             trialNumberStyle=style;BindTrialTargetFeedback();
             if(healingCanvas==null)healingCanvas=gameObject.AddComponent<OutsideHealingSpriteCanvas>();var healingOwner=context;var healingLease=presentation;healingCanvas.Bind(healingLease?.Player,()=>this!=null&&ReferenceEquals(context,healingOwner)&&healingOwner?.IsCurrent==true&&ReferenceEquals(presentation,healingLease)&&healingLease.IsCurrent,player,pixelsPerWorldUnit);
+            if(shieldHitCanvas==null)shieldHitCanvas=gameObject.AddComponent<OutsideShieldHitSpriteCanvas>();shieldHitCanvas.Bind(healingLease?.Player,()=>this!=null&&ReferenceEquals(context,healingOwner)&&healingOwner?.IsCurrent==true&&ReferenceEquals(presentation,healingLease)&&healingLease.IsCurrent,player,pixelsPerWorldUnit);
             if(feedbackCanvas==null&&style!=null)feedbackCanvas=gameObject.AddComponent<OutsideCombatFeedbackCanvas>();if(feedbackCanvas==null)return;var owner=context;var lease=presentation;
             feedbackCanvas.Bind(lease?.Player,style,()=>this!=null&&ReferenceEquals(context,owner)&&owner?.IsCurrent==true&&ReferenceEquals(presentation,lease)&&lease.IsCurrent,()=>new Vector2((float)lease.Core.Position/OutsideMovementDefinition.UnitsPerWorldUnit,(float)lease.Core.Height/OutsideMovementDefinition.UnitsPerWorldUnit+player.rectTransform.rect.height/pixelsPerWorldUnit+.2f),pixelsPerWorldUnit);
         }
-        private void ClearCombatFeedback(){healingCanvas?.Unbind();feedbackCanvas?.Unbind();feedbackObstacles.Clear();}
+        private void ClearCombatFeedback(){shieldHitCanvas?.Unbind();healingCanvas?.Unbind();feedbackCanvas?.Unbind();feedbackObstacles.Clear();}
         private void RenderCombatFeedback(float camera,float verticalOffset)
         {
-            healingCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);
+            healingCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);shieldHitCanvas?.Paint(Olca.Unity.BattleVisualClock.DeltaTime,Time.frameCount);
             if(feedbackCanvas==null||feedbackCanvas.ActiveCount==0)return;feedbackObstacles.Clear();if(mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0)feedbackObstacles.Add(mapNameLabel.rectTransform);if(recoveryPoint!=null)feedbackObstacles.Add((RectTransform)recoveryPoint.transform);if(reloadPoint!=null&&reloadPoint.gameObject.activeInHierarchy)feedbackObstacles.Add(reloadPoint);if(entrance!=null)feedbackObstacles.Add((RectTransform)entrance.transform);foreach(var slot in supplySlots)if(slot?.Button!=null)feedbackObstacles.Add((RectTransform)slot.Button.transform);
             if(trialTargetName!=null)feedbackObstacles.Add(trialTargetPlate);if(trialTargetGauge!=null&&trialTargetGauge.enabled)feedbackObstacles.Add(trialTargetGauge.rectTransform);if(secondTrialGauge!=null&&secondTrialGauge.enabled)feedbackObstacles.Add(secondTrialGauge.rectTransform);float floor=-((RectTransform)transform).rect.height*.29f;feedbackCanvas.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,floor+(world.y-verticalOffset)*pixelsPerWorldUnit),feedbackObstacles,mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0?mapNameLabel.rectTransform:null);
         }
@@ -1346,36 +1348,60 @@ namespace Olca.Presentation.Exploration
 
 namespace Olca.Presentation.Exploration
 {
-    /// <summary>実際に受理されたHP回復だけを短い光粒で示す。回復処理や本体画像は変更しない。</summary>
-    public sealed class OutsideHealingSpriteCanvas:MonoBehaviour
+    /// <summary>確定済み表示通知を六枚の借用Spriteへ写す。回復と吸収の寿命は別instanceで所有する。</summary>
+    public abstract class OutsideFeedbackSpriteCanvas:MonoBehaviour
     {
-        public const float Duration=.6f;
+        protected abstract Olca.Core.Domain.CombatFeedbackKind Trigger{get;}
+        protected abstract string SheetStem{get;}
+        protected abstract string EffectName{get;}
+        protected abstract float PulseDuration{get;}
         private Olca.Core.Domain.PlayerCharacter actor;private Func<bool> live;private Image body,effect;private Sprite[] frames;private float age,scale;private int lastDraw=-1;
         public bool IsAnimating=>effect!=null&&effect.enabled;
-        public static int FrameIndex(float elapsed)=>elapsed<0||elapsed>=Duration?-1:Mathf.Min(5,Mathf.FloorToInt(elapsed*10));
+        protected static int ResolveFrame(float elapsed,float duration)=>elapsed<0||elapsed>=duration?-1:Mathf.Min(5,Mathf.FloorToInt(elapsed*(6f/duration)));
         public void Bind(Olca.Core.Domain.PlayerCharacter value,Func<bool> isLive,Image anchor,float pixelsPerUnit)
         {Unbind();if(value==null||isLive==null||anchor==null||pixelsPerUnit<=0)return;actor=value;live=isLive;body=anchor;scale=pixelsPerUnit;actor.OnCombatFeedback+=OnFeedback;}
         private void OnFeedback(Olca.Core.Domain.CombatFeedback value)
         {
-            if(value.Kind!=Olca.Core.Domain.CombatFeedbackKind.Healing||value.Amount<=0||live?.Invoke()!=true||body==null||!body.isActiveAndEnabled)return;
-            if(frames==null){var source=Resources.LoadAll<Sprite>("OlcaCharacterMotion/trial_healing_effect_sheet");frames=Enumerable.Range(0,6).Select(n=>source.FirstOrDefault(s=>s.name=="trial_healing_effect_"+n&&s.rect.size==new Vector2(256,256)&&Mathf.Approximately(s.pixelsPerUnit,100)&&s.pivot==new Vector2(128,128))).ToArray();}
+            if(value.Kind!=Trigger||value.Amount<=0||live?.Invoke()!=true||body==null||!body.isActiveAndEnabled)return;
+            if(frames==null){var source=Resources.LoadAll<Sprite>("OlcaCharacterMotion/"+SheetStem+"_sheet");frames=Enumerable.Range(0,6).Select(n=>source.FirstOrDefault(s=>s.name==SheetStem+"_"+n&&s.rect.size==new Vector2(256,256)&&Mathf.Approximately(s.pixelsPerUnit,100)&&s.pivot==new Vector2(128,128))).ToArray();}
             if(frames.Any(s=>s==null))return;
-            if(effect==null){var go=new GameObject("OutsideHealingEffect",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);effect=go.GetComponent<Image>();effect.raycastTarget=false;}
+            if(effect==null){var go=new GameObject(EffectName,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);effect=go.GetComponent<Image>();effect.raycastTarget=false;}
             age=0;lastDraw=-1;effect.sprite=frames[0];effect.color=Color.white;effect.enabled=true;Place();
         }
         private void Place()
         {
             var rect=effect.rectTransform;rect.anchorMin=body.rectTransform.anchorMin;rect.anchorMax=body.rectTransform.anchorMax;rect.pivot=new Vector2(.5f,.5f);rect.anchoredPosition=body.rectTransform.anchoredPosition+Vector2.up*(1.25f*scale);rect.sizeDelta=Vector2.one*(3*scale);rect.localScale=Vector3.one;
-            // 胴体と顔の前に粒を重ねず、左右向きでも同じ空間へ立ち上げる。
+            // 胴体と顔の前へ重ねず、左右向きでも同じ空間へ追従させる。
             int before=body.transform.GetSiblingIndex();if(effect.transform.GetSiblingIndex()<before)before--;effect.transform.SetSiblingIndex(before);
         }
         public void Paint(float delta,int drawFrame)
         {
             if(live?.Invoke()!=true||body==null||!body.isActiveAndEnabled){Unbind();return;}if(!IsAnimating)return;
             if(lastDraw!=drawFrame){if(lastDraw!=-1)age+=Mathf.Max(0,delta);lastDraw=drawFrame;}
-            int n=FrameIndex(age);if(n<0){effect.enabled=false;effect.sprite=null;return;}effect.sprite=frames[n];Place();
+            int n=ResolveFrame(age,PulseDuration);if(n<0){effect.enabled=false;effect.sprite=null;return;}effect.sprite=frames[n];Place();
         }
         public void Unbind(){if(actor!=null)actor.OnCombatFeedback-=OnFeedback;actor=null;live=null;body=null;frames=null;age=0;lastDraw=-1;if(effect!=null){effect.enabled=false;effect.sprite=null;}}
-        private void OnDisable()=>Unbind();
+        protected virtual void OnDisable()=>Unbind();
+        protected virtual void OnDestroy()=>Unbind();
+    }
+    /// <summary>実際に増加したHPだけを示す既存の回復演出。</summary>
+    public sealed class OutsideHealingSpriteCanvas:OutsideFeedbackSpriteCanvas
+    {
+        public const float Duration=.6f;
+        public static int FrameIndex(float elapsed)=>ResolveFrame(elapsed,Duration);
+        protected override Olca.Core.Domain.CombatFeedbackKind Trigger=>Olca.Core.Domain.CombatFeedbackKind.Healing;
+        protected override string SheetStem=>"trial_healing_effect";
+        protected override string EffectName=>"OutsideHealingEffect";
+        protected override float PulseDuration=>Duration;
+    }
+    /// <summary>バリアが実際に吸収した通知だけを示す。残耐久や防御時間は変更しない。</summary>
+    public sealed class OutsideShieldHitSpriteCanvas:OutsideFeedbackSpriteCanvas
+    {
+        public const float Duration=.3f;
+        public static int FrameIndex(float elapsed)=>ResolveFrame(elapsed,Duration);
+        protected override Olca.Core.Domain.CombatFeedbackKind Trigger=>Olca.Core.Domain.CombatFeedbackKind.BarrierDamage;
+        protected override string SheetStem=>"trial_shield_hit_effect";
+        protected override string EffectName=>"OutsideShieldHitEffect";
+        protected override float PulseDuration=>Duration;
     }
 }

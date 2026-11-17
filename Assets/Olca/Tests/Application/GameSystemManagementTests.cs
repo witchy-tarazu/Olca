@@ -2163,5 +2163,34 @@ namespace Olca.Tests.Application
             var texture=new Texture2D(2,2);try{Assert.IsTrue(texture.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(UnityEngine.Application.dataPath,"Resources/OlcaCharacterMotion/trial_healing_effect_sheet.png"))));Assert.AreEqual(768,texture.width);Assert.AreEqual(512,texture.height);var pixels=texture.GetPixels32();Assert.IsTrue(pixels.All(x=>x.a==0||x.a==255));for(int n=0;n<6;n++){int ox=n%3*256,oy=(1-n/3)*256;int count=0;for(int y=0;y<256;y++)for(int x=0;x<256;x++){var c=pixels[(oy+y)*768+ox+x];if(c.a==0)continue;count++;Assert.IsTrue(x>0&&x<255&&y>0&&y<255);}Assert.Greater(count,0);}}
             finally{UnityEngine.Object.DestroyImmediate(texture);}
         }
+
+        [TestCase(-.01f,-1)] [TestCase(0f,0)] [TestCase(.049f,0)] [TestCase(.05f,1)] [TestCase(.15f,3)] [TestCase(.299f,5)] [TestCase(.3f,-1)]
+        public void シールド吸収光は三百ミリ秒で六枚を終える(float elapsed,int expected){Assert.AreEqual(expected,Olca.Presentation.Exploration.OutsideShieldHitSpriteCanvas.FrameIndex(elapsed));}
+        [Test] public void シールド吸収光は防いだ時だけ出て破壊後のHP被弾では出ない()
+        {
+            var root=new GameObject("ShieldFeedbackTest",typeof(RectTransform));var bodyGo=new GameObject("Body",typeof(RectTransform),typeof(Image));bodyGo.transform.SetParent(root.transform,false);var body=bodyGo.GetComponent<Image>();var canvas=root.AddComponent<Olca.Presentation.Exploration.OutsideShieldHitSpriteCanvas>();var actor=new Olca.Core.Domain.PlayerCharacter(100);bool live=true;
+            try{
+                actor.SetBarrier(15);canvas.Bind(actor,()=>live,body,100);Assert.IsFalse(canvas.IsAnimating);
+                actor.TakeDamage(10);Assert.AreEqual(100,actor.CurrentHp);Assert.AreEqual(5,actor.BarrierHp);Assert.IsTrue(canvas.IsAnimating);
+                var fx=root.transform.Find("OutsideShieldHitEffect").GetComponent<Image>();Assert.IsFalse(fx.raycastTarget);Assert.Less(fx.transform.GetSiblingIndex(),body.transform.GetSiblingIndex());
+                canvas.Paint(0,1);canvas.Paint(0,2);Assert.AreEqual("trial_shield_hit_effect_0",fx.sprite.name);canvas.Paint(.15f,3);Assert.AreEqual("trial_shield_hit_effect_3",fx.sprite.name);canvas.Paint(.15f,3);Assert.AreEqual("trial_shield_hit_effect_3",fx.sprite.name);
+                actor.TakeDamage(10);Assert.AreEqual(100,actor.CurrentHp);Assert.AreEqual(0,actor.BarrierHp);Assert.AreEqual("trial_shield_hit_effect_0",fx.sprite.name);
+                canvas.Paint(0,4);canvas.Paint(.3f,5);Assert.IsFalse(canvas.IsAnimating);actor.TakeDamage(10);Assert.AreEqual(90,actor.CurrentHp);Assert.IsFalse(canvas.IsAnimating);actor.Heal(5);Assert.IsFalse(canvas.IsAnimating);
+                actor.SetBarrier(15);actor.TakeDamage(10);Assert.IsTrue(canvas.IsAnimating);live=false;canvas.Paint(0,6);Assert.IsFalse(canvas.IsAnimating);live=true;actor.TakeDamage(10);Assert.IsFalse(canvas.IsAnimating);
+                canvas.Bind(actor,()=>true,body,100);actor.SetBarrier(15);actor.TakeDamage(10);Assert.IsTrue(canvas.IsAnimating);typeof(Olca.Presentation.Exploration.OutsideShieldHitSpriteCanvas).GetMethod("OnDisable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(canvas,null);Assert.IsFalse(canvas.IsAnimating);actor.TakeDamage(10);Assert.IsFalse(canvas.IsAnimating);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public void シールド吸収光と回復光粒は同時に出ても寿命とHPを混同しない()
+        {
+            var root=new GameObject("TwoFeedbackTest",typeof(RectTransform));var bodyGo=new GameObject("Body",typeof(RectTransform),typeof(Image));bodyGo.transform.SetParent(root.transform,false);var body=bodyGo.GetComponent<Image>();var heal=root.AddComponent<Olca.Presentation.Exploration.OutsideHealingSpriteCanvas>();var shield=root.AddComponent<Olca.Presentation.Exploration.OutsideShieldHitSpriteCanvas>();var actor=new Olca.Core.Domain.PlayerCharacter(100);
+            try{actor.TakeDamage(20);actor.SetBarrier(15);heal.Bind(actor,()=>true,body,100);shield.Bind(actor,()=>true,body,100);actor.Heal(5);Assert.IsTrue(heal.IsAnimating);Assert.IsFalse(shield.IsAnimating);actor.TakeDamage(10);Assert.IsTrue(heal.IsAnimating);Assert.IsTrue(shield.IsAnimating);heal.Paint(0,1);shield.Paint(0,1);heal.Paint(.3f,2);shield.Paint(.3f,2);Assert.IsTrue(heal.IsAnimating);Assert.IsFalse(shield.IsAnimating);Assert.AreEqual("trial_healing_effect_3",root.transform.Find("OutsideHealingEffect").GetComponent<Image>().sprite.name);heal.Paint(.3f,3);Assert.IsFalse(heal.IsAnimating);Assert.AreEqual(85,actor.CurrentHp);Assert.AreEqual(5,actor.BarrierHp);}
+            finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test] public void シールド吸収光は六枚の透過セルと中心規格を守る()
+        {
+            var frames=Resources.LoadAll<Sprite>("OlcaCharacterMotion/trial_shield_hit_effect_sheet");Assert.AreEqual(6,frames.Length);for(int n=0;n<6;n++){var frame=frames.Single(x=>x.name=="trial_shield_hit_effect_"+n);Assert.AreEqual(new Vector2(256,256),frame.rect.size);Assert.AreEqual(new Vector2(128,128),frame.pivot);Assert.AreEqual(100,frame.pixelsPerUnit);}
+            var texture=new Texture2D(2,2);try{Assert.IsTrue(texture.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(UnityEngine.Application.dataPath,"Resources/OlcaCharacterMotion/trial_shield_hit_effect_sheet.png"))));Assert.AreEqual(768,texture.width);Assert.AreEqual(512,texture.height);var pixels=texture.GetPixels32();Assert.IsTrue(pixels.All(x=>x.a==0||x.a==255));for(int n=0;n<6;n++){int count=0,ox=n%3*256,oy=(1-n/3)*256;for(int y=0;y<256;y++)for(int x=0;x<256;x++)if(pixels[(oy+y)*768+ox+x].a!=0){count++;Assert.IsTrue(x>0&&x<255&&y>0&&y<255);}Assert.Greater(count,0);}}
+            finally{UnityEngine.Object.DestroyImmediate(texture);}
+        }
     }
 }

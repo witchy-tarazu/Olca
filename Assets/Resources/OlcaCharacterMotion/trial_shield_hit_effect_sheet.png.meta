@@ -1,0 +1,593 @@
+fileFormatVersion: 2
+guid: 42002cda30e5ded25bac7f4e2e125c03
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8862973387396935706
+    second: trial_shield_hit_effect_sheet_0
+  - first:
+      213: 6077887249537437269
+    second: trial_shield_hit_effect_sheet_1
+  - first:
+      213: 1093763732302827756
+    second: trial_shield_hit_effect_sheet_2
+  - first:
+      213: 6107587301641116963
+    second: trial_shield_hit_effect_sheet_3
+  - first:
+      213: -9101926330679451174
+    second: trial_shield_hit_effect_sheet_4
+  - first:
+      213: -1696199949988201780
+    second: trial_shield_hit_effect_sheet_5
+  - first:
+      213: 7258247679576607726
+    second: trial_shield_hit_effect_sheet_6
+  - first:
+      213: 164865374743485875
+    second: trial_shield_hit_effect_sheet_7
+  - first:
+      213: -3824267194962267509
+    second: trial_shield_hit_effect_sheet_8
+  - first:
+      213: -6489867190382104975
+    second: trial_shield_hit_effect_sheet_9
+  - first:
+      213: -7975673573760578766
+    second: trial_shield_hit_effect_sheet_10
+  - first:
+      213: -7249727427425168258
+    second: trial_shield_hit_effect_sheet_11
+  - first:
+      213: -1340623298616120752
+    second: trial_shield_hit_effect_sheet_12
+  - first:
+      213: 8958113808022060759
+    second: trial_shield_hit_effect_sheet_13
+  - first:
+      213: 7341071168132224519
+    second: trial_shield_hit_effect_sheet_14
+  - first:
+      213: 6612734333554310783
+    second: trial_shield_hit_effect_sheet_15
+  - first:
+      213: -7494217108567942986
+    second: trial_shield_hit_effect_sheet_16
+  - first:
+      213: 3674722013973863717
+    second: trial_shield_hit_effect_sheet_17
+  - first:
+      213: -9203745909340163674
+    second: trial_shield_hit_effect_sheet_18
+  - first:
+      213: -603826640387627310
+    second: trial_shield_hit_effect_sheet_19
+  - first:
+      213: -8140060639634097552
+    second: trial_shield_hit_effect_sheet_20
+  - first:
+      213: 5881748094929705138
+    second: trial_shield_hit_effect_sheet_21
+  - first:
+      213: 9118302106617360534
+    second: trial_shield_hit_effect_sheet_22
+  - first:
+      213: 5057498811503453245
+    second: trial_shield_hit_effect_sheet_23
+  - first:
+      213: 4890945097586093064
+    second: trial_shield_hit_effect_sheet_24
+  - first:
+      213: 1951339341732783544
+    second: trial_shield_hit_effect_sheet_25
+  - first:
+      213: -776011404319743051
+    second: trial_shield_hit_effect_sheet_26
+  - first:
+      213: 1310950198147634282
+    second: trial_shield_hit_effect_sheet_27
+  - first:
+      213: 140010754960791544
+    second: trial_shield_hit_effect_sheet_28
+  - first:
+      213: 2691305656382503286
+    second: trial_shield_hit_effect_sheet_29
+  - first:
+      213: -1891200058065014973
+    second: trial_shield_hit_effect_sheet_30
+  - first:
+      213: 8209718439040277428
+    second: trial_shield_hit_effect_sheet_31
+  - first:
+      213: -1955229714841915801
+    second: trial_shield_hit_effect_sheet_32
+  - first:
+      213: 8098352825571521906
+    second: trial_shield_hit_effect_sheet_33
+  - first:
+      213: 4736683017074775676
+    second: trial_shield_hit_effect_sheet_34
+  - first:
+      213: -3041901785362147637
+    second: trial_shield_hit_effect_sheet_35
+  - first:
+      213: -2877190909247178266
+    second: trial_shield_hit_effect_sheet_36
+  - first:
+      213: 6157926489288375492
+    second: trial_shield_hit_effect_sheet_37
+  - first:
+      213: 3522559455627469964
+    second: trial_shield_hit_effect_sheet_38
+  - first:
+      213: 1774403535201526873
+    second: trial_shield_hit_effect_sheet_39
+  - first:
+      213: 5408623888600988609
+    second: trial_shield_hit_effect_sheet_40
+  - first:
+      213: -6779548140458431553
+    second: trial_shield_hit_effect_sheet_41
+  - first:
+      213: -786464483807029713
+    second: trial_shield_hit_effect_sheet_42
+  - first:
+      213: 3145285090643100724
+    second: trial_shield_hit_effect_sheet_43
+  - first:
+      213: -61048678385857848
+    second: trial_shield_hit_effect_sheet_44
+  - first:
+      213: 7075726967011267575
+    second: trial_shield_hit_effect_sheet_45
+  - first:
+      213: 7316194668048128691
+    second: trial_shield_hit_effect_sheet_46
+  - first:
+      213: -8014693743674946662
+    second: trial_shield_hit_effect_sheet_47
+  - first:
+      213: 7874757303227724449
+    second: trial_shield_hit_effect_sheet_48
+  - first:
+      213: 399524258796916139
+    second: trial_shield_hit_effect_sheet_49
+  - first:
+      213: -9045429555572589510
+    second: trial_shield_hit_effect_sheet_50
+  - first:
+      213: 8266810902886970258
+    second: trial_shield_hit_effect_sheet_51
+  - first:
+      213: 9099136528135952670
+    second: trial_shield_hit_effect_sheet_52
+  - first:
+      213: 8478638573231846485
+    second: trial_shield_hit_effect_sheet_53
+  - first:
+      213: -2317389783986750559
+    second: trial_shield_hit_effect_sheet_54
+  - first:
+      213: -8781129739920375829
+    second: trial_shield_hit_effect_sheet_55
+  - first:
+      213: -6395870319262036320
+    second: trial_shield_hit_effect_sheet_56
+  - first:
+      213: -7874226364593536775
+    second: trial_shield_hit_effect_sheet_57
+  - first:
+      213: -491279675117672923
+    second: trial_shield_hit_effect_sheet_58
+  - first:
+      213: 8122444623624583622
+    second: trial_shield_hit_effect_sheet_59
+  - first:
+      213: 5837627544473067206
+    second: trial_shield_hit_effect_sheet_60
+  - first:
+      213: 4814503879869279530
+    second: trial_shield_hit_effect_sheet_61
+  - first:
+      213: -1547135624968153875
+    second: trial_shield_hit_effect_sheet_62
+  - first:
+      213: 6668608507174357490
+    second: trial_shield_hit_effect_sheet_63
+  - first:
+      213: -3557890334848114813
+    second: trial_shield_hit_effect_sheet_64
+  - first:
+      213: 8758423706832892250
+    second: trial_shield_hit_effect_sheet_65
+  - first:
+      213: 1088472558877740843
+    second: trial_shield_hit_effect_sheet_66
+  - first:
+      213: 4651781213797079600
+    second: trial_shield_hit_effect_sheet_67
+  - first:
+      213: 9195054843842494271
+    second: trial_shield_hit_effect_sheet_68
+  - first:
+      213: 15688923641792320
+    second: trial_shield_hit_effect_sheet_69
+  - first:
+      213: -8514725548881347723
+    second: trial_shield_hit_effect_sheet_70
+  - first:
+      213: -9141743862469140970
+    second: trial_shield_hit_effect_sheet_71
+  - first:
+      213: -8949470138208511955
+    second: trial_shield_hit_effect_sheet_72
+  - first:
+      213: -6349667485408000621
+    second: trial_shield_hit_effect_sheet_73
+  - first:
+      213: -7258238145115461861
+    second: trial_shield_hit_effect_sheet_74
+  - first:
+      213: -5645178001606591414
+    second: trial_shield_hit_effect_sheet_75
+  - first:
+      213: 6799858054877759262
+    second: trial_shield_hit_effect_sheet_76
+  - first:
+      213: -1012766854638969323
+    second: trial_shield_hit_effect_sheet_77
+  - first:
+      213: -6355347342653913677
+    second: trial_shield_hit_effect_sheet_78
+  - first:
+      213: -3754537106660087055
+    second: trial_shield_hit_effect_sheet_79
+  - first:
+      213: 2805520372542282295
+    second: trial_shield_hit_effect_0
+  - first:
+      213: -7144652428991829892
+    second: trial_shield_hit_effect_1
+  - first:
+      213: -4473217993374049174
+    second: trial_shield_hit_effect_2
+  - first:
+      213: 5124426955600565972
+    second: trial_shield_hit_effect_3
+  - first:
+      213: -6621892228632153359
+    second: trial_shield_hit_effect_4
+  - first:
+      213: -6007909770663563608
+    second: trial_shield_hit_effect_5
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_shield_hit_effect_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 73a118f1ae53fe620800000000000000
+      internalID: 2805520372542282295
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_hit_effect_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c786f46487819dc90800000000000000
+      internalID: -7144652428991829892
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_hit_effect_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6cdd066fefebe1c0800000000000000
+      internalID: -4473217993374049174
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_hit_effect_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4d6120e6a2f9d1740800000000000000
+      internalID: 5124426955600565972
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_hit_effect_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f2f5733a105a14a0800000000000000
+      internalID: -6621892228632153359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_shield_hit_effect_5
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8aeeff415ed9f9ca0800000000000000
+      internalID: -6007909770663563608
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_shield_hit_effect_0: 2805520372542282295
+      trial_shield_hit_effect_1: -7144652428991829892
+      trial_shield_hit_effect_2: -4473217993374049174
+      trial_shield_hit_effect_3: 5124426955600565972
+      trial_shield_hit_effect_4: -6621892228632153359
+      trial_shield_hit_effect_5: -6007909770663563608
+      trial_shield_hit_effect_sheet_0: 8862973387396935706
+      trial_shield_hit_effect_sheet_1: 6077887249537437269
+      trial_shield_hit_effect_sheet_10: -7975673573760578766
+      trial_shield_hit_effect_sheet_11: -7249727427425168258
+      trial_shield_hit_effect_sheet_12: -1340623298616120752
+      trial_shield_hit_effect_sheet_13: 8958113808022060759
+      trial_shield_hit_effect_sheet_14: 7341071168132224519
+      trial_shield_hit_effect_sheet_15: 6612734333554310783
+      trial_shield_hit_effect_sheet_16: -7494217108567942986
+      trial_shield_hit_effect_sheet_17: 3674722013973863717
+      trial_shield_hit_effect_sheet_18: -9203745909340163674
+      trial_shield_hit_effect_sheet_19: -603826640387627310
+      trial_shield_hit_effect_sheet_2: 1093763732302827756
+      trial_shield_hit_effect_sheet_20: -8140060639634097552
+      trial_shield_hit_effect_sheet_21: 5881748094929705138
+      trial_shield_hit_effect_sheet_22: 9118302106617360534
+      trial_shield_hit_effect_sheet_23: 5057498811503453245
+      trial_shield_hit_effect_sheet_24: 4890945097586093064
+      trial_shield_hit_effect_sheet_25: 1951339341732783544
+      trial_shield_hit_effect_sheet_26: -776011404319743051
+      trial_shield_hit_effect_sheet_27: 1310950198147634282
+      trial_shield_hit_effect_sheet_28: 140010754960791544
+      trial_shield_hit_effect_sheet_29: 2691305656382503286
+      trial_shield_hit_effect_sheet_3: 6107587301641116963
+      trial_shield_hit_effect_sheet_30: -1891200058065014973
+      trial_shield_hit_effect_sheet_31: 8209718439040277428
+      trial_shield_hit_effect_sheet_32: -1955229714841915801
+      trial_shield_hit_effect_sheet_33: 8098352825571521906
+      trial_shield_hit_effect_sheet_34: 4736683017074775676
+      trial_shield_hit_effect_sheet_35: -3041901785362147637
+      trial_shield_hit_effect_sheet_36: -2877190909247178266
+      trial_shield_hit_effect_sheet_37: 6157926489288375492
+      trial_shield_hit_effect_sheet_38: 3522559455627469964
+      trial_shield_hit_effect_sheet_39: 1774403535201526873
+      trial_shield_hit_effect_sheet_4: -9101926330679451174
+      trial_shield_hit_effect_sheet_40: 5408623888600988609
+      trial_shield_hit_effect_sheet_41: -6779548140458431553
+      trial_shield_hit_effect_sheet_42: -786464483807029713
+      trial_shield_hit_effect_sheet_43: 3145285090643100724
+      trial_shield_hit_effect_sheet_44: -61048678385857848
+      trial_shield_hit_effect_sheet_45: 7075726967011267575
+      trial_shield_hit_effect_sheet_46: 7316194668048128691
+      trial_shield_hit_effect_sheet_47: -8014693743674946662
+      trial_shield_hit_effect_sheet_48: 7874757303227724449
+      trial_shield_hit_effect_sheet_49: 399524258796916139
+      trial_shield_hit_effect_sheet_5: -1696199949988201780
+      trial_shield_hit_effect_sheet_50: -9045429555572589510
+      trial_shield_hit_effect_sheet_51: 8266810902886970258
+      trial_shield_hit_effect_sheet_52: 9099136528135952670
+      trial_shield_hit_effect_sheet_53: 8478638573231846485
+      trial_shield_hit_effect_sheet_54: -2317389783986750559
+      trial_shield_hit_effect_sheet_55: -8781129739920375829
+      trial_shield_hit_effect_sheet_56: -6395870319262036320
+      trial_shield_hit_effect_sheet_57: -7874226364593536775
+      trial_shield_hit_effect_sheet_58: -491279675117672923
+      trial_shield_hit_effect_sheet_59: 8122444623624583622
+      trial_shield_hit_effect_sheet_6: 7258247679576607726
+      trial_shield_hit_effect_sheet_60: 5837627544473067206
+      trial_shield_hit_effect_sheet_61: 4814503879869279530
+      trial_shield_hit_effect_sheet_62: -1547135624968153875
+      trial_shield_hit_effect_sheet_63: 6668608507174357490
+      trial_shield_hit_effect_sheet_64: -3557890334848114813
+      trial_shield_hit_effect_sheet_65: 8758423706832892250
+      trial_shield_hit_effect_sheet_66: 1088472558877740843
+      trial_shield_hit_effect_sheet_67: 4651781213797079600
+      trial_shield_hit_effect_sheet_68: 9195054843842494271
+      trial_shield_hit_effect_sheet_69: 15688923641792320
+      trial_shield_hit_effect_sheet_7: 164865374743485875
+      trial_shield_hit_effect_sheet_70: -8514725548881347723
+      trial_shield_hit_effect_sheet_71: -9141743862469140970
+      trial_shield_hit_effect_sheet_72: -8949470138208511955
+      trial_shield_hit_effect_sheet_73: -6349667485408000621
+      trial_shield_hit_effect_sheet_74: -7258238145115461861
+      trial_shield_hit_effect_sheet_75: -5645178001606591414
+      trial_shield_hit_effect_sheet_76: 6799858054877759262
+      trial_shield_hit_effect_sheet_77: -1012766854638969323
+      trial_shield_hit_effect_sheet_78: -6355347342653913677
+      trial_shield_hit_effect_sheet_79: -3754537106660087055
+      trial_shield_hit_effect_sheet_8: -3824267194962267509
+      trial_shield_hit_effect_sheet_9: -6489867190382104975
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
