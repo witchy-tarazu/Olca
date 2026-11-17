@@ -968,7 +968,7 @@ namespace Olca.Presentation.Exploration
                 if(i>=initialShotImages.Count){var go=new GameObject("TrialStraightShot",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.color=new Color(.45f,.95f,1,.95f);created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(0,.21f);initialShotImages.Add(created);}
                 var shot=shots[i];var image=initialShotImages[i];image.enabled=true;
                 // 飛翔時計を読むだけの独立6コマ。弾速・命中・寿命・保存には触れない。
-                image.sprite=(initialShotMotion??(initialShotMotion=new TrialShotFlightMotion())).Resolve(presentation.Core.Frame-shot.StartedAt);
+                image.sprite=(initialShotMotion??(initialShotMotion=new TrialShotFlightMotion())).Resolve(presentation.Core.Frame-shot.StartedAt,shot.CardId);
                 bool animated=image.sprite!=null;var muzzle=animated?TrialShotBodyMotion.FlightOffset(presentation.Core.Frame-shot.StartedAt):Vector2.zero;image.color=animated?Color.white:new Color(.45f,.95f,1,.95f);image.rectTransform.localScale=new Vector3(animated?shot.Facing:1,1,1);image.rectTransform.sizeDelta=(animated?Vector2.one*.8f:new Vector2(.35f,.1f))*pixelsPerWorldUnit;image.rectTransform.anchoredPosition=new Vector2(((float)shot.Position(presentation.Core.Frame)/OutsideMovementDefinition.UnitsPerWorldUnit+shot.Facing*muzzle.x-camera+viewport*.5f)*pixelsPerWorldUnit,((float)shot.Height/OutsideMovementDefinition.UnitsPerWorldUnit+(1.2f+muzzle.y)-verticalOffset)*pixelsPerWorldUnit);
             }
             for(int i=shots.Count;i<initialShotImages.Count;i++)if(initialShotImages[i]!=null)initialShotImages[i].enabled=false;
@@ -1145,16 +1145,22 @@ namespace Olca.Presentation.Exploration
     /// <summary>直進弾の試用6コマ。既存の60論理フレーム寿命と発射時刻を表示へ写す。</summary>
     public sealed class TrialShotFlightMotion : System.IDisposable
     {
-        private readonly System.Func<string,Sprite[]> load;private Sprite[] frames;private bool tried,disposed;
+        private readonly System.Func<string,Sprite[]> load;private Sprite[] frames,airFrames;private bool tried,airTried,disposed;
         public TrialShotFlightMotion(System.Func<string,Sprite[]> loader=null){load=loader??(key=>Resources.LoadAll<Sprite>(key));}
         public static int FrameIndex(long age)=>age<0||age>=60?-1:(int)(age/2%6);
-        public Sprite Resolve(long age)
+        public Sprite Resolve(long age,string cardId=null)
         {
             int frame=FrameIndex(age);if(disposed||frame<0)return null;
-            if(!tried){tried=true;var all=load("OlcaCharacterMotion/trial_shot_flight_sheet");if(all!=null&&all.Length==6){var ordered=new Sprite[6];for(int i=0;i<6;i++){var found=Array.FindAll(all,s=>s!=null&&s.name=="trial_shot_flight_"+i);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||found[0].pivot!=new Vector2(128,128))return null;ordered[i]=found[0];}frames=ordered;}}
+            // 保存済みCardIdだけで見分ける。欠損時は既存ショットへ戻し、属性や飛翔計算を変えない。
+            if(cardId==Olca.Core.Domain.TrialInitialCardDefinitions.AirShot){if(!airTried){airTried=true;airFrames=ReadFrames("trial_air_shot_flight");}if(airFrames!=null)return airFrames[frame];}
+            if(!tried){tried=true;frames=ReadFrames("trial_shot_flight");}
             return frames?[frame];
         }
-        public void Dispose(){disposed=true;frames=null;}
+        private Sprite[] ReadFrames(string stem)
+        {
+            var all=load("OlcaCharacterMotion/"+stem+"_sheet");if(all==null||all.Length!=6)return null;var ordered=new Sprite[6];for(int i=0;i<6;i++){var found=Array.FindAll(all,s=>s!=null&&s.name==stem+"_"+i);if(found.Length!=1||found[0].rect.width!=256||found[0].rect.height!=256||Mathf.Abs(found[0].pixelsPerUnit-100)>.001f||found[0].pivot!=new Vector2(128,128))return null;ordered[i]=found[0];}return ordered;
+        }
+        public void Dispose(){disposed=true;frames=airFrames=null;}
     }
     /// <summary>地上/空中射撃の試用姿勢。既存の行動時計だけを読む。</summary>
     public sealed class TrialShotBodyMotion : System.IDisposable

@@ -1,0 +1,433 @@
+fileFormatVersion: 2
+guid: ad86bbb577dc5c5d98d47c802c286d9d
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 252929497149532438
+    second: trial_air_shot_flight_sheet_0
+  - first:
+      213: -8799254848416610809
+    second: trial_air_shot_flight_sheet_1
+  - first:
+      213: 4299372001924186424
+    second: trial_air_shot_flight_sheet_2
+  - first:
+      213: 4796774424587504259
+    second: trial_air_shot_flight_sheet_3
+  - first:
+      213: -3202622372813178610
+    second: trial_air_shot_flight_sheet_4
+  - first:
+      213: 3457159348029789079
+    second: trial_air_shot_flight_sheet_5
+  - first:
+      213: -3939477432366532441
+    second: trial_air_shot_flight_sheet_6
+  - first:
+      213: 6836929383929341043
+    second: trial_air_shot_flight_sheet_7
+  - first:
+      213: -3567520672156427827
+    second: trial_air_shot_flight_sheet_8
+  - first:
+      213: -1022676426331386933
+    second: trial_air_shot_flight_sheet_9
+  - first:
+      213: 7775722351513669159
+    second: trial_air_shot_flight_sheet_10
+  - first:
+      213: -1817041921681719406
+    second: trial_air_shot_flight_sheet_11
+  - first:
+      213: 7430371489453561641
+    second: trial_air_shot_flight_sheet_12
+  - first:
+      213: 1272586134004320650
+    second: trial_air_shot_flight_sheet_13
+  - first:
+      213: -4551438703878052590
+    second: trial_air_shot_flight_sheet_14
+  - first:
+      213: 6770478786514064482
+    second: trial_air_shot_flight_sheet_15
+  - first:
+      213: -7762764281969492250
+    second: trial_air_shot_flight_sheet_16
+  - first:
+      213: 6712186710205695164
+    second: trial_air_shot_flight_sheet_17
+  - first:
+      213: -3763697169637436220
+    second: trial_air_shot_flight_sheet_18
+  - first:
+      213: -8004364669578247710
+    second: trial_air_shot_flight_sheet_19
+  - first:
+      213: -510724535938274954
+    second: trial_air_shot_flight_sheet_20
+  - first:
+      213: 6882004732751677511
+    second: trial_air_shot_flight_sheet_21
+  - first:
+      213: -1595150830860035078
+    second: trial_air_shot_flight_sheet_22
+  - first:
+      213: -6538519114652179769
+    second: trial_air_shot_flight_sheet_23
+  - first:
+      213: 3743544699341671288
+    second: trial_air_shot_flight_sheet_24
+  - first:
+      213: 2229787302343233321
+    second: trial_air_shot_flight_sheet_25
+  - first:
+      213: 638060825029414813
+    second: trial_air_shot_flight_sheet_26
+  - first:
+      213: 7977375660122467662
+    second: trial_air_shot_flight_sheet_27
+  - first:
+      213: -1154810112525756483
+    second: trial_air_shot_flight_sheet_28
+  - first:
+      213: 5055200206652509885
+    second: trial_air_shot_flight_sheet_29
+  - first:
+      213: -8110538881534273818
+    second: trial_air_shot_flight_sheet_30
+  - first:
+      213: -3241338563914638550
+    second: trial_air_shot_flight_sheet_31
+  - first:
+      213: -4469554979083573292
+    second: trial_air_shot_flight_sheet_32
+  - first:
+      213: 8236442687069233897
+    second: trial_air_shot_flight_sheet_33
+  - first:
+      213: -945336824084011548
+    second: trial_air_shot_flight_sheet_34
+  - first:
+      213: 4921841633514657762
+    second: trial_air_shot_flight_sheet_35
+  - first:
+      213: -1806115413937645445
+    second: trial_air_shot_flight_sheet_36
+  - first:
+      213: -3234826997096935304
+    second: trial_air_shot_flight_sheet_37
+  - first:
+      213: 4405599341411194641
+    second: trial_air_shot_flight_sheet_38
+  - first:
+      213: -2068033548443609117
+    second: trial_air_shot_flight_sheet_39
+  - first:
+      213: 6103483471072542576
+    second: trial_air_shot_flight_0
+  - first:
+      213: -7134709628010492366
+    second: trial_air_shot_flight_1
+  - first:
+      213: 1233180574740267166
+    second: trial_air_shot_flight_2
+  - first:
+      213: 1789998196444843206
+    second: trial_air_shot_flight_3
+  - first:
+      213: 5376178735163957702
+    second: trial_air_shot_flight_4
+  - first:
+      213: -3705259548632213024
+    second: trial_air_shot_flight_5
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: trial_air_shot_flight_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07f3fb911ede3b450800000000000000
+      internalID: 6103483471072542576
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_air_shot_flight_1
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23e00e6056b6cfc90800000000000000
+      internalID: -7134709628010492366
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_air_shot_flight_2
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e904e45f2332d1110800000000000000
+      internalID: 1233180574740267166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_air_shot_flight_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6cc4fa730e957d810800000000000000
+      internalID: 1789998196444843206
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_air_shot_flight_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6c1e47e43160c9a40800000000000000
+      internalID: 5376178735163957702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: trial_air_shot_flight_5
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 9
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0e917236216449cc0800000000000000
+      internalID: -3705259548632213024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      trial_air_shot_flight_0: 6103483471072542576
+      trial_air_shot_flight_1: -7134709628010492366
+      trial_air_shot_flight_2: 1233180574740267166
+      trial_air_shot_flight_3: 1789998196444843206
+      trial_air_shot_flight_4: 5376178735163957702
+      trial_air_shot_flight_5: -3705259548632213024
+      trial_air_shot_flight_sheet_0: 252929497149532438
+      trial_air_shot_flight_sheet_1: -8799254848416610809
+      trial_air_shot_flight_sheet_10: 7775722351513669159
+      trial_air_shot_flight_sheet_11: -1817041921681719406
+      trial_air_shot_flight_sheet_12: 7430371489453561641
+      trial_air_shot_flight_sheet_13: 1272586134004320650
+      trial_air_shot_flight_sheet_14: -4551438703878052590
+      trial_air_shot_flight_sheet_15: 6770478786514064482
+      trial_air_shot_flight_sheet_16: -7762764281969492250
+      trial_air_shot_flight_sheet_17: 6712186710205695164
+      trial_air_shot_flight_sheet_18: -3763697169637436220
+      trial_air_shot_flight_sheet_19: -8004364669578247710
+      trial_air_shot_flight_sheet_2: 4299372001924186424
+      trial_air_shot_flight_sheet_20: -510724535938274954
+      trial_air_shot_flight_sheet_21: 6882004732751677511
+      trial_air_shot_flight_sheet_22: -1595150830860035078
+      trial_air_shot_flight_sheet_23: -6538519114652179769
+      trial_air_shot_flight_sheet_24: 3743544699341671288
+      trial_air_shot_flight_sheet_25: 2229787302343233321
+      trial_air_shot_flight_sheet_26: 638060825029414813
+      trial_air_shot_flight_sheet_27: 7977375660122467662
+      trial_air_shot_flight_sheet_28: -1154810112525756483
+      trial_air_shot_flight_sheet_29: 5055200206652509885
+      trial_air_shot_flight_sheet_3: 4796774424587504259
+      trial_air_shot_flight_sheet_30: -8110538881534273818
+      trial_air_shot_flight_sheet_31: -3241338563914638550
+      trial_air_shot_flight_sheet_32: -4469554979083573292
+      trial_air_shot_flight_sheet_33: 8236442687069233897
+      trial_air_shot_flight_sheet_34: -945336824084011548
+      trial_air_shot_flight_sheet_35: 4921841633514657762
+      trial_air_shot_flight_sheet_36: -1806115413937645445
+      trial_air_shot_flight_sheet_37: -3234826997096935304
+      trial_air_shot_flight_sheet_38: 4405599341411194641
+      trial_air_shot_flight_sheet_39: -2068033548443609117
+      trial_air_shot_flight_sheet_4: -3202622372813178610
+      trial_air_shot_flight_sheet_5: 3457159348029789079
+      trial_air_shot_flight_sheet_6: -3939477432366532441
+      trial_air_shot_flight_sheet_7: 6836929383929341043
+      trial_air_shot_flight_sheet_8: -3567520672156427827
+      trial_air_shot_flight_sheet_9: -1022676426331386933
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
