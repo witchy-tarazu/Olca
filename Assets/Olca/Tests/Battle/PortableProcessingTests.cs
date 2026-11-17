@@ -580,6 +580,62 @@ namespace Olca.Tests.Battle
                 s.RecoverOutside(OutsideTrialRoute.DoorHomePoint);Assert.IsEmpty(s.InitialShots);Assert.IsFalse(s.IsAttacking);Assert.IsNull(s.Core.TrialMapId);Assert.IsNull(s.CaptureRuntime(defs).InitialShots);
             }
         }
+        private static void Place339(OutsideExplorationSession s,long x,int facing=1)
+        {
+            var state=s.Core.CaptureState();state.Position=x;state.Facing=facing;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+        }
+        [TestCase(false)][TestCase(true)] public void 別マップ射撃は登録敵へ一命中し保存復元で再被害を作らない(bool air)
+        {
+            string id=air?TrialInitialCardDefinitions.AirShot:TrialInitialCardDefinitions.Shot;
+            using(var s=Outside271(id,out var defs))using(var cold=new OutsideExplorationSession()){
+                s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Place339(s,18*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==id);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==id));if(air)s.TickTraversal(0,true,true);Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,18);
+                }
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;Assert.IsTrue(cold.RestoreSavedState(actor,runtime,OutsideTrialRoute.DoorAnnexPoint,defs));
+                using(var lease=cold.AttachPresentation()){Frames(cold,90);Assert.AreEqual(107,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.SecondTrialTarget.CurrentHp);Assert.IsEmpty(cold.InitialShots);}
+                var after=cold.CaptureRuntime(defs);Assert.AreEqual(1,after.TrialTarget.Hits);var again=OutsidePlayerSaveData.Capture(cold.Player);again.Id=after.Id;Assert.IsTrue(s.RestoreSavedState(again,after,OutsideTrialRoute.DoorAnnexPoint,defs));
+                using(var lease=s.AttachPresentation())Frames(s,90);Assert.AreEqual(107,s.TrialTarget.CurrentHp);
+            }
+        }
+        [TestCase(1)][TestCase(-1)] public void 別マップ射撃は壁の前後を飛び越えず手前の敵だけに当たる(int facing)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out _)){
+                Assert.IsTrue(s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true)));s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Place339(s,facing>0?23*60000:25*60000,facing);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==TrialInitialCardDefinitions.Shot);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==TrialInitialCardDefinitions.Shot));Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,90);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Assert.IsEmpty(s.InitialShots);
+                }
+            }
+        }
+        [TestCase(0,72000,120)][TestCase(0,71999,107)][TestCase(72000,100000,120)][TestCase(72001,100000,107)]
+        public void 別マップ射撃の壁上下端は射線中心と一単位境界で判定する(long bottom,long top,int hp)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out _)){
+                var b=OutsideTraversalProfile.ValidationWall(true);var profile=new OutsideTraversalProfile("shot-wall-339",b.DashSpeedPerSecond,b.DashFrames,b.DashCooldownFrames,b.DashResetFrames,b.DashJumpSpeedPerSecond,b.BodyHalfWidth,b.BodyHeight,b.WallSlidePerFrame,b.WallKickVelocity,b.WallKickSpeedPerSecond,b.WallKickPushFrames,b.WallKickMotionFrames,true,new OutsideValidationWall("shot-wall",24*60000,bottom,top));Assert.IsTrue(s.TryConfigureTraversal(profile));s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Place339(s,23*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==TrialInitialCardDefinitions.Shot);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==TrialInitialCardDefinitions.Shot));Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,90);Assert.AreEqual(hp,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
+                }
+            }
+        }
+        [TestCase(-3000,120)][TestCase(0,120)][TestCase(3000,107)]
+        public void 別マップ射撃の同一sweepでは敵より手前と同位置の壁が優先される(long offset,int hp)
+        {
+            using(var s=Outside271(TrialInitialCardDefinitions.Shot,out _)){
+                var b=OutsideTraversalProfile.ValidationWall(true);var profile=new OutsideTraversalProfile("shot-tie-339",b.DashSpeedPerSecond,b.DashFrames,b.DashCooldownFrames,b.DashResetFrames,b.DashJumpSpeedPerSecond,b.BodyHalfWidth,b.BodyHeight,b.WallSlidePerFrame,b.WallKickVelocity,b.WallKickSpeedPerSecond,b.WallKickPushFrames,b.WallKickMotionFrames,true,new OutsideValidationWall("shot-tie",26*60000+offset,0,60000000));Assert.IsTrue(s.TryConfigureTraversal(profile));s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+                using(var lease=s.AttachPresentation()){
+                    Place339(s,25*60000);for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==TrialInitialCardDefinitions.Shot);n++)s.Cards.Reload();s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==TrialInitialCardDefinitions.Shot));Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));Frames(s,90);Assert.AreEqual(hp,s.SecondTrialTarget.CurrentHp);Assert.IsEmpty(s.InitialShots);
+                }
+            }
+        }
+        [Test] public void 別マップ射撃の接触間隔と撃破はcoldへ渡り移動リロードだけ再出現する()
+        {
+            using(var s=new OutsideExplorationSession(true))using(var cold=new OutsideExplorationSession(true))using(var blocked=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);using(var lease=s.AttachPresentation()){Place339(s,s.FirstTrialTargetX);s.TickTraversal(0);Frames(s,17);Assert.AreEqual(90,s.Player.CurrentHp);}
+                var data=s.CaptureRuntime();var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=data.Id;blocked.TryInitializePlayer(()=>new PlayerCharacter(99));var old=blocked.Player;Assert.Throws<ArgumentException>(()=>blocked.RestoreSavedState(actor,data,OutsideTrialRoute.DoorAnnexPoint));Assert.AreSame(old,blocked.Player);Assert.AreEqual(0,blocked.Core.Frame);
+                Assert.IsTrue(cold.RestoreSavedState(actor,data,OutsideTrialRoute.DoorAnnexPoint));using(var lease=cold.AttachPresentation()){Frames(cold,(int)(data.TrialContact.NextFrame-data.Core.Frame)-1);Assert.AreEqual(90,cold.Player.CurrentHp);cold.TickTraversal(0);Assert.AreEqual(80,cold.Player.CurrentHp);cold.TrialTarget.TakeDamage(120,ElementType.None);}
+                var dead=cold.CaptureRuntime();var deadActor=OutsidePlayerSaveData.Capture(cold.Player);deadActor.Id=dead.Id;Assert.AreEqual(0,dead.TrialTarget.Hp);Assert.IsTrue(s.RestoreSavedState(deadActor,dead,OutsideTrialRoute.DoorAnnexPoint));using(var lease=s.AttachPresentation()){Frames(s,120);Assert.AreEqual(80,s.Player.CurrentHp);}s.RecoverOutside(OutsideTrialRoute.DoorHomePoint);s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
+            }
+        }
         [TestCase(TrialInitialCardDefinitions.Shot)] [TestCase(TrialInitialCardDefinitions.Spear)]
         [TestCase(TrialInitialCardDefinitions.WideSword)] [TestCase(TrialInitialCardDefinitions.AirShot)]
         public void 探索の新四品も実命中でヒットストップし弾と攻撃の時計を止める(string id)

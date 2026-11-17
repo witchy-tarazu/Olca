@@ -147,6 +147,14 @@ namespace Olca.Tests.Application
         {
             using(var clip=new Olca.Presentation.Exploration.TrialShotFlightMotion()){var seen=new System.Collections.Generic.HashSet<Sprite>();for(int n=0;n<6;n++){var sprite=clip.Resolve(n*2);Assert.NotNull(sprite);Assert.AreEqual("trial_shot_flight_"+n,sprite.name);Assert.AreEqual(new Vector2(128,128),sprite.pivot);Assert.AreEqual(256,sprite.rect.width);Assert.AreEqual(256,sprite.rect.height);seen.Add(sprite);}Assert.AreEqual(6,seen.Count);clip.Dispose();Assert.IsNull(clip.Resolve(0));}using(var missing=new Olca.Presentation.Exploration.TrialShotFlightMotion(_=>Array.Empty<Sprite>()))Assert.IsNull(missing.Resolve(0));
         }
+        [TestCase(false)][TestCase(true)] public async Task 別マップ射撃の敵表示はマップ座標とHPを読み描画で状態を変えない(bool annex)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);if(annex)model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);var view=binding.View;view.Render();var first=view.transform.Find("OutsideTrialTarget").GetComponent<Image>();var second=view.transform.Find("OutsideSecondTrialTarget").GetComponent<Image>();Assert.IsTrue(first.enabled);Assert.IsTrue(second.enabled);var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();float pixels=body.rectTransform.sizeDelta.x/(body.sprite.rect.width/body.sprite.pixelsPerUnit);Assert.AreEqual((model.SecondTrialTargetX-model.FirstTrialTargetX)/60000f*pixels,second.rectTransform.anchoredPosition.x-first.rectTransform.anchoredPosition.x,.01f);if(annex)Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>().interactable);
+                model.TrialTarget.TakeDamage(13,Olca.Core.Domain.ElementType.None);long frame=model.Core.Frame;view.Render();Assert.AreEqual("107",view.transform.Find("OutsideTrialTargetHp").GetComponent<Text>().text);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(107,model.TrialTarget.CurrentHp);
+            }
+        }
         [TestCase(false,-1,false)][TestCase(false,1,false)][TestCase(true,-1,false)][TestCase(true,1,false)]
         [TestCase(false,-1,true)][TestCase(false,1,true)][TestCase(true,-1,true)][TestCase(true,1,true)]
         public async Task 専用直進弾は地上空中と左右で表示だけ進み消費や論理位置を変更しない(bool air,int facing,bool annex)
@@ -517,7 +525,7 @@ namespace Olca.Tests.Application
                 var old=button.onClick;EventSystem.current.SetSelectedGameObject(button.gameObject);old.Invoke();Assert.AreEqual(1,calls);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
                 ready=false;old.Invoke();Assert.AreEqual(1,calls);ready=true;view.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);
                 Assert.IsTrue((await binding.ReopenAfterMapTravelAsync()).Succeeded);old.Invoke();Assert.AreEqual(1,calls);view=binding.View;view.ConfigureMapDoor(()=>calls++,()=>ready,()=>"イドウ");view.Render();view.transform.Find("OutsideMapDoor").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(2,calls);
-                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("SetRecoveryMap",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint});view.Render();Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").gameObject.activeSelf);Assert.IsFalse(view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().enabled);
+                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("SetRecoveryMap",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint});view.Render();Assert.IsTrue(view.transform.Find("OutsideTrialTargetNamePlate").gameObject.activeSelf);Assert.IsTrue(view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().enabled);Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>().interactable);
                 Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(2,calls);
             }
         }
