@@ -18,6 +18,21 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase("trial-spear-v1",false,false,1,3)][TestCase("trial-spear-v1",false,true,-1,3)]
+        [TestCase("trial-spear-v1",true,false,-1,3)][TestCase("trial-spear-v1",true,true,1,3)]
+        [TestCase("trial-wide-sword-v1",false,false,1,1)][TestCase("sword",false,false,1,1)]
+        public async Task スピアの突進軌跡はカード種別と左右空中に追従し時計判定消費を変更しない(string id,bool fire,bool air,int facing,int row)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));if(fire)model.Player.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);
+            var source=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();Assert.IsTrue(model.QueueSelectedDeck("spear322",source,source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(322),out _));model.EnableTrialCardPolish();
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);while(model.Core.Position<15*60000)model.TickTraversal(1);for(int n=0;n<1000&&!model.Cards.Hand.Any(c=>c.Id==id);n++)model.Cards.Reload();Assert.IsTrue(model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id==id)));model.TickTraversal(facing);if(air)model.TickTraversal(0,true,true);
+                Assert.IsTrue(model.TryUseSelectedCard(model.Cards.SelectedCard,model.Cards.HandRevision,out var error),error);var lease=(Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease)binding.View.GetType().GetField("presentation",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(binding.View);
+                var view=binding.View;for(int age=0;age<20;age++){if(age>0)model.TickTraversal(0);view.Render();Assert.AreEqual(id,lease.SwordSwingCardId);var trail=view.transform.Find("OutsideSwordSpriteTrail").GetComponent<Image>();int frame=Olca.Presentation.Exploration.OutsideSwordSwingVisual.FrameIndex(age-8);Assert.AreEqual(frame>=0,trail.enabled);if(frame>=0){Assert.AreEqual("trial_slash_"+row+"_"+frame,trail.sprite.name);Assert.AreEqual(facing,trail.rectTransform.localScale.x);Assert.AreEqual(id==Olca.Core.Domain.TrialInitialCardDefinitions.Spear?270000:180000,lease.SwordSwingReach);}
+                    var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());int remaining=model.Cards.RemainingCount,hp=model.TrialTarget.CurrentHp;for(int k=0;k<3;k++)view.Render();Assert.AreEqual(remaining,model.Cards.RemainingCount);Assert.AreEqual(hp,model.TrialTarget.CurrentHp);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+                }Assert.AreEqual(id,lease.TrialStrike.CardId);Assert.AreEqual(id,lease.TrialStrike.Copy().CardId);model.TickTraversal(0);view.Render();Assert.IsNull(lease.SwordSwingCardId);Assert.IsFalse(view.transform.Find("OutsideSwordSpriteTrail").GetComponent<Image>().enabled);
+            }
+        }
         [TestCase(0,1f)][TestCase(1,11f/12)][TestCase(11,1f/12)][TestCase(12,0f)][TestCase(13,0f)][TestCase(59,0f)]
         public void 専用発射姿勢の掌補正は十二論理フレームで既存射線へ連続合流する(int age,float ratio){var offset=Olca.Presentation.Exploration.TrialShotBodyMotion.FlightOffset(age);Assert.AreEqual(.55f*ratio,offset.x,.00001f);Assert.AreEqual(.5f*ratio,offset.y,.00001f);}
         [TestCase(-1)][TestCase(1)] public void 専用発射姿勢の掌補正は左右とも直進弾の表示を逆行させない(int facing)

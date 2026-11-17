@@ -860,6 +860,8 @@ namespace Olca.Presentation.Exploration
     /// <summary>既存の即時効果を遅らせず、接触から12論理frameだけ振り抜く暫定表示。</summary>
     public static class OutsideSwordSwingVisual
     {
+        // スピアは前方への突進軌跡を使う。判定・本体の時計や保存形式は変更しない。
+        public static int TrailRow(string cardId)=>cardId==Olca.Core.Domain.TrialInitialCardDefinitions.Spear?3:1;
         public static int FrameIndex(long relativeToHit)=>relativeToHit< -2||relativeToHit>=12?-1:relativeToHit<0?0:relativeToHit<3?1:relativeToHit<7?2:3;
     }
     public sealed class OutsideSwordTrailGraphic:Graphic
@@ -920,7 +922,7 @@ namespace Olca.Presentation.Exploration
             var blade=trialSwordImage.rectTransform;blade.sizeDelta=trialSwordImage.sprite.bounds.size*pixelsPerWorldUnit;blade.anchoredPosition=new Vector2((core.Position/unit-camera+viewport*.5f+.35f*facing)*pixelsPerWorldUnit,(core.Height/unit+1.3f-verticalOffset)*pixelsPerWorldUnit);float scale=(reach-.35f)/trialSwordImage.sprite.bounds.max.x;blade.localScale=new Vector3(facing*scale,scale,1);float angle=windup?45+55*(presentation.SwordSwingElapsed/(float)Math.Max(1,presentation.SwordSwingStartup)):20-Math.Min(5,(int)age)*18;blade.localRotation=Quaternion.Euler(0,0,angle*facing);trialSwordImage.color=Color.white;trialSwordImage.enabled=true;
             }
             int frame=OutsideSwordSwingVisual.FrameIndex(age);polishedSwordTrail.enabled=frame>=0;
-            if(frame>=0){polishedSwordTrail.sprite=(slashSprites??(slashSprites=new Olca.Presentation.Effects.TrialSlashSprites())).Resolve(1,frame);polishedSwordTrail.color=Color.white;var rr=polishedSwordTrail.rectTransform;long expectedFired=action?core.Frame-presentation.SwordSwingElapsed+presentation.SwordSwingStartup:strike.Frame;bool useStrike=strike?.SpriteSwing==true&&strike.Frame==expectedFired;float x=useStrike?strike.X/unit:core.Position/unit,y=useStrike?strike.Y/unit:core.Height/unit;rr.anchoredPosition=new Vector2((x-camera+viewport*.5f+facing*reach*.5f)*pixelsPerWorldUnit,(y+1.2f-verticalOffset)*pixelsPerWorldUnit);rr.sizeDelta=new Vector2(reach,1.8f*vertical)*pixelsPerWorldUnit;rr.localScale=new Vector3(facing,1,1);}
+            if(frame>=0){polishedSwordTrail.sprite=(slashSprites??(slashSprites=new Olca.Presentation.Effects.TrialSlashSprites())).Resolve(OutsideSwordSwingVisual.TrailRow(action?presentation.SwordSwingCardId:strike.CardId),frame);polishedSwordTrail.color=Color.white;var rr=polishedSwordTrail.rectTransform;long expectedFired=action?core.Frame-presentation.SwordSwingElapsed+presentation.SwordSwingStartup:strike.Frame;bool useStrike=strike?.SpriteSwing==true&&strike.Frame==expectedFired;float x=useStrike?strike.X/unit:core.Position/unit,y=useStrike?strike.Y/unit:core.Height/unit;rr.anchoredPosition=new Vector2((x-camera+viewport*.5f+facing*reach*.5f)*pixelsPerWorldUnit,(y+1.2f-verticalOffset)*pixelsPerWorldUnit);rr.sizeDelta=new Vector2(reach,1.8f*vertical)*pixelsPerWorldUnit;rr.localScale=new Vector3(facing,1,1);}
             return true;
         }
         private void RenderBombs(float camera,float viewport,float verticalOffset)

@@ -191,6 +191,7 @@ namespace Olca.Core.Logic.Integration
             public IReadOnlyList<OutsideBombBlastData> BombBlasts=>IsCurrent?owner.BombBlasts:Array.Empty<OutsideBombBlastData>();
             // 投擲表示は既存行動時計と非保存の発射通知を読む。発射計画を複製・変更しない。
             public bool IsSwingingSword=>IsCurrent&&owner.attackState?.SwordMotionId==OutsideCardPolishTrial.SwordMotionId;
+            public string SwordSwingCardId=>IsSwingingSword?owner.Cards.ActionCard(owner.attackState.CardIndex).Id:null;
             public long SwordSwingElapsed=>IsSwingingSword?owner.Core.Frame-owner.attackState.StartedAt:-1;
             public int SwordSwingStartup=>IsSwingingSword?owner.attackState.StartupFrames:0;
             public int SwordSwingRecovery=>IsSwingingSword?owner.attackState.RecoveryFrames:0;
@@ -309,7 +310,7 @@ namespace Olca.Core.Logic.Integration
             Enemy target=null;bool second=false;
             if(InRange(TrialTargetX,TrialTarget))target=TrialTarget;
             else if(InRange(OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget)){target=SecondTrialTarget;second=true;}
-            trialStrike=new OutsideTrialStrike{Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=target!=null,Reach=reach,SpriteSwing=polished,VerticalScale=card.Id==TrialInitialCardDefinitions.WideSword?1.5f:1f};
+            trialStrike=new OutsideTrialStrike{CardId=card.Id,Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=target!=null,Reach=reach,SpriteSwing=polished,VerticalScale=card.Id==TrialInitialCardDefinitions.WideSword?1.5f:1f};
             if(target!=null){
                 if(second)secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
                 else{trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}
@@ -968,7 +969,7 @@ namespace Olca.Core.Logic.Integration
         public void Validate(long frame){if((DefinitionId!="trial-shield-enemy-v1"&&DefinitionId!="trial-shield-enemy-v2")||frame<0||NextFrame<=frame||NextFrame-frame>OutsideExplorationSession.TrialEnemyInterval)throw new ArgumentException("試用敵攻撃の定義/時計が不正です");}
     }
     public sealed class OutsideTrialTargetData{public string Id="trial-sword-target-v1";public int Hp,Hits;public OutsideTrialTargetData Copy()=>(OutsideTrialTargetData)MemberwiseClone();public void Validate(string expectedId="trial-sword-target-v1"){if(Id!=expectedId||Hp<0||Hp>OutsideExplorationSession.TrialTargetMaximum||Hits<0)throw new ArgumentException("試用標的の保存が不正です");}}
-    public sealed class OutsideTrialStrike{public long Frame,X,Y,Reach;public float VerticalScale;public int Facing;public bool Hit,SpriteSwing;public OutsideTrialStrike Copy()=>(OutsideTrialStrike)MemberwiseClone();}
+    public sealed class OutsideTrialStrike{public string CardId;public long Frame,X,Y,Reach;public float VerticalScale;public int Facing;public bool Hit,SpriteSwing;public OutsideTrialStrike Copy()=>(OutsideTrialStrike)MemberwiseClone();}
     public sealed class OutsideAfterimageStateData
     {public long X,Y,Frame;public int Facing;public OutsideAfterimagePose Pose;public OutsideAfterimageStateData Copy()=>(OutsideAfterimageStateData)MemberwiseClone();}
     [System.Runtime.Serialization.DataContract]
