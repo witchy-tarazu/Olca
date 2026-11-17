@@ -18,6 +18,24 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase(1)][TestCase(10)][TestCase(100)]
+        public async Task 探索手札コストは実フォントで三枠とも全文が収まり表示更新で消費しない(int cost)
+        {
+            var source=Enumerable.Range(0,5).SelectMany(id=>Enumerable.Range(0,4).Select(n=>new Olca.Core.Domain.Card("outside-cost-"+id,"ソード",cost,Olca.Core.Domain.CardRarity.Normal,Olca.Core.Domain.CardCategory.Attack,Olca.Core.Domain.ElementType.None,Olca.Core.Domain.CardSeries.None,1,"fixture"))).ToArray();
+            var owned=source.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());var model=system.OutsideExploration;
+            Assert.IsTrue(model.TryInitializeCards(source,owned,new Olca.Tests.Mocks.MockRandomProvider(),out _));var hand=model.Cards.Hand.ToArray();long frame=model.Core.Frame,gauge=model.Core.CardGauge.CurrentUnits,revision=model.Cards.HandRevision;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();Canvas.ForceUpdateCanvases();
+                for(int slot=0;slot<3;slot++){
+                    var label=view.transform.Find("OutsideHandCost"+slot).GetComponent<Text>();Assert.AreSame(Resources.Load<Font>("OlcaUI/MenuText"),label.font);Assert.AreEqual("コスト "+hand[slot].GetFinalCost(),label.text);Assert.IsFalse(label.raycastTarget);
+                    var settings=label.GetGenerationSettings(label.rectTransform.rect.size);label.cachedTextGenerator.Populate(label.text,settings);Assert.GreaterOrEqual(label.cachedTextGenerator.characterCountVisible,label.text.Length);Assert.Greater(label.cachedTextGenerator.vertexCount,0);Assert.LessOrEqual(label.preferredHeight,label.rectTransform.rect.height);
+                    var name=view.transform.Find("OutsideHandName"+slot).GetComponent<RectTransform>();Assert.LessOrEqual(label.rectTransform.anchoredPosition.y+label.rectTransform.rect.height/2,name.anchoredPosition.y-name.rect.height/2);
+                }
+                for(int n=0;n<4;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(gauge,model.Core.CardGauge.CurrentUnits);Assert.AreEqual(revision,model.Cards.HandRevision);CollectionAssert.AreEqual(hand,model.Cards.Hand);
+            }
+        }
+
         [TestCase(-3,-1)][TestCase(-2,0)][TestCase(-1,0)][TestCase(0,1)][TestCase(1,1)][TestCase(2,2)][TestCase(3,2)][TestCase(4,3)][TestCase(6,3)][TestCase(7,4)][TestCase(9,4)][TestCase(10,5)][TestCase(11,5)][TestCase(12,-1)]
         public void ワイド専用斬撃は既存の予兆命中後消失の境界を六枚へ写す(long age,int expected){Assert.AreEqual(expected,Olca.Presentation.Exploration.TrialWideSwordEffect.FrameIndex(age));}
         [Test] public void ワイド専用斬撃は完全透過と中心規格および初動の縦範囲を保つ()
