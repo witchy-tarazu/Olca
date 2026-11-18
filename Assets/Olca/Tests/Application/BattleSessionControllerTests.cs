@@ -1095,12 +1095,16 @@ namespace Olca.Tests.Application
 
         private async Task<bool> FinishUse(BattleSystem battle, Task<bool> task)
         {
-            var deadline = DateTime.UtcNow.AddSeconds(3);
-            while (!task.IsCompleted && DateTime.UtcNow < deadline)
+            // 負荷で論理更新数が減らないよう、試験専用の上限を最大6秒分の論理進行にする。
+            // 製品の許容待機時間ではなく、停止したままなら必ず失敗させるための有限回数。
+            const int maximumTicks = 600;
+            int ticks = 0;
+            var elapsed = System.Diagnostics.Stopwatch.StartNew();
+            while (!task.IsCompleted && ticks < maximumTicks)
             {
-                battle.Tick(10); await Task.Delay(10);
+                battle.Tick(10); ticks++; await Task.Delay(10);
             }
-            Assert.IsTrue(task.IsCompleted);
+            Assert.IsTrue(task.IsCompleted, $"カード処理が未完了: ticks={ticks}/{maximumTicks}, elapsedMs={elapsed.ElapsedMilliseconds}, paused={battle.IsPaused}, inFlight={battle.CardUsage.InFlightCard?.Id ?? "none"}");
             return await task;
         }
 

@@ -1132,7 +1132,7 @@ namespace Olca.Presentation.Field
             RestoreTrialBody();
             try
             {
-            if(!Olca.Presentation.Effects.TrialBasicKickBody.CanDisplay(currentBattle)&&!basicChargeVisual.CanDisplayFor(currentBattle))trialBasicKick?.Clear();
+            if(!Olca.Presentation.Effects.TrialBasicKickBody.CanDisplay(currentBattle))trialBasicKick?.Clear();
             // 取消・終了は停止中にも反映し、古い武器を残さない。
             if (currentBattle?.PlayerActionVisual == null) actionPoseRenderer?.Clear();
             if(Olca.Unity.BattleVisualClock.IsPaused)return;
@@ -1150,8 +1150,8 @@ namespace Olca.Presentation.Field
             if (contactPoseActive && contactPoseSprite != null) { trialBasicKick?.Clear();SetPlayerSprite(contactPoseSprite); return; }
             if(currentBattle?.PlayerActionVisual!=null)trialBasicKick?.Clear();
             if (actionPoseRenderer?.Apply(currentBattle?.PlayerActionVisual) == true) return;
-            if(isActiveAndEnabled&&playerSprite!=null&&(currentBattle?.IsPlayerBasicAction==true||basicChargeVisual.CanDisplayFor(currentBattle))&&
-                (trialBasicKick??(trialBasicKick=new Olca.Presentation.Effects.TrialBasicKickBody(playerSprite,playerAnimator))).Apply(currentBattle,basicChargeVisual))return;
+            if(isActiveAndEnabled&&playerSprite!=null&&currentBattle?.IsPlayerBasicAction==true&&
+                (trialBasicKick??(trialBasicKick=new Olca.Presentation.Effects.TrialBasicKickBody(playerSprite,playerAnimator))).Apply(currentBattle))return;
             int jumpPhase = SelectJumpAnimationPhase(dungeonSystem != null && (dungeonSystem.IsJumping||dungeonSystem.IsTerrainRecovering)
                 && !dungeonSystem.IsInBattle && playerPositionUpdateEnabled && cameraFollowEnabled,
                 dungeonSystem?.IsTerrainRecovering==true?.8f:dungeonSystem?.JumpProgress ?? 0f);

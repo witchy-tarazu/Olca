@@ -13,7 +13,7 @@ namespace Olca.Presentation.Effects
         public bool Full=>Required>0&&Frames>=Required;
         public bool CanDisplayFor(BattleSystem battle)=>ReferenceEquals(Battle,battle)&&battle!=null&&epoch==battle.AttackInputEpoch&&serial==battle.AttackActionSerial&&Charging&&Frames>0&&Required>0&&
             !battle.IsGameOver&&!battle.Player.IsDead&&!battle.Player.IsActionPrevented&&!battle.HasPlayerAction&&
-            !battle.PlayerMovement.IsNormalMoving&&battle.CardUsage.InFlightCard==null&&!battle.CustomScreen.IsOpen&&battle.Transformations.ActiveId==null&&
+            battle.CardUsage.InFlightCard==null&&!battle.CustomScreen.IsOpen&&battle.Transformations.ActiveId==null&&
             (battle.Player.DepartureStyle.Id==DepartureStyleDefinition.BasicId||battle.Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id);
     }
     /// <summary>既存の通常攻撃phaseを読むだけの試用本体。命中後3論理フレームの接触姿勢は暫定演出。</summary>
@@ -40,14 +40,14 @@ namespace Olca.Presentation.Effects
             (battle.Player.DepartureStyle.Id==DepartureStyleDefinition.BasicId||battle.Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id);
         public bool Apply(BattleSystem battle,BattleChargeVisualState charge=default)
         {
-            bool charging=charge.CanDisplayFor(battle);
-            if(disposed||body==null||!CanDisplay(battle)&&!charging){
+            // 溜め中は元Animatorと姿勢を保ち、解放後の攻撃だけを専用素材にする。
+            if(disposed||body==null||!CanDisplay(battle)){
                 Clear();return false;
             }
-            Sprite selected;bool dedicated=charging||battle.IsPlayerChargedBasicAction;
+            Sprite selected;bool dedicated=battle.IsPlayerChargedBasicAction;
             bool striking=battle.PlayerActionPhase==PlayerAttackPhase.Executing||battle.PlayerActionPhase==PlayerAttackPhase.Recovery&&battle.RecoveryElapsedFrames<ContactPoseFrames;
             if(dedicated){int elapsed=battle.PlayerActionPhase==PlayerAttackPhase.Startup?0:striking?1:2;
-                selected=chargeMotion.Resolve(true,charging,charge.Full,elapsed,ChargePoseTiming,battle.Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id);
+                selected=chargeMotion.Resolve(true,false,false,elapsed,ChargePoseTiming,battle.Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id);
             }else{if(!attempted){attempted=true;prepare=load("prepare");contact=load("contact");}selected=prepare!=null&&contact!=null?(striking?contact:prepare):null;}
             if(selected==null){Clear();return false;}
             if(!ReferenceEquals(owner,battle))Clear();

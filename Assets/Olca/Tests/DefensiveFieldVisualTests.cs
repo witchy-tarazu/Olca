@@ -66,6 +66,14 @@ namespace Olca.Tests
                 var old=new BattleChargeVisualState(b,true,60,60);var next=BodyBattle(fire);effect.Bind(next);effect.Tick(0,old);Assert.AreEqual(0,effect.ActivePixels);Assert.AreEqual(0,effect.ObservationErrors);
             }}finally{Object.DestroyImmediate(gridHost);}
         }
+        [TestCase(false)] [TestCase(true)] public void 戦闘移動中もタメ演出を表示し本体Animatorを奪わない(bool fire)
+        {
+            var b=BodyBattle(fire);var animator=host.AddComponent<Animator>();var original=body.sprite;Assert.IsTrue(b.PlayerMovement.TryStartNormalMove(new Olca.Core.Domain.Vector2Int(1,0),new System.Collections.Generic.List<Enemy>()));Assert.IsTrue(b.PlayerMovement.IsNormalMoving);
+            var gridHost=new GameObject("Charge350MovingGrid");var grid=gridHost.AddComponent<WorldBattleGridView>();typeof(WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);grid.Show(b.Field,0);
+            try{using(var pose=new TrialBasicKickBody(body,animator))using(var effect=new BattleKickVisual(host.transform,()=>body,()=>grid)){
+                effect.Bind(b);var charge=new BattleChargeVisualState(b,true,60,60);Assert.IsTrue(charge.CanDisplayFor(b));Assert.IsFalse(pose.Apply(b,charge));effect.Tick(0,charge);Assert.Greater(effect.ActivePixels,0);Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);Assert.IsTrue(b.PlayerMovement.IsNormalMoving);Assert.IsFalse(b.HasPlayerAction);Assert.AreEqual(100,b.Player.CurrentHp);
+            }}finally{Object.DestroyImmediate(gridHost);}
+        }
         [TestCase(-1f)][TestCase(1f)] public void World撃破メッシュは百回再利用し非入力で破棄後に資源を残さない(float facing)
         {
             host.transform.localScale=new Vector3(facing*2,3,1);var area=new Rect(2,4,3,2);
@@ -150,11 +158,11 @@ namespace Olca.Tests
             }
         }
         [TestCase(false,false)] [TestCase(false,true)] [TestCase(true,false)] [TestCase(true,true)]
-        public void 戦闘タメ本体は保持完了解放引戻しを区別し時計と位置を進めない(bool fire,bool flip)
+        public void 戦闘タメ本体は保持中の姿勢を上書きせず解放攻撃だけを表示する(bool fire,bool flip)
         {
             var animator=host.AddComponent<Animator>();animator.enabled=true;body.flipX=flip;var original=body.sprite;var position=host.transform.position;var b=BodyBattle(fire);string prefix=fire?"trial_fire_charge_ground_":"trial_charge_ground_";
             using(var pose=new TrialBasicKickBody(body,animator)){
-                for(int f=1;f<=60;f++){var charge=new BattleChargeVisualState(b,true,f,60);Assert.IsTrue(pose.Apply(b,charge));Assert.AreEqual(prefix+(f==60?1:0),body.sprite.name);Assert.AreEqual(!flip,body.flipX);Assert.IsFalse(b.HasPlayerAction);Assert.IsFalse(animator.enabled);}
+                for(int f=1;f<=60;f++){var charge=new BattleChargeVisualState(b,true,f,60);Assert.IsFalse(pose.Apply(b,charge));Assert.AreSame(original,body.sprite);Assert.AreEqual(flip,body.flipX);Assert.IsFalse(b.HasPlayerAction);Assert.IsTrue(animator.enabled);}
                 Assert.IsTrue(b.TryStartPlayerBasicAttack(true));Assert.IsTrue(b.IsPlayerChargedBasicAction);Assert.IsTrue(pose.Apply(b));Assert.AreEqual(prefix+1,body.sprite.name);
                 for(int n=0;n<3;n++)b.TickFrame(17);Assert.AreEqual(980,b.Enemies[0].CurrentHp);Assert.IsTrue(pose.Apply(b));Assert.AreEqual(prefix+2,body.sprite.name);
                 b.Pause(Olca.Core.Logic.Battle.BattlePauseReason.User);for(int n=0;n<4;n++){Assert.IsTrue(pose.Apply(b));b.TickFrame(17);Assert.AreEqual(0,b.RecoveryElapsedFrames);}b.Resume(Olca.Core.Logic.Battle.BattlePauseReason.User);
@@ -167,23 +175,31 @@ namespace Olca.Tests
             var b=BodyBattle(false);var charge=new BattleChargeVisualState(b,true,60,60);Assert.IsTrue(charge.CanDisplayFor(b));Assert.IsFalse(charge.CanDisplayFor(BodyBattle(false)));Assert.IsFalse(default(BattleChargeVisualState).CanDisplayFor(b));
             Assert.IsTrue(b.TryStartPlayerBasicAttack(true));Assert.IsFalse(charge.CanDisplayFor(b));b.CancelBasicAction();Assert.IsFalse(b.HasPlayerAction);Assert.IsFalse(b.IsPlayerChargedBasicAction);Assert.IsFalse(charge.CanDisplayFor(b));
             var updated=new BattleChargeVisualState(b,true,1,60);Assert.IsTrue(updated.CanDisplayFor(b));using(var pose=new TrialBasicKickBody(body,null)){
-                var original=body.sprite;Assert.IsTrue(pose.Apply(b,updated));b.Player.SetHp(0);Assert.IsFalse(pose.Apply(b,updated));Assert.AreSame(original,body.sprite);
+                var original=body.sprite;Assert.IsFalse(pose.Apply(b,updated));b.Player.SetHp(0);Assert.IsFalse(pose.Apply(b,updated));Assert.AreSame(original,body.sprite);
             }
         }
         [Test] public void 戦闘タメ素材の欠損は旧姿勢と反転を所有せず共有Spriteを破棄しない()
         {
             int loads=0;var b=BodyBattle(false);var original=body.sprite;body.flipX=true;
             using(var pose=new TrialBasicKickBody(body,null,null,key=>{loads++;return new Sprite[0];})){
-                for(int n=0;n<4;n++)Assert.IsFalse(pose.Apply(b,new BattleChargeVisualState(b,true,60,60)));Assert.AreEqual(1,loads);Assert.AreSame(original,body.sprite);Assert.IsTrue(body.flipX);
+                for(int n=0;n<4;n++)Assert.IsFalse(pose.Apply(b,new BattleChargeVisualState(b,true,60,60)));Assert.AreEqual(0,loads);Assert.AreSame(original,body.sprite);Assert.IsTrue(body.flipX);
             }
         }
         [Test] public void 戦闘タメsnapshotはFieldの停止取消とreleaseで姿勢を残さない()
         {
             var b=BodyBattle(false);var animator=host.AddComponent<Animator>();var original=body.sprite;var view=host.AddComponent<GameFieldView>();Set(view,"playerSprite",body);Set(view,"playerAnimator",animator);Set(view,"idlePlayerSprite",original);Set(view,"currentBattle",b);var pauseOwner=new object();
             try{
-                view.SetBasicChargePresentation(b,true,60,60);Call(view,"UpdatePlayerSprite");Assert.AreEqual("trial_charge_ground_1",body.sprite.name);Assert.IsFalse(animator.enabled);
+                view.SetBasicChargePresentation(b,true,60,60);Call(view,"UpdatePlayerSprite");Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);
                 Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);view.SetBasicChargePresentation(b,false,0,60);Call(view,"UpdatePlayerSprite");Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);
                 view.SetBasicChargePresentation(b,true,60,60);Call(view,"UpdatePlayerSprite");view.ReleasePresentation();Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);Set(view,"currentBattle",BodyBattle(false));Call(view,"UpdatePlayerSprite");Assert.AreSame(original,body.sprite);
+            }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);view.ReleasePresentation();}
+        }
+        [Test] public void 戦闘タメ開始時は停止中にも直前の解放攻撃姿勢を残さない()
+        {
+            var b=BodyBattle(false);var animator=host.AddComponent<Animator>();var original=body.sprite;var view=host.AddComponent<GameFieldView>();Set(view,"playerSprite",body);Set(view,"playerAnimator",animator);Set(view,"idlePlayerSprite",original);Set(view,"currentBattle",b);var pauseOwner=new object();
+            try{
+                Assert.IsTrue(b.TryStartPlayerBasicAttack(true));Call(view,"UpdatePlayerSprite");Assert.AreEqual("trial_charge_ground_1",body.sprite.name);Assert.IsFalse(animator.enabled);
+                b.CancelBasicAction();view.SetBasicChargePresentation(b,true,1,60);Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,true);Call(view,"UpdatePlayerSprite");Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);
             }finally{Olca.Unity.BattleVisualClock.SetPaused(pauseOwner,false);view.ReleasePresentation();}
         }
         [Test] public void 戦闘試用蹴りは素材欠損で元Animatorを所有せず借用Spriteを破棄しない()

@@ -181,11 +181,10 @@ namespace Olca.Presentation.Exploration
         {
             // 専用の試用4姿勢。Sessionの論理phaseだけを読み、表示から時刻・位置を変更しない。
             if(presentation?.Player==null||presentation.Player.IsDead||presentation.Player.IsStaggered||presentation.Player.IsParalyzed)return null;
-            bool charging=presentation.IsCharging;
-            if(presentation!=null&&(presentation.IsChargedKick||charging&&
-                (!presentation.Core.IsGrounded||!presentation.Core.IsMoving)&&!presentation.Core.IsWallSliding&&!presentation.Core.IsWallKicking)){
-                bool ground=presentation.IsChargedKick?presentation.NormalKickKind<=OutsideKickKind.GroundThird:presentation.Core.IsGrounded;
-                var pose=(trialChargeMotion??(trialChargeMotion=new TrialChargeMotion())).Resolve(ground,charging,
+            // 保持中は待機・移動・ジャンプの本来の動作を続け、溜めは別レイヤーの演出で示す。
+            if(presentation.IsChargedKick){
+                bool ground=presentation.NormalKickKind<=OutsideKickKind.GroundThird;
+                var pose=(trialChargeMotion??(trialChargeMotion=new TrialChargeMotion())).Resolve(ground,false,
                     presentation.ChargeFrames>=presentation.ChargeRequiredFrames,presentation.KickElapsedFrames,presentation.KickTiming,
                     Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation.Player));
                 if(pose!=null)return pose;

@@ -301,6 +301,23 @@ namespace Olca.Tests.Application
                 Step(false);Assert.AreEqual(mode<=1,model.NormalKick.IsCharged);if(mode>=2)Assert.IsFalse(model.IsAttacking);
             }}finally{GameplayPause.SetPaused(oldPause);rel.SetValue(null,oldRel);res.SetValue(null,oldRes);model.Dispose();}
         }
+        [TestCase(false,0,1)] [TestCase(false,1,1)] [TestCase(false,2,1)] [TestCase(true,0,1)] [TestCase(true,1,1)] [TestCase(true,2,1)]
+        [TestCase(false,0,-1)] [TestCase(false,1,-1)] [TestCase(false,2,-1)] [TestCase(true,0,-1)] [TestCase(true,1,-1)] [TestCase(true,2,-1)]
+        public async Task 探索タメ中も待機移動ジャンプの既存アニメを継続する(bool fire,int mode,int facing)
+        {
+            var model=system.OutsideExploration;Assert.IsTrue(model.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true)));var actor=new Olca.Core.Domain.PlayerCharacter(100);if(fire)actor.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);model.TryInitializePlayer(()=>actor);model.EnableTrialNormalKick();
+            var field=Resources.Load<GameObject>("OlcaSystem/WorldPresentation").GetComponent<Olca.Presentation.Field.GameFieldView>();var sampler=new GameObject("Charge350Expected",typeof(SpriteRenderer));var sample=sampler.GetComponent<SpriteRenderer>();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
+            try{using(var costume=new Olca.Presentation.Effects.TrialFireBodyMotion())using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);if(facing<0)for(int n=0;n<120;n++)model.TickTraversal(1);model.TickTraversal(0);var view=binding.View;var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();var ring=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Single(v=>v.name=="OutsideProvisionalChargeRing");var seen=new HashSet<Sprite>();bool rise=false,fall=false;long initial=model.Core.Position;
+                for(int n=0;n<120;n++){
+                    model.TickTraversal(mode==0?0:facing,mode==2&&n==12,mode==2&&n>=12&&n<23);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);var core=model.Core;Sprite expected;
+                    if(core.IsGrounded){var clip=core.IsMoving?field.AuthoredMoveClip:field.AuthoredIdleClip;float time=(float)(((core.IsMoving?core.MovementFrame:core.IdleFrame)/60d)%clip.length);var curve=UnityEditor.AnimationUtility.GetObjectReferenceCurve(clip,UnityEditor.AnimationUtility.GetObjectReferenceCurveBindings(clip).Single(v=>v.type==typeof(SpriteRenderer)&&v.propertyName=="m_Sprite"));expected=curve.Last(v=>v.time<=time).value as Sprite;}else{expected=Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?field.AuthoredJumpApexSprite:core.VerticalVelocity>0?field.AuthoredJumpRiseSprite:field.AuthoredJumpFallSprite;rise|=core.VerticalVelocity>0;fall|=core.VerticalVelocity<0;}
+                    expected=costume.Resolve(expected,actor);long frame=core.Frame;int beforeRenderHp=actor.CurrentHp;view.Render();Assert.AreEqual(beforeRenderHp,actor.CurrentHp);Assert.AreSame(expected,body.sprite,"frame "+n);Assert.IsTrue(ring.enabled);Assert.IsTrue(model.IsCharging);Assert.IsFalse(model.IsAttacking);Assert.AreEqual(frame,core.Frame);seen.Add(body.sprite);
+                }
+                Assert.GreaterOrEqual(model.ChargeFrames,60);Assert.Greater(seen.Count,1,"待機も静止ポーズへ固定しない");if(mode==0)Assert.AreEqual(initial,model.Core.Position);else Assert.Greater((model.Core.Position-initial)*facing,0);if(mode==2){Assert.IsTrue(rise);Assert.IsTrue(fall);}
+            }}finally{UnityEngine.Object.DestroyImmediate(sampler);}
+        }
         [TestCase(1920,1080)] [TestCase(1440,1080)] [TestCase(3840,2160)]
         public async Task 探索タメ表示は蓄積完了解放を区別し表示だけでは時計とHPを進めない(int width,int height)
         {
@@ -308,7 +325,7 @@ namespace Olca.Tests.Application
             Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.Load<Font>("OlcaUI/MenuText"),resources));
             using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var ring=view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Single(v=>v.name=="OutsideProvisionalChargeRing");var caption=view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideProvisionalKickCaptionText");
-                for(int n=0;n<60;n++){model.TickTraversal(0);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);view.Render();Assert.IsTrue(ring.enabled);Assert.AreEqual("trial_charge_ground_"+(n==59?1:0),view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);StringAssert.Contains(n==59?"カンリョウ":"タメチュウ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);}
+                for(int n=0;n<60;n++){model.TickTraversal(0);model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true,ChargeHoldButton=true},false,true,true,out _);view.Render();Assert.IsTrue(ring.enabled);StringAssert.DoesNotContain("charge",view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);StringAssert.Contains(n==59?"カンリョウ":"タメチュウ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);}
                 long frame=model.Core.Frame;int hp=model.Player.CurrentHp;var sprite=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite;for(int n=0;n<30;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(hp,model.Player.CurrentHp);Assert.AreSame(sprite,view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite);
                 model.TickTraversal(0);Assert.IsTrue(model.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{HasChargeHoldSample=true},false,true,true,out _));view.Render();Assert.IsFalse(ring.enabled);StringAssert.Contains("タメ",caption.text);StringAssert.Contains("ジュンビ",caption.text);Assert.AreEqual("trial_charge_ground_1",view.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);Assert.IsTrue(model.NormalKick.IsCharged);
                 Assert.IsTrue(binding.ReturnToHub());Assert.IsFalse(ring.enabled);
@@ -1687,6 +1704,20 @@ namespace Olca.Tests.Application
                 Assert.IsTrue(binding.ReturnToHub());Assert.IsTrue(burst.All(v=>!v.enabled));Assert.IsTrue((await binding.OpenAsync()).Succeeded);view=binding.View;view.Render();Assert.IsTrue(view.GetComponentsInChildren<Olca.Presentation.Effects.ProvisionalCombatGraphic>(true).Where(v=>v.name.StartsWith("OutsideProvisionalTargetDeath_")).All(v=>!v.enabled),"再入済みdeadを新たな撃破として表示しない");
                 Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out _));view.Render();var caption=view.GetComponentsInChildren<Text>(true).Single(v=>v.name=="OutsideProvisionalKickCaptionText");StringAssert.Contains("1ダンメ",caption.text);Assert.GreaterOrEqual(caption.rectTransform.rect.height,caption.preferredHeight);Assert.GreaterOrEqual(caption.rectTransform.rect.width,caption.preferredWidth);
                 for(int n=0;n<6;n++)model.TickTraversal(0);view.Render();slash=view.GetComponentsInChildren<Image>(true).Single(v=>v.name=="OutsideProvisionalKickTrail");Assert.IsTrue(slash.enabled);Assert.AreEqual("trial_slash_0_0",slash.sprite.name);frame=model.Core.Frame;for(int n=0;n<10;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);for(int n=0;n<3;n++)model.TickTraversal(0);view.Render();Assert.AreEqual("trial_slash_0_2",slash.sprite.name);for(int n=0;n<9;n++)model.TickTraversal(0);view.Render();Assert.IsFalse(slash.enabled);
+            }
+        }
+        [TestCase(1920,1080)] [TestCase(3840,2160)] [TestCase(1440,1080)]
+        public async Task Home専用のリロードと地形案内は別マップで隠れ帰還すると戻る(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var session=system.OutsideExploration;bool trial=true;
+            Assert.IsTrue(session.TryConfigureTraversal(Olca.Core.Logic.Integration.OutsideTraversalProfile.ValidationWall(true)));session.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,session,factory,()=>true,()=>{},trialRoute:()=>trial)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;
+                void Check(bool visible){long frame=session.Core.Frame,position=session.Core.Position,gauge=session.Core.CardGauge.CurrentUnits;int hp=session.Player.CurrentHp;var snapshot=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(session.Core.CaptureState());for(int n=0;n<3;n++)view.Render();foreach(string name in new[]{"OutsideReloadPoint","OutsideTrialRouteHint"})Assert.AreEqual(visible,view.transform.Find(name).gameObject.activeSelf,name);Assert.AreEqual(frame,session.Core.Frame);Assert.AreEqual(position,session.Core.Position);Assert.AreEqual(gauge,session.Core.CardGauge.CurrentUnits);Assert.AreEqual(hp,session.Player.CurrentHp);CollectionAssert.AreEqual(snapshot,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(session.Core.CaptureState()));}
+                Check(true);session.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.IsReloadZone(session.Core));Check(false);
+                views.GetLayer("return-hub").CloseCurrent();Assert.IsTrue((await binding.OpenAsync()).Succeeded);Check(false);
+                session.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint);Check(true);trial=false;Check(false);trial=true;Check(true);
             }
         }
         [Test] public async Task 外界手札の枯渇表示は空枠を無効化し古い選択でも落ちず再装填で戻る()
