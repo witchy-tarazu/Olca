@@ -10,6 +10,56 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        private static OutsideExplorationSession AnnexSword346(string id="sword",int x=20,int facing=1,bool air=false,long wallBottom=0,long wallTop=60000000,long wallX=24*60000)
+        {
+            var s=new OutsideExplorationSession();var p=OutsideTraversalProfile.ValidationWall(true);
+            Assert.IsTrue(s.TryConfigureTraversal(new OutsideTraversalProfile("annex-sword346",p.DashSpeedPerSecond,p.DashFrames,p.DashCooldownFrames,p.DashResetFrames,p.DashJumpSpeedPerSecond,p.BodyHalfWidth,p.BodyHeight,p.WallSlidePerFrame,p.WallKickVelocity,p.WallKickSpeedPerSecond,p.WallKickPushFrames,p.WallKickMotionFrames,true,new OutsideValidationWall("wall346",wallX,wallBottom,wallTop))));
+            s.TryInitializePlayer(()=>new PlayerCharacter(100));var f=new Olca.Application.Battle.SimpleCardFactory();var cards=f.CreateTrialInitialLoadout().Outside.ToArray();if(id=="fire_sword")cards[0]=f.CreateById(id);Assert.IsTrue(s.QueueSelectedDeck("annex-sword346",cards,Owned(cards),new SeededBattleRandom(346),out var error),error);Walk155(s,10*60000);s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+            using(var lease=s.AttachPresentation())for(int n=0;n<60;n++)s.TickTraversal(1);
+            for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==id);n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==id)));
+            var state=s.Core.CaptureState();state.Position=x*60000;state.Facing=facing;state.Moving=false;state.MovementFrame=0;if(air){state.Height=60000;state.SupportId=null;state.Velocity=0;}typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.EnableTrialCardPolish();return s;
+        }
+        [TestCase("sword",1,false)][TestCase("sword",-1,false)][TestCase("sword",1,true)][TestCase("sword",-1,true)]
+        [TestCase("fire_sword",1,false)][TestCase("fire_sword",-1,true)]
+        [TestCase(TrialInitialCardDefinitions.WideSword,1,false)][TestCase(TrialInitialCardDefinitions.WideSword,-1,true)]
+        [TestCase(TrialInitialCardDefinitions.Spear,1,false)][TestCase(TrialInitialCardDefinitions.Spear,-1,true)]
+        public void 別マップソードは可視の標的位置へ既存威力を一度だけ与え使用消費と前隙を保つ(string id,int facing,bool air)
+        {
+            using(var s=AnnexSword346(id,facing==1?20:23,facing,air))using(var lease=s.AttachPresentation()){
+                var card=s.Cards.SelectedCard;int power=card.GetFinalPower(s.Player.AttackPower);long rev=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;
+                Assert.AreEqual(OutsideCardUseRestriction.None,s.SelectedCardRestriction);Assert.IsFalse(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,false,true,out _));Assert.AreEqual(rev,s.Cards.HandRevision);s.TickTraversal(0);
+                Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);Assert.AreEqual(rev+1,s.Cards.HandRevision);Assert.AreEqual(gauge-card.GetFinalCost()*OutsideCardGauge.UnitsPerPoint,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
+                for(int n=0;n<7;n++)s.TickTraversal(0);Assert.AreEqual(120,s.TrialTarget.CurrentHp);s.TickTraversal(0);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Assert.IsTrue(s.TrialStrike.Hit);
+                for(int n=0;n<40;n++)s.TickTraversal(0);Assert.AreEqual(Math.Max(0,120-power),s.TrialTarget.CurrentHp);Assert.IsFalse(s.IsAttacking);Assert.AreEqual(rev+1,s.Cards.HandRevision);
+            }
+        }
+        [TestCase(0L,72000L,false)][TestCase(0L,71999L,true)][TestCase(72000L,80000L,false)][TestCase(72001L,80000L,true)]
+        public void 別マップソードの壁上下端は射撃と同じ試用中心高で包含判定する(long bottom,long top,bool hits)
+        {
+            using(var s=AnnexSword346(x:23,wallBottom:bottom,wallTop:top))using(var lease=s.AttachPresentation()){
+                var card=s.Cards.SelectedCard;Assert.IsTrue(s.TryUseSelectedCard(card,s.Cards.HandRevision,out var error),error);for(int n=0;n<30;n++)s.TickTraversal(0);
+                Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(hits?120-card.GetFinalPower(s.Player.AttackPower):120,s.SecondTrialTarget.CurrentHp);Assert.AreEqual(hits,s.TrialStrike.Hit);
+            }
+        }
+        [Test] public void 別マップソードは壁手前の敵を左向きにも命中し壁向こうへ貫通しない()
+        {
+            using(var s=AnnexSword346(TrialInitialCardDefinitions.Spear,27,-1))using(var lease=s.AttachPresentation()){
+                var card=s.Cards.SelectedCard;Assert.IsTrue(s.TryUseSelectedCard(card,s.Cards.HandRevision,out _));for(int n=0;n<30;n++)s.TickTraversal(0);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120-card.GetFinalPower(s.Player.AttackPower),s.SecondTrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void 別マップソードの壁と標的が同じ位置なら壁を優先して命中しない()
+        {
+            using(var s=AnnexSword346(wallX:1350000))using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<30;n++)s.TickTraversal(0);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.AreEqual(120,s.SecondTrialTarget.CurrentHp);Assert.IsFalse(s.TrialStrike.Hit);}
+        }
+        [TestCase(1,false)][TestCase(8,false)][TestCase(12,false)][TestCase(1,true)][TestCase(12,true)]
+        public void 別マップソードの前隙と命中済み保存は失敗再試行とcoldで消費命中を二重適用しない(int age,bool blocked)
+        {
+            string dir=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"annex-sword346-"+Guid.NewGuid().ToString("N"));
+            try{using(var s=AnnexSword346(x:blocked?23:20))using(var cold=new OutsideExplorationSession()){
+                int power=s.Cards.SelectedCard.GetFinalPower(s.Player.AttackPower);using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));for(int n=0;n<age;n++)s.TickTraversal(0);}
+                var defs=Door239Definitions(s);var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;long rev=s.Cards.HandRevision;var plan=new ClearReturnProfile{Revision=1,CommitId=Guid.NewGuid().ToString("N"),OutsideRecoveryPointId=OutsideTrialRoute.DoorAnnexPoint,OutsideRuntimeSave=runtime,OutsidePlayerSave=actor,OutsideItemState=new OutsideItemStateData{ActorKey=actor.Key(),RuntimeKey=runtime.Key()}};var io=new Action159Io();var store=new Olca.Unity.ClearReturnFileStore(dir,io);Assert.IsFalse(store.TryWrite(0,plan,out _));Assert.IsFalse(System.IO.File.Exists(store.ActivePath));io.Fail=false;Assert.IsTrue(store.TryWrite(0,plan,out var error),error);var bytes=System.IO.File.ReadAllBytes(store.ActivePath);Assert.IsTrue(store.TryWrite(0,plan,out _));CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(store.ActivePath));var saved=store.Read(out _);Assert.IsTrue(cold.TryConfigureTraversal(s.Core.TraversalProfile));Assert.IsTrue(cold.RestoreSavedState(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,OutsideTrialRoute.DoorAnnexPoint,defs));Assert.IsFalse(cold.RestoreSavedState(saved.OutsidePlayerSave,saved.OutsideRuntimeSave,OutsideTrialRoute.DoorAnnexPoint,defs));using(var lease=cold.AttachPresentation())for(int n=0;n<50;n++)cold.TickTraversal(0);Assert.AreEqual(blocked?120:120-power,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.SecondTrialTarget.CurrentHp);Assert.AreEqual(rev,cold.Cards.HandRevision);Assert.IsFalse(cold.IsAttacking);
+            }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
+        }
         [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)]
         public void 通常マップ帰着と操作範囲の右端は登録済み全地形で待機しても被弾しない(int profileIndex)
         {
@@ -39,11 +89,11 @@ namespace Olca.Tests
             }
         }
 
-        [Test] public void 試用別マップへ偽装したソード途中保存は元Sessionを変えず拒否する()
+        [Test] public void 試用未知マップへ偽装したソード途中保存は元Sessionを変えず拒否する()
         {
             using(var s=Sword161(startup:3,recovery:8))using(var cold=Heal158()){
                 using(var lease=s.AttachPresentation()){Assert.IsTrue(s.TryUseSelectedCard(s.Cards.SelectedCard,s.Cards.HandRevision,out _));s.TickTraversal(0);}
-                var defs=Door239Definitions(s);var runtime=s.CaptureRuntime(defs);runtime.Core.TrialMapId=OutsideTrialRoute.AnnexMapId;var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                var defs=Door239Definitions(s);var runtime=s.CaptureRuntime(defs);runtime.Core.TrialMapId="unregistered-map";var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
                 var before=cold.CaptureRuntime(Door239Definitions(cold));var prior=cold.Player;var cards=cold.Cards;
                 Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,runtime,OutsideTrialRoute.DoorAnnexPoint,defs));
                 var after=cold.CaptureRuntime(Door239Definitions(cold));after.Id=before.Id;Assert.AreEqual(before.Key(),after.Key());Assert.AreSame(prior,cold.Player);Assert.AreSame(cards,cold.Cards);
@@ -99,15 +149,15 @@ namespace Olca.Tests
                 Assert.AreEqual(70,cold.Player.CurrentHp);Assert.AreEqual(rev,cold.Cards.HandRevision);Assert.IsFalse(cold.IsAttacking);CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(runtime));
             }
         }
-        [Test] public void 試用別マップのシールド残量はcold復帰し攻撃カードと固有攻撃は未登録のまま拒否する()
+        [Test] public void 試用別マップのシールド残量はcold復帰しボムと固有攻撃は未登録のまま拒否する()
         {
             using(var s=AnnexSupport335("shield"))using(var cold=new OutsideExplorationSession()){
                 using(var lease=s.AttachPresentation()){Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out _));s.Player.TakeDamage(10,affectsPoise:false);}
                 var defs=Door239Definitions(s);var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;Assert.IsTrue(cold.RestoreSavedState(actor,runtime,OutsideTrialRoute.DoorAnnexPoint,defs));Assert.AreEqual(5,cold.Player.BarrierHp);
                 using(var lease=cold.AttachPresentation()){Assert.IsFalse(cold.ProcessCardUseInput(false,false,true,0,1,out _));Assert.IsFalse(cold.IsAttacking);}
             }
-            using(var s=AnnexSupport335("sword"))using(var lease=s.AttachPresentation()){
-                long rev=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.AreEqual(OutsideCardUseRestriction.UnsupportedLocation,s.SelectedCardRestriction);Assert.IsFalse(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error));StringAssert.Contains("バショ",error);Assert.AreEqual(rev,s.Cards.HandRevision);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);
+            using(var s=AnnexSupport335("bomb"))using(var lease=s.AttachPresentation()){
+                long rev=s.Cards.HandRevision,gauge=s.Core.CardGauge.CurrentUnits;Assert.AreEqual(OutsideCardUseRestriction.UnsupportedTrajectory,s.SelectedCardRestriction);Assert.IsFalse(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error));StringAssert.Contains("対応する探索マップ",error);Assert.AreEqual(rev,s.Cards.HandRevision);Assert.AreEqual(gauge,s.Core.CardGauge.CurrentUnits);
             }
         }
 
@@ -1514,14 +1564,14 @@ namespace Olca.Tests
             using(var s=Sword161(level:ExceedLevel.Lv1)){Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(s.Cards.SelectedCard));}
             Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(new Card("unknown","fixture",1,CardRarity.Normal,CardCategory.Defense,ElementType.None,CardSeries.None,1,"fixture")));Assert.IsFalse(OutsideCardUseDefinition.AllowsAir(null));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("sword")));Assert.AreEqual(9,OutsideCardUseDefinition.TrialDefinitions.Count(d=>d.CanUseInAir&&!TrialInitialCardDefinitions.IsId(d.CardId)));Assert.IsTrue(OutsideCardUseDefinition.AllowsAir(new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb")));
         }
-        [TestCase(0,OutsideCardUseRestriction.None)][TestCase(1,OutsideCardUseRestriction.InsufficientGauge)][TestCase(2,OutsideCardUseRestriction.UnsupportedCard)][TestCase(3,OutsideCardUseRestriction.UnsupportedLocation)][TestCase(4,OutsideCardUseRestriction.None)]
+        [TestCase(0,OutsideCardUseRestriction.None)][TestCase(1,OutsideCardUseRestriction.InsufficientGauge)][TestCase(2,OutsideCardUseRestriction.UnsupportedCard)][TestCase(3,OutsideCardUseRestriction.UnsupportedTrajectory)][TestCase(4,OutsideCardUseRestriction.None)]
         public void 選択カードの制限案内は既存登録と場所とコストを読み消費や予約を作らない(int mode,OutsideCardUseRestriction expected)
         {
             using(var s=Heal158())using(var lease=s.AttachPresentation()){
                 if(mode==1)Assert.IsTrue(s.Core.CardGauge.TrySpend(100));
                 if(mode==2){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="tuning");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="tuning")));}
-                // 別マップの場所制限は攻撃ソードで保持し、自己回復ヒールは許可される案内を別ケースで読む。
-                if(mode==3){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="sword");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="sword")));}
+                // 別マップの未登録ボムは場所制限を保持し、自己回復ヒールは許可される案内を別ケースで読む。
+                if(mode==3){for(int n=0;n<100&&!s.Cards.Hand.Any(c=>c.Id=="bomb");n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb")));}
                 if(mode==3||mode==4)typeof(OutsideExplorationCore).GetMethod("SetRecoveryMap",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{OutsideTrialRoute.DoorAnnexPoint});
                 long frame=s.Core.Frame,gauge=s.Core.CardGauge.CurrentUnits,revision=s.Cards.HandRevision;int hp=s.Player.CurrentHp,selected=s.Cards.SelectedIndex,remaining=s.Cards.RemainingCount;var hand=s.Cards.Hand.ToArray();
                 for(int n=0;n<100;n++){Assert.AreEqual(expected,s.SelectedCardRestriction);Assert.AreEqual(expected,lease.SelectedCardRestriction);}

@@ -190,6 +190,7 @@ namespace Olca.Core.Logic.Integration
             public IReadOnlyList<OutsideBombFlightData> Bombs=>IsCurrent?owner.Bombs:Array.Empty<OutsideBombFlightData>();
             public IReadOnlyList<OutsideBombBlastData> BombBlasts=>IsCurrent?owner.BombBlasts:Array.Empty<OutsideBombBlastData>();
             // 投擲表示は既存行動時計と非保存の発射通知を読む。発射計画を複製・変更しない。
+            public long? FirstSwordBlockingWall(long x,long y,int facing,long reach)=>IsCurrent?owner.FirstSwordBlockingWall(x,y,facing,reach):null;
             public bool IsSwingingSword=>IsCurrent&&owner.attackState?.SwordMotionId==OutsideCardPolishTrial.SwordMotionId;
             public string SwordSwingCardId=>IsSwingingSword?owner.Cards.ActionCard(owner.attackState.CardIndex).Id:null;
             public long SwordSwingElapsed=>IsSwingingSword?owner.Core.Frame-owner.attackState.StartedAt:-1;
@@ -302,17 +303,30 @@ namespace Olca.Core.Logic.Integration
         private OutsideTrialTargetData CaptureTrialTarget()=>trialTargetChanged||trialTarget!=null&&trialTarget.CurrentHp!=TrialTargetMaximum?new OutsideTrialTargetData{Hp=TrialTarget.CurrentHp,Hits=trialTargetHits}:null;
         // 静止標的に対する試用の縦範囲。正式な敵の当たり形状ではない。
         public const long TrialSwordVerticalRange=90000;
+        // 命中と表示が同じ閉区間を読む試用壁query。状態・予約・カードは変更しない。
+        private long? FirstSwordBlockingWall(long x,long y,int facing,long reach)
+        {
+            if(IsEnded||Core.TrialMapId!=OutsideTrialRoute.AnnexMapId||x<0||x>Core.Definition.Width||reach<0||facing!=1&&facing!=-1)return null;
+            long? first=null;long nearest=long.MaxValue;decimal height=(decimal)y+72000;
+            foreach(var wall in Core.TraversalProfile?.Walls??Array.Empty<OutsideValidationWall>()){
+                long distance=(wall.X-x)*facing;if(distance<0||distance>reach||height<wall.Bottom||height>wall.Top)continue;
+                if(distance<nearest){first=wall.X;nearest=distance;}
+            }
+            return first;
+        }
         private void ApplyTrialSword(Card card,int? resolvedPower=null){
             bool polished=attackState?.SwordMotionId==OutsideCardPolishTrial.SwordMotionId;
             long baseReach=polished?OutsideCardPolishTrial.SwordReach:TrialSwordRange;
             long reach=card.Id==TrialInitialCardDefinitions.Spear?baseReach*3/2:baseReach;
             long verticalRange=card.Id==TrialInitialCardDefinitions.WideSword?TrialSwordVerticalRange*3/2:TrialSwordVerticalRange;
             bool vertical=Core.IsGrounded||(OutsideCardUseDefinition.AllowsAir(card)&&Core.Height>=0&&Core.Height<=verticalRange);
-            bool InRange(long x,Enemy enemy){long dx=(x-Core.Position)*Core.Facing;return vertical&&!enemy.IsDead&&dx>=0&&dx<=reach;}
+            // 別マップは直進弾と同じ試用の垂直壁・高さ1.2worldで遮蔽する。床の厚みや正式物理は追加しない。
+            bool Blocked(long x)=>FirstSwordBlockingWall(Core.Position,Core.Height,Core.Facing,(x-Core.Position)*Core.Facing).HasValue;
+            bool InRange(long x,Enemy enemy){long dx=(x-Core.Position)*Core.Facing;return vertical&&!enemy.IsDead&&dx>=0&&dx<=reach&&!Blocked(x);}
             // 単体命中と従来の第一標的優先を保持する。描画の生成順に依存させない。
             Enemy target=null;bool second=false;
-            if(InRange(TrialTargetX,TrialTarget))target=TrialTarget;
-            else if(InRange(OutsideKickTrialDefinition.SecondTargetX,SecondTrialTarget)){target=SecondTrialTarget;second=true;}
+            if(InRange(FirstTrialTargetX,TrialTarget))target=TrialTarget;
+            else if(InRange(SecondTrialTargetX,SecondTrialTarget)){target=SecondTrialTarget;second=true;}
             trialStrike=new OutsideTrialStrike{CardId=card.Id,Frame=Core.Frame,X=Core.Position,Y=Core.Height,Facing=Core.Facing,Hit=target!=null,Reach=reach,SpriteSwing=polished,VerticalScale=card.Id==TrialInitialCardDefinitions.WideSword?1.5f:1f};
             if(target!=null){
                 if(second)secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
@@ -359,8 +373,8 @@ namespace Olca.Core.Logic.Integration
         public Olca.Core.Logic.Battle.AttackReservationKind PendingAttack=>attackReservation.Kind;
         public void CancelAttackReservation(){attackReservation.Cancel();reservedCard=null;reservedOwner=null;}
         public void ObserveAttackBoundary(int facing,bool grounded){if(Core.Facing!=facing||Core.IsGrounded!=grounded)CancelAttackReservation();}
-        // 別マップは敵未登録。自己回復・防御と既存の試用直進弾だけを許可する。
-        private static bool SupportsCardLocation(Card card,string mapId)=>mapId==null||mapId==OutsideTrialRoute.AnnexMapId&&(HealDefinition(card)||ShieldDefinition(card)||ShotDefinition(card));
+        // 別マップの登録済み標的には剣・直進弾を許可し、ボムと固有攻撃は引き続き未登録。
+        private static bool SupportsCardLocation(Card card,string mapId)=>mapId==null||mapId==OutsideTrialRoute.AnnexMapId&&(HealDefinition(card)||ShieldDefinition(card)||ShotDefinition(card)||SwordDefinition(card));
         private bool SupportedCard(Card card)=>SupportsCardLocation(card,Core.TrialMapId)&&Core.Definition.Id=="validation-landing-32"&&(HealDefinition(card)||SwordDefinition(card)||ShieldDefinition(card)||ShotDefinition(card)||BombDefinition(card))&&(Core.IsGrounded||OutsideCardUseDefinition.AllowsAir(card))&&(!BombDefinition(card)||CanPlanBomb());
         // 使用受付ではない読取案内。予約/前後隙を無視して「使用可能」と断言しない。
         public OutsideCardUseRestriction SelectedCardRestriction

@@ -928,6 +928,25 @@ namespace Olca.Presentation.Exploration
         private TrialBombBlastMotion bombBlastMotion;
         private void ClearBombVisuals(){foreach(var image in bombImages)if(image!=null){image.enabled=false;image.sprite=null;}bombBlastMotion?.Dispose();bombBlastMotion=null;bombAssets?.Dispose();bombAssets=null;}
         private Image polishedSwordTrail;
+        private OutsideSwordWallClip swordPropWallClip,swordTrailWallClip,swordSpriteWallClip;
+        private void ClipSwordGraphic(Graphic image,ref OutsideSwordWallClip clip,long? wall,int facing,float boundary)
+        {
+            if(image==null||!image.isActiveAndEnabled||!wall.HasValue){if(clip!=null)clip.ClearClip();return;}
+            if(clip==null)clip=image.GetComponent<OutsideSwordWallClip>()??image.gameObject.AddComponent<OutsideSwordWallClip>();
+            clip.SetClip(transform,facing,boundary);
+        }
+        private void RenderSwordWallClip(float camera,float viewport)
+        {
+            var core=presentation.Core;var strike=presentation.TrialStrike;bool action=presentation.IsSwingingSword;
+            long expected=action?core.Frame-presentation.SwordSwingElapsed+presentation.SwordSwingStartup:-1;
+            bool fired=strike!=null&&(!action||strike.Frame==expected);
+            long x=fired?strike.X:core.Position,y=fired?strike.Y:core.Height;int facing=fired?strike.Facing:core.Facing;
+            long reach=action?presentation.SwordSwingReach:strike?.Reach??0;
+            bool visible=polishedSwordTrail!=null&&polishedSwordTrail.enabled||trialSwordImage!=null&&trialSwordImage.enabled||trialSwordTrail!=null&&trialSwordTrail.enabled;
+            var wall=visible?presentation.FirstSwordBlockingWall(x,y,facing,reach):null;
+            float boundary=wall.HasValue?((RectTransform)transform).rect.xMin+(wall.Value/(float)OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit:0;
+            ClipSwordGraphic(polishedSwordTrail,ref swordSpriteWallClip,wall,facing,boundary);ClipSwordGraphic(trialSwordImage,ref swordPropWallClip,wall,facing,boundary);ClipSwordGraphic(trialSwordTrail,ref swordTrailWallClip,wall,facing,boundary);
+        }
         private bool RenderPolishedSword(float camera,float viewport,float verticalOffset)
         {
             var core=presentation.Core;var strike=presentation.TrialStrike;bool action=presentation.IsSwingingSword;
@@ -1009,6 +1028,7 @@ namespace Olca.Presentation.Exploration
             if(!RenderPolishedSword(camera,viewport,verticalOffset)){
             var strike=presentation.TrialStrike;float swordAngle=0,swordAlpha=0;bool show=strike!=null&&OutsideSwordTrailGraphic.TrySample(core.Frame>=strike.Frame?core.Frame-strike.Frame:-1,strike.Facing,out swordAngle,out swordAlpha);trialSwordImage.enabled=show;trialSwordTrail.enabled=show;if(show){if(trialSwordAssets==null)trialSwordAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);if(trialSwordImage.sprite==null){if(!Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Sword,out var sprite,trialSwordAssets))throw new InvalidOperationException("共用ソード素材がありません");trialSwordImage.sprite=sprite;trialSwordImage.rectTransform.pivot=sprite.pivot/sprite.rect.size;trialSwordImage.rectTransform.sizeDelta=sprite.bounds.size*pixelsPerWorldUnit;}trialSwordImage.rectTransform.anchoredPosition=new Vector2(((float)strike.X/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f+.35f*strike.Facing)*pixelsPerWorldUnit,((float)strike.Y/OutsideMovementDefinition.UnitsPerWorldUnit+1.2f-verticalOffset)*pixelsPerWorldUnit);float tip=(float)(strike.Reach>0?strike.Reach:OutsideExplorationSession.TrialSwordRange)/OutsideMovementDefinition.UnitsPerWorldUnit-.35f;float scale=tip/trialSwordImage.sprite.bounds.max.x;trialSwordImage.rectTransform.localScale=new Vector3(strike.Facing*scale,scale*(strike.VerticalScale>0?strike.VerticalScale:1),1);trialSwordImage.rectTransform.localRotation=Quaternion.Euler(0,0,swordAngle);trialSwordImage.color=new Color(1,1,1,swordAlpha);trialSwordTrail.rectTransform.anchoredPosition=trialSwordImage.rectTransform.anchoredPosition;trialSwordTrail.rectTransform.localScale=new Vector3(strike.Facing,strike.VerticalScale>0?strike.VerticalScale:1,1);trialSwordTrail.SetPose(swordAngle*strike.Facing,swordAlpha,tip*pixelsPerWorldUnit);}
             }
+            RenderSwordWallClip(camera,viewport);
             PaintSecondTrialFeedback(camera,verticalOffset);
             if(trialTargetFeedback.ActiveCount>0){var obstacles=TrialNumberObstacles();trialTargetFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),obstacles,TrialNumberProtectedOverlay());}
         }
@@ -1022,7 +1042,7 @@ namespace Olca.Presentation.Exploration
         private List<RectTransform> TrialNumberObstacles()=>new List<RectTransform>{trialTargetPlate,trialTargetGauge.rectTransform,secondTrialGauge.rectTransform,entrance!=null?(RectTransform)entrance.transform:null,reloadPoint,mapNameLabel!=null?mapNameLabel.rectTransform:null};
         private RectTransform TrialNumberProtectedOverlay()=>mapNameLabel!=null&&mapNameLabel.isActiveAndEnabled&&mapNameLabel.color.a>0?mapNameLabel.rectTransform:null;
         private void PaintSecondTrialFeedback(float camera,float verticalOffset){if(secondTrialFeedback?.ActiveCount>0)secondTrialFeedback.Paint(world=>new Vector2((world.x-camera)*pixelsPerWorldUnit,-((RectTransform)transform).rect.height*.29f+(world.y-verticalOffset)*pixelsPerWorldUnit),TrialNumberObstacles(),TrialNumberProtectedOverlay());}
-        private void ClearTrialSword(){if(polishedSwordTrail!=null){polishedSwordTrail.enabled=false;polishedSwordTrail.sprite=null;}ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null){image.enabled=false;image.sprite=null;}if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
+        private void ClearTrialSword(){swordPropWallClip?.ClearClip();swordTrailWallClip?.ClearClip();swordSpriteWallClip?.ClearClip();if(polishedSwordTrail!=null){polishedSwordTrail.enabled=false;polishedSwordTrail.sprite=null;}ClearBombVisuals();foreach(var image in initialShotImages)if(image!=null){image.enabled=false;image.sprite=null;}if(trialEnemyAttackButton!=null){trialEnemyAttackButton.onClick.RemoveAllListeners();trialEnemyAttackButton.interactable=false;}if(trialSwordTrail!=null)trialSwordTrail.enabled=false;trialTargetFeedback?.Unbind();secondTrialFeedback?.Unbind();secondFeedbackTarget=null;feedbackTarget=null;feedbackLease=null;trialNumberStyle=null;if(trialSwordImage!=null){trialSwordImage.enabled=false;trialSwordImage.sprite=null;}trialSwordAssets?.Dispose();trialSwordAssets=null;}
     }
 }
 
@@ -1477,5 +1497,45 @@ namespace Olca.Presentation.Exploration
         protected override string SheetStem=>"trial_shield_hit_effect";
         protected override string EffectName=>"OutsideShieldHitEffect";
         protected override float PulseDuration=>Duration;
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>試用壁の先だけをUIメッシュから切り取り、スプライトの寸法・UV・時計は変えない。</summary>
+    public sealed class OutsideSwordWallClip : UnityEngine.UI.BaseMeshEffect
+    {
+        private Transform space;private int side;private float edge;private Matrix4x4 configuredMatrix;private bool clipping;
+        private readonly List<UIVertex> source=new List<UIVertex>(64),polygon=new List<UIVertex>(8),result=new List<UIVertex>(96);
+        public void SetClip(Transform coordinateSpace,int facing,float boundary)
+        {
+            var matrix=coordinateSpace.worldToLocalMatrix*transform.localToWorldMatrix;
+            bool changed=!clipping||space!=coordinateSpace||side!=facing||edge!=boundary||configuredMatrix!=matrix;
+            space=coordinateSpace;side=facing;edge=boundary;configuredMatrix=matrix;clipping=true;
+            if(!enabled)enabled=true;else if(changed)graphic?.SetVerticesDirty();
+        }
+        public void ClearClip(){clipping=false;space=null;if(enabled)enabled=false;}
+        public override void ModifyMesh(VertexHelper vh)
+        {
+            if(!IsActive()||!clipping||space==null)return;
+            var matrix=space.worldToLocalMatrix*transform.localToWorldMatrix;source.Clear();result.Clear();vh.GetUIVertexStream(source);
+            float Distance(UIVertex v)=>(edge-matrix.MultiplyPoint3x4(v.position).x)*side;
+            for(int n=0;n+2<source.Count;n+=3){
+                polygon.Clear();var previous=source[n+2];float prior=Distance(previous);
+                for(int k=0;k<3;k++){
+                    var current=source[n+k];float distance=Distance(current);
+                    if((prior>=0)!=(distance>=0))polygon.Add(Interpolate(previous,current,Mathf.Clamp01(prior/(prior-distance))));
+                    if(distance>=0)polygon.Add(current);previous=current;prior=distance;
+                }
+                for(int k=1;k+1<polygon.Count;k++){result.Add(polygon[0]);result.Add(polygon[k]);result.Add(polygon[k+1]);}
+            }
+            vh.Clear();vh.AddUIVertexTriangleStream(result);
+        }
+        private static UIVertex Interpolate(UIVertex a,UIVertex b,float t)
+        {
+            a.position=Vector3.LerpUnclamped(a.position,b.position,t);a.normal=Vector3.LerpUnclamped(a.normal,b.normal,t);a.tangent=Vector4.LerpUnclamped(a.tangent,b.tangent,t);a.color=Color.LerpUnclamped(a.color,b.color,t);
+            a.uv0=Vector4.LerpUnclamped(a.uv0,b.uv0,t);a.uv1=Vector4.LerpUnclamped(a.uv1,b.uv1,t);a.uv2=Vector4.LerpUnclamped(a.uv2,b.uv2,t);a.uv3=Vector4.LerpUnclamped(a.uv3,b.uv3,t);return a;
+        }
+        protected override void OnDisable(){clipping=false;space=null;base.OnDisable();}
     }
 }
