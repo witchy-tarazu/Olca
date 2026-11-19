@@ -50,6 +50,9 @@ namespace Olca.Presentation.Field
         public Sprite AuthoredJumpRiseSprite=>jumpRisePlayerSprite;
         public Sprite AuthoredJumpApexSprite=>jumpApexPlayerSprite;
         public Sprite AuthoredJumpFallSprite=>jumpFallPlayerSprite;
+        // 共有被弾素材の読取だけを公開し、配列や経過時計を外部へ渡さない。
+        public Sprite AuthoredStaggerSprite(int elapsedFrames)=>contactKnockbackSprites==null||contactKnockbackSprites.Length==0?null:contactKnockbackSprites[System.Math.Min(contactKnockbackSprites.Length-1,System.Math.Max(0,elapsedFrames)/6)];
+
         public AnimationClip AuthoredIdleClip=>playerAnimator!=null&&playerAnimator.runtimeAnimatorController!=null
             ?System.Array.Find(playerAnimator.runtimeAnimatorController.animationClips,clip=>clip.name=="Player_Idle"):null;
         public AnimationClip AuthoredMoveClip=>playerAnimator!=null&&playerAnimator.runtimeAnimatorController!=null

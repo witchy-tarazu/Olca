@@ -43,6 +43,8 @@ namespace Olca.Presentation.Exploration
         private readonly Text[] handNames=new Text[3],handCosts=new Text[3];
         private readonly Image[] handIcons=new Image[3],handSelectionMarks=new Image[3];
         private readonly Button[] handButtons=new Button[3];
+        private Func<int,Sprite> authoredStaggerSprite;
+        private Sprite StaggerSprite(){var actor=presentation?.Player;return actor?.IsStaggered==true?authoredStaggerSprite?.Invoke(Math.Max(0,actor.StaggerDurationFrames-actor.StaggerRemainingFrames)):null;}
         private Sprite idleSprite,riseSprite,apexSprite,fallSprite;private AnimationClip moveClip,idleClip;private SpriteRenderer motionSample;
         private readonly System.Collections.Generic.List<(Image image,Text label)> landingViews=new System.Collections.Generic.List<(Image,Text)>();
         private Image player,terrain;private Text leftEnd,rightEnd,gaugeLabel;private RectTransform gaugeFill;private long lastGaugeUnits=-1,lastGaugeMaximum=-1;private float pixelsPerWorldUnit;
@@ -62,7 +64,7 @@ namespace Olca.Presentation.Exploration
             Image Picture(string name,Sprite sprite,Vector2 min,Vector2 max){if(sprite==null)throw new InvalidOperationException("外界入口の画像がありません: "+name);var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=sprite;image.raycastTarget=false;var r=image.rectTransform;r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;return image;}
             var background=Picture("OutsideOriginalBackground",Find("DungeonBackground"),Vector2.zero,Vector2.one);var cover=background.gameObject.AddComponent<AspectRatioFitter>();cover.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;cover.aspectRatio=background.sprite.rect.width/background.sprite.rect.height;
             terrain=Picture("OutsideEntryGround",Find("Ground"),Vector2.zero,new Vector2(1,.21f));terrain.type=Image.Type.Tiled;
-            var field=source.GetComponent<Olca.Presentation.Field.GameFieldView>();var idle=idleSprite=field.AuthoredIdlePlayerSprite;
+            var field=source.GetComponent<Olca.Presentation.Field.GameFieldView>();var idle=idleSprite=field.AuthoredIdlePlayerSprite;authoredStaggerSprite=field.AuthoredStaggerSprite;
             riseSprite=field.AuthoredJumpRiseSprite;apexSprite=field.AuthoredJumpApexSprite;fallSprite=field.AuthoredJumpFallSprite;moveClip=field.AuthoredMoveClip;idleClip=field.AuthoredIdleClip;
             if(moveClip!=null){var sampler=new GameObject("OutsideImportedMotionSample",typeof(SpriteRenderer),typeof(Animator));sampler.transform.SetParent(transform,false);motionSample=sampler.GetComponent<SpriteRenderer>();motionSample.enabled=false;var animator=sampler.GetComponent<Animator>();animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;animator.enabled=false;}
             player=Picture("OutsideEntryPlayer",idle,new Vector2(0,.21f),new Vector2(0,.21f));player.rectTransform.pivot=idle.pivot/idle.rect.size;pixelsPerWorldUnit=1080f/(2*resources.GetShared<GameObject>("OlcaSystem/GameplayCamera").GetComponent<Camera>().orthographicSize);player.rectTransform.sizeDelta=new Vector2(idle.bounds.size.x,idle.bounds.size.y)*pixelsPerWorldUnit;player.rectTransform.localScale=new Vector3(-1,1,1);
@@ -328,7 +330,7 @@ namespace Olca.Presentation.Exploration
 
             if(recoveryPoint!=null){recoveryPoint.gameObject.SetActive(recover!=null&&trialRoute?.Invoke()==true);recoveryPoint.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.RecoveryX/unit)),340-verticalOffset*pixelsPerWorldUnit);recoveryPoint.interactable=canRecover?.Invoke()==true;var label=recoveryPoint.GetComponentInChildren<Text>();label.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(recoveryMessage?.Invoke()??"ケンショウ カイフク（カリ）");label.resizeTextForBestFit=true;label.resizeTextMinSize=18;label.resizeTextMaxSize=24;}
             PaintSupportFeedback();var supportSprite=TrialSupportSprite();
-            Sprite sprite=TrialShotSprite()??TrialSwordSprite()??TrialBombSprite()??TrialKickSprite()??supportSprite??TraversalSprite(core);
+            Sprite sprite=StaggerSprite()??TrialShotSprite()??TrialSwordSprite()??TrialBombSprite()??TrialKickSprite()??supportSprite??TraversalSprite(core);
             if(sprite==null){sprite=idleSprite;
             if(!core.IsGrounded)sprite=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apexSprite:core.VerticalVelocity>0?riseSprite:fallSprite;
             else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null&&motionSample!=null){long frame=core.IsMoving?core.MovementFrame:core.IdleFrame;clip.SampleAnimation(motionSample.gameObject,(float)((frame/60d)%clip.length));sprite=motionSample.sprite;}}
