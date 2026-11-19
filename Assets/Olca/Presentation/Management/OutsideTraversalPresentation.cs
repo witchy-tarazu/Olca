@@ -928,7 +928,7 @@ namespace Olca.Presentation.Exploration
         private TrialBombBlastMotion bombBlastMotion;
         private void ClearBombVisuals(){foreach(var image in bombImages)if(image!=null){image.enabled=false;image.sprite=null;}bombBlastMotion?.Dispose();bombBlastMotion=null;bombAssets?.Dispose();bombAssets=null;}
         private Image polishedSwordTrail;
-        private OutsideSwordWallClip swordPropWallClip,swordTrailWallClip,swordSpriteWallClip;
+        private OutsideSwordWallClip swordPropWallClip,swordTrailWallClip,swordSpriteWallClip,kickTrailWallClip;
         private void ClipSwordGraphic(Graphic image,ref OutsideSwordWallClip clip,long? wall,int facing,float boundary)
         {
             if(image==null||!image.isActiveAndEnabled||!wall.HasValue){if(clip!=null)clip.ClearClip();return;}
@@ -971,7 +971,7 @@ namespace Olca.Presentation.Exploration
         }
         private void RenderBombs(float camera,float viewport,float verticalOffset)
         {
-            if(presentation?.IsCurrent!=true||presentation.Core.TrialMapId!=null){ClearBombVisuals();return;}
+            if(presentation?.IsCurrent!=true||!OutsideTrialRoute.KnownMap(presentation.Core.TrialMapId)){ClearBombVisuals();return;}
             var flights=presentation.Bombs;var blasts=presentation.BombBlasts;int used=0;long frame=presentation.Core.Frame;
             // 飛翔開始時に一度だけ用意し、着弾frameで画像decode/画素変換を行わない。
             if(bombAssets==null&&(flights.Count>0||blasts.Count>0)){bombAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,out _,bombAssets);(bombBlastMotion??(bombBlastMotion=new TrialBombBlastMotion())).Resolve(0,18);}
@@ -1138,6 +1138,7 @@ namespace Olca.Presentation.Exploration
             var kind=presentation.NormalKickKind;var timing=presentation.KickTiming;
             chargeRing.enabled=false;
             if(presentation.IsCharging){
+                kickTrailWallClip?.ClearClip();
                 var chargeCore=presentation.Core;float chargeUnit=OutsideMovementDefinition.UnitsPerWorldUnit;
                 float chargeX=(chargeCore.Position/chargeUnit-camera+viewport*.5f)*pixelsPerWorldUnit;
                 float chargeY=(chargeCore.Height/chargeUnit-verticalOffset+1.15f)*pixelsPerWorldUnit;
@@ -1148,7 +1149,7 @@ namespace Olca.Presentation.Exploration
                 kickCaption.text=full?"カンリョウ / ハナス（カリ）":"タメチュウ（カリ）";kickCaptionKey=-1;kickCaptionPlate.gameObject.SetActive(true);
                 float chargeWidth=((RectTransform)transform).rect.width;kickCaptionPlate.anchoredPosition=new Vector2(Mathf.Clamp(chargeX,182,Mathf.Max(182,chargeWidth-182)),(chargeCore.Height/chargeUnit-verticalOffset)*pixelsPerWorldUnit-30);return;
             }
-            if(!kind.HasValue||timing==null||presentation.Player==null){kickTrail.enabled=false;kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;return;}
+            if(!kind.HasValue||timing==null||presentation.Player==null){kickTrailWallClip?.ClearClip();kickTrail.enabled=false;kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;return;}
             var core=presentation.Core;bool hit=presentation.IsKickHitWindow,recovery=presentation.IsKickRecovery;int elapsed=presentation.KickElapsedFrames;long low,high;if(presentation.IsChargedKick)OutsideChargeKickData.Bounds(kind.Value<=OutsideKickKind.GroundThird,out low,out high);else OutsideKickTrialDefinition.Bounds(kind.Value,out low,out high);
             float unit=OutsideMovementDefinition.UnitsPerWorldUnit,range=(kind.Value==OutsideKickKind.Dash?OutsideKickTrialDefinition.DashRange:OutsideKickTrialDefinition.Range)/unit;int facing=presentation.NormalKickFacing??core.Facing;
             float center=(core.Position/unit+facing*range*.5f-camera+viewport*.5f)*pixelsPerWorldUnit,y=(core.Height/unit+(low+high)*.5f/unit-verticalOffset)*pixelsPerWorldUnit;
@@ -1157,6 +1158,10 @@ namespace Olca.Presentation.Exploration
             int frame=Olca.Presentation.Effects.TrialSlashSprites.FrameIndex(hit?elapsed-timing.StartupFrames:-1,timing.ActiveFrames,recovery?elapsed-timing.StartupFrames-timing.ActiveFrames:-1,timing.RecoveryFrames);
             int row=presentation.IsChargedKick?3:kind.Value==OutsideKickKind.GroundSecond?1:kind.Value==OutsideKickKind.GroundThird?2:0;
             kickTrail.sprite=(slashSprites??(slashSprites=new Olca.Presentation.Effects.TrialSlashSprites())).Resolve(row,frame);kickTrail.color=new Color(1,1,1,hit?1:alpha);kickTrail.rectTransform.localScale=new Vector3(facing,1,1);kickTrail.enabled=alpha>0&&kickTrail.sprite!=null;
+            // 元の寸法・反転・UVを保ち、命中と同じ試用壁の先だけを除く。
+            var wall=kickTrail.enabled?presentation.FirstSwordBlockingWall(core.Position,core.Height,facing,kind.Value==OutsideKickKind.Dash?OutsideKickTrialDefinition.DashRange:OutsideKickTrialDefinition.Range):null;
+            float boundary=wall.HasValue?((RectTransform)transform).rect.xMin+(wall.Value/unit-camera+viewport*.5f)*pixelsPerWorldUnit:0;
+            ClipSwordGraphic(kickTrail,ref kickTrailWallClip,wall,facing,boundary);
             int key=(presentation.IsChargedKick?100:0)+(int)kind.Value*3+(hit?1:recovery?2:0);if(kickCaptionKey!=key){kickCaptionKey=key;kickCaption.text=presentation.IsChargedKick?"タメ（カリ） / "+(hit?"ハツドウ":recovery?"フッキ":"ジュンビ"):ProvisionalKickCaption(kind.Value,hit,recovery);}kickCaptionPlate.gameObject.SetActive(true);
             float width=((RectTransform)transform).rect.width;float x=(core.Position/unit-camera+viewport*.5f)*pixelsPerWorldUnit;kickCaptionPlate.anchoredPosition=new Vector2(Mathf.Clamp(x,182,Mathf.Max(182,width-182)),(core.Height/unit-verticalOffset)*pixelsPerWorldUnit-30);
         }
@@ -1174,7 +1179,7 @@ namespace Olca.Presentation.Exploration
             }
         }
         private void ClearTargetBursts(){burstLease=null;for(int i=0;i<2;i++){observedBurstTargets[i]=null;observedDead[i]=false;targetDeathAt[i]=-1;if(targetBursts[i]!=null)targetBursts[i].enabled=false;}}
-        private void ClearKickEffects(){if(chargeRing!=null)chargeRing.enabled=false;if(kickTrail!=null){kickTrail.enabled=false;kickTrail.sprite=null;}if(kickCaptionPlate!=null)kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;ClearTargetBursts();}
+        private void ClearKickEffects(){kickTrailWallClip?.ClearClip();if(chargeRing!=null)chargeRing.enabled=false;if(kickTrail!=null){kickTrail.enabled=false;kickTrail.sprite=null;}if(kickCaptionPlate!=null)kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;ClearTargetBursts();}
     }
 }
 

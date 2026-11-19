@@ -18,6 +18,35 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        private static IEnumerable<object[]> 蹴り壁表示の行列()
+        {
+            foreach(int stage in new[]{0,1,2,3})foreach(int facing in new[]{-1,1})foreach(var size in new[]{new Vector2Int(1920,1080),new Vector2Int(3840,2160),new Vector2Int(1440,1080)})yield return new object[]{stage,facing,size.x,size.y};
+        }
+        [TestCaseSource(nameof(蹴り壁表示の行列))]
+        public async Task 蹴り軌跡は三段空中左右と三比率で寸法を変えず壁先だけを除く(int stage,int facing,int width,int height)
+        {
+            float scale=Mathf.Sqrt(width/1920f*height/1080f);((RectTransform)host.transform).sizeDelta=new Vector2(width/scale,height/scale);PrepareSwordWall347("sword",stage==3,facing);var model=system.OutsideExploration;model.EnableTrialNormalKick();
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);
+                for(int n=0;n<(stage==3?0:stage);n++){Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,model.Core.Frame+1,out _));for(int k=0;k<21;k++)model.TickTraversal(0);}
+                Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,model.Core.Frame+1,out var error),error);for(int n=0;n<6;n++)model.TickTraversal(0);var view=binding.View;view.Render();
+                var image=view.transform.Find("OutsideProvisionalKickTrail").GetComponent<Image>();Assert.IsTrue(image.enabled);var clip=image.GetComponent<Olca.Presentation.Exploration.OutsideSwordWallClip>();Assert.NotNull(clip);Assert.IsTrue(clip.enabled);
+                var wall=(RectTransform)view.transform.Find("OutsideValidationWall-"+model.Core.TraversalProfile.Walls.Single().Id);float edge=view.transform.InverseTransformPoint(wall.position).x;var size=image.rectTransform.sizeDelta;var sprite=image.sprite;var color=image.color;
+                using(var vh=new VertexHelper()){
+                    typeof(Image).GetMethod("OnPopulateMesh",BindingFlags.Instance|BindingFlags.NonPublic,null,new[]{typeof(VertexHelper)},null).Invoke(image,new object[]{vh});var original=new List<UIVertex>();vh.GetUIVertexStream(original);Assert.IsTrue(original.Any(v=>facing*(view.transform.InverseTransformPoint(image.transform.TransformPoint(v.position)).x-edge)>.1f));clip.ModifyMesh(vh);var clipped=new List<UIVertex>();vh.GetUIVertexStream(clipped);Assert.Greater(clipped.Count,0);Assert.IsTrue(clipped.All(v=>facing*(view.transform.InverseTransformPoint(image.transform.TransformPoint(v.position)).x-edge)<=.01f));
+                }
+                var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());for(int n=0;n<3;n++)view.Render();CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.AreEqual(size,image.rectTransform.sizeDelta);Assert.AreSame(sprite,image.sprite);Assert.AreEqual(color,image.color);Assert.AreEqual(120,model.TrialTarget.CurrentHp);Assert.AreEqual(120,model.SecondTrialTarget.CurrentHp);Assert.IsNull(view.transform.Find("OutsideEntryPlayer").GetComponent<Olca.Presentation.Exploration.OutsideSwordWallClip>());
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint);view.Render();Assert.IsFalse(clip.enabled);Assert.IsFalse(image.enabled);
+            }
+        }
+        [TestCase(71999,true)][TestCase(72000,true)][TestCase(72001,false)]
+        public async Task 蹴り軌跡の有限壁は現在の命中中心高と同じ閉区間で切取りを解除する(long bottom,bool blocked)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(1920,1080);PrepareSwordWall347("sword",false,1,60000000,bottom);var model=system.OutsideExploration;model.EnableTrialNormalKick();
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out _));for(int n=0;n<6;n++)model.TickTraversal(0);binding.View.Render();var image=binding.View.transform.Find("OutsideProvisionalKickTrail").GetComponent<Image>();Assert.AreEqual(blocked,image.GetComponent<Olca.Presentation.Exploration.OutsideSwordWallClip>()?.enabled==true);
+            }
+        }
         [TestCase(1,1f,false)][TestCase(-1,1f,false)][TestCase(1,2f,false)][TestCase(-1,2f,false)][TestCase(1,1f,true)][TestCase(-1,2f,true)]
         public void ソード壁表示の切取は左右拡大でもUVと元寸法を維持し解除で全幅へ戻る(int facing,float scale,bool negativeParent)
         {
@@ -2411,9 +2440,9 @@ namespace Olca.Tests.Application
             var texture=new Texture2D(2,2);try{Assert.IsTrue(texture.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(UnityEngine.Application.dataPath,"Resources/OlcaCharacterMotion/trial_bomb_blast_sheet.png"))));Assert.AreEqual(768,texture.width);Assert.AreEqual(512,texture.height);var pixels=texture.GetPixels32();Assert.IsTrue(pixels.All(x=>x.a==0||x.a==255));for(int n=0;n<6;n++){int count=0,ox=n%3*256,oy=(1-n/3)*256;for(int y=0;y<256;y++)for(int x=0;x<256;x++)if(pixels[(oy+y)*768+ox+x].a!=0){count++;Assert.IsTrue(x>0&&x<255&&y>0&&y<255);}Assert.Greater(count,0);}}
             finally{UnityEngine.Object.DestroyImmediate(texture);}
         }
-        [Test] public async Task ボム着弾は実通知前に爆風を表示せず発動後だけ一つの連番を出す()
+        [TestCase(false)][TestCase(true)] public async Task ボム着弾は実通知前に爆風を表示せず発動後だけ一つの連番を出す(bool annex)
         {
-            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var cards=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();Assert.IsTrue(model.QueueSelectedDeck("bomb340",cards,cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(490),out _));
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var cards=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();Assert.IsTrue(model.QueueSelectedDeck("bomb340",cards,cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(490),out _));if(annex){while(model.Core.Position<600000){model.Core.TickFrame(1);model.AdvanceDeckLocation();}Assert.NotNull(model.Cards);model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);}
             using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
                 Assert.IsTrue((await binding.OpenAsync()).Succeeded);while(model.Core.Position<990000)model.TickTraversal(1);for(int n=0;n<1000&&!model.Cards.Hand.Any(c=>c.Id=="bomb");n++)model.Cards.Reload();model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(c=>c.Id=="bomb"));Assert.IsTrue(model.TryUseSelectedCard(model.Cards.SelectedCard,model.Cards.HandRevision,out _));long revision=model.Cards.HandRevision;bool flightSeen=false;
                 for(int n=0;n<180&&model.BombBlasts.Count==0;n++){
