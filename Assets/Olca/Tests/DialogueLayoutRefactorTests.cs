@@ -9,6 +9,46 @@ namespace Olca.Tests
 {
     public class DialogueLayoutRefactorTests
     {
+        private static void WithDialogue(System.Action<DialogueView,GameObject> action)
+        {
+            var root=new GameObject("DialogueReveal",typeof(RectTransform),typeof(Canvas));DialogueView view=null;
+            try{root.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;var panel=new GameObject("DialoguePanel",typeof(RectTransform));panel.transform.SetParent(root.transform,false);view=panel.AddComponent<DialogueView>();view.Initialize(UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/Font/JikiTourai.ttf"),()=>{});action(view,panel);}
+            finally{if(view!=null)typeof(DialogueView).GetMethod("OnDestroy",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);Object.DestroyImmediate(root);}
+        }
+        [TestCase(DialogueTextSpeed.Slow,4)][TestCase(DialogueTextSpeed.Normal,2)][TestCase(DialogueTextSpeed.Fast,1)]
+        public void 会話の選択の読みは全文で確定し原文の速度で出た文字を置換しない(DialogueTextSpeed speed,int interval)
+        {
+            WithDialogue((view,panel)=>{
+                const string source="選択したカードを確定します。";var session=new DialogueSession(new DialogueScript("reveal",new[]{new DialogueLine(source)}),speed);view.Bind(session);var body=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="DialogueText");var font=body.font;string previous="",full="センタクしたカードをカクテイします。";int count=System.Globalization.StringInfo.ParseCombiningCharacters(source).Length;
+                for(int frame=0;frame<=count*interval;frame++){
+                    if(frame>0)session.AdvanceFrame();view.Refresh();Assert.AreEqual(frame/interval,session.VisibleElements);Assert.IsTrue(body.text.StartsWith(previous),"表示済み本文を書き換えない");Assert.IsTrue(full.StartsWith(body.text));Assert.AreSame(font,body.font);
+                    if(frame==interval)Assert.AreEqual("セン",body.text);if(frame==2*interval)Assert.AreEqual("センタク",body.text);previous=body.text;
+                }
+                Assert.AreEqual(full,body.text);Assert.AreEqual(source,session.VisibleText);Assert.IsTrue(session.TextComplete);Assert.AreEqual(0,session.Index);
+            });
+        }
+        [TestCase("全ての選択を確定します。")][TestCase("一つ前のカードを選択します。")][TestCase("支払いを確認します。")][TestCase("あ\u3099😀選択したカード\nABC 123")]
+        public void 会話の文脈読みと元のかな結合文字は安定した全文の接頭辞だけを表示する(string source)
+        {
+            WithDialogue((view,panel)=>{var session=new DialogueSession(new DialogueScript("context",new[]{new DialogueLine(source)}),DialogueTextSpeed.Fast);view.Bind(session);var body=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="DialogueText");string full=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(source),previous="";
+                for(int n=0;n<System.Globalization.StringInfo.ParseCombiningCharacters(source).Length;n++){session.AdvanceFrame();view.Refresh();Assert.IsTrue(body.text.StartsWith(previous));Assert.IsTrue(full.StartsWith(body.text));Assert.IsFalse(body.text.Length>0&&char.IsHighSurrogate(body.text[body.text.Length-1]));previous=body.text;}
+                Assert.AreEqual(full,body.text);Assert.AreEqual(source,session.VisibleText);
+            });
+        }
+        [Test] public void 会話の最初の決定は全文表示し次の決定で進みログとInstantは従来の全文を保つ()
+        {
+            WithDialogue((view,panel)=>{const string source="選択したカードを確定します。";var script=new DialogueScript("decide",new[]{new DialogueLine(source,"A"),new DialogueLine("全ての説明です。","B")});var session=new DialogueSession(script,DialogueTextSpeed.Slow);view.Bind(session);for(int n=0;n<4;n++)session.AdvanceFrame();view.Refresh();var body=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="DialogueText");
+                panel.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueNext").onClick.Invoke();view.Refresh();Assert.AreEqual(0,session.Index);Assert.AreEqual("センタクしたカードをカクテイします。",body.text);Assert.AreEqual("A\n"+source,session.Backlog.Single());
+                panel.GetComponentsInChildren<Button>().Single(x=>x.name=="DialogueNext").onClick.Invoke();view.Refresh();Assert.AreEqual(1,session.Index);Assert.AreEqual("",body.text);
+                session=new DialogueSession(script,DialogueTextSpeed.Instant);view.Bind(session);Assert.AreEqual("センタクしたカードをカクテイします。",body.text);Assert.AreEqual("A\n"+source,session.Backlog.Single());
+            });
+        }
+        [Test] public void 会話の早送りと同文の再Bindも原文の文字数で進みポーズ復帰で本文を変えない()
+        {
+            WithDialogue((view,panel)=>{const string source="選択したカードを確定します。";var script=new DialogueScript("rebind",new[]{new DialogueLine(source)});var session=new DialogueSession(script,DialogueTextSpeed.Slow);view.Bind(session);session.ToggleFastForward();session.AdvanceFrame();view.Refresh();Assert.AreEqual(4,session.VisibleElements);var body=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="DialogueText");Assert.AreEqual("センタクした",body.text);string before=body.text;view.SetPresentationPaused(true);view.SetPresentationPaused(false);Assert.AreEqual(before,body.text);
+                session=new DialogueSession(script,DialogueTextSpeed.Slow);view.Bind(session);Assert.AreEqual("",body.text);for(int n=0;n<4;n++)session.AdvanceFrame();view.Refresh();Assert.AreEqual("セン",body.text);Assert.AreEqual(1,session.VisibleElements);
+            });
+        }
         [TestCase(false,false)][TestCase(false,true)][TestCase(true,false)][TestCase(true,true)]
         public void 次の発言と別会話は同じ本文でも先頭から表示し慣性を持ち越さない(bool rebind,bool sameText)
         {

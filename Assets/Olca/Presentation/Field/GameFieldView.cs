@@ -1692,6 +1692,7 @@ namespace Olca.Presentation.Field
     public sealed class DialogueView : MonoBehaviour
     {
         private DialogueSession owner;private Font font;private Text title,body;private ScrollRect scroll;private GameObject content;
+        private string readingSource,readingText;private int[] readingOffsets;
         private Button next,fast,history,skip,pause;private readonly List<Button> choices=new List<Button>();
         private Olca.Unity.MenuPadScope menu;private string navigationKey,restoredFocus;
         private Olca.Presentation.Management.ManagedScreenContext context;private Olca.Presentation.Management.DialogManager dialogs;
@@ -1754,13 +1755,40 @@ namespace Olca.Presentation.Field
         private void OnEnable(){rendered=-1;navigationKey=null;}
         public void Bind(DialogueSession value){CancelPopup();popupOrigin=null;restoredFocus=null;generation++;bindEpoch++;menu?.Suspend();navigationKey=null;owner=value;rendered=-1;renderedNode=-1;choiceNode=-1;backlogPosition=null;gameObject.SetActive(value!=null);if(value==null){body.text="";title.text="";foreach(var b in choices)b.gameObject.SetActive(false);}Refresh();}
         private void Action(Button button,string label,bool enabled,System.Action<DialogueSession> action){button.gameObject.SetActive(true);button.interactable=enabled;button.GetComponentInChildren<Text>().text=label;button.onClick=new Button.ButtonClickedEvent();var captured=owner;long version=captured.Version;int epoch=generation;button.onClick.AddListener(()=>{if(epoch==generation&&ReferenceEquals(owner,captured)&&captured.Version==version&&CanAct)action(captured);});}
+        // Sessionの原文ステップは維持し、会話本文だけ全文の読みを先に確定する。
+        private string ReadableDialogueText()
+        {
+            string source=owner.Current.Text;
+            if(readingSource!=source){readingSource=source;readingText=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(source);readingOffsets=null;}
+            if(owner.TextComplete)return readingText;
+            string visible=owner.VisibleText;
+            if(visible.Length==0||readingText==source)return visible;
+            if(readingOffsets==null){
+                readingOffsets=new int[source.Length+1];int input=0,output=0;
+                foreach(System.Text.RegularExpressions.Match word in System.Text.RegularExpressions.Regex.Matches(source,@"[一-鿿々]+")){
+                    for(;input<word.Index;input++,output++)readingOffsets[input+1]=output+1;
+                    // 共有変換が参照する直後の一文字も渡す（一つ・全て・支払い）。部分漢字では読まない。
+                    bool following=word.Index+word.Length<source.Length;
+                    string reading=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(source.Substring(word.Index,word.Length+(following?1:0)));
+                    if(following)reading=reading.Substring(0,reading.Length-1);
+                    int[] elements=System.Globalization.StringInfo.ParseCombiningCharacters(reading);
+                    for(int n=1;n<=word.Length;n++){
+                        int shown=(int)((long)elements.Length*n/word.Length);
+                        readingOffsets[input+n]=output+(shown==elements.Length?reading.Length:elements[shown]);
+                    }
+                    input+=word.Length;output+=reading.Length;
+                }
+                for(;input<source.Length;input++,output++)readingOffsets[input+1]=output+1;
+            }
+            return readingText.Substring(0,Mathf.Clamp(readingOffsets[visible.Length],0,readingText.Length));
+        }
         public void Refresh(){if(this==null||owner==null||!owner.IsOpen||presentationPaused)return;if(rendered==owner.Version&&!(popup==null&&(owner.SkipConfirmationOpen||owner.BacklogOpen)))return;rendered=owner.Version;generation++;
             var captured=owner;var current=context;int epoch=bindEpoch,action=generation;long version=captured.Version;pause.onClick=new Button.ButtonClickedEvent();pause.onClick.AddListener(()=>{if(epoch==bindEpoch&&action==generation&&captured.Version==version&&ReferenceEquals(owner,captured)&&ReferenceEquals(context,current)&&CanPause)pauseAction?.Invoke();});
             if(owner.SkipConfirmationOpen||owner.BacklogOpen){PresentPopup(owner.SkipConfirmationOpen);return;}
             if(popup!=null)CancelPopup();backlogPosition=null;content.SetActive(true);foreach(var b in choices)b.gameObject.SetActive(false);
             title.text=owner.Current.Speaker;Action(next,!owner.TextComplete?"全文表示":owner.Index==owner.Script.Lines.Count-1?"閉じる":"次へ",!owner.WaitingForChoice,s=>s.Decide());Action(fast,owner.FastForward?(owner.WaitingForChoice?"早送り：選択待ち":"早送り：ON"):"早送り：OFF",true,s=>s.ToggleFastForward());Action(history,"バックログ",true,s=>s.ToggleBacklog());Action(skip,owner.Script.CanSkip?"スキップ":"分岐のためスキップ不可",owner.Script.CanSkip,s=>s.RequestSkip());
             if(owner.WaitingForChoice){if(choiceNode!=owner.Index){foreach(var b in choices)Destroy(b.gameObject);choices.Clear();choiceNode=owner.Index;for(int n=0;n<owner.Current.Choices.Count;n++)choices.Add(Make("DialogueChoice"+n,"",new Vector2((n-(owner.Current.Choices.Count-1)*.5f)*370,-200),new Vector2(350,80)));}for(int n=0;n<choices.Count;n++){int index=n;Action(choices[n],owner.Current.Choices[n].Label,true,s=>s.Choose(index));}}
-            string text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(owner.VisibleText);if(body.text!=text){body.text=text;body.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,body.preferredHeight+20));}
+            string text=ReadableDialogueText();if(body.text!=text){body.text=text;body.rectTransform.sizeDelta=new Vector2(1480,Mathf.Max(420,body.preferredHeight+20));}
             // 新しい発言と別会話だけ先頭へ戻し、同じ発言の再描画・ポーズ復帰は読んでいた位置を保つ。
             if(renderedNode!=owner.Index){scroll.StopMovement();scroll.verticalNormalizedPosition=1;renderedNode=owner.Index;}
             string key=owner.Index+":"+owner.WaitingForChoice;if(menu==null)menu=new Olca.Unity.MenuPadScope(()=>CanAct&&Olca.Unity.MenuPadScope.IsTopmost(transform));if(navigationKey!=key){string preferred=restoredFocus??(owner.WaitingForChoice?"DialogueChoice0":"DialogueNext");restoredFocus=null;navigationKey=key;menu.Bind(transform,preferred,CancelMenu,scroll,directionScroll:false);}
