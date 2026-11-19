@@ -2224,6 +2224,45 @@ namespace Olca.Tests
 
         [TestCase(214,false)] [TestCase(215,true)] [TestCase(220,true)] [TestCase(225,true)] [TestCase(226,false)] public void 試用リロード専用地点は独立した閉範囲と地上編成を使う(int x,bool inside)
         {using(var model=new OutsideExplorationSession()){Walk155(model,x*6000L);Assert.AreEqual(inside,OutsideTrialRoute.IsReloadZone(model.Core));Assert.AreEqual(inside,OutsideTrialRoute.CanEditDeck(model.Core));if(inside){Assert.IsFalse(OutsideTrialRoute.CanRecover(model.Core));Assert.IsFalse(OutsideTrialRoute.CanInspect(model.Core));Assert.IsFalse(OutsideTrialRoute.CanClaimSupply(model.Core));model.Core.TickFrame(0,true,true);Assert.IsFalse(OutsideTrialRoute.CanEditDeck(model.Core));Assert.IsTrue(OutsideTrialRoute.IsReloadZone(model.Core));}}}
+        [TestCase(164,false)][TestCase(165,true)][TestCase(170,true)][TestCase(175,true)][TestCase(176,false)][TestCase(60,false)][TestCase(80,false)][TestCase(220,false)]
+        public void 別マップリロードは専用閉範囲だけ編成でき回復や入口にはならない(int x,bool inside)
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);Walk155(s,x*6000L);
+                Assert.AreEqual(1020000,OutsideTrialRoute.ReloadPosition(s.Core));Assert.AreEqual(inside,OutsideTrialRoute.IsReloadZone(s.Core));Assert.AreEqual(inside,OutsideTrialRoute.CanEditDeck(s.Core));Assert.IsFalse(OutsideTrialRoute.CanRecover(s.Core));Assert.IsFalse(OutsideTrialRoute.CanInspect(s.Core));
+                if(inside){s.Core.TickFrame(0,true,true);Assert.IsFalse(OutsideTrialRoute.CanEditDeck(s.Core));Assert.IsTrue(OutsideTrialRoute.IsReloadZone(s.Core));}
+            }
+        }
+        private static OutsideExplorationSession AnnexReload391()
+        {
+            var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100));var cards=Deck155();Assert.IsTrue(s.QueueSelectedDeck("annex391",cards,Owned(cards),new SeededBattleRandom(391),out var error),error);Walk155(s,600000);s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+            s.Core.CardGauge.Configure(100,0);for(int i=0;i<4;i++)Assert.IsTrue(s.Cards.TryConsumeSelected(s.Cards.SelectedCard,s.Cards.HandRevision,s.Core.CardGauge,out _));s.Core.CardGauge.TrySpend(60);s.Player.SetHp(37);s.Player.ApplyPoison("annex391",new StatusEffect(StatusEffectType.Poison,60000,1),600);s.TrialTarget.TakeDamage(30,ElementType.None);return s;
+        }
+        [Test] public void 別マップリロード退出は手札三十枚とゲージだけ再装填しHP毒標的を維持する()
+        {
+            using(var s=AnnexReload391()){
+                var cards=s.Cards;var target=s.TrialTarget;long units=s.Core.CardGauge.CurrentUnits;Assert.AreEqual(23,cards.RemainingCount);Walk155(s,1020000);Assert.IsTrue(s.IsDeckEditingLocation);string key=s.Cards.CaptureState(Door239Definitions(s)).Key();
+                for(int n=0;n<30;n++)Assert.IsFalse(s.AdvanceDeckLocation());Assert.AreEqual(key,s.Cards.CaptureState(Door239Definitions(s)).Key());Assert.AreEqual(units,s.Core.CardGauge.CurrentUnits);
+                Walk155(s,1080000);Assert.IsFalse(s.IsDeckEditingLocation);Assert.AreSame(cards,s.Cards);Assert.AreEqual(27,s.Cards.RemainingCount);Assert.AreEqual(3,s.Cards.Hand.Count);Assert.AreEqual(6000,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(37,s.Player.CurrentHp);Assert.IsNotEmpty(s.Player.CapturePoisons());Assert.AreSame(target,s.TrialTarget);Assert.AreEqual(90,s.TrialTarget.CurrentHp);
+                string after=s.Cards.CaptureState(Door239Definitions(s)).Key();s.Core.CardGauge.TrySpend(1);Assert.IsFalse(s.AdvanceDeckLocation());Assert.AreEqual(after,s.Cards.CaptureState(Door239Definitions(s)).Key());Assert.AreEqual(5940,s.Core.CardGauge.CurrentUnits);
+            }
+        }
+        [Test] public void 別マップリロード途中の保存復元は再表示で再抽選せず退出でwarmとcoldが一致する()
+        {
+            using(var warm=AnnexReload391())using(var cold=new OutsideExplorationSession()){
+                Walk155(warm,1020000);var defs=Door239Definitions(warm);var runtime=warm.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(warm.Player);actor.Id=runtime.Id;var bytes=PortableCheckpointJson.Serialize(runtime);var decoded=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes);Assert.AreEqual(runtime.Key(),decoded.Key());Assert.IsTrue(cold.RestoreSavedState(actor,decoded,OutsideTrialRoute.DoorAnnexPoint,defs));cold.QueueSelectedDeck(null,null,null,null,out _);
+                Assert.AreEqual(warm.Cards.CaptureState(defs).Key(),cold.Cards.CaptureState(defs).Key());using(var lease=cold.AttachPresentation())Assert.IsFalse(cold.AdvanceDeckLocation());Assert.AreEqual(warm.Cards.CaptureState(defs).Key(),cold.Cards.CaptureState(defs).Key());Walk155(warm,1080000);Walk155(cold,1080000);Assert.AreEqual(warm.Cards.CaptureState(defs).Key(),cold.Cards.CaptureState(defs).Key());Assert.AreEqual(37,cold.Player.CurrentHp);Assert.IsNotEmpty(cold.Player.CapturePoisons());Assert.AreEqual(90,cold.TrialTarget.CurrentHp);Assert.AreEqual(6000,cold.Core.CardGauge.CurrentUnits);
+            }
+        }
+        [Test] public void 別マップリロード退出は撃破済み二標的を復活させない()
+        {
+            using(var s=AnnexReload391()){
+                var first=s.TrialTarget;var second=s.SecondTrialTarget;first.TakeDamage(999,ElementType.None);second.TakeDamage(999,ElementType.None);
+                Walk155(s,1020000);Walk155(s,1080000);
+                Assert.AreSame(first,s.TrialTarget);Assert.AreSame(second,s.SecondTrialTarget);Assert.AreEqual(0,first.CurrentHp);Assert.AreEqual(0,second.CurrentHp);
+                Assert.AreEqual(3,s.Cards.Hand.Count);Assert.AreEqual(27,s.Cards.RemainingCount);Assert.AreEqual(6000,s.Core.CardGauge.CurrentUnits);Assert.AreEqual(37,s.Player.CurrentHp);Assert.IsNotEmpty(s.Player.CapturePoisons());
+            }
+        }
         private static OutsideExplorationSession Reload182()
         {var s=new OutsideExplorationSession();s.TryInitializePlayer(()=>new PlayerCharacter(100));var data=Deck155();Assert.IsTrue(s.QueueSelectedDeck("reload182",data,Owned(data),new SeededBattleRandom(182),out _));Walk155(s,10*60000);s.Player.SetHp(37);s.Player.ApplyPoison("reload182",new StatusEffect(StatusEffectType.Poison,60000,1),600);s.TrialTarget.TakeDamage(30,ElementType.None);s.Core.CardGauge.Configure(100,0);for(int i=0;i<4;i++)Assert.IsTrue(s.Cards.TryConsumeSelected(s.Cards.SelectedCard,s.Cards.HandRevision,s.Core.CardGauge,out _));s.Core.CardGauge.TrySpend(60);return s;}
         [Test] public void 専用地点退出は三十枚とゲージだけを一度再装填しHP状態標的を維持する()
