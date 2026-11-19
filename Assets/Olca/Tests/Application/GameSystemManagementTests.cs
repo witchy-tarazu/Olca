@@ -2186,6 +2186,35 @@ namespace Olca.Tests.Application
                 }
             }
         }
+        [TestCase(1920,1080,false,false)]
+        [TestCase(1920,1080,true,false)]
+        [TestCase(1920,1080,false,true)]
+        [TestCase(1920,1080,true,true)]
+        [TestCase(3840,2160,false,false)]
+        [TestCase(3840,2160,true,false)]
+        [TestCase(3840,2160,false,true)]
+        [TestCase(3840,2160,true,true)]
+        [TestCase(1440,1080,false,false)]
+        [TestCase(1440,1080,true,false)]
+        [TestCase(1440,1080,false,true)]
+        [TestCase(1440,1080,true,true)]
+        public async Task 別マップの撃破案内は残敵とマップ出入りを表示し回復を案内しない(int width,int height,bool firstDead,bool secondDead)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            var flags=BindingFlags.Instance|BindingFlags.NonPublic;var core=model.Core.CaptureState();core.TrialMapId=Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId;
+            typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",flags).Invoke(model.Core,new object[]{core});
+            if(firstDead)model.TrialTarget.TakeDamage(120,Olca.Core.Domain.ElementType.None);if(secondDead)model.SecondTrialTarget.TakeDamage(120,Olca.Core.Domain.ElementType.None);
+            int firstHp=model.TrialTarget.CurrentHp,secondHp=model.SecondTrialTarget.CurrentHp;long frame=model.Core.Frame;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();Canvas.ForceUpdateCanvases();var text=view.transform.Find("OutsideTrialTargetName").GetComponent<Text>();
+                StringAssert.DoesNotContain("カイフク",text.text);
+                if(firstDead&&secondDead)Assert.AreEqual("マップノ デイリデ サイセイ",text.text);
+                else {StringAssert.Contains(firstDead||secondDead?"1タイ / セッショク10（カリ）":"シヨウテキ / セッショク10（カリ）",text.text);StringAssert.Contains("AIコウゲキOFF",text.text);}
+                using(var generator=new TextGenerator()){Assert.IsTrue(generator.Populate(text.text,text.GetGenerationSettings(text.rectTransform.rect.size)));Assert.AreEqual(text.text.Length,generator.characterCountVisible,"案内の末尾を欠けさせない");}
+                Assert.AreEqual(firstHp,model.TrialTarget.CurrentHp);Assert.AreEqual(secondHp,model.SecondTrialTarget.CurrentHp);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
         [Test] public void 通常Rootの初回と新規進行だけ試用敵の接触を明示登録する()
         {
             using(var lease=system.OutsideExploration.AttachPresentation())Assert.IsTrue(lease.TrialContactDamageEnabled);
