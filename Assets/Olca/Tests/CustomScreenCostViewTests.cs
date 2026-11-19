@@ -1720,7 +1720,7 @@ namespace Olca.Tests
             } finally { Object.DestroyImmediate(root); Object.DestroyImmediate(assigned); Object.DestroyImmediate(texture); }
         }
 
-        [TestCase("sword")][TestCase("fire_sword")][TestCase("bomb")][TestCase("heal")][TestCase("shield")][TestCase("tuning")][TestCase("fire")][TestCase("ice")]
+        [TestCase("sword")][TestCase("fire_sword")][TestCase("bomb")][TestCase("heal")][TestCase("shield")][TestCase("tuning")][TestCase("fire")][TestCase("ice")][TestCase(TrialInitialCardDefinitions.Shot)]
         public void 登録仮本絵は正方形の専用画像でミニアイコンとは別素材である(string id)
         {
             var root=new GameObject("CardArt");try{var v=root.AddComponent<CustomScreenView>();var art=v.GetCardIllustration(id);Assert.IsNotNull(art);Assert.AreEqual(art.rect.width,art.rect.height);Assert.Greater(art.rect.width,256);Assert.AreNotSame(art,v.GetCardIcon(id));StringAssert.StartsWith("OlcaCardArt_",art.name);}finally{Object.DestroyImmediate(root);}

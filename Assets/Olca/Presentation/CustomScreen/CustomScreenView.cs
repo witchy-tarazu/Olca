@@ -28,8 +28,8 @@ namespace Olca.Presentation.CustomScreen
         public Sprite GetCardIllustration(string id)
         {
             var assigned=cardVisuals?.FirstOrDefault(v=>v!=null&&v.CardId==id)?.Illustration;if(assigned!=null)return assigned;
-            if(TrialInitialCardDefinitions.IsId(id))return GetCardIcon(id);
-            if(id!="sword"&&id!="fire_sword"&&id!="bomb"&&id!="heal"&&id!="shield"&&id!="tuning"&&id!="fire"&&id!="ice")return null;
+            if(TrialInitialCardDefinitions.IsId(id)&&id!=TrialInitialCardDefinitions.Shot)return GetCardIcon(id);
+            if(id!="sword"&&id!="fire_sword"&&id!="bomb"&&id!="heal"&&id!="shield"&&id!="tuning"&&id!="fire"&&id!="ice"&&id!=TrialInitialCardDefinitions.Shot)return null;
             if(!registeredIllustrations.TryGetValue(id,out var result)||result==null){
                 var texture=Resources.Load<Texture2D>("OlcaCards/"+id);if(texture==null)return null;
                 result=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f));result.name="OlcaCardArt_"+id;registeredIllustrations[id]=result;
