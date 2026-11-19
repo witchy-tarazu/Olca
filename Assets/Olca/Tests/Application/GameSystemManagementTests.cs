@@ -18,6 +18,60 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase(1920,1080,false)][TestCase(1920,1080,true)][TestCase(3840,2160,false)][TestCase(3840,2160,true)][TestCase(1440,1080,false)][TestCase(1440,1080,true)]
+        public async Task 外界現在神依HUDは固定待機の顔と名称を三比率で表示し移動や覆いで状態を変更しない(int width,int height,bool fire)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;
+            model.TryInitializePlayer(()=>{var actor=new Olca.Core.Domain.PlayerCharacter(100);if(fire)actor.SetDepartureStyle(Olca.Core.Domain.DepartureStyleDefinition.TrialFire);return actor;});
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;int calls=0;view.ConfigureKamuiShortcut(()=>calls++);view.Render();Canvas.ForceUpdateCanvases();
+                var button=view.transform.Find("OutsideKamuiShortcut").GetComponent<Button>();var label=button.GetComponentInChildren<Text>();var mask=(RectTransform)button.transform.Find("OutsideKamuiPortraitMask");var face=mask.Find("OutsideKamuiPortraitImage").GetComponent<Image>();
+                StringAssert.Contains(fire?"カエン（カリ）":"ツウジョウ",label.text);Assert.IsNotNull(face.sprite);Assert.IsTrue(face.enabled);Assert.IsFalse(face.raycastTarget);Assert.IsFalse(mask.GetComponent<Image>().raycastTarget);Assert.IsNotNull(mask.GetComponent<RectMask2D>());Assert.AreEqual(new Vector2(240,90),((RectTransform)button.transform).sizeDelta);
+                if(fire)StringAssert.StartsWith("trial_fire_idle",face.sprite.name);else StringAssert.StartsWith("heroine_idle_",face.sprite.name);
+                var generator=new TextGenerator();Assert.IsTrue(generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)));Assert.AreEqual(label.text.Length,generator.characterCountVisible);Assert.AreEqual(2,generator.lineCount);foreach(char glyph in label.text)if(!char.IsWhiteSpace(glyph))Assert.IsTrue(label.font.HasCharacter(glyph));((IDisposable)generator).Dispose();
+                Assert.Less(mask.anchoredPosition.x+mask.rect.width/2,label.rectTransform.anchoredPosition.x-label.rectTransform.rect.width/2);Assert.LessOrEqual(label.rectTransform.anchoredPosition.x+label.rectTransform.rect.width/2,120);Assert.GreaterOrEqual(mask.anchoredPosition.x-mask.rect.width/2,-120);
+                var portrait=face.sprite;var actor=model.Player;long frameBefore=model.Core.Frame,gauge=model.Core.CardGauge.CurrentUnits;view.Render();view.Render();Assert.AreSame(actor,model.Player);Assert.AreEqual(frameBefore,model.Core.Frame);Assert.AreEqual(gauge,model.Core.CardGauge.CurrentUnits);
+                model.TickTraversal(-1,true);view.Render();Assert.AreSame(portrait,face.sprite);Assert.AreEqual(Vector3.one,face.rectTransform.localScale);view.SetCovered(true);view.Render();Assert.IsFalse(button.interactable);Assert.IsTrue(face.enabled);Assert.AreEqual(0,calls);
+                view.ConfigureKamuiShortcut(null);Assert.IsFalse(button.gameObject.activeSelf);view.Hide();Assert.IsNull(face.sprite);Assert.IsFalse(face.enabled);
+            }
+        }
+        [Test] public async Task 神依HUDボタンは未設定や覆いと旧callbackから起動せず再表示で新しい所有へ結び直す()
+        {
+            system.OutsideExploration.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var button=view.transform.Find("OutsideKamuiShortcut").GetComponent<Button>();Assert.IsFalse(button.gameObject.activeSelf);int calls=0;
+                view.ConfigureKamuiShortcut(()=>calls++);Assert.IsTrue(button.gameObject.activeSelf);var old=button.onClick;old.Invoke();Assert.AreEqual(1,calls);
+                view.SetCovered(true);view.Render();Assert.IsFalse(button.interactable);old.Invoke();Assert.AreEqual(1,calls);view.SetCovered(false);
+                view.ConfigureKamuiShortcut(null);Assert.IsFalse(button.gameObject.activeSelf);old.Invoke();Assert.AreEqual(1,calls);
+                views.GetLayer("return-hub").CloseCurrent();old.Invoke();Assert.AreEqual(1,calls);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);view=binding.View;view.ConfigureKamuiShortcut(()=>calls+=10);old.Invoke();Assert.AreEqual(1,calls);view.transform.Find("OutsideKamuiShortcut").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(11,calls);
+            }
+        }
+        [TestCase(1920,1080)][TestCase(3840,2160)][TestCase(1440,1080)]
+        public async Task 神依HUDボタンは三比率で画面内に収まり本体と既存上部操作へ重ならない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);system.OutsideExploration.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigureKamuiShortcut(()=>{});view.Render();Canvas.ForceUpdateCanvases();var root=(RectTransform)view.transform;
+                Rect Bounds(string name){var rect=(RectTransform)view.transform.Find(name);var corners=new Vector3[4];rect.GetWorldCorners(corners);var min=root.InverseTransformPoint(corners[0]);var max=min;foreach(var corner in corners){var point=root.InverseTransformPoint(corner);min=Vector3.Min(min,point);max=Vector3.Max(max,point);}return Rect.MinMaxRect(min.x,min.y,max.x,max.y);}
+                var button=Bounds("OutsideKamuiShortcut");Assert.GreaterOrEqual(button.xMin,root.rect.xMin);Assert.LessOrEqual(button.xMax,root.rect.xMax);Assert.GreaterOrEqual(button.yMin,root.rect.yMin);Assert.LessOrEqual(button.yMax,root.rect.yMax);
+                foreach(var other in new[]{"PauseOutsideExploration","CloseOutsideExploration","OutsideEntryPlayer"})Assert.IsFalse(button.Overlaps(Bounds(other)),other);
+                var label=view.transform.Find("OutsideKamuiShortcut").GetComponentInChildren<Text>();var generator=new TextGenerator();Assert.IsTrue(generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)));Assert.AreEqual(label.text.Length,generator.characterCountVisible);((IDisposable)generator).Dispose();
+            }
+        }
+        [TestCase(false)][TestCase(true)] public async Task 神依HUDのポインタ操作は既存ホイールを停止所有し確定失敗と取消では効果を作らない(bool cancel)
+        {
+            system.OutsideExploration.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            using(var binding=new OutsideExplorationPresentationBinding(views,system.OutsideExploration,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var panel=new GameObject("HudWheelTrial",typeof(RectTransform));panel.transform.SetParent(host.transform,false);var wheel=panel.AddComponent<OutsideKamuiWheelDialog>();wheel.Initialize(resources.GetShared<Font>("OlcaUI/MenuText"));int calls=0;bool success=false,paused=false;
+                try{wheel.ConfigureChoices(new[]{"ツウジョウ","カエン（カリ）"},0,index=>{Assert.AreEqual(1,index);calls++;return success;});view.ConfigureKamuiShortcut(()=>Assert.IsTrue(wheel.OpenMenu(dialogs,binding.Context,()=>binding.IsOpen,()=>true,value=>paused=value,"タップ: カクテイ / モドる: トジル")));
+                    var pointer=new PointerEventData(EventSystem.current){button=PointerEventData.InputButton.Left,pointerId=1};ExecuteEvents.Execute<IPointerClickHandler>(view.transform.Find("OutsideKamuiShortcut").gameObject,pointer,ExecuteEvents.pointerClickHandler);Assert.IsTrue(wheel.IsOpen);Assert.IsTrue(paused);Assert.AreEqual(1,dialogs.ActiveCount);
+                    if(cancel){ExecuteEvents.Execute<IPointerClickHandler>(panel.transform.Find("KamuiWheelRelease").gameObject,pointer,ExecuteEvents.pointerClickHandler);Assert.AreEqual(0,calls);}
+                    else{ExecuteEvents.Execute<IPointerClickHandler>(panel.transform.Find("KamuiWheelAlternate").gameObject,pointer,ExecuteEvents.pointerClickHandler);Assert.AreEqual(1,calls);Assert.IsTrue(wheel.IsOpen);Assert.IsTrue(paused);success=true;frame++;wheel.RefreshMenu();ExecuteEvents.Execute<IPointerClickHandler>(panel.transform.Find("KamuiWheelAlternate").gameObject,pointer,ExecuteEvents.pointerClickHandler);Assert.AreEqual(2,calls);}
+                    Assert.IsFalse(wheel.IsOpen);Assert.IsFalse(paused);Assert.AreEqual(0,dialogs.ActiveCount);Assert.AreEqual(100,system.OutsideExploration.Player.CurrentHp);
+                }finally{wheel.Abort();UnityEngine.Object.DestroyImmediate(panel);}
+            }
+        }
         private static IEnumerable<object[]> 蹴り壁表示の行列()
         {
             foreach(int stage in new[]{0,1,2,3})foreach(int facing in new[]{-1,1})foreach(var size in new[]{new Vector2Int(1920,1080),new Vector2Int(3840,2160),new Vector2Int(1440,1080)})yield return new object[]{stage,facing,size.x,size.y};

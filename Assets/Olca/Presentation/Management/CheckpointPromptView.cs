@@ -33,7 +33,8 @@ namespace Olca.Presentation.Exploration
         private Olca.Presentation.Management.ManagedScreenContext context;
         private Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease presentation;
         private Olca.Unity.MenuPadScope menu;
-        private Button back,pause;private bool covered;private int uncoveredFrame=-1;
+        private Image kamuiPortrait;private Text kamuiLabel;
+        private long kamuiShortcutEpoch;private Button back,pause,kamuiShortcut;private bool covered;private int uncoveredFrame=-1;
         private Action returned,entered;private Func<bool> canEnter;private Func<string> interactionHint;private Func<bool> trialRoute,transientInputBlocked;private Button entrance;private Text entranceTitle,entranceActionHint;private Text trialRouteHint;private Image trialDoor;private RectTransform reloadPoint;private Text reloadPointLabel;
         private Func<Olca.Core.Domain.Card,Sprite> cardIcon;
         private Olca.Core.Logic.Integration.OutsideExplorationCards renderedCards;
@@ -100,6 +101,12 @@ namespace Olca.Presentation.Exploration
             rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
             pause=factory.Button("PauseOutsideExploration","ポーズ",transform,Vector2.one,new Vector2(-430,-62));Olca.Presentation.Dungeon.UiLook.Button(pause);
             back=factory.Button("CloseOutsideExploration","戻る",transform,Vector2.one,new Vector2(-160,-62));Olca.Presentation.Dungeon.UiLook.Button(back);
+            kamuiShortcut=factory.Button("OutsideKamuiShortcut","カムイ",transform,new Vector2(1,0),new Vector2(-160,70));kamuiShortcut.GetComponent<RectTransform>().sizeDelta=new Vector2(240,90);kamuiShortcut.navigation=new Navigation{mode=Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.Button(kamuiShortcut);kamuiShortcut.gameObject.SetActive(false);
+            // 専用顔素材が揃うまで、既存の固定待機コマの顔をUIマスクで借用する。画像・セーブは加工しない。
+            kamuiLabel=kamuiShortcut.GetComponentInChildren<Text>();kamuiLabel.rectTransform.anchorMin=kamuiLabel.rectTransform.anchorMax=new Vector2(.5f,.5f);kamuiLabel.rectTransform.sizeDelta=new Vector2(148,72);kamuiLabel.rectTransform.anchoredPosition=new Vector2(36,0);kamuiLabel.fontSize=20;kamuiLabel.resizeTextForBestFit=false;
+            var faceMask=new GameObject("OutsideKamuiPortraitMask",typeof(RectTransform),typeof(Image),typeof(RectMask2D));faceMask.transform.SetParent(kamuiShortcut.transform,false);var faceRect=(RectTransform)faceMask.transform;faceRect.anchorMin=faceRect.anchorMax=new Vector2(.5f,.5f);faceRect.sizeDelta=new Vector2(64,64);faceRect.anchoredPosition=new Vector2(-78,0);var faceBack=faceMask.GetComponent<Image>();faceBack.color=new Color(.03f,.12f,.19f,1);faceBack.raycastTarget=false;
+            var face=new GameObject("OutsideKamuiPortraitImage",typeof(RectTransform),typeof(Image));face.transform.SetParent(faceMask.transform,false);kamuiPortrait=face.GetComponent<Image>();kamuiPortrait.raycastTarget=false;kamuiPortrait.rectTransform.anchorMin=kamuiPortrait.rectTransform.anchorMax=new Vector2(.5f,.5f);kamuiPortrait.rectTransform.sizeDelta=new Vector2(256,256);kamuiPortrait.rectTransform.anchoredPosition=new Vector2(0,-80);kamuiPortrait.enabled=false;
+
             var doorObject=new GameObject("OutsideTrialDungeonMarker",typeof(RectTransform),typeof(Image));doorObject.transform.SetParent(transform,false);trialDoor=doorObject.GetComponent<Image>();trialDoor.sprite=resources.GetShared<Sprite>("OlcaUI/window");trialDoor.type=Image.Type.Sliced;trialDoor.color=new Color(.15f,.45f,.55f,.92f);trialDoor.raycastTarget=false;var doorRect=trialDoor.rectTransform;doorRect.anchorMin=doorRect.anchorMax=new Vector2(0,.21f);doorRect.pivot=new Vector2(.5f,0);doorRect.sizeDelta=new Vector2(140,200);doorObject.transform.SetSiblingIndex(player.transform.GetSiblingIndex());
             var reloadObject=new GameObject("OutsideReloadPoint",typeof(RectTransform),typeof(Image));reloadObject.transform.SetParent(transform,false);reloadPoint=reloadObject.GetComponent<RectTransform>();reloadPoint.anchorMin=reloadPoint.anchorMax=new Vector2(0,.21f);reloadObject.GetComponent<Image>().color=new Color(.025f,.07f,.1f,.9f);reloadObject.GetComponent<Image>().raycastTarget=false;
             reloadPointLabel=factory.Label("OutsideReloadPointLabel",reloadPoint,new Vector2(.5f,.5f),Vector2.zero,new Vector2(210,48));reloadPointLabel.fontSize=24;reloadPointLabel.alignment=TextAnchor.MiddleCenter;reloadPointLabel.color=Color.white;reloadPointLabel.raycastTarget=false;reloadPointLabel.resizeTextForBestFit=true;reloadPointLabel.resizeTextMinSize=18;reloadPointLabel.resizeTextMaxSize=24;
@@ -179,6 +186,22 @@ namespace Olca.Presentation.Exploration
                     var label=factory.Label("OutsideLandingLabel-"+surface.Id,transform,new Vector2(0,.21f),Vector2.zero,new Vector2(300,32));label.text="ケンショウ アシバ";label.fontSize=20;label.color=Color.white;label.raycastTarget=false;image.transform.SetSiblingIndex(player.transform.GetSiblingIndex());label.transform.SetSiblingIndex(player.transform.GetSiblingIndex());landingViews.Add((image,label));}}
             menu=new Olca.Unity.MenuPadScope(()=>CanPlay){CancelOnly=true,SuppressPadCancel=true};menu.Bind(transform,back.name,()=>back.onClick.Invoke());UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(back.gameObject);Render();
         }
+        /// <summary>探索HUDの専用ボタン。古い画面/leaseや覆われた画面からは開かない。</summary>
+        public void ConfigureKamuiShortcut(Action action)
+        {
+            if(kamuiShortcut==null)return;long ticket=++kamuiShortcutEpoch;var owner=context;var lease=presentation;
+            kamuiShortcut.onClick=new Button.ButtonClickedEvent();kamuiShortcut.gameObject.SetActive(action!=null);kamuiShortcut.interactable=CanPlay;RenderKamuiShortcut();
+            kamuiShortcut.onClick.AddListener(()=>{if(this!=null&&ticket==kamuiShortcutEpoch&&kamuiShortcut.isActiveAndEnabled&&action!=null&&ReferenceEquals(context,owner)&&owner?.IsCurrent==true&&ReferenceEquals(presentation,lease)&&lease?.IsCurrent==true&&CanPlay)action();});
+        }
+        private void RenderKamuiShortcut()
+        {
+            if(kamuiShortcut==null||!kamuiShortcut.gameObject.activeSelf||kamuiLabel==null||kamuiPortrait==null)return;
+            var style=presentation?.Player?.DepartureStyle;string name=style==null?"—":style.Id==Olca.Core.Domain.DepartureStyleDefinition.BasicId?"ツウジョウ":Olca.Presentation.CustomScreen.CustomDisplay.Katakana(style.Name);
+            kamuiLabel.text="カムイ\n"+name;
+            // 現在のジャンプ/移動コマや左右向きを顔へ転用せず、同じ待機コマを読み続ける。
+            kamuiPortrait.sprite=style==null?null:ResolveBodyCostume(idleSprite);kamuiPortrait.enabled=kamuiPortrait.sprite!=null;
+        }
+        private void ClearKamuiShortcut(){if(kamuiPortrait!=null){kamuiPortrait.sprite=null;kamuiPortrait.enabled=false;}if(kamuiLabel!=null)kamuiLabel.text="カムイ";kamuiShortcutEpoch++;if(kamuiShortcut!=null){kamuiShortcut.onClick=new Button.ButtonClickedEvent();kamuiShortcut.gameObject.SetActive(false);}}
         public void SetCovered(bool value)
         {
             if(covered==value)return;covered=value;
@@ -293,6 +316,7 @@ namespace Olca.Presentation.Exploration
             trialDoor.gameObject.SetActive(entered!=null&&trialRoute?.Invoke()==true);trialDoor.rectTransform.anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),-verticalOffset*pixelsPerWorldUnit);trialRouteHint.gameObject.SetActive(homeTrial);trialRouteHint.text=core.TraversalProfile?.WallActionsUnlocked==true?"シヨウチケイ / ミギ18: ソード ヒョウテキ（カリ） / イリグチ・カベ":"シヨウチケイ / ミギ: ダンジョン イリグチ / カベハ ミカイホウ";
             if(entrance!=null){entrance.GetComponent<RectTransform>().anchoredPosition=new Vector2(Origin((float)(Olca.Core.Logic.Integration.OutsideTrialRoute.EntranceX/unit)),340-verticalOffset*pixelsPerWorldUnit);RenderEntranceHint(entered!=null&&trialRoute?.Invoke()==true,CanPlay&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanInspect(core)&&(canEnter?.Invoke()??false),core.IsGrounded,interactionHint?.Invoke());}
 
+            if(kamuiShortcut!=null)kamuiShortcut.interactable=CanPlay;RenderKamuiShortcut();
             foreach(var slot in supplySlots)if(slot?.Button!=null){
                 bool shop=slot.Index==4;bool nearShop=shop&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanVisitShop(core);bool naming=presentation.MapNameOpacity>0;slot.Button.gameObject.SetActive(slot.Claim!=null&&trialRoute?.Invoke()==true&&(!shop||!naming||nearShop));var rect=slot.Button.GetComponent<RectTransform>();rect.anchoredPosition=new Vector2(Origin((float)(slot.X/unit)),(shop?(naming?625:430):slot.Index==3?510:340)-verticalOffset*pixelsPerWorldUnit);slot.Button.interactable=slot.CanUse?.Invoke()==true;
                 // 遠方・使用済みでも案内を読めるようにする。操作可能時の既存配色は維持する。
@@ -334,10 +358,10 @@ namespace Olca.Presentation.Exploration
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
         private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){Olca.Unity.BattleVisualClock.SetPaused(this,false);if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
-        private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;}
+        private void OnDisable(){Olca.Unity.BattleVisualClock.SetPaused(this,false);if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
+        private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;kamuiShortcut=null;}
     }
 }
 

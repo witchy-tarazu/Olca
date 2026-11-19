@@ -560,6 +560,7 @@ namespace Olca.Application.Dungeon
             outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);
             outsideExploration.View.ConfigureMiniMap(()=>clearReturnSession.InventoryRevision,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(clearReturnSession.Snapshot,gameSystem.OutsideExploration.Core));
             outsideExploration.View.ConfigureNavigation(()=>OutsideNavigation);
+            outsideExploration.View.ConfigureKamuiShortcut(OpenOutsideWheelFromHud);
             outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();BindOutsideShop();BindOutsideMapDoor();
         }
         private string outsideCardSupplyMessage;private int outsideCardSupplyAttemptFrame=-1;
@@ -610,7 +611,7 @@ namespace Olca.Application.Dungeon
         private bool OutsideRouteBusy=>outsideMapTravelBusy||outsideMapTravelNeedsBind||outsideExplorationOpening||outsideExploration?.IsOpen==true;
         private Olca.Presentation.Management.OutsideKamuiWheelDialog outsideWheel;
         private bool outsideWheelPaused,outsideWheelHeld;private object outsideWheelInputContext;
-        private enum OutsideWheelInputOwner{None,Pad,Pc,Menu}
+        private enum OutsideWheelInputOwner{None,Pad,Pc,Menu,Hud}
         private OutsideWheelInputOwner outsideWheelInputOwner;private int outsideWheelKeyboard=-1;
         private int outsideWheelPad=-1;
         private long outsideWheelEpoch;
@@ -644,7 +645,7 @@ namespace Olca.Application.Dungeon
             bool found=inputProvider.ReadOutsideWheel(same&&outsideWheel?.IsOpen==true&&outsideWheelInputOwner==OutsideWheelInputOwner.Pad?outsideWheelPad:-1,out var pad,out var held,out var decide,out var stick);
             bool edge=SampleOutsideWheelOpen(context,held);
             var pc=inputProvider.ReadOutsidePcWheel(context,outsideWheel?.IsOpen==true&&outsideWheelInputOwner==OutsideWheelInputOwner.Pc?outsideWheelKeyboard:-1,out var keyboard);
-            if(outsideWheel?.IsOpen==true){if(outsideWheelInputOwner==OutsideWheelInputOwner.Menu){outsideWheel.RefreshMenu();return;}if(outsideWheelInputOwner==OutsideWheelInputOwner.Pc)outsideWheel.TickPc(pc);else outsideWheel.Tick(found&&held,decide,stick);return;}
+            if(outsideWheel?.IsOpen==true){if(outsideWheelInputOwner==OutsideWheelInputOwner.Menu||outsideWheelInputOwner==OutsideWheelInputOwner.Hud){if(outsideWheelInputOwner==OutsideWheelInputOwner.Hud&&pc.ToggleDown)outsideWheel.Abort();else outsideWheel.RefreshMenu();return;}if(outsideWheelInputOwner==OutsideWheelInputOwner.Pc)outsideWheel.TickPc(pc);else outsideWheel.Tick(found&&held,decide,stick);return;}
             bool pcOpen=pc.ToggleDown&&pc.KeyboardAvailable;
             // 同時開始も既存の最後に使った入力機器に従う。表示中は開始した入力方式を固定する。
             if(edge&&pcOpen&&InputGuideActivity.Current==InputGuideDevice.Gamepad)pcOpen=false;
@@ -666,6 +667,16 @@ namespace Olca.Application.Dungeon
         {
             var choices=departureStyles.Where(v=>(v.Id==DepartureStyleDefinition.BasicId||v.Id==DepartureStyleDefinition.TrialFire.Id)&&v.IsUnlocked(clearReturnSession.Snapshot)).ToArray();
             outsideWheel.ConfigureChoices(choices.Select(v=>v.Id==DepartureStyleDefinition.BasicId?"ツウジョウ ジョウタイ":v.Name+" / ヒ・キック カリ").ToArray(),System.Array.FindIndex(choices,v=>v.Id==gameSystem.OutsideExploration.Player?.DepartureStyle.Id),index=>alive()&&epoch==outsideWheelEpoch&&index>=0&&index<choices.Length&&gameSystem.OutsideExploration.TrySwitchOutsideStyle(clearReturnSession,choices[index],memoryCheckpoints?.Definitions,out _));
+        }
+        // 専用HUDボタンは既存の項目クリック確定/取消と停止所有を使い、Pad保持を要求しない。
+        private void OpenOutsideWheelFromHud()
+        {
+            if(outsideExploration?.IsOpen!=true||outsideExploration.View.CanPlay!=true||!CustomizationUiLive||IsUserPaused||DialogueOpen||GameplayPause.InputBlocked||Time.timeScale<=0||gameSystem.Dialogs.ActiveCount!=0||outsideWheel?.IsOpen==true)return;
+            if(outsideWheel==null)outsideWheel=panelFactory.Component<Olca.Presentation.Management.OutsideKamuiWheelDialog>("OutsideKamuiWheelDialog",v=>v.Initialize(panelFactory.Font));
+            var owner=outsideExploration.Context;long epoch=++outsideWheelEpoch;
+            System.Func<bool> alive=()=>CustomizationUiLive&&outsideExploration?.IsOpen==true&&ReferenceEquals(outsideExploration.Context,owner);
+            ConfigureOutsideWheelChoices(alive,epoch);outsideWheelInputOwner=OutsideWheelInputOwner.Hud;outsideWheelInputContext=owner;outsideWheelHeld=false;
+            outsideWheel.OpenMenu(gameSystem.Dialogs,owner,alive,()=>!IsUserPaused&&!DialogueOpen,value=>SetOutsideWheelPaused(epoch,value),"コウモクヲ タップ / クリック: カクテイ\nモドる: トジル");
         }
         private void OpenOutsideWheelFromPause()
         {
