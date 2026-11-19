@@ -19,6 +19,58 @@ namespace Olca.Tests.Application
     public class GameSystemManagementTests
     {
         [TestCase(1920,1080,false)][TestCase(1920,1080,true)][TestCase(3840,2160,false)][TestCase(3840,2160,true)][TestCase(1440,1080,false)][TestCase(1440,1080,true)]
+        public async Task 別マップ任意AIの二行案内は接触登録に依存せず実フォントの全文が板内に収まる(int width,int height,bool contact)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            using(var model=new Olca.Core.Logic.Integration.OutsideExplorationSession(contact)){
+                model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+                Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+                using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                    Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;
+                    for(int mode=0;mode<2;mode++){
+                        if(mode==1)Assert.IsTrue(model.SetTrialEnemyAttack(true));view.Render();Canvas.ForceUpdateCanvases();
+                        var text=view.transform.Find("OutsideTrialTargetName").GetComponent<Text>();var plate=(RectTransform)view.transform.Find("OutsideTrialTargetNamePlate");StringAssert.Contains(mode==1?"AIコウゲキON":"AIコウゲキOFF",text.text);
+                        var generator=new TextGenerator();Assert.IsTrue(generator.Populate(text.text,text.GetGenerationSettings(text.rectTransform.rect.size)));Assert.AreEqual(text.text.Length,generator.characterCountVisible);Assert.AreEqual(2,generator.lineCount);
+                        foreach(var vertex in generator.verts){float y=vertex.position.y/text.pixelsPerUnit;Assert.That(y,Is.InRange(plate.rect.yMin+2,plate.rect.yMax-2));}
+                        ((System.IDisposable)generator).Dispose();Assert.LessOrEqual(text.preferredHeight,text.rectTransform.rect.height);Assert.Less(text.rectTransform.rect.height,plate.rect.height);
+                    }
+                }
+            }
+        }
+        [Test] public async Task 別マップ任意AIの表示とボタンは覆い中と標的撃破後に操作を拒否する()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);binding.View.ConfigureCombatFeedback(new Olca.Presentation.Effects.CombatNumberStyle(resources.GetShared<Font>("OlcaUI/MenuText"),FontStyle.Normal,Color.white,.2f,.01f,1,1));binding.View.Render();
+                var button=binding.View.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>();var label=binding.View.transform.Find("OutsideTrialTargetName").GetComponent<Text>();
+                Assert.IsTrue(button.interactable);StringAssert.Contains("AIコウゲキOFF",label.text);button.onClick.Invoke();binding.View.Render();StringAssert.Contains("AIコウゲキON",label.text);
+                button.onClick.Invoke();binding.View.Render();StringAssert.Contains("AIコウゲキOFF",label.text);var old=button.onClick;
+                binding.View.SetCovered(true);old.Invoke();binding.View.SetCovered(false);binding.View.Render();StringAssert.Contains("AIコウゲキOFF",label.text);
+                model.TrialTarget.TakeDamage(120,Olca.Core.Domain.ElementType.None);binding.View.Render();Assert.IsFalse(button.interactable);
+            }
+        }
+        [TestCase(1920,1080,false)][TestCase(1920,1080,true)][TestCase(3840,2160,false)][TestCase(3840,2160,true)][TestCase(1440,1080,false)][TestCase(1440,1080,true)]
+        public async Task 試用敵の直前予告は既存十二フレームだけ表示し再描画では進行しない(int width,int height,bool annex)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            using(var model=new Olca.Core.Logic.Integration.OutsideExplorationSession()){
+                model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));if(annex)model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+                Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+                using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                    Assert.IsTrue((await binding.OpenAsync()).Succeeded);Assert.IsTrue(model.SetTrialEnemyAttack(true));var view=binding.View;
+                    var label=view.transform.Find("OutsideTrialTargetName").GetComponent<Text>();
+                    for(int elapsed=0;elapsed<=60;elapsed++){
+                        long frame=model.Core.Frame;view.Render();view.Render();Assert.AreEqual(frame,model.Core.Frame);
+                        bool warning=elapsed>=48&&elapsed<60;Assert.AreEqual(warning,label.text.Contains("チョクゼン"),"elapsed="+elapsed);
+                        if(warning){foreach(char glyph in label.text){if(!char.IsWhiteSpace(glyph))Assert.IsTrue(label.font.HasCharacter(glyph),"欠字: "+glyph);}Canvas.ForceUpdateCanvases();var generator=new TextGenerator();Assert.IsTrue(generator.Populate(label.text,label.GetGenerationSettings(label.rectTransform.rect.size)));Assert.AreEqual(label.text.Length,generator.characterCountVisible);Assert.AreEqual(annex?2:1,generator.lineCount);((System.IDisposable)generator).Dispose();}
+                        if(elapsed<60)model.TickTraversal(0);
+                    }
+                    Assert.IsTrue(model.SetTrialEnemyAttack(false));view.Render();StringAssert.Contains("コウゲキOFF",label.text);
+                }
+            }
+        }
+        [TestCase(1920,1080,false)][TestCase(1920,1080,true)][TestCase(3840,2160,false)][TestCase(3840,2160,true)][TestCase(1440,1080,false)][TestCase(1440,1080,true)]
         public async Task 外界現在神依HUDは固定待機の顔と名称を三比率で表示し移動や覆いで状態を変更しない(int width,int height,bool fire)
         {
             ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;
@@ -290,7 +342,7 @@ namespace Olca.Tests.Application
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
             using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
-                Assert.IsTrue((await binding.OpenAsync()).Succeeded);if(annex)model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);var view=binding.View;view.Render();var first=view.transform.Find("OutsideTrialTarget").GetComponent<Image>();var second=view.transform.Find("OutsideSecondTrialTarget").GetComponent<Image>();Assert.IsTrue(first.enabled);Assert.IsTrue(second.enabled);var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();float pixels=body.rectTransform.sizeDelta.x/(body.sprite.rect.width/body.sprite.pixelsPerUnit);Assert.AreEqual((model.SecondTrialTargetX-model.FirstTrialTargetX)/60000f*pixels,second.rectTransform.anchoredPosition.x-first.rectTransform.anchoredPosition.x,.01f);if(annex)Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>().interactable);
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);if(annex)model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);var view=binding.View;view.Render();var first=view.transform.Find("OutsideTrialTarget").GetComponent<Image>();var second=view.transform.Find("OutsideSecondTrialTarget").GetComponent<Image>();Assert.IsTrue(first.enabled);Assert.IsTrue(second.enabled);var body=view.transform.Find("OutsideEntryPlayer").GetComponent<Image>();float pixels=body.rectTransform.sizeDelta.x/(body.sprite.rect.width/body.sprite.pixelsPerUnit);Assert.AreEqual((model.SecondTrialTargetX-model.FirstTrialTargetX)/60000f*pixels,second.rectTransform.anchoredPosition.x-first.rectTransform.anchoredPosition.x,.01f);if(annex)Assert.IsTrue(view.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>().interactable);
                 model.TrialTarget.TakeDamage(13,Olca.Core.Domain.ElementType.None);long frame=model.Core.Frame;view.Render();Assert.AreEqual("107",view.transform.Find("OutsideTrialTargetHp").GetComponent<Text>().text);Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(107,model.TrialTarget.CurrentHp);
             }
         }
@@ -696,7 +748,7 @@ namespace Olca.Tests.Application
                 var old=button.onClick;EventSystem.current.SetSelectedGameObject(button.gameObject);old.Invoke();Assert.AreEqual(1,calls);Assert.IsNull(EventSystem.current.currentSelectedGameObject);
                 ready=false;old.Invoke();Assert.AreEqual(1,calls);ready=true;view.SetCovered(true);old.Invoke();Assert.AreEqual(1,calls);
                 Assert.IsTrue((await binding.ReopenAfterMapTravelAsync()).Succeeded);old.Invoke();Assert.AreEqual(1,calls);view=binding.View;view.ConfigureMapDoor(()=>calls++,()=>ready,()=>"イドウ");view.Render();view.transform.Find("OutsideMapDoor").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(2,calls);
-                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("SetRecoveryMap",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint});view.Render();Assert.IsTrue(view.transform.Find("OutsideTrialTargetNamePlate").gameObject.activeSelf);Assert.IsTrue(view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().enabled);Assert.IsFalse(view.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>().interactable);
+                typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("SetRecoveryMap",flags).Invoke(model.Core,new object[]{Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint});view.Render();Assert.IsTrue(view.transform.Find("OutsideTrialTargetNamePlate").gameObject.activeSelf);Assert.IsTrue(view.transform.Find("OutsideTrialTargetName").GetComponent<Text>().enabled);Assert.IsTrue(view.transform.Find("OutsideTrialTargetNamePlate").GetComponent<Button>().interactable);
                 Assert.IsTrue(binding.ReturnToHub());old.Invoke();Assert.AreEqual(2,calls);
             }
         }

@@ -122,6 +122,45 @@ namespace Olca.Tests
                 using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<100;n++){s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(s.TrialTarget.CurrentHp,cold.TrialTarget.CurrentHp);Assert.AreEqual(s.Bombs.Count,cold.Bombs.Count);}Assert.AreEqual(rev,cold.Cards.HandRevision);Assert.AreEqual(80,cold.TrialTarget.CurrentHp);Assert.AreEqual(120,cold.SecondTrialTarget.CurrentHp);
             }}finally{if(System.IO.Directory.Exists(dir))System.IO.Directory.Delete(dir,true);}
         }
+        [TestCase(21,true)][TestCase(23,true)][TestCase(20,false)][TestCase(24,false)]
+        public void 別マップ任意敵AIは可視の第一標的から射程と壁を判定する(int x,bool hits)
+        {
+            using(var s=AnnexSword346(x:x))using(var lease=s.AttachPresentation()){
+                for(int n=0;n<100;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);
+                Assert.IsTrue(s.SetTrialEnemyAttack(true));Assert.IsTrue(lease.TrialEnemyAttackEnabled);
+                for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);
+                s.TickTraversal(0);Assert.AreEqual(hits?90:100,s.Player.CurrentHp);
+                for(int n=0;n<89;n++)s.TickTraversal(0);Assert.AreEqual(hits?90:100,s.Player.CurrentHp);
+                s.TickTraversal(0);Assert.AreEqual(hits?80:100,s.Player.CurrentHp);
+                Assert.IsTrue(s.SetTrialEnemyAttack(false));for(int n=0;n<100;n++)s.TickTraversal(0);Assert.AreEqual(hits?80:100,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 別マップ任意敵AIの残り一フレーム保存はcold後一度だけ発動し通常復帰では解除する()
+        {
+            using(var s=AnnexSword346(x:21))using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.SetTrialEnemyAttack(true,true));for(int n=0;n<59;n++)s.TickTraversal(0);}
+                var defs=Door239Definitions(s);var rt=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=rt.Id;
+                Assert.AreEqual(s.Core.Frame+1,rt.TrialEnemyAttack.NextFrame);var bytes=PortableCheckpointJson.Serialize(rt);
+                var copy=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes);
+                Assert.IsTrue(cold.RestoreSavedState(actor,copy,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));
+                Assert.IsFalse(cold.RestoreSavedState(actor,copy,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation()){
+                    cold.TickTraversal(0);s.TickTraversal(0);Assert.AreEqual(90,cold.Player.CurrentHp);Assert.AreEqual(s.Player.AccumulatedDamage,cold.Player.AccumulatedDamage);
+                    for(int n=0;n<89;n++){cold.TickTraversal(0);s.TickTraversal(0);}Assert.AreEqual(90,cold.Player.CurrentHp);
+                    cold.TickTraversal(0);s.TickTraversal(0);Assert.AreEqual(80,cold.Player.CurrentHp);
+                }
+                CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(rt));Assert.IsNull(rt.ForRun(Guid.NewGuid().ToString("N")).TrialEnemyAttack);
+                using(var normal=new OutsideExplorationSession()){normal.ClassifyStartupRestore(true);normal.RestoreForPresentation(actor,rt,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile);using(var lease=normal.AttachPresentation())Assert.IsFalse(lease.TrialEnemyAttackEnabled);}
+            }
+        }
+        [Test] public void 別マップ任意敵AIは非表示中に進まず標的撃破で停止する()
+        {
+            using(var s=AnnexSword346(x:21)){
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.SetTrialEnemyAttack(true));for(int n=0;n<10;n++)s.TickTraversal(0);}
+                long frame=s.Core.Frame;Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(0));Assert.AreEqual(frame,s.Core.Frame);
+                using(var lease=s.AttachPresentation()){s.TrialTarget.TakeDamage(120,ElementType.None);for(int n=0;n<100;n++)s.TickTraversal(0);Assert.IsFalse(lease.TrialEnemyAttackEnabled);Assert.AreEqual(100,s.Player.CurrentHp);}
+            }
+        }
         private static OutsideExplorationSession AnnexSword346(string id="sword",int x=20,int facing=1,bool air=false,long wallBottom=0,long wallTop=60000000,long wallX=24*60000)
         {
             var s=new OutsideExplorationSession();var p=OutsideTraversalProfile.ValidationWall(true);
