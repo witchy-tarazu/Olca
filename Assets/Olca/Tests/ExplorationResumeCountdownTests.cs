@@ -161,11 +161,11 @@ namespace Olca.Tests
                 using(var lease=s.AttachPresentation()){s.TrialTarget.TakeDamage(120,ElementType.None);for(int n=0;n<100;n++)s.TickTraversal(0);Assert.IsFalse(lease.TrialEnemyAttackEnabled);Assert.AreEqual(100,s.Player.CurrentHp);}
             }
         }
-        private static OutsideExplorationSession AnnexSword346(string id="sword",int x=20,int facing=1,bool air=false,long wallBottom=0,long wallTop=60000000,long wallX=24*60000)
+        private static OutsideExplorationSession AnnexSword346(string id="sword",int x=20,int facing=1,bool air=false,long wallBottom=0,long wallTop=60000000,long wallX=24*60000,int stagger=0)
         {
             var s=new OutsideExplorationSession();var p=OutsideTraversalProfile.ValidationWall(true);
             Assert.IsTrue(s.TryConfigureTraversal(new OutsideTraversalProfile("annex-sword346",p.DashSpeedPerSecond,p.DashFrames,p.DashCooldownFrames,p.DashResetFrames,p.DashJumpSpeedPerSecond,p.BodyHalfWidth,p.BodyHeight,p.WallSlidePerFrame,p.WallKickVelocity,p.WallKickSpeedPerSecond,p.WallKickPushFrames,p.WallKickMotionFrames,true,new OutsideValidationWall("wall346",wallX,wallBottom,wallTop))));
-            s.TryInitializePlayer(()=>new PlayerCharacter(100));var f=new Olca.Application.Battle.SimpleCardFactory();var cards=f.CreateTrialInitialLoadout().Outside.ToArray();if(id=="fire_sword")cards[0]=f.CreateById(id);Assert.IsTrue(s.QueueSelectedDeck("annex-sword346",cards,Owned(cards),new SeededBattleRandom(346),out var error),error);Walk155(s,10*60000);s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
+            s.TryInitializePlayer(()=>new PlayerCharacter(100,staggerDurationFrames:stagger));var f=new Olca.Application.Battle.SimpleCardFactory();var cards=f.CreateTrialInitialLoadout().Outside.ToArray();if(id=="fire_sword")cards[0]=f.CreateById(id);Assert.IsTrue(s.QueueSelectedDeck("annex-sword346",cards,Owned(cards),new SeededBattleRandom(346),out var error),error);Walk155(s,10*60000);s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);
             using(var lease=s.AttachPresentation())for(int n=0;n<60;n++)s.TickTraversal(1);
             for(int n=0;n<1000&&!s.Cards.Hand.Any(c=>c.Id==id);n++)s.Cards.Reload();Assert.IsTrue(s.Cards.TrySelect(s.Cards.Hand.ToList().FindIndex(c=>c.Id==id)));
             var state=s.Core.CaptureState();state.Position=x*60000;state.Facing=facing;state.Moving=false;state.MovementFrame=0;if(air){state.Height=60000;state.SupportId=null;state.Velocity=0;}typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});s.EnableTrialCardPolish();return s;
@@ -1332,6 +1332,94 @@ namespace Olca.Tests
         {
             var p=new PlayerCharacter(100);p.TakeDamage(10);var actor=OutsidePlayerSaveData.Capture(p);var retry=new OutsideRetryReturnData{EntryLevel=1,Entry=actor};var result=retry.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.AreEqual(10,result.Restore().AccumulatedDamage);Assert.AreNotSame(actor.HitState,result.HitState);var first=new OutsideClearEndData{EntryLevel=1,Entry=actor,End=actor.Player.Copy()}.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.IsNull(first.HitState);Assert.IsNull(OutsidePlayerSaveData.ForRecovery(p).HitState);Assert.NotNull(actor.HitState);
         }
+        private static void Knockback411Ticks(OutsideExplorationSession s,int frames,float input=0)
+        { for(int n=0;n<frames;n++)s.TickTraversal(input); }
+        [TestCase(21,1,-1)][TestCase(23,-1,1)]
+        public void 試用敵v2押戻しは非ブレイクで動かず確定後の六フレームだけ打撃元から離れる(int x,int facing,int away)
+        {
+            using(var s=AnnexSword346(x:x,facing:facing,stagger:18))using(var lease=s.AttachPresentation()){
+                long start=s.Core.Position;Assert.IsTrue(s.SetTrialEnemyAttack(true,true));
+                Knockback411Ticks(s,60);Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(start,s.Core.Position);Assert.AreEqual(0,s.KnockbackFramesRemaining);
+                Knockback411Ticks(s,90);Assert.AreEqual(80,s.Player.CurrentHp);Assert.AreEqual(start,s.Core.Position);Assert.AreEqual(0,s.KnockbackFramesRemaining);
+                Knockback411Ticks(s,90);Assert.AreEqual(70,s.Player.CurrentHp);Assert.IsTrue(s.Player.IsStaggered);Assert.AreEqual(start,s.Core.Position);Assert.AreEqual(6,s.KnockbackFramesRemaining);
+                for(int n=1;n<=6;n++){s.TickTraversal(-away);Assert.AreEqual(start+away*3000*n,s.Core.Position);Assert.AreEqual(6-n,s.KnockbackFramesRemaining);Assert.AreEqual(facing,s.Core.Facing);}
+                s.TickTraversal(0);Assert.AreEqual(start+away*18000,s.Core.Position);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 試用敵v2押戻しは左右の壁を通常コリジョンで越えない(bool left)
+        {
+            long wall=left?1230000:1440000,start=left?1263000:1404000;
+            using(var s=AnnexSword346(x:left?21:23,wallX:wall,stagger:18))using(var lease=s.AttachPresentation()){
+                BombPosition289(s,start,left?1:-1);Assert.IsTrue(s.SetTrialEnemyAttack(true,true));Knockback411Ticks(s,246);
+                Assert.AreEqual(70,s.Player.CurrentHp);Assert.AreEqual(left?wall+31200:wall-31200,s.Core.Position);Assert.AreEqual(0,s.KnockbackFramesRemaining);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 試用敵v2押戻しは旧攻撃と完全防御を変更しない(bool barrier)
+        {
+            using(var s=AnnexSword346(x:21,stagger:18))using(var lease=s.AttachPresentation()){
+                long start=s.Core.Position;if(barrier)s.Player.SetBarrier(100);Assert.IsTrue(s.SetTrialEnemyAttack(true,barrier));Knockback411Ticks(s,246);
+                Assert.AreEqual(start,s.Core.Position);Assert.AreEqual(0,s.KnockbackFramesRemaining);Assert.IsFalse(s.Player.IsStaggered);Assert.AreEqual(barrier?100:70,s.Player.CurrentHp);
+            }
+        }
+        [TestCase(0)][TestCase(2)][TestCase(5)]
+        public void 試用敵v2押戻し途中の保存復元は残り移動だけを再開する(int elapsed)
+        {
+            using(var s=AnnexSword346(x:21,stagger:18))using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation()){s.SetTrialEnemyAttack(true,true);Knockback411Ticks(s,240+elapsed);}
+                var defs=Kick214Definitions(s);var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                Assert.AreEqual(6-elapsed,runtime.Knockback.FramesRemaining);var copy=runtime.Copy();Assert.AreNotSame(runtime.Knockback,copy.Knockback);Assert.IsNull(runtime.ForRun(Guid.NewGuid().ToString("N")).Knockback);
+                var bytes=PortableCheckpointJson.Serialize(runtime);
+                Assert.IsTrue(cold.RestoreSavedState(actor,PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes),OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));Assert.IsFalse(cold.RestoreSavedState(actor,runtime,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<12;n++){s.TickTraversal(0);cold.TickTraversal(0);Assert.AreEqual(s.Core.Position,cold.Core.Position);Assert.AreEqual(s.KnockbackFramesRemaining,cold.KnockbackFramesRemaining);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);}
+                Assert.AreEqual(bytes,PortableCheckpointJson.Serialize(runtime));
+            }
+        }
+        [Test] public void 試用敵v2押戻しはHP通知時点で確定し非表示中は進まない()
+        {
+            using(var s=AnnexSword346(x:21,stagger:18)){
+                int observed=-1;var defs=Kick214Definitions(s);s.Player.OnHpChanged+=(hp,max)=>{if(hp==70){observed=s.KnockbackFramesRemaining;}};
+                using(var lease=s.AttachPresentation()){s.SetTrialEnemyAttack(true,true);Knockback411Ticks(s,240);}Assert.AreEqual(6,observed);long x=s.Core.Position,frame=s.Core.Frame;Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(1));Assert.AreEqual(frame,s.Core.Frame);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(6,s.KnockbackFramesRemaining);
+            }
+        }
+        [TestCase(0,3000,6)][TestCase(1,0,6)][TestCase(1,60001,6)][TestCase(1,3001,6)][TestCase(1,3000,7)][TestCase(1,3000,0)][TestCase(-1,3000,61)]
+        public void 試用敵v2押戻しの不正な保存値は拒否する(int direction,long units,int frames)
+        {Assert.Throws<ArgumentException>(()=>new OutsideKnockbackStateData{Direction=direction,UnitsPerFrame=units,FramesRemaining=frames}.Validate());}
+        [Test] public void 試用敵v2押戻しのない旧保存は余分なフィールドを持たない()
+        {
+            using(var s=AnnexSword346()){var runtime=s.CaptureRuntime(Kick214Definitions(s));Assert.IsNull(runtime.Knockback);var bytes=PortableCheckpointJson.Serialize(runtime);StringAssert.DoesNotContain("Knockback",System.Text.Encoding.UTF8.GetString(bytes));Assert.IsNull(PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(bytes).Knockback);}
+        }
+
+        [Test] public void 試用敵v2押戻しは停止した攻撃を発生させず状態解除で止まる()
+        {
+            using(var s=AnnexSword346(x:21,stagger:18))using(var lease=s.AttachPresentation()){
+                s.SetTrialEnemyAttack(true,true);Knockback411Ticks(s,150);s.SetTrialEnemyAttack(false);Knockback411Ticks(s,90);Assert.AreEqual(80,s.Player.CurrentHp);Assert.AreEqual(0,s.KnockbackFramesRemaining);
+                s.SetTrialEnemyAttack(true,true);Knockback411Ticks(s,60);Assert.AreEqual(6,s.KnockbackFramesRemaining);long x=s.Core.Position;Hit229(s.Player,"ClearStagger");s.TickTraversal(0);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(0,s.KnockbackFramesRemaining);
+            }
+        }
+        [Test] public void 試用敵v2押戻しは個体交換へ持ち越さない()
+        {
+            using(var s=AnnexSword346(x:21,stagger:18)){
+                using(var lease=s.AttachPresentation()){s.SetTrialEnemyAttack(true,true);Knockback411Ticks(s,240);}Assert.AreEqual(6,s.KnockbackFramesRemaining);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=Guid.NewGuid().ToString("N");Assert.IsTrue(s.RestoreSavedPlayer(actor,OutsideTrialRoute.DoorAnnexPoint));Assert.AreEqual(0,s.KnockbackFramesRemaining);long x=s.Core.Position;using(var lease=s.AttachPresentation())s.TickTraversal(0);Assert.AreEqual(x,s.Core.Position);
+            }
+        }
+        [TestCase(-1)][TestCase(1)]
+        public void 試用敵v2押戻しの地形経路は既存移動の穴と空中落下に従う(int side)
+        {
+            var profile=OutsideTraversalProfile.ValidationPit;
+            var a=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,profile);var b=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,profile);
+            var state=a.CaptureState();state.Position=side==1?222000:258000;state.Facing=side;
+            var restore=typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);restore.Invoke(a,new object[]{state});restore.Invoke(b,new object[]{state});
+            var tick=typeof(OutsideExplorationCore).GetMethod("TickKnockbackFrame",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            for(int n=0;n<4;n++){tick.Invoke(a,new object[]{side*6000L,false,false});b.TickFrame(side);var x=a.CaptureState();var y=b.CaptureState();Assert.AreEqual(y.Position,x.Position);Assert.AreEqual(y.Height,x.Height);Assert.AreEqual(y.Velocity,x.Velocity);Assert.AreEqual(y.SupportId,x.SupportId);}
+        }
+        [TestCase(0,-1)][TestCase(1800000,1)]
+        public void 試用敵v2押戻しはマップ端から外へ出ない(long position,int side)
+        {
+            var core=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);var state=core.CaptureState();state.Position=position==0?0:core.Definition.Width;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(core,new object[]{state});typeof(OutsideExplorationCore).GetMethod("TickKnockbackFrame",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(core,new object[]{side*3000L,false,false});Assert.AreEqual(state.Position,core.Position);
+        }
+
         [Test] public void 試用敵v2の強靭被害は保存cold後の次撃で一度だけ怯みへ進む()
         {
             using(var s=Sword161(stagger:18)){

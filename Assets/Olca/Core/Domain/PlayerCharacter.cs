@@ -359,6 +359,8 @@ namespace Olca.Core.Domain
             if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
             pendingInvincibilityMs = 0;
         }
+        // Commit後、通知を公開する前に確定済みブレイク結果を読む。判定そのものは共通処理が所有する。
+        internal bool DidStaggerAtHpFrameCommit => frameStaggered;
         internal void PublishHpFrame()
         {
             bool changed = frameHp.TakeNotification(out bool died);
