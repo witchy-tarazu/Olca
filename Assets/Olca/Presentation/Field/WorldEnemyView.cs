@@ -21,6 +21,7 @@ namespace Olca.Presentation.Field
         private Enemy enemy;
         private float dungeonWorldX;       // 換算済みのダンジョン配置World X
         private WorldBattleGridView gridView;  // バトル中のみセットされる
+        private System.Collections.Generic.IReadOnlyList<Enemy> battleEnemies;
         private int previousHp;
         private int pendingContactDamage;     // バトル開始前に適用されたダッシュダメージ（フェーズ3で発動）
         private bool battleStarted,feedbackSubscribed,hitReactionRunning;
@@ -199,6 +200,7 @@ namespace Olca.Presentation.Field
             this.enemy = enemy;
             this.dungeonWorldX = dungeonX;
             this.gridView = null;
+            battleEnemies = null;
             this.previousHp = enemy.CurrentHp;
             deadAtBind=enemy.IsDead;
             if(!enemy.IsDead&&!gameObject.activeSelf)gameObject.SetActive(true);
@@ -254,9 +256,10 @@ namespace Olca.Presentation.Field
         // ==================== バトル遷移 ====================
 
         /// <summary>バトル開始時 - グリッド座標モードに切り替え（グリッド範囲内の敵のみ）</summary>
-        public void OnBattleStarted(WorldBattleGridView grid, bool participates = true)
+        public void OnBattleStarted(WorldBattleGridView grid, bool participates = true, System.Collections.Generic.IReadOnlyList<Enemy> occupants = null)
         {
             positionAnimating = false;
+            battleEnemies = occupants;
             if (enemy == null) return;
 
             // バトル開始前（ダッシュ接触時）に適用済みのダメージをここで保存し、
@@ -285,6 +288,7 @@ namespace Olca.Presentation.Field
             battleStarted=false;pendingContactFeedback.Clear();pendingContactDamage=0;
             SetHiddenByBlindness(false);
             gridView = null;
+            battleEnemies = null;
             SetStrongEnemy(strongEnemy);
             enemyView?.HideHp();
             if (hiddenForBattle)
@@ -395,10 +399,35 @@ namespace Olca.Presentation.Field
         private void UpdatePosition()
         {
             float worldX = (gridView != null && enemy != null)
-                ? gridView.GridIndexToWorldX(enemy.GridPosition.X)
+                ? gridView.GridIndexToWorldX(enemy.GridPosition.X) + GetOverlapOffset()
                 : dungeonWorldX;
 
             transform.position = new Vector3(worldX, transform.position.y, transform.position.z);
+        }
+
+        // 論理座標は変えず、生存した同マスの雑魚だけを安定した戦闘リスト順で分散する。
+        private float GetOverlapOffset()
+        {
+            if (gridView == null || enemy == null || enemy.IsDead || enemy.EnemyId == "boss" || battleEnemies == null) return 0f;
+            int count = 0, index = -1;
+            bool bossPresent = false;
+            foreach (var other in battleEnemies)
+            {
+                if (other == null || other.IsDead || other.GridPosition != enemy.GridPosition) continue;
+                if (other.EnemyId == "boss") { bossPresent = true; continue; }
+                if (ReferenceEquals(other, enemy)) index = count;
+                count++;
+            }
+            if (index < 0 || count <= 1 && !bossPresent) return 0f;
+            float fraction;
+            if (bossPresent)
+            {
+                // ボス用に中央を空け、雑魚は左右交互に配置する。
+                float step = .24f / Mathf.Ceil(count / 2f);
+                fraction = (index % 2 == 0 ? -1f : 1f) * (index / 2 + 1) * step;
+            }
+            else fraction = (index - (count - 1) * .5f) * Mathf.Min(.24f, .48f / (count - 1));
+            return gridView.LogicalToWorld(fraction);
         }
 
         private void OnDestroy()

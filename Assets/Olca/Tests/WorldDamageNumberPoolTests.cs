@@ -12,6 +12,48 @@ using UnityEngine.TestTools;
 
 namespace Olca.Tests
 {
+    public class EnemyOverlapDisplayTests
+    {
+        private readonly List<GameObject> objects = new List<GameObject>();
+        private Olca.Presentation.Field.WorldBattleGridView Grid()
+        {
+            var go=new GameObject("OverlapGrid");objects.Add(go);return go.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();
+        }
+        private Olca.Presentation.Field.WorldEnemyView View(Olca.Core.Domain.Enemy enemy)
+        {
+            var go=new GameObject("OverlapEnemy");objects.Add(go);var v=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();v.Initialize(enemy,10f);return v;
+        }
+        private static Olca.Core.Domain.Enemy Enemy(string id="grunt",int x=2,int y=0)
+            =>new Olca.Core.Domain.Enemy(id,"テスト",100,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(x,y));
+        [TearDown] public void Cleanup(){foreach(var go in objects)if(go!=null)UnityEngine.Object.DestroyImmediate(go);objects.Clear();}
+
+        [TestCase(2)][TestCase(3)][TestCase(10)]
+        public void 同一マスの雑魚だけを左右へ分け論理座標と単独の敵は変えない(int count)
+        {
+            var grid=Grid();var enemies=Enumerable.Range(0,count).Select(_=>Enemy()).ToList();var positions=new List<float>();
+            foreach(var enemy in enemies){var v=View(enemy);v.OnBattleStarted(grid,occupants:enemies);positions.Add(v.transform.position.x);Assert.AreEqual(new Olca.Core.Domain.Vector2Int(2,0),enemy.GridPosition);v.Refresh();Assert.AreEqual(positions.Last(),v.transform.position.x);}
+            float center=grid.GridIndexToWorldX(2);Assert.AreEqual(count,positions.Distinct().Count());Assert.Less(positions.First(),center);Assert.Greater(positions.Last(),center);
+            Assert.That(positions.Average(),Is.EqualTo(center).Within(.0001f));foreach(float x in positions)Assert.LessOrEqual(Mathf.Abs(x-center),grid.LogicalToWorld(.241f));
+            var alone=View(Enemy(x:3));alone.OnBattleStarted(grid,occupants:enemies);Assert.AreEqual(grid.GridIndexToWorldX(3),alone.transform.position.x);
+        }
+        [TestCase(1)][TestCase(2)][TestCase(5)]
+        public void ボスは中央に固定し同マスの雑魚は中央を空ける(int count)
+        {
+            var grid=Grid();var boss=Enemy("boss");var enemies=new List<Olca.Core.Domain.Enemy>{boss};enemies.AddRange(Enumerable.Range(0,count).Select(_=>Enemy()));float center=grid.GridIndexToWorldX(2);
+            var bossView=View(boss);bossView.OnBattleStarted(grid,occupants:enemies);Assert.AreEqual(center,bossView.transform.position.x);
+            var positions=new List<float>();foreach(var enemy in enemies.Skip(1)){var v=View(enemy);v.OnBattleStarted(grid,occupants:enemies);Assert.AreNotEqual(center,v.transform.position.x);positions.Add(v.transform.position.x);}Assert.AreEqual(count,positions.Distinct().Count());
+            bossView.Refresh();Assert.AreEqual(center,bossView.transform.position.x);
+        }
+        [Test] public void 移動と撃破で重なりを解消し戦闘終了と再利用でオフセットを残さない()
+        {
+            var grid=Grid();var a=Enemy();var b=Enemy();var enemies=new List<Olca.Core.Domain.Enemy>{a,b};var view=View(a);view.OnBattleStarted(grid,occupants:enemies);float shifted=view.transform.position.x;
+            view.SetPositionAnimating(true);b.MoveTo(new Olca.Core.Domain.Vector2Int(3,0));view.Refresh();Assert.AreEqual(shifted,view.transform.position.x);
+            view.SetPositionAnimating(false);view.Refresh();Assert.AreEqual(grid.GridIndexToWorldX(2),view.transform.position.x);
+            b.MoveTo(a.GridPosition);view.Refresh();Assert.AreEqual(shifted,view.transform.position.x);b.TakeDamage(100,Olca.Core.Domain.ElementType.None);view.Refresh();Assert.AreEqual(grid.GridIndexToWorldX(2),view.transform.position.x);
+            view.OnBattleEnded();Assert.AreEqual(10f,view.transform.position.x);view.Initialize(Enemy(),20f);view.Refresh();Assert.AreEqual(20f,view.transform.position.x);
+        }
+    }
+
     public class WorldDamageNumberPoolTests
     {
         private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;

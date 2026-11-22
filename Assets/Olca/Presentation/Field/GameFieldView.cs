@@ -946,7 +946,7 @@ namespace Olca.Presentation.Field
 
             // 全敵スプライトをバトルグリッド座標に切り替え
             foreach (var view in enemyViews)
-                view?.OnBattleStarted(battleGridView, battle.Enemies.Contains(view.TrackedEnemy));
+                view?.OnBattleStarted(battleGridView, battle.Enemies.Contains(view.TrackedEnemy), battle.Enemies);
         }
 
         /// <summary>
@@ -1295,7 +1295,7 @@ namespace Olca.Presentation.Field
         {
             var view = CreateEnemyView(summon, 0f);
             enemyViews.Add(view);
-            view.OnBattleStarted(battleGridView);
+            view.OnBattleStarted(battleGridView, occupants: currentBattle?.Enemies);
         }
 
         private void UpdateEnemyViews()
