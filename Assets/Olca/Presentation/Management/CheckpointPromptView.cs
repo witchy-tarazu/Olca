@@ -45,6 +45,7 @@ namespace Olca.Presentation.Exploration
         private readonly Button[] handButtons=new Button[3];
         private Func<int,Sprite> authoredStaggerSprite;
         private Sprite StaggerSprite(){var actor=presentation?.Player;return actor?.IsStaggered==true?authoredStaggerSprite?.Invoke(Math.Max(0,actor.StaggerDurationFrames-actor.StaggerRemainingFrames)):null;}
+        private Image outsideBackground;private AspectRatioFitter backgroundCover;private Sprite originalOutsideBackground,annexCaveBackground;
         private Sprite idleSprite,riseSprite,apexSprite,fallSprite;private AnimationClip moveClip,idleClip;private SpriteRenderer motionSample;
         private readonly System.Collections.Generic.List<(Image image,Text label)> landingViews=new System.Collections.Generic.List<(Image,Text)>();
         private Image player,terrain;private Text leftEnd,rightEnd,gaugeLabel;private RectTransform gaugeFill;private long lastGaugeUnits=-1,lastGaugeMaximum=-1;private float pixelsPerWorldUnit;
@@ -62,7 +63,7 @@ namespace Olca.Presentation.Exploration
             var source=resources.GetShared<GameObject>("OlcaSystem/WorldPresentation");
             Sprite Find(string name){foreach(var sr in source.GetComponentsInChildren<SpriteRenderer>(true))if(sr.name==name)return sr.sprite;throw new InvalidOperationException("外界入口の共有素材がありません: "+name);}
             Image Picture(string name,Sprite sprite,Vector2 min,Vector2 max){if(sprite==null)throw new InvalidOperationException("外界入口の画像がありません: "+name);var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=sprite;image.raycastTarget=false;var r=image.rectTransform;r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;return image;}
-            var background=Picture("OutsideOriginalBackground",Find("DungeonBackground"),Vector2.zero,Vector2.one);var cover=background.gameObject.AddComponent<AspectRatioFitter>();cover.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;cover.aspectRatio=background.sprite.rect.width/background.sprite.rect.height;
+            var background=outsideBackground=Picture("OutsideOriginalBackground",originalOutsideBackground=Find("DungeonBackground"),Vector2.zero,Vector2.one);annexCaveBackground=resources.FindShared<Sprite>("OlcaUI/AnnexCaveSpritePilot");var cover=backgroundCover=background.gameObject.AddComponent<AspectRatioFitter>();cover.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;cover.aspectRatio=background.sprite.rect.width/background.sprite.rect.height;
             terrain=Picture("OutsideEntryGround",Find("Ground"),Vector2.zero,new Vector2(1,.21f));terrain.type=Image.Type.Tiled;
             var field=source.GetComponent<Olca.Presentation.Field.GameFieldView>();var idle=idleSprite=field.AuthoredIdlePlayerSprite;authoredStaggerSprite=field.AuthoredStaggerSprite;
             riseSprite=field.AuthoredJumpRiseSprite;apexSprite=field.AuthoredJumpApexSprite;fallSprite=field.AuthoredJumpFallSprite;moveClip=field.AuthoredMoveClip;idleClip=field.AuthoredIdleClip;
@@ -288,6 +289,9 @@ namespace Olca.Presentation.Exploration
         {
             Olca.Unity.BattleVisualClock.SetPaused(this,IsOpen&&presentation?.IsHitStopped==true);
             if(!IsOpen||player==null)return;
+            // Annexの遠景だけを差し替え、移動先では共有の元背景へ戻す。
+            var sceneBackground=presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&annexCaveBackground!=null?annexCaveBackground:originalOutsideBackground;
+            if(outsideBackground.sprite!=sceneBackground){outsideBackground.sprite=sceneBackground;outsideBackground.color=sceneBackground==annexCaveBackground?new Color(.72f,.72f,.78f,1):Color.white;backgroundCover.aspectRatio=sceneBackground.rect.width/sceneBackground.rect.height;}
             RefreshItemHud();RenderMiniMap();
             RefreshOutsideStatusIcons();
             // Custom詳細と同じ残強靭度の読取。のけぞり/回復の計算は既存Playerが所有する。

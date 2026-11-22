@@ -70,6 +70,17 @@ namespace Olca.Tests.Application
                 }
             }
         }
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(3840,2160)] public async Task Annex遠景414だけを実寸比率で中央coverし退出時に元へ戻す(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();var image=view.transform.Find("OutsideOriginalBackground").GetComponent<Image>();var original=image.sprite;var terrain=view.transform.Find("OutsideEntryGround").GetComponent<Image>().sprite;var candidate=resources.GetShared<Sprite>("OlcaUI/AnnexCaveSpritePilot");Assert.AreEqual(new Vector2(384,216),candidate.rect.size);Assert.AreEqual(FilterMode.Point,candidate.texture.filterMode);
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.Render();Canvas.ForceUpdateCanvases();Assert.AreSame(candidate,image.sprite);Assert.AreEqual(new Color(.72f,.72f,.78f,1),image.color);Assert.IsFalse(image.raycastTarget);var fit=image.GetComponent<AspectRatioFitter>();Assert.AreEqual(AspectRatioFitter.AspectMode.EnvelopeParent,fit.aspectMode);Assert.That(fit.aspectRatio,Is.EqualTo(384f/216).Within(.0001f));Assert.That(image.rectTransform.rect.width/image.rectTransform.rect.height,Is.EqualTo(384f/216).Within(.001f));Assert.AreSame(terrain,view.transform.Find("OutsideEntryGround").GetComponent<Image>().sprite);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint);view.Render();Assert.AreSame(original,image.sprite);Assert.AreEqual(Color.white,image.color);Assert.That(fit.aspectRatio,Is.EqualTo(original.rect.width/original.rect.height).Within(.0001f));
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("annexCaveBackground",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(view,null);view.Render();Assert.AreSame(original,image.sprite,"任意遠景がない場合は元背景を維持する");
+            }
+        }
         [TestCase("trial_slash_1_0",1,-1)][TestCase("trial_slash_1_1",-1,1)][TestCase("trial_slash_3_1",1,1)][TestCase("trial_wide_sword_effect_1",-1,-1)][TestCase(null,1,1)] public void 斬撃413は共有下振り原画だけ画像の左右を補正する(string sprite,int facing,int expected){Assert.AreEqual(expected,Olca.Presentation.Exploration.OutsideSwordSwingVisual.TrailScale(sprite,facing));}
         [TestCase(0,6)][TestCase(1,4)][TestCase(2,6)] public void 自作攻撃演出413は透過連番を共有借用し破棄と無効フレームを保つ(int kind,int count)
         {
