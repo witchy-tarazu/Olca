@@ -5,6 +5,79 @@ using System.Threading;
 
 namespace Olca.Presentation.Effects
 {
+    /// <summary>自作の側面正投影VFX。球状粒子の奥行き・照明を連番へ焼き、既存UIのclipを使う。
+    /// 外部素材、乱数、実時間、ゲーム状態を参照しない。Unity生成物は既存の借用cacheが所有する。</summary>
+    public static class AuthoredAttackVfx
+    {
+        private const int Cell=256;
+        private static readonly Color32[][][] pixels=new Color32[3][][];
+        public static Sprite Resolve(Olca.Unity.GeneratedSpriteAssets.Lease lease,int kind,int frame)
+        {
+            int count=kind==1?4:6;if(kind<0||kind>2||frame<0||frame>=count||lease==null)return null;
+            return lease.Get("AuthoredAttackVfx413/"+kind,b=>Build(b,kind,count))[frame];
+        }
+        private static Sprite[] Build(Olca.Unity.GeneratedSpriteAssets.Builder builder,int kind,int count)
+        {
+            if(pixels[kind]==null){var baked=new Color32[count][];for(int n=0;n<count;n++)baked[n]=Render(kind,n);pixels[kind]=baked;}
+            var texture=builder.CreateTexture(Cell*count,Cell);texture.name="SelfAuthoredSideVfx413_"+kind;texture.filterMode=FilterMode.Bilinear;texture.wrapMode=TextureWrapMode.Clamp;texture.hideFlags=HideFlags.DontSave;
+            for(int n=0;n<count;n++)texture.SetPixels32(n*Cell,0,Cell,Cell,pixels[kind][n]);texture.Apply(false,true);
+            var frames=new Sprite[count];for(int n=0;n<count;n++){frames[n]=builder.CreateSprite(texture,new Rect(n*Cell,0,Cell,Cell),Vector2.one*.5f,100);frames[n].name=(kind==0?"trial_bomb_blast_":kind==1?"authored_sword_":"authored_hit_")+n;frames[n].hideFlags=HideFlags.DontSave;}return frames;
+        }
+        private static Color32[] Render(int kind,int frame)
+        {
+            var data=new Color[Cell*Cell];if(kind==0)Bomb(data,frame);else if(kind==1)Sword(data,frame);else Hit(data,frame);
+            var result=new Color32[data.Length];for(int n=0;n<data.Length;n++)result[n]=data[n];return result;
+        }
+        // Straight alphaで合成し、透過縁へ黒や白の矩形を残さない。
+        private static void Over(Color[] data,int x,int y,Color ink)
+        {
+            if(x<0||x>=Cell||y<0||y>=Cell||ink.a<=0)return;int i=y*Cell+x;Color prior=data[i];float a=ink.a+prior.a*(1-ink.a);var value=(ink*ink.a+prior*(prior.a*(1-ink.a)))/Mathf.Max(a,.00001f);value.a=a;data[i]=value;
+        }
+        private static void Sphere(Color[] data,float cx,float cy,float rx,float ry,float depth,Color tint,float opacity,bool emissive)
+        {
+            for(int y=Mathf.Max(84,Mathf.FloorToInt(cy-ry));y<=Mathf.Min(172,Mathf.CeilToInt(cy+ry));y++)for(int x=Mathf.Max(14,Mathf.FloorToInt(cx-rx));x<=Mathf.Min(242,Mathf.CeilToInt(cx+rx));x++){
+                float nx=(x+.5f-cx)/rx,ny=(y+.5f-cy)/ry;float warp=1+.055f*Mathf.Sin(nx*13+depth*4)*Mathf.Sin(ny*11+depth*7);float d=(nx*nx+ny*ny)*warp;if(d>=1)continue;float nz=Mathf.Sqrt(1-d);
+                float light=emissive ? .75f+.25f*nz:.36f+.64f*Mathf.Clamp01(-.38f*nx+.6f*ny+.7f*nz);var ink=tint*light;ink.a=opacity*Mathf.SmoothStep(0,1,Mathf.Clamp01((1-d)*4));Over(data,x,y,ink);
+            }
+        }
+        private static void Streak(Color[] data,Vector2 start,Vector2 end,float width,Color color)
+        {
+            var d=end-start;float length=d.sqrMagnitude;for(int y=Mathf.Max(1,Mathf.FloorToInt(Mathf.Min(start.y,end.y)-width));y<=Mathf.Min(254,Mathf.CeilToInt(Mathf.Max(start.y,end.y)+width));y++)for(int x=Mathf.Max(1,Mathf.FloorToInt(Mathf.Min(start.x,end.x)-width));x<=Mathf.Min(254,Mathf.CeilToInt(Mathf.Max(start.x,end.x)+width));x++){
+                var p=new Vector2(x+.5f,y+.5f);float t=length<=0?0:Mathf.Clamp01(Vector2.Dot(p-start,d)/length);float radius=width*(1-.85f*t);float alpha=Mathf.Clamp01((radius-Vector2.Distance(p,start+d*t))+.5f);var ink=color;ink.a*=alpha;Over(data,x,y,ink);
+            }
+        }
+        private static void Bomb(Color[] data,int frame)
+        {
+            float t=new[]{0f,.17f,.35f,.54f,.75f,.94f}[frame],spread=18+84*Mathf.Sqrt(t),rise=7+28*t;
+            // 奥から手前へ粒子を重ねる。冷えた陰影の煙の内側だけ、初期は熱い発光を残す。
+            var order=new int[17];for(int k=0;k<order.Length;k++)order[k]=k;System.Array.Sort(order,(a,b)=>Mathf.Sin(a*2.399963f*.71f).CompareTo(Mathf.Sin(b*2.399963f*.71f)));
+            foreach(int n in order){
+                float a=n*2.399963f,z=Mathf.Sin(a*.71f),x=128+Mathf.Cos(a)*spread*(.3f+.65f*(n%4)/3f),y=91+rise+Mathf.Sin(a)*13*t+z*4;
+                float r=(11+15*t)*(1+.15f*z),heat=Mathf.Clamp01(1-t*1.7f)*(n%3==0 ? .6f:1);Color cold=Color.Lerp(new Color(.23f,.25f,.28f),new Color(.62f,.64f,.66f),(z+1)*.5f);Color hot=Color.Lerp(new Color(1,.19f,.015f),new Color(1,.68f,.12f),(z+1)*.5f);Sphere(data,x,y,r,r*.73f,z,Color.Lerp(cold,hot,heat),frame==5 ? .65f:.95f,heat>.5f);
+            }
+            if(t<.62f){float r=20+80*Mathf.Sin(t*Mathf.PI);Color fire=Color.Lerp(new Color(1,.85f,.28f),new Color(1,.23f,.015f),t);for(int side=-1;side<=1;side+=2)Sphere(data,128+side*r*.65f,92+r*.18f,r*.55f,r*.36f,side,fire,1,true);Sphere(data,128,93+r*.22f,r*.65f,r*.40f,0,Color.Lerp(new Color(1,1,.98f),new Color(1,.82f,.2f),Mathf.Clamp01((t-.25f)*2)),1,true);}
+            if(frame>0&&frame<4){float rx=25+110*t,ry=5+8*t;for(int y=84;y<114;y++)for(int x=14;x<243;x++){float dx=(x-128)/rx,dy=(y-92)/ry;float edge=Mathf.Abs(Mathf.Sqrt(dx*dx+dy*dy)-1);if(edge<.12f)Over(data,x,y,new Color(1,.72f,.22f,(1-edge/.12f)*.6f*(1-t)));}}
+            for(int n=0;n<7;n++){float a=.15f+n*Mathf.PI/7f;var p=new Vector2(128+Mathf.Cos(a)*(16+88*t),90+Mathf.Sin(a)*(13+65*t)-24*t*t);Streak(data,p,p+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*Mathf.Lerp(8,2,t),1.4f*(1-t)+.3f,new Color(1,.8f,.3f,(1-t)*.9f));}
+        }
+        private static void Sword(Color[] data,int frame)
+        {
+            float[] starts={52,70,-12,-50},ends={85,-8,-64,-82};float start=starts[frame],end=ends[frame];float fade=frame==3 ? .55f:1;
+            // 面積を持つ曲面の斬撃。各コマで先端が上から下へ走り、残光は薄い層へ戻る。
+            for(int y=2;y<254;y++)for(int x=2;x<254;x++){
+                float nx=(x-30)/211f,ny=(y-128)/119f,r=Mathf.Sqrt(nx*nx+ny*ny),angle=Mathf.Atan2(ny,nx)*Mathf.Rad2Deg;float low=Mathf.Min(start,end),high=Mathf.Max(start,end);if(angle<low||angle>high||r>1.02f||r<.52f)continue;
+                float along=(angle-low)/Mathf.Max(1,high-low),tail=frame==0?1:Mathf.Pow(1-along,.4f);float thickness=(.12f+.36f*(1-along))*Mathf.Pow(Mathf.Max(0,Mathf.Sin(along*Mathf.PI)),.35f);float inner=1-thickness;if(r<inner)continue;float edge=Mathf.Clamp01((r-inner)/Mathf.Max(.001f,thickness));Color ink=Color.Lerp(new Color(.08f,.5f,1,.05f),new Color(.34f,.9f,1,.85f),edge);if(edge>.84f)ink=Color.Lerp(ink,new Color(.96f,1,1,1),(edge-.84f)/.16f);ink.a*=fade*tail*Mathf.Clamp01((1.02f-r)*60)*Mathf.Clamp01(along*30)*Mathf.Clamp01((1-along)*30);Over(data,x,y,ink);
+            }
+        }
+        private static void Hit(Color[] data,int frame)
+        {
+            float t=frame/6f;for(int n=0;n<9;n++){float a=n*Mathf.PI*2/9+.25f;var direction=new Vector2(Mathf.Cos(a),Mathf.Sin(a));float distance=8+76*t;var start=Vector2.one*128+direction*distance;Streak(data,start,start+direction*(45*(1-t)),4*(1-t)+.4f,new Color(1,.74f,.25f,1-t));}
+            if(frame<3){float r=34-frame*8;Streak(data,new Vector2(128-r,128),new Vector2(128+r,128),5-frame,Color.white);Streak(data,new Vector2(128,128-r),new Vector2(128,128+r),5-frame,Color.white);}
+        }
+    }
+}
+
+namespace Olca.Presentation.Effects
+{
     /// <summary>
     /// ヒットエフェクトを表示するView
     /// 敵が攻撃を受けた際のフラッシュ・振動エフェクト
