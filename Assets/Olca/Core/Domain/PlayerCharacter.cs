@@ -296,7 +296,8 @@ namespace Olca.Core.Domain
         internal void ResetBlindness()
         {blindnessTimer.SetFrames(0); blindnessCarryAcrossBattles=false;pendingBlindnessFrames=null;pendingBlindnessCarryAcrossBattles=false;blindnessFrameOpen=frameBlind=clearBlindnessPending=false;}
 
-        private int pendingInvincibilityMs;
+        private int pendingInvincibilityMs,pendingOutsideHitInvincibilityMs;
+        private bool outsideHitInvincibility;
         private readonly PoiseRecoveryState poiseRecovery = new PoiseRecoveryState();
         /// <summary>保存・戦闘をまたいで保持する外部定義。残り待ち時間は含めない。</summary>
         public int? PoiseRecoveryDefinitionFrames { get; }
@@ -315,9 +316,11 @@ namespace Olca.Core.Domain
             accumulatedDamage = 0;
         }
         // 外界の確定済み被弾状態だけを復元する。Damage/のけぞり通知を再実行しない。
-        internal PlayerHitStateData CaptureHitState()
+        internal PlayerHitStateData CaptureHitState()=>CaptureHitStateInternal(false);
+        internal PlayerHitStateData CaptureOutsideHitState()=>CaptureHitStateInternal(true);
+        private PlayerHitStateData CaptureHitStateInternal(bool allowOutside)
         {
-            if(!CanCaptureTimedAilments||IsInvincible||PoiseRecoveryDelayFrames!=PoiseRecoveryDefinitionFrames)throw new ArgumentException("未確定フレーム/無敵/変更された回復定義は外界退避できません");
+            if(!CanCaptureTimedAilments||IsInvincible&&!(allowOutside&&outsideHitInvincibility)||PoiseRecoveryDelayFrames!=PoiseRecoveryDefinitionFrames)throw new ArgumentException("未確定フレーム/無敵/変更された回復定義は外界退避できません");
             var value=new PlayerHitStateData{AccumulatedDamage=accumulatedDamage,RecoveryUnits=poiseRecovery.RemainingUnits,StaggerUnits=staggerTimer.RemainingUnits};
             if(value.AccumulatedDamage==0&&value.RecoveryUnits==0&&value.StaggerUnits==0)return null;
             value.Validate(poise,StaggerDurationFrames,PoiseRecoveryDefinitionFrames);return value;
@@ -331,7 +334,7 @@ namespace Olca.Core.Domain
         private long framePoiseDamage;
         private bool framePoiseHit, frameForceStagger;
         internal bool HasPendingHpFrame => frameHp.Active;
-        internal void BeginHpFrame() { frameHp.Begin(currentHp); foreach(var state in poisons.Values) state.BeginFrame(); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
+        internal void BeginHpFrame() { frameHp.Begin(currentHp); foreach(var state in poisons.Values) state.BeginFrame(); protection.BeginFrame(); poiseRecovery.BeginFrame(); frameInvincible = invincibilityTimer.IsActive; frameWasStaggered = staggerTimer.IsActive; frameStaggered = false; pendingInvincibilityMs = pendingOutsideHitInvincibilityMs = 0; framePoiseDamage = 0; framePoiseHit = frameForceStagger = false; }
         internal void CommitHpFrame()
         {
             currentHp = frameHp.Commit(currentHp, maxHp);
@@ -356,8 +359,12 @@ namespace Olca.Core.Domain
             }
             framePoiseDamage = 0; framePoiseHit = frameForceStagger = false;
             // 新規付与を当該フレームのTickで消費せず、次フレームへ全期間を渡す。
-            if (pendingInvincibilityMs > 0) invincibilityTimer.ExtendMilliseconds(pendingInvincibilityMs);
-            pendingInvincibilityMs = 0;
+            // 探索の付与は全HP確定後の生存時だけ。混在時は呼出順によらず汎用所有を維持する。
+            int outsideMs=IsDead?0:pendingOutsideHitInvincibilityMs;
+            if(pendingInvincibilityMs>0){invincibilityTimer.ExtendMilliseconds(Math.Max(pendingInvincibilityMs,outsideMs));outsideHitInvincibility=false;}
+            else if(outsideMs>0&&(!invincibilityTimer.IsActive||outsideHitInvincibility)){invincibilityTimer.ExtendMilliseconds(outsideMs);outsideHitInvincibility=true;}
+            if(IsDead&&outsideHitInvincibility){invincibilityTimer.SetFrames(0);outsideHitInvincibility=false;}
+            pendingInvincibilityMs=pendingOutsideHitInvincibilityMs=0;
         }
         // Commit後、通知を公開する前に確定済みブレイク結果を読む。判定そのものは共通処理が所有する。
         internal bool DidStaggerAtHpFrameCommit => frameStaggered;
@@ -694,23 +701,50 @@ namespace Olca.Core.Domain
         {
             if (durationMs <= 0) return;
             if (frameHp.Active) { pendingInvincibilityMs = Math.Max(pendingInvincibilityMs, durationMs); return; }
-            invincibilityTimer.ExtendMilliseconds(durationMs);
+            invincibilityTimer.ExtendMilliseconds(durationMs);outsideHitInvincibility=false;
         }
 
+        // 試用攻撃から受理された本体ヒットだけが呼ぶ。通常の一時無敵を保存可能にはしない。
+        internal bool TryTakeOutsideHit(int damage,ElementType element,int poiseDamage,int invincibilityMs)
+        {
+            if(!frameHp.Active)throw new InvalidOperationException("探索被弾はHP論理フレーム内で処理してください");
+            if(invincibilityMs!=0&&invincibilityMs!=OutsideHitInvincibilityData.TrialDurationMs)throw new ArgumentOutOfRangeException(nameof(invincibilityMs));
+            bool accepted=TryTakeDamage(damage,attackElement:element,poiseDamage:poiseDamage);
+            if(accepted&&damage>0&&invincibilityMs>0)SetOutsideHitInvincible(invincibilityMs);
+            return accepted;
+        }
+        private void SetOutsideHitInvincible(int durationMs)
+        {
+            if(durationMs!=OutsideHitInvincibilityData.TrialDurationMs)throw new ArgumentOutOfRangeException(nameof(durationMs));
+            if(IsDead||invincibilityTimer.IsActive&&!outsideHitInvincibility)return;
+            if(frameHp.Active){pendingOutsideHitInvincibilityMs=Math.Max(pendingOutsideHitInvincibilityMs,durationMs);return;}
+            invincibilityTimer.ExtendMilliseconds(durationMs);outsideHitInvincibility=true;
+        }
+        internal OutsideHitInvincibilityData CaptureOutsideHitInvincibility()
+        {
+            if(!CanCaptureTimedAilments||invincibilityTimer.IsActive&&!outsideHitInvincibility)throw new ArgumentException("探索起因以外の無敵は退避できません");
+            if(!invincibilityTimer.IsActive)return null;
+            var value=new OutsideHitInvincibilityData{RemainingUnits=invincibilityTimer.RemainingUnits};value.Validate();return value;
+        }
+        internal void RestoreOutsideHitInvincibility(OutsideHitInvincibilityData value)
+        {
+            if(!CanCaptureTimedAilments||IsInvincible)throw new ArgumentException("反映途中の無敵へ復元できません");
+            value?.Validate();invincibilityTimer.RestoreUnits(value?.RemainingUnits??0);outsideHitInvincibility=value!=null;pendingOutsideHitInvincibilityMs=0;
+        }
         /// <summary>
         /// 無敵時間をカウントダウンする（毎ティック呼び出す）
         /// </summary>
         /// <param name="elapsedMs">経過時間（ミリ秒）</param>
         public void TickInvincible(int elapsedMs)
         {
-            invincibilityTimer.Tick(elapsedMs);
+            invincibilityTimer.Tick(elapsedMs);if(!invincibilityTimer.IsActive)outsideHitInvincibility=false;
         }
 
-        public void TickInvincibleFrame() => invincibilityTimer.TickFrame();
+        public void TickInvincibleFrame(){invincibilityTimer.TickFrame();if(!invincibilityTimer.IsActive)outsideHitInvincibility=false;}
         // 戦闘限定の無敵と未反映予約を、勝敗通知/保存境界より前に解除する。
         internal void ClearInvincibility()
         {
-            invincibilityTimer.SetFrames(0); pendingInvincibilityMs = 0; frameInvincible = false;
+            invincibilityTimer.SetFrames(0); pendingInvincibilityMs=pendingOutsideHitInvincibilityMs=0;outsideHitInvincibility=false; frameInvincible = false;
         }
 
 

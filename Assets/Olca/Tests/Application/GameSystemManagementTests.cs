@@ -70,6 +70,18 @@ namespace Olca.Tests.Application
                 }
             }
         }
+        [TestCase(1920,1080)][TestCase(3840,2160)][TestCase(1440,1080)] public async Task 探索被弾無敵412のV3試用ボタンは通常操作で明示選択し旧ONOFFを維持する(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);binding.View.ConfigureCombatFeedback(new Olca.Presentation.Effects.CombatNumberStyle(resources.GetShared<Font>("OlcaUI/MenuText"),FontStyle.Normal,Color.white,.2f,.01f,1,1));binding.View.Render();
+                var plate=binding.View.transform.Find("OutsideTrialTargetNamePlate");var legacy=plate.GetComponent<Button>();var trial=plate.Find("OutsideTrialHitInvincibilityButton").GetComponent<Button>();var label=trial.GetComponentInChildren<Text>();Assert.IsTrue(trial.interactable);StringAssert.Contains("600ms（カリ）",label.text);Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled);var boundsMethod=binding.View.GetType().GetMethod("BoundsInView",BindingFlags.Instance|BindingFlags.NonPublic);var trialBounds=(Rect)boundsMethod.Invoke(binding.View,new object[]{(RectTransform)trial.transform});var plateBounds=(Rect)boundsMethod.Invoke(binding.View,new object[]{(RectTransform)plate});Assert.IsFalse(trialBounds.Overlaps(plateBounds),"入口案内の上ではなく名札の横に配置");
+                legacy.onClick.Invoke();binding.View.Render();Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled);trial.onClick.Invoke();binding.View.Render();Assert.IsTrue(model.TrialEnemyHitInvincibilityEnabled);StringAssert.Contains("V3 ON",label.text);legacy.onClick.Invoke();binding.View.Render();Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled);
+                var cached=trial.onClick;binding.View.SetCovered(true);cached.Invoke();Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled);binding.View.SetCovered(false);trial.onClick.Invoke();Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled,"覆い解除の同描画frameは再発動を防ぐ");int uncovered=Time.frameCount;for(int n=0;n<30&&Time.frameCount==uncovered;n++){UnityEditor.EditorApplication.QueuePlayerLoopUpdate();await Task.Delay(20);}Assert.AreNotEqual(uncovered,Time.frameCount,"次の実frameへ進めた");binding.View.Render();trial.onClick.Invoke();binding.View.Render();Assert.IsTrue(model.TrialEnemyHitInvincibilityEnabled);trial.onClick.Invoke();Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled);model.TrialTarget.TakeDamage(120,Olca.Core.Domain.ElementType.None);binding.View.Render();Assert.IsFalse(trial.interactable);Assert.IsFalse(trial.gameObject.activeInHierarchy);cached.Invoke();Assert.IsFalse(model.TrialEnemyHitInvincibilityEnabled);
+            }
+        }
         [Test] public async Task 別マップ任意AIの表示とボタンは覆い中と標的撃破後に操作を拒否する()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));

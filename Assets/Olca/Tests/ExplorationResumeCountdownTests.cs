@@ -1332,6 +1332,125 @@ namespace Olca.Tests
         {
             var p=new PlayerCharacter(100);p.TakeDamage(10);var actor=OutsidePlayerSaveData.Capture(p);var retry=new OutsideRetryReturnData{EntryLevel=1,Entry=actor};var result=retry.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.AreEqual(10,result.Restore().AccumulatedDamage);Assert.AreNotSame(actor.HitState,result.HitState);var first=new OutsideClearEndData{EntryLevel=1,Entry=actor,End=actor.Player.Copy()}.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.IsNull(first.HitState);Assert.IsNull(OutsidePlayerSaveData.ForRecovery(p).HitState);Assert.NotNull(actor.HitState);
         }
+        private static bool OutsideHit412(PlayerCharacter p,int damage=10,bool enabled=true)
+        {return (bool)Hit229(p,"TryTakeOutsideHit",damage,ElementType.None,10,enabled?600:0);}
+        private static void HpFrame412(PlayerCharacter p,Action hit)
+        {Hit229(p,"BeginHpFrame");try{hit();p.TickInvincibleFrame();}finally{Hit229(p,"CommitHpFrame");Hit229(p,"PublishHpFrame");}}
+        private static OutsidePlayerSaveData LegacyActor412(bool hit)
+        {var p=new PlayerCharacter(100,staggerDurationFrames:18);if(hit)p.TakeDamage(10);var s=OutsidePlayerSaveData.Capture(p);s.Id="41200000000000000000000000000000";return s;}
+        [Test] public void 探索被弾無敵412の旧保存無被弾は基準版の実JSONとキーに一致する()
+        {var s=LegacyActor412(false);var bytes=Convert.FromBase64String("eyJJZCI6IjQxMjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwiUGxheWVyIjp7IkFkZGl0aW9uYWxFbGVtZW50UmVzaXN0YW5jZXMiOm51bGwsIkF0dGFja0dyb3d0aCI6bnVsbCwiQXR0YWNrUG93ZXIiOjEwLCJCbGluZFJlc2lzdGFuY2UiOjAsIkNvbmZ1c2lvblJlc2lzdGFuY2UiOjAsIkN1c3RvbVNwZWVkIjoxLCJDdXN0b21pemF0aW9uQWJpbGl0aWVzIjpudWxsLCJFYXJ0aFJlc2lzdGFuY2UiOjAsIkZpcmVSZXNpc3RhbmNlIjowLCJHcmlkWCI6MCwiR3JpZFkiOjAsIkhwIjoxMDAsIk1heEhwIjoxMDAsIlBhcmFseXplUmVzaXN0YW5jZSI6MCwiUG9pc2UiOjMwLCJQb2lzZVJlY292ZXJ5RnJhbWVzIjpudWxsLCJQb2lzb25SZXNpc3RhbmNlIjowLCJQb2lzb25zIjpbXSwiUmF3QmFzZUVhcnRoUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZUZpcmVSZXNpc3RhbmNlIjpudWxsLCJSYXdCYXNlV2F0ZXJSZXNpc3RhbmNlIjpudWxsLCJSYXdCYXNlV2luZFJlc2lzdGFuY2UiOm51bGwsIlN0YWdnZXJGcmFtZXMiOjE4LCJTdHlsZSI6bnVsbCwiVGltZWRBaWxtZW50cyI6bnVsbCwiV2F0ZXJSZXNpc3RhbmNlIjowLCJXaW5kUmVzaXN0YW5jZSI6MH0sIlJhd0Jhc2VFbGVtZW50cyI6WzAsMCwwLDBdLCJWZXJzaW9uIjoxfQ==");CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(s));Assert.AreEqual("4EA6179B4C31BEE603A3211644C6F512F9C7F62C454B1F35FF772B98C4B5262F",s.Key());var old=PortableCheckpointJson.Deserialize<OutsidePlayerSaveData>(bytes);Assert.IsNull(old.HitInvincibility);Assert.AreEqual(s.Key(),old.Key());Assert.IsFalse(old.Restore().IsInvincible);}
+        [Test] public void 探索被弾無敵412の旧保存被弾済みは基準版の実JSONとキーに一致する()
+        {var s=LegacyActor412(true);var bytes=Convert.FromBase64String("eyJIaXRTdGF0ZSI6eyJBY2N1bXVsYXRlZERhbWFnZSI6MTAsIlJlY292ZXJ5VW5pdHMiOjAsIlN0YWdnZXJVbml0cyI6MH0sIklkIjoiNDEyMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJQbGF5ZXIiOnsiQWRkaXRpb25hbEVsZW1lbnRSZXNpc3RhbmNlcyI6bnVsbCwiQXR0YWNrR3Jvd3RoIjpudWxsLCJBdHRhY2tQb3dlciI6MTAsIkJsaW5kUmVzaXN0YW5jZSI6MCwiQ29uZnVzaW9uUmVzaXN0YW5jZSI6MCwiQ3VzdG9tU3BlZWQiOjEsIkN1c3RvbWl6YXRpb25BYmlsaXRpZXMiOm51bGwsIkVhcnRoUmVzaXN0YW5jZSI6MCwiRmlyZVJlc2lzdGFuY2UiOjAsIkdyaWRYIjowLCJHcmlkWSI6MCwiSHAiOjkwLCJNYXhIcCI6MTAwLCJQYXJhbHl6ZVJlc2lzdGFuY2UiOjAsIlBvaXNlIjozMCwiUG9pc2VSZWNvdmVyeUZyYW1lcyI6bnVsbCwiUG9pc29uUmVzaXN0YW5jZSI6MCwiUG9pc29ucyI6W10sIlJhd0Jhc2VFYXJ0aFJlc2lzdGFuY2UiOm51bGwsIlJhd0Jhc2VGaXJlUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdhdGVyUmVzaXN0YW5jZSI6bnVsbCwiUmF3QmFzZVdpbmRSZXNpc3RhbmNlIjpudWxsLCJTdGFnZ2VyRnJhbWVzIjoxOCwiU3R5bGUiOm51bGwsIlRpbWVkQWlsbWVudHMiOm51bGwsIldhdGVyUmVzaXN0YW5jZSI6MCwiV2luZFJlc2lzdGFuY2UiOjB9LCJSYXdCYXNlRWxlbWVudHMiOlswLDAsMCwwXSwiVmVyc2lvbiI6MX0=");CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(s));Assert.AreEqual("9B13FEEEF6EC0A23D6A63BA77C04FCFBF7D8E4A11B5EDC7733FB1BB585152B4A",s.Key());var old=PortableCheckpointJson.Deserialize<OutsidePlayerSaveData>(bytes);Assert.IsNull(old.HitInvincibility);Assert.AreEqual(s.Key(),old.Key());Assert.IsFalse(old.Restore().IsInvincible);}
+        [Test] public void 探索被弾無敵412は同frame二打を受け翌frameから三十六frame防ぐ()
+        {
+            var p=new PlayerCharacter(100,staggerDurationFrames:18);int accepted=0;HpFrame412(p,()=>{if(OutsideHit412(p))accepted++;if(OutsideHit412(p))accepted++;Assert.IsFalse(p.IsInvincible);});Assert.AreEqual(2,accepted);Assert.AreEqual(80,p.CurrentHp);Assert.AreEqual(1800,OutsidePlayerSaveData.Capture(p).HitInvincibility.RemainingUnits);
+            for(int n=1;n<=36;n++){HpFrame412(p,()=>Assert.IsFalse(OutsideHit412(p)));Assert.AreEqual(80,p.CurrentHp);if(n==1){Assert.AreEqual(584,p.InvincibleDurationMs);Assert.AreEqual(1750,OutsidePlayerSaveData.Capture(p).HitInvincibility.RemainingUnits);}}
+            Assert.IsFalse(p.IsInvincible);Assert.IsNull(OutsidePlayerSaveData.Capture(p).HitInvincibility);HpFrame412(p,()=>Assert.IsTrue(OutsideHit412(p)));Assert.AreEqual(70,p.CurrentHp);
+        }
+        [TestCase(0,1,1797)][TestCase(35,16,2)][TestCase(34,33,1)]
+        public void 探索被弾無敵412のms端数は切上げ表示へ戻さず厳密復元する(int frames,int ms,long units)
+        {
+            var p=new PlayerCharacter(100,staggerDurationFrames:18);HpFrame412(p,()=>OutsideHit412(p));for(int n=0;n<frames;n++)p.TickInvincibleFrame();p.TickInvincible(ms);var s=OutsidePlayerSaveData.Capture(p);Assert.AreEqual(units,s.HitInvincibility.RemainingUnits);var copy=s.Copy();Assert.AreNotSame(s.HitInvincibility,copy.HitInvincibility);Assert.AreEqual(s.Key(),copy.Key());var q=PortableCheckpointJson.Deserialize<OutsidePlayerSaveData>(PortableCheckpointJson.Serialize(s)).Restore();Assert.AreEqual(units,OutsidePlayerSaveData.Capture(q).HitInvincibility.RemainingUnits);p.TickInvincibleFrame();q.TickInvincibleFrame();Assert.AreEqual(p.IsInvincible,q.IsInvincible);Assert.AreEqual(p.InvincibleDurationMs,q.InvincibleDurationMs);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 探索被弾無敵412と汎用の同frame混在は順序によらず汎用所有で退避を拒否する(bool genericFirst)
+        {
+            var p=new PlayerCharacter(100);HpFrame412(p,()=>{Assert.IsTrue(p.TryTakeDamage(10));if(genericFirst)p.SetInvincible(200);Hit229(p,"SetOutsideHitInvincible",600);if(!genericFirst)p.SetInvincible(200);});Assert.AreEqual(600,p.InvincibleDurationMs);Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(p));
+            p.TickInvincible(600);Assert.IsFalse(p.IsInvincible);Assert.IsNull(OutsidePlayerSaveData.Capture(p).HitInvincibility);
+        }
+        [Test] public void 探索被弾無敵412は既存汎用を所有し直さず零指定は従来noOpを保つ()
+        {
+            var p=new PlayerCharacter(100);p.SetInvincible(900);Hit229(p,"SetOutsideHitInvincible",600);Assert.AreEqual(900,p.InvincibleDurationMs);Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(p));Hit229(p,"ClearInvincibility");HpFrame412(p,()=>OutsideHit412(p));p.SetInvincible(0);p.SetInvincible(-1);Assert.AreEqual(1800,OutsidePlayerSaveData.Capture(p).HitInvincibility.RemainingUnits);p.SetInvincible(1);Assert.Throws<ArgumentException>(()=>OutsidePlayerSaveData.Capture(p));
+        }
+        [TestCase(25,5,true)][TestCase(15,0,false)]
+        public void 探索被弾無敵412は全HP確定後の生存だけを通知前に保護する(int hp,int final,bool alive)
+        {
+            var p=new PlayerCharacter(100);p.SetHp(hp);int accepted=0,notified=-1,deaths=0;p.OnHpChanged+=(h,m)=>{notified=p.InvincibleDurationMs;Assert.AreEqual(final,h);};p.OnDeath+=()=>{deaths++;Assert.IsFalse(p.IsInvincible);};HpFrame412(p,()=>{if(OutsideHit412(p))accepted++;if(OutsideHit412(p))accepted++;});Assert.AreEqual(2,accepted);Assert.AreEqual(final,p.CurrentHp);Assert.AreEqual(alive?600:0,notified);Assert.AreEqual(alive?0:1,deaths);Assert.AreEqual(alive,p.IsInvincible);
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 探索被弾無敵412は設定なしとバリア完全吸収で付与しない(bool barrier)
+        {
+            var p=new PlayerCharacter(100);if(barrier)p.SetBarrier(10);HpFrame412(p,()=>Assert.AreEqual(!barrier,OutsideHit412(p,enabled:barrier)));Assert.AreEqual(barrier?100:90,p.CurrentHp);Assert.IsFalse(p.IsInvincible);Assert.IsNull(OutsidePlayerSaveData.Capture(p).HitInvincibility);
+        }
+        [Test] public void 探索被弾無敵412は回復初回帰還で解除し再挑戦Entryだけを厳密copyする()
+        {
+            var p=new PlayerCharacter(100,staggerDurationFrames:18);HpFrame412(p,()=>OutsideHit412(p));p.TickInvincibleFrame();var actor=OutsidePlayerSaveData.Capture(p);Assert.IsNull(OutsidePlayerSaveData.ForRecovery(p).HitInvincibility);var end=new OutsideClearEndData{EntryLevel=1,Entry=actor,End=actor.Player.Copy()}.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.IsNull(end.HitInvincibility);var retry=new OutsideRetryReturnData{EntryLevel=1,Entry=actor}.Build(Guid.NewGuid().ToString("N"),1,new ClearReturnSettings());Assert.AreEqual(1750,retry.HitInvincibility.RemainingUnits);Assert.AreNotSame(actor.HitInvincibility,retry.HitInvincibility);var fresh=new PlayerCharacter(100);new OutsideDepartureVitals{Hp=90,MaxHp=100,Template=actor,Poisons=Array.Empty<PlayerPoisonDto>()}.ApplyToStart(fresh);Assert.IsFalse(fresh.IsInvincible);Hit229(p,"ClearInvincibility");Assert.IsFalse(p.IsInvincible);Assert.IsNull(OutsidePlayerSaveData.Capture(p).HitInvincibility);
+        }
+        [TestCase(0)][TestCase(1801)]
+        public void 探索被弾無敵412は未登録の残時間を復元前に拒否する(long units)
+        {var s=LegacyActor412(false);s.HitInvincibility=new OutsideHitInvincibilityData{RemainingUnits=units};Assert.Throws<ArgumentException>(()=>s.Restore());s.HitInvincibility=new OutsideHitInvincibilityData{DefinitionId="unknown",RemainingUnits=50};Assert.Throws<ArgumentException>(()=>s.Restore());}
+
+        private static long OutsideUnits412(PlayerCharacter p)=>OutsidePlayerSaveData.Capture(p).HitInvincibility?.RemainingUnits??0;
+        private static int Hits412(PlayerCharacter p)=>Convert.ToInt32(typeof(PlayerCharacter).GetProperty("TotalHitsTaken",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(p));
+        [TestCase(36,false)][TestCase(37,true)]
+        public void 探索被弾無敵412は初接触の期限を独立した実frameの境界で判定する(int at,bool damage)
+        {
+            using(var s=Contact266(-58800)){
+                long h;using(var lease=s.AttachPresentation()){
+                    Assert.IsTrue(s.SetTrialEnemyAttack(true,true,true));for(int n=0;n<60;n++)s.TickTraversal(0);h=s.Core.Frame;Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(1,Hits412(s.Player));Assert.AreEqual(1800,OutsideUnits412(s.Player));Assert.AreEqual(0,typeof(OutsideExplorationSession).GetField("trialContactNextFrame",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(s));
+                    for(int n=1;n<at;n++)s.TickTraversal(0);s.TickTraversal(1);Assert.AreEqual(h+at,s.Core.Frame);Assert.AreEqual(damage?80:90,s.Player.CurrentHp);Assert.AreEqual(damage?2:1,Hits412(s.Player));Assert.IsFalse(s.Player.IsInvincible);
+                }
+                var contact=s.CaptureRuntime(null).TrialContact;Assert.AreEqual(h+at+60,contact.NextFrame);Assert.AreEqual(0,contact.SecondNextFrame);
+            }
+        }
+        [TestCase(25,5,true)][TestCase(15,0,false)]
+        public void 探索被弾無敵412の実Session同frame攻撃接触は二打確定後の生死を通知する(int hp,int final,bool alive)
+        {
+            using(var s=Contact266(-58800))using(var lease=s.AttachPresentation()){
+                s.Player.SetHp(hp);int hpEvents=0,deathEvents=0;s.Player.OnHpChanged+=(value,max)=>{hpEvents++;Assert.AreEqual(final,value);Assert.AreEqual(alive?600:0,s.Player.InvincibleDurationMs);if(alive)Assert.AreEqual(1800,OutsideUnits412(s.Player));};s.Player.OnDeath+=()=>{deathEvents++;Assert.AreEqual(0,s.Player.InvincibleDurationMs);Assert.IsFalse(s.Player.IsInvincible);};
+                s.SetTrialEnemyAttack(true,true,true);for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(0,Hits412(s.Player));s.TickTraversal(1);Assert.AreEqual(60,s.Core.Frame);Assert.AreEqual(2,Hits412(s.Player));Assert.AreEqual(final,s.Player.CurrentHp);Assert.AreEqual(1,hpEvents);Assert.AreEqual(alive?0:1,deathEvents);
+            }
+        }
+        [Test] public void 探索被弾無敵412のH翌frameアイテム失敗は実書込一回で全状態を保ち再操作だけ成功する()
+        {
+            using(var s=Contact266(-58800))using(var cold=new OutsideExplorationSession())using(var normal=new OutsideExplorationSession()){
+                var item=OutsideRecoveryItemDefinition.Provisional;var store=new Style231Store{Fail=true,Value=new ClearReturnProfile{OutsideInventory=new OutsideInventoryData{Items=new[]{new OutsideItemCount{Id=item.Id,Count=2}}}}};var save=new ClearReturnSession(store);var before=PortableCheckpointJson.Serialize(store.Value);long h;
+                using(var lease=s.AttachPresentation()){
+                    s.SetTrialEnemyAttack(true,true,true);for(int n=0;n<60;n++)s.TickTraversal(0);h=s.Core.Frame;Assert.AreEqual(90,s.Player.CurrentHp);Assert.IsFalse(s.Player.IsStaggered);s.TickTraversal(0);Assert.AreEqual(h+1,s.Core.Frame);Assert.AreEqual(1750,OutsideUnits412(s.Player));Assert.AreEqual(584,s.Player.InvincibleDurationMs);int writes=store.Writes;long revision=store.Value.Revision;bool pending=save.HasPendingSave;
+                    Assert.IsFalse(s.TryUseRecoveryItem(save,item,null,out _));Assert.AreEqual(writes+1,store.Writes);Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(2,save.OutsideInventorySnapshot.Items.Single(v=>v.Id==item.Id).Count);Assert.AreEqual(0,s.ItemCooldownRemaining(item.Id));Assert.AreEqual(1750,OutsideUnits412(s.Player));Assert.AreEqual(revision,store.Value.Revision);Assert.AreEqual(pending,save.HasPendingSave);CollectionAssert.AreEqual(before,PortableCheckpointJson.Serialize(store.Value));
+                    store.Fail=false;Assert.IsTrue(s.TryUseRecoveryItem(save,item,null,out var error),error);Assert.AreEqual(writes+2,store.Writes);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(1,save.OutsideInventorySnapshot.Items.Single(v=>v.Id==item.Id).Count);Assert.AreEqual(item.CooldownFrames,s.ItemCooldownRemaining(item.Id));Assert.AreEqual(h+1,s.Core.Frame);Assert.AreEqual(1750,OutsideUnits412(s.Player));Assert.AreEqual(revision+1,store.Value.Revision);Assert.IsFalse(save.HasPendingSave);
+                }
+                var profile=store.Value.Copy();var actor=profile.OutsidePlayerSave;var runtime=profile.OutsideRuntimeSave;var items=profile.OutsideItemState;Assert.AreEqual(1750,actor.HitInvincibility.RemainingUnits);items.Validate(actor,runtime);Assert.IsTrue(cold.RestoreSavedState(actor,runtime,null));cold.RestoreItemCooldowns(items,actor,runtime);Assert.AreEqual(h+1,cold.Core.Frame);Assert.AreEqual(100,cold.Player.CurrentHp);Assert.AreEqual(1750,OutsideUnits412(cold.Player));Assert.AreEqual(item.CooldownFrames,cold.ItemCooldownRemaining(item.Id));
+                var tampered=actor.Copy();tampered.HitInvincibility.RemainingUnits--;Assert.Throws<ArgumentException>(()=>items.Validate(tampered,runtime));Assert.Throws<ArgumentException>(()=>cold.RestoreItemCooldowns(items,tampered,runtime));Assert.AreEqual(1750,OutsideUnits412(cold.Player));Assert.AreEqual(item.CooldownFrames,cold.ItemCooldownRemaining(item.Id));
+                normal.ClassifyStartupRestore(true);normal.RestoreForPresentation(actor,runtime,null,itemState:items);Assert.IsFalse(normal.Player.IsInvincible);Assert.IsNull(OutsidePlayerSaveData.Capture(normal.Player).HitInvincibility);Assert.AreEqual(item.CooldownFrames,normal.ItemCooldownRemaining(item.Id));
+            }
+        }
+        [Test] public void 探索被弾無敵412の毒は別の実タイマーを刻み保護を貫通し更新しない()
+        {
+            using(var s=Contact266(-58800))using(var lease=s.AttachPresentation()){
+                s.SetTrialEnemyAttack(true,true,true);for(int n=0;n<60;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);s.Player.ApplyPoison("poison412",new StatusEffect(StatusEffectType.Poison,1000,3),1);
+                for(int n=1;n<=3;n++){s.TickTraversal(0);Assert.AreEqual(90-3*n,s.Player.CurrentHp);Assert.AreEqual(1800-50*n,OutsideUnits412(s.Player));}Hit229(s.Player,"TakeFallDamage",7);Assert.AreEqual(74,s.Player.CurrentHp);Assert.AreEqual(1650,OutsideUnits412(s.Player));
+            }
+        }
+        [TestCase(1)][TestCase(2)][TestCase(3)]
+        public void 探索被弾無敵412は新定義だけで発生し旧V1V2の厳密保存を読み替えない(int version)
+        {
+            using(var s=Contact266(-58800))using(var cold=new OutsideExplorationSession()){
+                using(var lease=s.AttachPresentation()){Assert.IsTrue(s.SetTrialEnemyAttack(true,version>=2,version==3));for(int n=0;n<60;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);Assert.AreEqual(version==3,s.Player.IsInvincible);}
+                var rt=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=rt.Id;Assert.AreEqual("trial-shield-enemy-v"+version,rt.TrialEnemyAttack.DefinitionId);Assert.IsTrue(cold.RestoreSavedState(actor,rt,null));Assert.AreEqual(version==3,cold.Player.IsInvincible);Assert.AreEqual(rt.TrialEnemyAttack.DefinitionId,cold.CaptureRuntime(null).TrialEnemyAttack.DefinitionId);
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)]
+        public void 探索被弾無敵412はガード全吸収破壊オーラと耐性無効で付与しない(int mode)
+        {
+            var p=new PlayerCharacter(100);if(mode==0)p.Guard.Set(true,false);if(mode==1)p.SetBarrier(10);if(mode==2)p.SetAura(10);if(mode==3)p.SetElementResistances(new ElementResistances(fire:100));HpFrame412(p,()=>Assert.IsFalse((bool)Hit229(p,"TryTakeOutsideHit",10,ElementType.Fire,10,600)));Assert.AreEqual(100,p.CurrentHp);Assert.IsFalse(p.IsInvincible);Assert.AreEqual(0,p.AccumulatedDamage);
+        }
+
+        [Test] public void 探索被弾無敵412はHPframe外の新攻撃入口を通知前に拒否する()
+        {var p=new PlayerCharacter(100);int notified=0;p.OnHpChanged+=(_,__)=>notified++;var error=Assert.Throws<System.Reflection.TargetInvocationException>(()=>Hit229(p,"TryTakeOutsideHit",10,ElementType.None,10,600));Assert.IsInstanceOf<InvalidOperationException>(error.InnerException);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(0,notified);Assert.IsFalse(p.IsInvincible);}
+        [Test] public void 探索被弾無敵412の毒は下限一を保ち落下致死では通知前に所有を消去する()
+        {
+            using(var s=Contact266(-58800))using(var lease=s.AttachPresentation()){
+                s.SetTrialEnemyAttack(true,true,true);for(int n=0;n<60;n++)s.TickTraversal(0);s.Player.ApplyPoison("lethal412",new StatusEffect(StatusEffectType.Poison,1000,100),1);s.TickTraversal(0);Assert.AreEqual(1,s.Player.CurrentHp,"毒は既存のHP1下限を維持");Assert.AreEqual(1750,OutsideUnits412(s.Player));int died=0;s.Player.OnHpChanged+=(hp,max)=>{Assert.AreEqual(0,hp);Assert.AreEqual(0,s.Player.InvincibleDurationMs);};s.Player.OnDeath+=()=>{died++;Assert.IsFalse(s.Player.IsInvincible);};HpFrame412(s.Player,()=>Hit229(s.Player,"TakeFallDamage",100));Assert.AreEqual(1,died);Assert.AreEqual(0,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void 探索被弾無敵412を全回復計画へ混入すると検証で拒否する()
+        {
+            using(var s=new OutsideExplorationSession()){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));s.RecoverOutside(null);var runtime=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var plan=new OutsideRecoveryData{PointId=null,SourcePlayerKey=new string('A',64),SourceRuntimeKey=new string('B',64),Player=actor,Runtime=runtime};Assert.DoesNotThrow(()=>plan.Validate());actor.HitInvincibility=new OutsideHitInvincibilityData{RemainingUnits=1};Assert.Throws<ArgumentException>(()=>plan.Validate());
+            }
+        }
         private static void Knockback411Ticks(OutsideExplorationSession s,int frames,float input=0)
         { for(int n=0;n<frames;n++)s.TickTraversal(input); }
         [TestCase(21,1,-1)][TestCase(23,-1,1)]
