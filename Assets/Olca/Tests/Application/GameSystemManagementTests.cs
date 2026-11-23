@@ -433,6 +433,23 @@ namespace Olca.Tests.Application
         {
             using(var clip=new Olca.Presentation.Exploration.TrialShotFlightMotion()){var seen=new System.Collections.Generic.HashSet<Sprite>();for(int n=0;n<6;n++){var sprite=clip.Resolve(n*2);Assert.NotNull(sprite);Assert.AreEqual("trial_shot_flight_"+n,sprite.name);Assert.AreEqual(new Vector2(128,128),sprite.pivot);Assert.AreEqual(256,sprite.rect.width);Assert.AreEqual(256,sprite.rect.height);seen.Add(sprite);}Assert.AreEqual(6,seen.Count);clip.Dispose();Assert.IsNull(clip.Resolve(0));}using(var missing=new Olca.Presentation.Exploration.TrialShotFlightMotion(_=>Array.Empty<Sprite>()))Assert.IsNull(missing.Resolve(0));
         }
+        [Test] public void AnnexGoblin418の表示コマは論理時計と既存予告だけから決まる()
+        {
+            Assert.AreEqual(0,Olca.Presentation.Exploration.AnnexGoblinSprite.FrameIndex(0,90,false,false));Assert.AreEqual(1,Olca.Presentation.Exploration.AnnexGoblinSprite.FrameIndex(10,90,false,false));
+            Assert.AreEqual(4,Olca.Presentation.Exploration.AnnexGoblinSprite.FrameIndex(20,12,true,false));Assert.AreEqual(7,Olca.Presentation.Exploration.AnnexGoblinSprite.FrameIndex(20,0,true,false));Assert.AreEqual(8,Olca.Presentation.Exploration.AnnexGoblinSprite.FrameIndex(0,12,true,true));
+            using(var lease=Olca.Unity.GeneratedSpriteAssets.Acquire())for(int i=0;i<10;i++){var sprite=Olca.Presentation.Exploration.AnnexGoblinSprite.Resolve(lease,i);Assert.NotNull(sprite);Assert.AreEqual(new Vector2(128,20),sprite.pivot);Assert.AreEqual(256,sprite.rect.width);Assert.AreEqual(256,sprite.rect.height);Assert.AreEqual(FilterMode.Point,sprite.texture.filterMode);Assert.AreSame(sprite,Olca.Presentation.Exploration.AnnexGoblinSprite.Resolve(lease,i));}
+        }
+        [TestCase(1920,1080)][TestCase(3840,2160)][TestCase(1440,1080)] public async Task AnnexGoblin418は独立試用枠のみを変え両向きと停止と死亡を維持する(int width,int height)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;((RectTransform)view.transform).sizeDelta=new Vector2(width,height);view.Render();var first=view.transform.Find("OutsideTrialTarget").GetComponent<Image>();var second=view.transform.Find("OutsideSecondTrialTarget").GetComponent<Image>();var original=first.sprite;Assert.AreSame(original,second.sprite);
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);view.Render();StringAssert.StartsWith("trial_annex_goblin_",first.sprite.name);Assert.AreSame(original,second.sprite);Assert.AreEqual(-1,first.rectTransform.localScale.x);Assert.AreEqual(0,first.rectTransform.anchoredPosition.y,.01f);
+                var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());var shown=first.sprite;view.SetCovered(true);for(int n=0;n<8;n++)view.Render();Assert.AreSame(shown,first.sprite);CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));view.SetCovered(false);
+                for(int n=0;n<300&&model.Core.Position<23*60000;n++)model.TickTraversal(1);view.Render();Assert.AreEqual(1,first.rectTransform.localScale.x);Assert.AreEqual(120,model.TrialTarget.CurrentHp);model.TrialTarget.TakeDamage(999,Olca.Core.Domain.ElementType.None);view.Render();Assert.IsFalse(first.enabled);Assert.IsTrue(second.enabled);
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint);view.Render();Assert.AreSame(original,first.sprite);Assert.AreSame(original,second.sprite);
+            }
+        }
         [TestCase(false)][TestCase(true)] public async Task 別マップ射撃の敵表示はマップ座標とHPを読み描画で状態を変えない(bool annex)
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
