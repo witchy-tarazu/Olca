@@ -1170,16 +1170,15 @@ namespace Olca.Presentation.Exploration
         private void RenderKickEffects(float camera,float viewport,float verticalOffset)
         {
             var kind=presentation.NormalKickKind;var timing=presentation.KickTiming;
-            chargeRing.enabled=false;
+            if(!presentation.IsCharging)chargeRing.ClearChargeParticles();
             if(presentation.IsCharging){
                 kickTrailWallClip?.ClearClip();
                 var chargeCore=presentation.Core;float chargeUnit=OutsideMovementDefinition.UnitsPerWorldUnit;
                 float chargeX=(chargeCore.Position/chargeUnit-camera+viewport*.5f)*pixelsPerWorldUnit;
                 float chargeY=(chargeCore.Height/chargeUnit-verticalOffset+1.15f)*pixelsPerWorldUnit;
                 float fraction=Mathf.Clamp01(presentation.ChargeFrames/(float)Mathf.Max(1,presentation.ChargeRequiredFrames));bool full=fraction>=1;
-                var tint=Olca.Presentation.Effects.ProvisionalPixelPattern.Tint(Olca.Presentation.Effects.TrialFireKamuiVisual.IsActive(presentation.Player));
-                chargeRing.rectTransform.anchoredPosition=new Vector2(chargeX,chargeY);chargeRing.rectTransform.sizeDelta=Vector2.one*(full?1.8f:1.45f)*pixelsPerWorldUnit;
-                chargeRing.Arc(2,fraction,full?1:.65f,tint,chargeCore.Facing<0);chargeRing.enabled=true;kickTrail.enabled=false;
+                chargeRing.rectTransform.anchoredPosition=new Vector2(chargeX,chargeY);chargeRing.rectTransform.sizeDelta=Vector2.one*1.9f*pixelsPerWorldUnit;
+                chargeRing.ShowChargeParticles(chargeCore.Frame,presentation.ChargeFrames,presentation.ChargeRequiredFrames);kickTrail.enabled=false;
                 kickCaption.text=full?"カンリョウ / ハナス（カリ）":"タメチュウ（カリ）";kickCaptionKey=-1;kickCaptionPlate.gameObject.SetActive(true);
                 float chargeWidth=((RectTransform)transform).rect.width;kickCaptionPlate.anchoredPosition=new Vector2(Mathf.Clamp(chargeX,182,Mathf.Max(182,chargeWidth-182)),(chargeCore.Height/chargeUnit-verticalOffset)*pixelsPerWorldUnit-30);return;
             }
@@ -1213,7 +1212,7 @@ namespace Olca.Presentation.Exploration
             }
         }
         private void ClearTargetBursts(){burstLease=null;for(int i=0;i<2;i++){observedBurstTargets[i]=null;observedDead[i]=false;targetDeathAt[i]=-1;if(targetBursts[i]!=null)targetBursts[i].enabled=false;}}
-        private void ClearKickEffects(){kickTrailWallClip?.ClearClip();if(chargeRing!=null)chargeRing.enabled=false;if(kickTrail!=null){kickTrail.enabled=false;kickTrail.sprite=null;}if(kickCaptionPlate!=null)kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;ClearTargetBursts();}
+        private void ClearKickEffects(){kickTrailWallClip?.ClearClip();if(chargeRing!=null)chargeRing.ClearChargeParticles();if(kickTrail!=null){kickTrail.enabled=false;kickTrail.sprite=null;}if(kickCaptionPlate!=null)kickCaptionPlate.gameObject.SetActive(false);kickCaptionKey=-1;ClearTargetBursts();}
     }
 }
 

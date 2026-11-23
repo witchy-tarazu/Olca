@@ -369,15 +369,66 @@ namespace Olca.Presentation.Effects
             color=index%3==0?Color.white:tint;color.a=1-t;return true;
         }
     }
+    /// <summary>表示専用の論理時計。最大到達で粒子の年齢をリセットせず、飽和する蓄積値から保持時間を分離する。</summary>
+    public sealed class ChargeParticleClock
+    {
+        private long start,last=-1,fullAt=-1;private int prior,required;
+        public bool Active{get;private set;}public long Age{get;private set;}public long FullAge{get;private set;}=-1;
+        public float Fraction{get;private set;}public float Gold=>FullAge<0?0:Mathf.Clamp01(FullAge/4f);
+        public void Step(long frame,int frames,int limit)
+        {
+            if(frame<0||frames<1||limit<1){Reset();return;}long inferred=frame-frames+1;
+            if(!Active||frame<last||frames<prior||limit!=required||frames<limit&&inferred!=start){start=inferred;fullAt=-1;}
+            Active=true;last=frame;prior=frames;required=limit;Age=System.Math.Max(0,frame-start);Fraction=Mathf.Clamp01(frames/(float)limit);
+            if(frames>=limit&&fullAt<0)fullAt=start+limit-1;FullAge=fullAt<0?-1:System.Math.Max(0,frame-fullAt);
+        }
+        public void Reset(){Active=false;last=-1;fullAt=-1;prior=required=0;Age=0;FullAge=-1;Fraction=0;}
+    }
+    /// <summary>自作の小粒と一度だけ広がる輪。位相は論理年齢だけで進み、青→白金の補間で再生成しない。</summary>
+    public static class ChargeParticlePattern
+    {
+        public const int Count=10,RingFrames=12;
+        public readonly struct Dot
+        {
+            public readonly Vector2 Position,Size;public readonly Color Color;
+            public Dot(Vector2 position,Vector2 size,Color color){Position=position;Size=size;Color=color;}
+        }
+        public static Dot Sample(int index,long age,float fraction,float gold)
+        {
+            float phase=((age%100)*.01f+index*.61803399f)%1f;float angle=index*2.399963f+(age%180)*(2*Mathf.PI/180);float radius=.12f+.30f*(1-phase);
+            float fade=Mathf.Sin(phase*Mathf.PI);fade*=fade;float size=.013f+.004f*(index%3);
+            var blue=Color.Lerp(new Color(.16f,.55f,1),new Color(.4f,.95f,1),(index%3)/2f);var warm=Color.Lerp(new Color(1,.76f,.28f),new Color(1,.98f,.86f),(index%3)/2f);var color=Color.Lerp(blue,warm,gold);color.a=fade*(.5f+.22f*fraction);
+            return new Dot(new Vector2(.5f+Mathf.Cos(angle)*radius,.5f+Mathf.Sin(angle)*radius*.68f),new Vector2(size*(1-.15f*gold),size*(1+.9f*gold)),color);
+        }
+        private static Vector3 At(Rect area,Vector2 value)=>new Vector3(area.x+area.width*value.x,area.y+area.height*value.y);
+        public static void Populate(UnityEngine.UI.VertexHelper vh,Rect area,ChargeParticleClock clock)
+        {
+            vh.Clear();if(!clock.Active)return;
+            for(int i=0;i<Count;i++){
+                var dot=Sample(i,clock.Age,clock.Fraction,clock.Gold);int first=vh.currentVertCount;var core=Color.Lerp(dot.Color,Color.white,.32f);core.a=dot.Color.a;vh.AddVert(At(area,dot.Position),core,Vector2.zero);var edge=dot.Color;edge.a=0;
+                for(int n=0;n<=12;n++){float a=n*Mathf.PI/6;vh.AddVert(At(area,dot.Position+new Vector2(Mathf.Cos(a)*dot.Size.x,Mathf.Sin(a)*dot.Size.y)),edge,Vector2.zero);if(n>0)vh.AddTriangle(first,first+n,first+n+1);}
+            }
+            if(clock.FullAge<0||clock.FullAge>=RingFrames)return;float t=clock.FullAge/(float)RingFrames;float radius=.18f+.27f*t,width=.004f;var ink=new Color(1,.91f,.59f,.55f*(1-t));
+            // 細い楕円を一度だけ展開。大きな発光面や点滅でキャラ・足元を覆わない。
+            for(int n=0;n<48;n++){
+                int first=vh.currentVertCount;for(int side=0;side<2;side++)for(int end=0;end<2;end++){float a=(n+end)*Mathf.PI/24,r=radius+(side==0?-width:width);vh.AddVert(At(area,Vector2.one*.5f+new Vector2(Mathf.Cos(a)*r,Mathf.Sin(a)*r*.68f)),ink,Vector2.zero);}vh.AddTriangle(first,first+1,first+3);vh.AddTriangle(first,first+3,first+2);
+            }
+        }
+    }
     /// <summary>UI用の無購読ピクセル演出。描画だけを更新し、Raycastや進行を発生させない。</summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class ProvisionalCombatGraphic : UnityEngine.UI.MaskableGraphic
     {
+        private bool chargeParticles;private readonly ChargeParticleClock chargeClock=new ChargeParticleClock();
+        public bool IsChargeParticleMode=>chargeParticles;public long ChargeParticleAge=>chargeClock.Age;public long ChargeParticleFullAge=>chargeClock.FullAge;public float ChargeParticleGold=>chargeClock.Gold;
+        public void ShowChargeParticles(long frame,int frames,int required){chargeParticles=true;chargeClock.Step(frame,frames,required);enabled=chargeClock.Active;SetVerticesDirty();}
+        public void ClearChargeParticles(){chargeParticles=false;chargeClock.Reset();enabled=false;SetVerticesDirty();}
         private bool burst,mirror;private int variant;private float progress,strength;private Color tint;
-        public void Arc(int kind,float sweep,float alpha,Color value,bool flip){burst=false;variant=kind;progress=sweep;strength=alpha;tint=value;mirror=flip;SetVerticesDirty();}
-        public void Burst(float age,Color value){burst=true;progress=age;tint=value;mirror=false;SetVerticesDirty();}
+        public void Arc(int kind,float sweep,float alpha,Color value,bool flip){chargeParticles=false;chargeClock.Reset();burst=false;variant=kind;progress=sweep;strength=alpha;tint=value;mirror=flip;SetVerticesDirty();}
+        public void Burst(float age,Color value){chargeParticles=false;chargeClock.Reset();burst=true;progress=age;tint=value;mirror=false;SetVerticesDirty();}
         protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper vh)
         {
+            if(chargeParticles){ChargeParticlePattern.Populate(vh,rectTransform.rect,chargeClock);return;}
             vh.Clear();var area=rectTransform.rect;int count=burst?ProvisionalPixelPattern.BurstCount:ProvisionalPixelPattern.ArcCount;
             for(int i=0;i<count;i++){
                 Rect tile;Color ink;bool visible=burst?ProvisionalPixelPattern.Burst(i,progress,tint,out tile,out ink):ProvisionalPixelPattern.Arc(i,variant,progress,strength,tint,out tile,out ink);if(!visible)continue;
