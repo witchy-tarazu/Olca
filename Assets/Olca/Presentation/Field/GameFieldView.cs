@@ -1437,15 +1437,15 @@ namespace Olca.Presentation.Field
             var handleGo=new GameObject("Handle",typeof(RectTransform),typeof(UnityEngine.UI.Image));handleGo.transform.SetParent(barRect,false);var handle=(RectTransform)handleGo.transform;handle.anchorMin=Vector2.zero;handle.anchorMax=Vector2.one;handle.offsetMin=handle.offsetMax=Vector2.zero;var graphic=handleGo.GetComponent<UnityEngine.UI.Image>();graphic.color=new Color(.45f,.88f,.95f,.85f);var bar=barGo.GetComponent<UnityEngine.UI.Scrollbar>();bar.handleRect=handle;bar.targetGraphic=graphic;bar.direction=UnityEngine.UI.Scrollbar.Direction.BottomToTop;bar.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};bindingScroll.verticalScrollbar=bar;
         }
         private RectTransform ReadingFace(string name,Transform parent,Vector2 position,Vector2 size){
-            var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();image.sprite=Resources.Load<Sprite>("OlcaUI/window");image.type=Image.Type.Sliced;image.color=Color.white;image.raycastTarget=false;var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=position;rect.sizeDelta=size;return rect;
+            var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();Olca.Presentation.Management.LiquidGlassMenu.ReadingSurface(image,true);image.raycastTarget=false;var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.anchoredPosition=position;rect.sizeDelta=size;return rect;
         }
         private void TrackColumn(RectTransform rect,int column,float offset){settingsColumns.Add((rect,column,offset));}
         private string ActionLabel(string action){
-            if(action=="InteractionPrimary")return "シラベル / ハナす";if(action=="ItemUp")return "アイテムウエ";if(action=="ItemRight")return "アイテムミギ";if(action=="ItemDown")return "アイテムシタ";if(action=="ItemLeft")return "アイテムヒダリ";if(action=="WheelPrimary")return "カムイホイール";if(action=="SelectionPrevious")return "カード マエ";if(action=="SelectionNext")return "カード ツギ";
+            if(action=="InteractionPrimary")return "調べる / 話す";if(action=="ItemUp")return "アイテム上";if(action=="ItemRight")return "アイテム右";if(action=="ItemDown")return "アイテム下";if(action=="ItemLeft")return "アイテム左";if(action=="WheelPrimary")return "神依ホイール";if(action=="SelectionPrevious")return "前のカード";if(action=="SelectionNext")return "次のカード";
             if(gamepad){if(action=="Left")return "左へ";if(action=="Right")return "右へ";if(action=="Up")return "上へ";if(action=="Down")return "下へ";}
             string value=Label(action);return gamepad&&value.EndsWith(" 1",System.StringComparison.Ordinal)?value.Substring(0,value.Length-2):value;
         }
-        private static string ContextLabel(string context)=>context=="outside"?"ガイカイ":context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
+        private static string ContextLabel(string context)=>context=="outside"?"外界":context=="exploration"?"探索":context=="battle"?"戦闘":context=="menu"?"メニュー":"カスタム";
         private InputBindingProfile Defaults()=>gamepad?Olca.Unity.UnityInputProvider.CreateDefaultGamepadProfile():Olca.Unity.UnityInputProvider.CreateDefaultKeyboardProfile();
         private InputBindingProfile applied;
         private InputBindingEdit edit;
@@ -1491,16 +1491,16 @@ namespace Olca.Presentation.Field
             this.font = font; this.save = save;this.gamepad=gamepad;
             var root = (RectTransform)transform;
             root.anchorMin = Vector2.zero; root.anchorMax = Vector2.one; root.offsetMin = root.offsetMax = Vector2.zero;
-            gameObject.AddComponent<UnityEngine.UI.Image>().color = Olca.Presentation.Dungeon.UiLook.Surface;
+            Olca.Presentation.Management.LiquidGlassMenu.Backdrop(gameObject.AddComponent<UnityEngine.UI.Image>());
             settingsHeader=ReadingFace("SettingsHeader",transform,new Vector2(0,410),new Vector2(1760,170));
             settingsReading=ReadingFace("SettingsReading",transform,new Vector2(0,-2.5f),new Vector2(1760,625));
             titleRect=MakeText("Title", gamepad?"パッド設定（キーボードと独立保存）":"キーボード設定（ゲーム操作）", transform, new Vector2(0, 455), new Vector2(1700, 75), 38).rectTransform;
             status = MakeText("Status", "", transform, new Vector2(0, 365), new Vector2(1740, 80), 26);statusRect=status.rectTransform;
             var defaults = Defaults();
             int[] rows = { 0, 0, 0, 0 };
-            if(gamepad){string[] names={"ダンジョン / ガイカイ","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
+            if(gamepad){string[] names={"ダンジョン / 外界","戦闘","メニュー","カスタム"};for(int n=0;n<4;n++){var group=MakeText("Group"+n,names[n],transform,new Vector2((n-1.5f)*450,285),new Vector2(430,50),28);TrackColumn(group.rectTransform,n,0);}}
             else {
-            TrackColumn(MakeText("ExploreTitle", "探索 / ガイカイ", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
+            TrackColumn(MakeText("ExploreTitle", "探索 / 外界", transform, new Vector2(-560, 285), new Vector2(520, 50), 28).rectTransform,0,0);
             TrackColumn(MakeText("MoveTitle", "戦闘：移動", transform, new Vector2(0, 285), new Vector2(520, 50), 28).rectTransform,1,0);
             TrackColumn(MakeText("ActionTitle", "戦闘：行動", transform, new Vector2(560, 285), new Vector2(520, 50), 28).rectTransform,2,0);
             }
@@ -1509,10 +1509,10 @@ namespace Olca.Presentation.Field
                 int column = gamepad?System.Array.IndexOf(new[]{"exploration","battle","menu","custom"},slot.Context=="outside"?"exploration":slot.Context):(slot.Context == "exploration"||slot.Context=="outside") ? 0 :
                     (slot.Action.StartsWith("Left") || slot.Action.StartsWith("Right") || slot.Action.StartsWith("Up") || slot.Action.StartsWith("Down") ? 1 : 2);
                 if(gamepad&&slot.Context=="outside"&&slot.Action=="JumpPrimary"){
-                    var group=MakeText("OutsideGroup","ガイカイ",transform,new Vector2(-675,215-rows[0]++*40),new Vector2(430,38),22);TrackColumn(group.rectTransform,0,0);
+                    var group=MakeText("OutsideGroup","外界",transform,new Vector2(-675,215-rows[0]++*40),new Vector2(430,38),22);TrackColumn(group.rectTransform,0,0);
                 }
                 if(!gamepad&&slot.Context=="outside"&&slot.Action=="WheelPrimary"){
-                    var group=MakeText("OutsideGroup","ガイカイ",transform,new Vector2(-560,215-rows[0]++*70),new Vector2(520,55),24);TrackColumn(group.rectTransform,0,0);
+                    var group=MakeText("OutsideGroup","外界",transform,new Vector2(-560,215-rows[0]++*70),new Vector2(520,55),24);TrackColumn(group.rectTransform,0,0);
                 }
                 float x = gamepad?(column-1.5f)*450:(column-1)*560, y = 215 - rows[column]++ * (gamepad?40:70);
                 var action=MakeText("Action_" + slot.Action, ActionLabel(slot.Action), transform, new Vector2(x - (gamepad?192:165), y), new Vector2(gamepad?145:180, gamepad?38:55), gamepad?22:24);
@@ -1598,8 +1598,8 @@ namespace Olca.Presentation.Field
                 var image=pair.Value.transform.parent.GetComponent<Image>();image.color=waiting?Olca.Presentation.Dungeon.UiLook.Chosen:changed?new Color(.78f,.94f,.98f):Color.white;
                 var outline=image.GetComponent<Outline>();if(outline!=null){outline.enabled=waiting;outline.effectColor=Olca.Presentation.Dungeon.UiLook.Edge;outline.effectDistance=new Vector2(1,-1);}
             }
-            string state=listening.HasValue?"入力待機: "+ContextLabel(listening.Value.Context)+" / "+ActionLabel(listening.Value.Action):pending?"ミホゾンのコウホ":"テキヨウチュウのワリアテ";
-            status.text=state+" / "+message;status.color=error?new Color(.50f,.20f,.12f):Olca.Presentation.Dungeon.UiLook.Ink;
+            string state=listening.HasValue?"入力待機: "+ContextLabel(listening.Value.Context)+" / "+ActionLabel(listening.Value.Action):pending?"未保存の設定":"適用中の割り当て";
+            status.text=state+" / "+message;status.color=error?new Color(1f,.78f,.55f):Color.white;
             transform.Find("CancelCapture").gameObject.SetActive(listening.HasValue);
             saveButton.interactable = !listening.HasValue;InvalidateNavigation();
         }
@@ -1620,7 +1620,7 @@ namespace Olca.Presentation.Field
         {
             var obj = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Text)); obj.transform.SetParent(parent, false);
             var view = obj.GetComponent<UnityEngine.UI.Text>(); view.text = text; view.font = font; view.fontSize = fontSize;
-            view.alignment = TextAnchor.MiddleCenter; Olca.Presentation.Dungeon.UiLook.Label(view);
+            view.alignment = TextAnchor.MiddleCenter; Olca.Presentation.Dungeon.UiLook.Label(view); Olca.Presentation.Management.LiquidGlassMenu.ReadingText(view);
             view.rectTransform.anchorMin = view.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             view.rectTransform.anchoredPosition = position; view.rectTransform.sizeDelta = size; return view;
         }
@@ -1630,7 +1630,7 @@ namespace Olca.Presentation.Field
             var rect = (RectTransform)obj.transform; rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f); rect.anchoredPosition = position; rect.sizeDelta = size;
             obj.GetComponent<UnityEngine.UI.Image>().color = new Color(0.12f, 0.2f, 0.36f, 1f);
             var button = obj.GetComponent<UnityEngine.UI.Button>(); button.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.None };
-            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); Olca.Presentation.Dungeon.UiLook.MenuButton(button,name.StartsWith("Clear_",System.StringComparison.Ordinal)||name=="ResetKeyboardSettings"||name=="CloseKeyboardSettings"); return button;
+            MakeText("Label", text, obj.transform, Vector2.zero, size, 24); Olca.Presentation.Dungeon.UiLook.MenuButton(button,name.StartsWith("Clear_",System.StringComparison.Ordinal)||name=="ResetKeyboardSettings"||name=="CloseKeyboardSettings"); Olca.Presentation.Management.LiquidGlassMenu.Button(button); return button;
         }
     }
 
@@ -1647,17 +1647,17 @@ namespace Olca.Presentation.Field
         private void OnDisable(){menu?.Suspend();managedContext?.NotifyHidden();}
         private void OnDestroy(){menu?.Dispose();save=null;close=null;managedContext=null;}
         private Text Label(string name,string value,Vector2 position,Vector2 size,int fontSize){var obj=new GameObject(name,typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);
-            var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.alignment=TextAnchor.MiddleCenter;text.text=value;Olca.Presentation.Dungeon.UiLook.Label(text);
+            var text=obj.GetComponent<Text>();text.font=font;text.fontSize=fontSize;text.alignment=TextAnchor.MiddleCenter;text.text=value;Olca.Presentation.Dungeon.UiLook.Label(text);Olca.Presentation.Management.LiquidGlassMenu.ReadingText(text);
             text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;}
         private Button Button(string name,string value,Vector2 position){var obj=new GameObject(name,typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);
             var rect=(RectTransform)obj.transform;rect.anchoredPosition=position;rect.sizeDelta=new Vector2(460,80);var button=obj.GetComponent<Button>();
-            var text=Label(name+"Label",value,Vector2.zero,new Vector2(440,70),30);text.transform.SetParent(obj.transform,false);Olca.Presentation.Dungeon.UiLook.MenuButton(button);return button;}
+            var text=Label(name+"Label",value,Vector2.zero,new Vector2(440,70),30);text.transform.SetParent(obj.transform,false);Olca.Presentation.Dungeon.UiLook.MenuButton(button);Olca.Presentation.Management.LiquidGlassMenu.Button(button);return button;}
         private Image SliderImage(string name,Transform parent,Color color,Vector2 size){var obj=new GameObject(name,typeof(RectTransform),typeof(Image));obj.transform.SetParent(parent,false);var image=obj.GetComponent<Image>();image.color=color;image.rectTransform.sizeDelta=size;return image;}
         public void Initialize(Font font,System.Func<Olca.Unity.AudioVolumeSettings,string> save,System.Action close)
         {
             this.font=font;this.save=save;this.close=close;var rect=(RectTransform)transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
             // 音量の操作中は背面HUDを透かさず、既存の面色を保つ。
-            var surface=Olca.Presentation.Dungeon.UiLook.Surface;surface.a=1f;gameObject.AddComponent<Image>().color=surface;
+            Olca.Presentation.Management.LiquidGlassMenu.Backdrop(gameObject.AddComponent<Image>());
             Label("AudioTitle","音量設定",new Vector2(0,420),new Vector2(1600,80),38);
             status=Label("AudioStatus","",new Vector2(0,310),new Vector2(1600,110),26);
             string[] ids={"Master","Bgm","Effects","Voice"},names={"全体","BGM","効果音","ボイス"};

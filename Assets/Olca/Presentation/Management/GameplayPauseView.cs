@@ -51,16 +51,16 @@ namespace Olca.Presentation.Management
             var kamui=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideKamuiButton");if(kamui!=null){kamui.gameObject.SetActive(value);((RectTransform)kamui.transform).anchoredPosition=new Vector2(-480,-216);((RectTransform)kamui.transform).sizeDelta=new Vector2(360,88);}
             var travel=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideFastTravelButton");if(travel!=null)travel.gameObject.SetActive(value);
             var objectives=actions.Keys.FirstOrDefault(b=>b!=null&&b.name=="OutsideObjectivesButton");if(objectives!=null)objectives.gameObject.SetActive(value);
-            if(playHeading!=null)playHeading.text=value?"タンサク":playHeadingText;
+            if(playHeading!=null)playHeading.text=value?"探索":playHeadingText;
         }
         private Text inputGuide;
         private readonly Dictionary<Button,GameObject> focusFrames=new Dictionary<Button,GameObject>();
         // 操作は変更せず、メニューが実際に読む割当だけを案内する。
         public static string InputGuideText(Olca.Core.Domain.InputBindingProfile profile,bool gamepad)
         {
-            if(!gamepad)return "Enter : ケッテイ    Esc : モドる";
+            if(!gamepad)return "Enter : 決定    Esc : 戻る";
             string Label(string action)=>Olca.Unity.UnityInputProvider.GamepadBindingLabel(profile!=null&&profile.Bindings.TryGetValue(("gamepad","menu",action),out var value)?value:null);
-            return Label("Decide")+" : ケッテイ    "+Label("Cancel")+" : モドる";
+            return Label("Decide")+" : 決定    "+Label("Cancel")+" : 戻る";
         }
         public void SetOutsidePresentation(bool value)
         {
@@ -68,11 +68,14 @@ namespace Olca.Presentation.Management
             if(inputGuide==null&&actions.Count>0){
                 var obj=new GameObject("OutsidePauseInputGuide",typeof(RectTransform),typeof(Text));obj.transform.SetParent(transform,false);inputGuide=obj.GetComponent<Text>();
                 inputGuide.font=actions.Keys.Select(b=>b.GetComponentInChildren<Text>()).FirstOrDefault(t=>t!=null)?.font;UiLook.Label(inputGuide);inputGuide.fontSize=24;inputGuide.color=new Color(.8f,.97f,1f);inputGuide.alignment=TextAnchor.MiddleCenter;inputGuide.raycastTarget=false;
+                LiquidGlassMenu.ProtectText(inputGuide);
                 inputGuide.rectTransform.sizeDelta=new Vector2(1300,48);inputGuide.rectTransform.anchoredPosition=new Vector2(0,-350);
                 foreach(var button in actions.Keys){
-                    var frame=new GameObject("OutsidePauseFocusFrame",typeof(RectTransform));frame.transform.SetParent(button.transform,false);var rect=(RectTransform)frame.transform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=new Vector2(-4,-4);rect.offsetMax=new Vector2(4,4);
-                    void Edge(string name,Vector2 min,Vector2 max,Vector2 size){var edge=new GameObject(name,typeof(RectTransform),typeof(Image));edge.transform.SetParent(frame.transform,false);var image=edge.GetComponent<Image>();image.color=new Color(.3f,.95f,1f,1f);image.raycastTarget=false;var area=(RectTransform)edge.transform;area.anchorMin=min;area.anchorMax=max;area.anchoredPosition=Vector2.zero;area.sizeDelta=size;}
-                    Edge("Top",new Vector2(0,1),Vector2.one,new Vector2(0,4));Edge("Bottom",Vector2.zero,new Vector2(1,0),new Vector2(0,4));Edge("Left",Vector2.zero,new Vector2(0,1),new Vector2(4,0));Edge("Right",new Vector2(1,0),Vector2.one,new Vector2(4,0));frame.SetActive(false);focusFrames.Add(button,frame);
+                    // フォーカス色はボタン面で描画し、ここでは表示状態だけを保持する。
+                    var frame = new GameObject("OutsidePauseFocusFrame", typeof(RectTransform));
+                    frame.transform.SetParent(button.transform, false);
+                    frame.SetActive(false);
+                    focusFrames.Add(button, frame);
                 }
             }
             RefreshOutsidePresentation();
@@ -177,7 +180,7 @@ namespace Olca.Presentation.Management
             chrome.Collection=Button("CardCollectionButton","カード図鑑",parent,Vector2.one,new Vector2(-402,-64));
             ((RectTransform)chrome.Collection.transform).sizeDelta=new Vector2(300,60);
             var label=chrome.Collection.GetComponentInChildren<Text>();label.fontSize=label.resizeTextMaxSize=26;label.rectTransform.offsetMin=new Vector2(16,4);label.rectTransform.offsetMax=new Vector2(-16,-4);
-            chrome.Loadout=Button("OpenCustomizationEditor","ソウビ・パーツ",parent,Vector2.one,new Vector2(-310,-140));
+            chrome.Loadout=Button("OpenCustomizationEditor","装備・パーツ",parent,Vector2.one,new Vector2(-310,-140));
             chrome.Unlock=Button("OpenCustomizationUnlocks","マスカイホウ",parent,Vector2.one,new Vector2(-310,-200));
             chrome.Acquisition=Button("OpenCustomizationAcquisitions","ソウビのウケトリ",parent,Vector2.one,new Vector2(-310,-260));
             foreach(var button in new[]{chrome.Collection,chrome.Loadout,chrome.Unlock,chrome.Acquisition}){((RectTransform)button.transform).sizeDelta=new Vector2(300,60);button.gameObject.SetActive(false);}return chrome;
@@ -214,7 +217,7 @@ namespace Olca.Presentation.Management
                 }
                 button.onClick.AddListener(()=>sound?.Invoke(name)); return button;
             }
-        // ポーズの操作を攻略と設定へまとめ、既存の水鏡素材と余白を共有する。入力・購読は既存ボタンを維持。
+        // ポーズの操作を攻略と設定にまとめ、同じガラス面を共有する。
         private void LayoutPauseMenu(GameObject pauseOverlay)
         {
             var panel = new GameObject("PauseMenuSurface", typeof(RectTransform), typeof(Image));
@@ -222,32 +225,22 @@ namespace Olca.Presentation.Management
             panel.transform.SetAsFirstSibling();
             var rect = (RectTransform)panel.transform;
             rect.sizeDelta = new Vector2(1440, 840);
-            // 既存の暗い読取面を借用し、背面Customよりポーズ操作を読み取りやすくする。
             var surface = panel.GetComponent<Image>();
-            surface.sprite = Resources.Load<Sprite>("OlcaUI/description");
-            surface.type = Image.Type.Sliced;
-            surface.color = surface.sprite != null ? Color.white : new Color(.025f, .075f, .105f, .98f);
-            panel.GetComponent<Image>().raycastTarget = false;
-            // 読取面の内側だけ背面文字を遮り、既存ベベル外縁の透明感は残す。
-            var backing = new GameObject("PauseMenuBacking", typeof(RectTransform), typeof(Image));
-            backing.transform.SetParent(pauseOverlay.transform, false);
-            backing.transform.SetAsFirstSibling();
-            ((RectTransform)backing.transform).sizeDelta = rect.sizeDelta - new Vector2(24, 24);
-            var backingImage = backing.GetComponent<Image>();
-            backingImage.color = new Color(.025f, .075f, .105f, 1f);
-            backingImage.raycastTarget = false;
+            LiquidGlassMenu.Panel(surface);
+            surface.raycastTarget = false;
             Text Heading(string name, string text, Vector2 position, Vector2 size, int fontSize)
             {
                 var obj = new GameObject(name, typeof(RectTransform), typeof(Text));
                 obj.transform.SetParent(panel.transform, false);
                 var label = obj.GetComponent<Text>(); label.font = Font; label.text = text;
-                UiLook.Label(label); label.color = new Color(.58f, .94f, 1f, 1f); label.fontSize = fontSize; label.alignment = TextAnchor.MiddleLeft;
+                UiLook.Label(label); label.color = new Color(.94f, .99f, 1f, 1f); label.fontSize = fontSize; label.alignment = TextAnchor.MiddleLeft;
+                LiquidGlassMenu.ProtectText(label);
                 label.rectTransform.sizeDelta = size; label.rectTransform.anchoredPosition = position;
                 return label;
             }
             Heading("PauseMenuTitle", "ポーズ", new Vector2(-480, 320), new Vector2(360, 70), 44);
-            Heading("PausePlayHeading", "コウリャク", new Vector2(-480, 210), new Vector2(360, 40), 24);
-            Heading("PauseSettingsHeading", "セッテイ", new Vector2(210, 210), new Vector2(740, 40), 24);
+            Heading("PausePlayHeading", "攻略", new Vector2(-480, 210), new Vector2(360, 40), 24);
+            Heading("PauseSettingsHeading", "設定", new Vector2(210, 210), new Vector2(740, 40), 24);
             void Rule(string name, Vector2 position, Vector2 size)
             {
                 var obj = new GameObject(name, typeof(RectTransform), typeof(Image)); obj.transform.SetParent(panel.transform, false);
@@ -279,9 +272,9 @@ namespace Olca.Presentation.Management
 
         public GameObject Pause()
         {
-            var panel=Panel("PauseOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.86f);
-            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","タンサク アイテム"),("OutsideEquipmentButton","ソウビ・パーツ"),("OutsideKamuiButton","カムイ キリカエ"),("OutsideFastTravelButton","ゼンタイマップ\nイドウ"),("OutsideObjectivesButton","モクテキ・イライ"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
-                Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero);
+            var panel=Panel("PauseOverlay",true);panel.GetComponent<Image>().color=new Color(.025f,.07f,.10f,.13f);
+            foreach(var pair in new[]{("ResumeButton","再開"),("LoadCheckpointButton","続きから"),("KeyboardSettingsButton","キー設定"),("GamepadSettingsButton","パッド設定"),("VibrationSetting",""),("TransformationAnimationSetting",""),("OwnedCardsButton","所持カード"),("OutsideItemsButton","探索アイテム"),("OutsideEquipmentButton","装備・パーツ"),("OutsideKamuiButton","神依切替"),("OutsideFastTravelButton","全体マップ\n移動"),("OutsideObjectivesButton","目的・依頼"),("RetreatButton","撤退して\n帰還"),("AudioSettingsButton","音量設定"),("DialogueTextSpeedButton","")})
+                LiquidGlassMenu.Button(Button(pair.Item1,pair.Item2,panel.transform,new Vector2(.5f,.5f),Vector2.zero));
             LayoutPauseMenu(panel);panel.transform.Find("OutsideEquipmentButton").gameObject.SetActive(false);panel.transform.Find("OutsideKamuiButton").gameObject.SetActive(false);panel.transform.Find("OutsideFastTravelButton").gameObject.SetActive(false);panel.transform.Find("OutsideObjectivesButton").gameObject.SetActive(false);return panel;
         }
         public Text Label(string name,Transform target,Vector2 anchor,Vector2 position,Vector2 size)

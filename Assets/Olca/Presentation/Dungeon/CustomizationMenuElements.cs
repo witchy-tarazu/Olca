@@ -27,11 +27,10 @@ namespace Olca.Presentation.Dungeon
             Position((RectTransform)go.transform,x,y,width,height);
             var button=go.GetComponent<Button>();button.navigation=new Navigation{mode=Navigation.Mode.None};return button;
         }
-        internal static void Backdrop(Image image){image.sprite=null;image.type=Image.Type.Simple;image.color=new Color(.025f,.075f,.10f,1);}
         internal static void FitReference(Transform parent,GameObject content,IReadOnlyDictionary<Text,int> sizes)
         {if(content==null)return;var available=((RectTransform)parent).rect.size;float scale=Mathf.Max(.01f,Mathf.Min(1,available.x/1920,available.y/1080));var r=(RectTransform)content.transform;r.anchorMin=r.anchorMax=r.pivot=new Vector2(.5f,.5f);r.anchoredPosition=Vector2.zero;r.sizeDelta=new Vector2(1920,1080);r.localScale=Vector3.one*scale;foreach(var pair in sizes)if(pair.Key!=null)pair.Key.fontSize=pair.Value<34?Mathf.RoundToInt(pair.Value*(scale<.9f?1.12f:1)):pair.Value;}
         internal static Image Face(Transform parent,string name,float x,float y,float width,float height,bool dark=false)
-        {var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(parent,false);var image=go.GetComponent<Image>();image.sprite=Resources.Load<Sprite>(dark?"OlcaUI/description":"OlcaUI/window");image.type=Image.Type.Sliced;image.color=Color.white;image.raycastTarget=false;Position((RectTransform)go.transform,x,y,width,height);return image;}
+        {var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(parent,false);var image=go.GetComponent<Image>();Olca.Presentation.Management.LiquidGlassMenu.ReadingSurface(image,dark);image.raycastTarget=false;Position((RectTransform)go.transform,x,y,width,height);return image;}
         internal static string ShortName(string value,int maximum)
         {string display=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(value);var elements=System.Globalization.StringInfo.ParseCombiningCharacters(display);return elements.Length>maximum?display.Substring(0,elements[maximum])+"…":display;}
         internal static void SelectionMarker(Transform parent,float x,float height)

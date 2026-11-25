@@ -1007,9 +1007,9 @@ namespace Olca.Tests
                     foreach(var button in host.GetComponentsInChildren<Button>())RequireInside(viewport,(RectTransform)button.transform);
                     var reading=host.transform.Find("SavedDeckContents");
                     foreach(var name in new[]{"DeckLibraryHeaderGlass","DeckLibraryListGlass"}){
-                        var face=reading.GetComponentsInChildren<Image>().Single(image=>image.name==name);Assert.AreSame(glass,face.sprite);Assert.IsFalse(face.raycastTarget);RequireInside(viewport,face.rectTransform);
+                        var face=reading.GetComponentsInChildren<Image>().Single(image=>image.name==name);Assert.IsNull(face.sprite);Assert.That(face.color.a,Is.InRange(0.01f,0.99f));Assert.IsFalse(face.raycastTarget);RequireInside(viewport,face.rectTransform);
                     }
-                    var panel=(RectTransform)reading.Find("DeckLibraryListGlass");var pageRect=(RectTransform)reading.Find("SavedDeckPage");var pagePosition=pageRect.anchoredPosition;var pageSize=pageRect.sizeDelta;
+                    Assert.AreEqual("Olca/UI/LiquidGlass",reading.Find("LiquidGlassMenuSurface").GetComponent<Image>().material.shader.name);var panel=(RectTransform)reading.Find("DeckLibraryListGlass");var pageRect=(RectTransform)reading.Find("SavedDeckPage");var pagePosition=pageRect.anchoredPosition;var pageSize=pageRect.sizeDelta;
                     void RequireReadingGap(){var a=new Vector3[4];var b=new Vector3[4];panel.GetWorldCorners(a);pageRect.GetWorldCorners(b);Assert.GreaterOrEqual(a.Min(c=>reading.InverseTransformPoint(c).y),b.Max(c=>reading.InverseTransformPoint(c).y)+7.9f);Assert.AreEqual(pagePosition,pageRect.anchoredPosition);Assert.AreEqual(pageSize,pageRect.sizeDelta);}
                     RequireReadingGap();
                     foreach(var size in new[]{new Vector2(1920,1080),new Vector2(2199.64f,942.7f),new Vector2(width,height)}){
@@ -1027,7 +1027,7 @@ namespace Olca.Tests
                 view.RenderOwnedDeparture(profile,new Card[0],new Card[0],null,false,(_,__)=>{},()=>{},_=>{},()=>{},false,save:()=>{},deckName:"テスト");
                 Assert.AreEqual(savedDeckReadingColor,host.GetComponent<Image>().color,"通常のDungeon編成と一覧は同じ読み面を使う");
                 foreach(var name in new[]{"DepartureSummary","DepartureCandidates","SavedDeckName"})
-                    Assert.AreSame(glass,host.GetComponentsInChildren<Image>().Single(image=>image.name==name).sprite,"編成の既存面へimport素材を借用する");
+                    Assert.IsNull(host.GetComponentsInChildren<Image>().Single(image=>image.name==name).sprite,"編成の読取面は色付きの下地を使う");
                 Assert.IsFalse(host.GetComponentsInChildren<Image>().Any(image=>image.name=="DeckLibraryHeaderGlass"||image.name=="DeckLibraryListGlass"));
                 Object.DestroyImmediate(host);Assert.IsTrue(glass!=null);Assert.IsTrue(texture!=null);
             }finally{Object.DestroyImmediate(root);}

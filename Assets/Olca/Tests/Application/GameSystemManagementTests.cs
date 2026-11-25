@@ -996,7 +996,7 @@ namespace Olca.Tests.Application
         {
             var panel=new GameplayPanelFactory(host.transform,Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null).Pause();panel.SetActive(true);var view=panel.AddComponent<GameplayPauseView>();view.Initialize(()=>true);
             var item=(RectTransform)panel.transform.Find("OutsideItemsButton");var before=item.anchoredPosition;var size=item.sizeDelta;var heading=panel.GetComponentsInChildren<Text>().Single(x=>x.name=="PausePlayHeading");var title=heading.text;
-            view.SetOutsidePresentation(true);Assert.AreEqual(new Vector2(-480,0),item.anchoredPosition);Assert.AreEqual(new Vector2(360,88),item.sizeDelta);Assert.AreEqual("タンサク",heading.text);
+            view.SetOutsidePresentation(true);Assert.AreEqual(new Vector2(-480,0),item.anchoredPosition);Assert.AreEqual(new Vector2(360,88),item.sizeDelta);Assert.AreEqual("探索",heading.text);
             foreach(var name in new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"})Assert.IsFalse(panel.transform.Find(name).gameObject.activeSelf);
             view.SetOutsidePresentation(true);view.SetOutsidePresentation(false);Assert.AreEqual(before,item.anchoredPosition);Assert.AreEqual(size,item.sizeDelta);Assert.AreEqual(title,heading.text);Assert.IsFalse(panel.transform.Find("OutsideEquipmentButton").gameObject.activeSelf);Assert.IsFalse(panel.transform.Find("OutsideKamuiButton").gameObject.activeSelf);
             foreach(var name in new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"})Assert.IsTrue(panel.transform.Find(name).gameObject.activeSelf);
@@ -1016,10 +1016,10 @@ namespace Olca.Tests.Application
         }
         [Test] public void 外界Pause案内はメニュー割当を表示しゲーム割当と混同しない()
         {
-            var profile=UnityInputProvider.CreateDefaultGamepadProfile();Assert.AreEqual("A / × : ケッテイ    B / ○ : モドる",GameplayPauseView.InputGuideText(profile,true));
+            var profile=UnityInputProvider.CreateDefaultGamepadProfile();Assert.AreEqual("A / × : 決定    B / ○ : 戻る",GameplayPauseView.InputGuideText(profile,true));
             profile=new Olca.Core.Domain.InputBindingProfile(new Dictionary<(string,string,string),string>{{("gamepad","menu","Decide"),"North"},{("gamepad","menu","Cancel"),"West"}},Array.Empty<(string,string,string)>());
-            Assert.AreEqual("Y / △ : ケッテイ    X / □ : モドる",GameplayPauseView.InputGuideText(profile,true));Assert.AreEqual("Enter : ケッテイ    Esc : モドる",GameplayPauseView.InputGuideText(profile,false));
-            Assert.AreEqual("未割当 : ケッテイ    未割当 : モドる",GameplayPauseView.InputGuideText(null,true));
+            Assert.AreEqual("Y / △ : 決定    X / □ : 戻る",GameplayPauseView.InputGuideText(profile,true));Assert.AreEqual("Enter : 決定    Esc : 戻る",GameplayPauseView.InputGuideText(profile,false));
+            Assert.AreEqual("未割当 : 決定    未割当 : 戻る",GameplayPauseView.InputGuideText(null,true));
         }
 
         [Test] public async Task 同じ画面の連打は一度だけ生成し表示を共有する()

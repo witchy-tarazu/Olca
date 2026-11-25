@@ -248,7 +248,7 @@ namespace Olca.Application.Dungeon
         {
             if(gameSystem!=null){pauseViews=gameSystem.Views.GetLayer("system-pause");pauseViewRegistered=true;}
             hostPanels.Register(ManagedPauseScreen,"system-pause",BuildPausePanel,
-                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.SetOutsidePresentation(OutsideRouteBusy);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);var equipmentButton=panel.transform.Find("OutsideEquipmentButton")?.GetComponent<Button>();if(equipmentButton!=null){equipmentButton.interactable=customizationCatalog!=null&&customizationAbilityCatalog!=null&&!clearReturnSession.HasPendingSave;equipmentButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"ソウビ・パーツ（ミトウロク）":Olca.Application.Management.TrialCustomizationDefinitions.IsTrialBoard(customizationCatalog.BoardId)?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";}managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
+                (panel,context)=>{if(!IsUserPaused||!isActiveAndEnabled)throw new System.OperationCanceledException();managedPauseView.Show(context);managedPauseView.SetOutsidePresentation(OutsideRouteBusy);var itemButton=panel.transform.Find("OutsideItemsButton");if(itemButton!=null)itemButton.gameObject.SetActive(OutsideRouteBusy);var equipmentButton=panel.transform.Find("OutsideEquipmentButton")?.GetComponent<Button>();if(equipmentButton!=null){equipmentButton.interactable=customizationCatalog!=null&&customizationAbilityCatalog!=null&&!clearReturnSession.HasPendingSave;equipmentButton.GetComponentInChildren<Text>().text=customizationCatalog==null?"装備・パーツ（未登録）":Olca.Application.Management.TrialCustomizationDefinitions.IsTrialBoard(customizationCatalog.BoardId)?"装備・パーツ（仮）":"装備・パーツ";}managedPauseView.RestrictControls(OutsideRouteBusy?new[]{"LoadCheckpointButton","OwnedCardsButton","RetreatButton"}:System.Array.Empty<string>());},
                 panel=>{if(panel!=null)panel.GetComponent<Olca.Presentation.Management.GameplayPauseView>().Hide();});
         }
         private void RegisterReturnViews(){RegisterReturnView(false);RegisterReturnView(true);}
@@ -1576,7 +1576,7 @@ namespace Olca.Application.Dungeon
             Bind("ResumeButton",ResumeFromPauseUi);Bind("LoadCheckpointButton",ContinueCheckpointFromUi);
             Bind("KeyboardSettingsButton",OpenKeyboardSettings);Bind("GamepadSettingsButton",OpenGamepadSettings);Bind("AudioSettingsButton",OpenAudioSettings);
             Bind("OwnedCardsButton",OpenOwnedCards);Bind("RetreatButton",RequestRetreat);
-            void Vibration()=>Button("VibrationSetting").GetComponentInChildren<Text>().text=vibrationSettingsError!=null?"シンドウ: ホゾンエラー（サイシコウ）":"シンドウ: "+(GamepadVibrationEnabled?"ON":"OFF");
+            void Vibration()=>Button("VibrationSetting").GetComponentInChildren<Text>().text=vibrationSettingsError!=null?"振動：保存失敗（再試行）":"振動："+(GamepadVibrationEnabled?"ON":"OFF");
             Bind("VibrationSetting",()=>{TrySetGamepadVibrationEnabled(!GamepadVibrationEnabled,out _);Vibration();});Vibration();
             void Animation()=>Button("TransformationAnimationSetting").GetComponentInChildren<Text>().text=transformationSettingsError!=null?"演出設定 保存失敗（再試行）":"変身演出：\n"+(shortTransformationPresentation?"短縮":"通常");
             Bind("TransformationAnimationSetting",()=>{if(transformationSettings.TrySave(!shortTransformationPresentation,out transformationSettingsError)){shortTransformationPresentation=!shortTransformationPresentation;if(manager?.CurrentBattle!=null)manager.CurrentBattle.Transformations.ShortPresentation=shortTransformationPresentation;}Animation();});Animation();
@@ -1681,7 +1681,7 @@ namespace Olca.Application.Dungeon
                 customizationEditorButton.gameObject.SetActive(allowProgressActions&&IsProgressHub);
                 customizationEditorButton.interactable=customizationCatalog!=null&&!clearReturnSession.HasPendingSave;
                 var label=customizationEditorButton.GetComponentInChildren<Text>();
-                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":Olca.Application.Management.TrialCustomizationDefinitions.IsTrialBoard(customizationCatalog.BoardId)?"ソウビ・パーツ（カリ）":"ソウビ・パーツ";
+                label.text=customizationCatalog==null?"ソウビ・パーツ\n（ミトウロク）":Olca.Application.Management.TrialCustomizationDefinitions.IsTrialBoard(customizationCatalog.BoardId)?"装備・パーツ（仮）":"装備・パーツ";
                 // 未登録注記の2行だけ、既存の外形と上下の装飾内に余白を確保する。
                 label.resizeTextMaxSize=customizationCatalog==null?24:30;
             }
