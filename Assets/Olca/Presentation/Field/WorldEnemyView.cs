@@ -162,8 +162,9 @@ namespace Olca.Presentation.Field
             if(attackPoseBody!=null){attackPoseBody.transform.localPosition=attackPosePosition;attackPoseBody.transform.localScale=attackPoseScale;}
         }
         /// <summary>読取済みの論理前隙だけを描く。時計/Root/grid/HP文字は変更しない。既存絵の仮屈伸。</summary>
-        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0)
+        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0)
         {
+            if(enemyView?.IsTrialArcher==true){ResetAttackWindup();enemyView.RenderTrialArcher(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits);return;}
             if(!active||totalFrames<=0||enemy==null||enemy.IsDead||deathStarted||hitReactionRunning||hiddenByBlindness||hiddenForBattle||!isActiveAndEnabled){ResetAttackWindup();return;}
             var body=enemyView?.EnsureAttackPoseBody();if(body==null){ResetAttackWindup();return;}
             if(attackPoseBody!=body){ResetAttackWindup();attackPoseBody=body;attackPosePosition=body.transform.localPosition;attackPoseScale=body.transform.localScale;}

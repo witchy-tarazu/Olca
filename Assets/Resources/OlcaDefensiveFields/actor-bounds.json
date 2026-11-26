@@ -21,6 +21,116 @@
       "h": 395,
       "source": "Assets/Art/Sprites/Enemies/boss_512.png",
       "sourceSha256": "b4bc4c29d3f4808d876db257597cf43d270d9fc7521c6c6dcd199f78a09548ef"
+    },
+    {
+      "name": "dungeon_archer_428_0",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 116,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_1",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 116,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_2",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 112,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_3",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 112,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_4",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 116,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_5",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 120,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_6",
+      "width": 256,
+      "height": 256,
+      "x": 82,
+      "y": 20,
+      "w": 92,
+      "h": 112,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_7",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 112,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_8",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 116,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
+    },
+    {
+      "name": "dungeon_archer_428_9",
+      "width": 256,
+      "height": 256,
+      "x": 96,
+      "y": 20,
+      "w": 64,
+      "h": 116,
+      "source": "Assets/Resources/OlcaPickups/trial_archer_v1.bytes",
+      "sourceSha256": "709e2565bf159e24a2e4886fbda0536a6fc0a2e53ab0a4ff65ee5f39c09cd458"
     }
   ]
 }

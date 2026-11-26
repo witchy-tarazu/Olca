@@ -17,6 +17,36 @@ namespace Olca.Presentation.Battle
         [SerializeField] private Sprite bossSprite;
 
         private Enemy enemy;
+        private Olca.Unity.GeneratedSpriteAssets.Lease archerAssets;
+        private bool archerWindup;
+        private long archerReleaseAt=-1000,archerExpectedRelease;
+        public bool IsTrialArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonTrialArrowAction.EnemyId;
+        private Sprite ArcherSprite(int frame)
+        {
+            if(archerAssets==null)archerAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
+            float foot=gruntSprite!=null?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(gruntSprite).min.y:0f;
+            float pivotY=20f-foot*100f;
+            var frames=archerAssets.Get<Sprite[]>("DungeonTrialArcher428_"+pivotY.ToString(System.Globalization.CultureInfo.InvariantCulture),b=>{
+                var bytes=Resources.Load<TextAsset>("OlcaPickups/trial_archer_v1");if(bytes==null)return null;
+                var texture=b.CreateTexture(2,2);if(!texture.LoadImage(bytes.bytes,true)||texture.width!=2560||texture.height!=256)return null;
+                texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;
+                var result=new Sprite[10];for(int i=0;i<10;i++){result[i]=b.CreateSprite(texture,new Rect(i*256,0,256,256),new Vector2(.5f,pivotY/256),100);result[i].name="dungeon_archer_428_"+i;}
+                return result;
+            });return frames==null?null:frames[Mathf.Clamp(frame,0,9)];
+        }
+        /// <summary>専用試用敵だけの論理時計による構え/放ち。判定や待機時間を更新しない。</summary>
+        public void RenderTrialArcher(bool active,int elapsed,long logicalUnits)
+        {
+            if(!IsTrialArcher||enemyImage==null)return;
+            bool live=!enemy.IsDead&&!enemy.IsStunned&&!enemy.IsParalyzed;
+            if(active)archerExpectedRelease=logicalUnits-elapsed*50L+1500;
+            if(archerWindup&&!active&&live&&logicalUnits>=archerExpectedRelease)archerReleaseAt=archerExpectedRelease;
+            if(!live)archerReleaseAt=-1000;
+            archerWindup=active&&live;
+            int frame=enemy.IsStaggered?8:archerWindup?4+Mathf.Min(2,elapsed/10):logicalUnits>=archerReleaseAt&&logicalUnits-archerReleaseAt<400?7:(int)(logicalUnits/500%4);
+            var sprite=ArcherSprite(frame);if(sprite!=null)enemyImage.sprite=sprite;
+        }
+
         private string displayedEnemyName;
         private LineRenderer bodyLink;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
@@ -226,7 +256,7 @@ namespace Olca.Presentation.Battle
         private void OnEnable(){if(hpVisible)RegisterGauge();}
         private void OnDisable(){if(bodyLink!=null)bodyLink.enabled=false;guardVisual?.Clear();paralysisVisual?.Clear();defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
         private void LateUpdate(){if(hpVisible)RefreshGauges();RefreshDefensiveField();RefreshConditionVisuals();}
-        private void OnDestroy(){guardVisual?.Dispose();paralysisVisual?.Dispose();defensiveField?.Dispose();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
+        private void OnDestroy(){archerAssets?.Dispose();archerAssets=null;guardVisual?.Dispose();paralysisVisual?.Dispose();defensiveField?.Dispose();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
 
         private bool deathPresentationActive;
         public void SetDeathPresentationActive(bool active)=>deathPresentationActive=active;
@@ -262,7 +292,7 @@ namespace Olca.Presentation.Battle
         public void Initialize(Enemy enemy)
         {
             guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
-            this.enemy = enemy;displayedEnemyName=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
+            this.enemy = enemy;archerWindup=false;archerReleaseAt=-1000;displayedEnemyName=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
             if(enemyNameText!=null&&namePositionCached)enemyNameText.transform.localPosition=nameLocalPosition;
             if(enemyNameText!=null)enemyNameText.text=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
@@ -291,7 +321,7 @@ namespace Olca.Presentation.Battle
         /// <summary>既存の敵IDに対応する仮素材を表示する。戦闘データは変更しない。</summary>
         private void ApplyAppearance()
         {
-            var sprite = enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
+            var sprite = IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
             if (enemyImage == null || sprite == null) return;
 
             enemyImage.sprite = sprite;
@@ -299,7 +329,7 @@ namespace Olca.Presentation.Battle
             enemyImage.flipX = true; // 右向きの原画を、左側のプレイヤーへ向ける
 
             // 元絵の透明余白でなく、既存の可視領域校正へ名前をつなぐ。絵とpivotは変更しない。
-            float top = sprite.bounds.max.y;
+            float top = IsTrialArcher?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(sprite).max.y:sprite.bounds.max.y;
             if (enemyNameText != null)
                 enemyNameText.transform.localPosition = new Vector3(0f, top + 1.05f, -0.1f);
             if (hpText != null)

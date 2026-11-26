@@ -306,3 +306,28 @@ namespace Olca.Core.Logic.Battle
         public float GetCooldown()=>cooldownMs/1000f;
     }
 }
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>弓試作用の専用技。2〜3マス、開始時の1マスへ30f予告、追尾なし。Shotカードは不使用。</summary>
+    public sealed class DungeonTrialArrowAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource
+    {
+        public const string EnemyId="trial-dungeon-archer-v1",TechniqueId="dungeon-trial-locked-arrow-v1";
+        private readonly Action<Vector2Int> onArrow;
+        public DungeonTrialArrowAction(Action<Vector2Int> onArrow=null){this.onArrow=onArrow;}
+        private System.Threading.CancellationTokenSource cancellation;private FrameTask task;private AIContext active;private long started;private object owner;private Vector2Int target;
+        public bool IsRunning {get{Observe();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        public bool CanExecute(AIContext c)=>c.Battle!=null&&!c.Battle.IsGameOver&&!IsRunning&&c.Self!=null&&c.Player!=null&&!c.Self.IsDead&&!c.Self.IsStunned&&!c.Self.IsParalyzed&&!c.Self.IsInTemporaryMove&&c.HasVisiblePlayer&&c.GetDistanceToPlayer()>=2&&c.GetDistanceToPlayer()<=3;
+        public void Execute(AIContext c){if(!CanExecute(c))return;active=c;started=c.Battle.ActionPresentationTimeUnits;var delta=new Vector2Int(c.Player.GridPosition.X-c.Self.GridPosition.X,c.Player.GridPosition.Y-c.Self.GridPosition.Y);var aim=c.ResolveDirectionalInput(delta);target=new Vector2Int(c.Self.GridPosition.X+aim.X,c.Self.GridPosition.Y+aim.Y);owner=new object();cancellation=new System.Threading.CancellationTokenSource();c.Battle.SetEnemyAttackTelegraph(owner,new[]{target});task=Resolve(c,target,owner,cancellation.Token);Observe();}
+        private async FrameTask Resolve(AIContext c,Vector2Int locked,object ticket,System.Threading.CancellationToken token)
+        {
+            try{await c.Battle.WaitForActionFramesAsync(30,token);token.ThrowIfCancellationRequested();if(c.Battle.IsGameOver||c.Self.IsDead||c.Player.IsDead)return;onArrow?.Invoke(locked);if(!c.Player.GridPosition.Equals(locked))return;if(c.Player.TryTakeDamage(10)&&!c.Player.IsDead)c.Player.SetInvincible(c.Battle.DefaultHitInvincibilityMs);}
+            finally{c.Battle.ClearEnemyAttackTelegraph(ticket);if(ReferenceEquals(owner,ticket))owner=null;}
+        }
+        private void Observe(){if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation.Dispose();cancellation=null;}
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview){preview=default;if(cancellation==null||task.Status!=FrameTaskStatus.Pending)return false;preview=new EnemyAttackPreview(target,(int)Math.Min(30,Math.Max(0,(active.Battle.ActionPresentationTimeUnits-started)/50)),30);return true;}
+        public void Tick(int ms,AIContext c,bool logicalFrame)=>Observe();
+        public void Cancel(AIContext c){var source=cancellation;var ticket=owner;cancellation=null;owner=null;if(source==null)return;try{source.Cancel();}finally{source.Dispose();active.Battle?.ClearEnemyAttackTelegraph(ticket);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
+        public int GetCooldownMs()=>1200;public float GetCooldown()=>1.2f;
+    }
+}

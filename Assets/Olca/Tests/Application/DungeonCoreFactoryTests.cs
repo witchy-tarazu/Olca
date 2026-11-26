@@ -430,3 +430,50 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonArcher428Tests
+    {
+        [NUnit.Framework.TestCase(false)] [NUnit.Framework.TestCase(true)]
+        public void 弓428の専用連番は256透過枠で構え放ちを論理時計だけで選ぶ(bool authoredPivot)
+        {
+            var go=new UnityEngine.GameObject("Archer428View");UnityEngine.Texture2D texture=null;UnityEngine.Sprite grunt=null;try{
+                var renderer=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,renderer);
+                if(authoredPivot){texture=new UnityEngine.Texture2D(256,256);grunt=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,256,256),new UnityEngine.Vector2(.5f,.22460938f),100);grunt.name="grunt_256";typeof(Olca.Presentation.Battle.EnemyView).GetField("gruntSprite",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,grunt);}
+                var enemy=new Enemy(DungeonCoreFactory.TrialArcherEnemyId,"ユミ",60,ElementType.None,new Vector2Int(4,0));view.Initialize(enemy);Assert.IsTrue(view.IsTrialArcher);Assert.IsNotNull(renderer.sprite);Assert.AreEqual(256,renderer.sprite.rect.width);Assert.AreEqual(256,renderer.sprite.rect.height);Assert.AreEqual(UnityEngine.FilterMode.Point,renderer.sprite.texture.filterMode);var body=Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(renderer.sprite);Assert.AreEqual(authoredPivot?-.375f:0f,body.min.y,.0001f);Assert.AreEqual(1.16f,body.size.y,.0001f);
+                view.RenderTrialArcher(true,20,1000);Assert.AreEqual(6*256,renderer.sprite.rect.x);view.RenderTrialArcher(false,0,1500);Assert.AreEqual(7*256,renderer.sprite.rect.x);var released=renderer.sprite;view.RenderTrialArcher(false,0,1500);Assert.AreSame(released,renderer.sprite);view.RenderTrialArcher(false,0,1900);Assert.AreNotSame(released,renderer.sprite);
+                view.RenderTrialArcher(true,1,2000);view.RenderTrialArcher(false,0,2050);Assert.Less(renderer.sprite.rect.x,4*256,"発動前の取消を放ちとして表示しない");
+            }finally{UnityEngine.Object.DestroyImmediate(go);if(grunt!=null)UnityEngine.Object.DestroyImmediate(grunt);if(texture!=null)UnityEngine.Object.DestroyImmediate(texture);}
+        }
+        private BattleSystem Battle(out PlayerCharacter player,out Enemy enemy,int column=1)
+        {
+            player=new PlayerCharacter(100,new Vector2Int(column,0));enemy=new Enemy(DungeonCoreFactory.TrialArcherEnemyId,"ユミ",60,ElementType.None,new Vector2Int(4,0),poiseDefinition:new EnemyPoiseDefinition(10,3));
+            var b=new BattleSystem(player,new System.Collections.Generic.List<Enemy>{enemy},new Deck(),customGaugeSpeed:0,randomProvider:new SeededBattleRandom(7),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.ConfigureDefaultHitInvincibility(600);return b;
+        }
+        [NUnit.Framework.TestCase(false)] [NUnit.Framework.TestCase(true)]
+        public void 弓428は実登録AIで開始マスを固定し30境界だけで命中し移動先を追尾しない(bool evade)
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var locked,out var age,out var total));Assert.AreEqual(new Vector2Int(1,0),locked);Assert.AreEqual(0,age);Assert.AreEqual(30,total);
+            if(evade)p.MoveTo(new Vector2Int(2,0));for(int i=0;i<29;i++)b.TickFrame(17);Assert.AreEqual(100,p.CurrentHp);b.TickFrame(17);Assert.AreEqual(evade?100:90,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+            for(int i=0;i<71;i++)b.TickFrame(17);Assert.IsFalse(b.TryGetEnemyAttackPreview(e,out _,out _,out _));b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out _,out _,out _));
+        }
+        [NUnit.Framework.TestCase(0)] [NUnit.Framework.TestCase(3)]
+        public void 弓428は射程外と隣接では発射しない(int column)
+        {var b=Battle(out var p,out var e,column);for(int i=0;i<100;i++)b.TickFrame(17);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);}
+        [NUnit.Framework.TestCase(BattlePauseReason.User)] [NUnit.Framework.TestCase(BattlePauseReason.CustomScreen)]
+        public void 弓428はポーズ中に予告と残時間を変えない(BattlePauseReason reason)
+        {var b=Battle(out var p,out var e);b.TickFrame(17);for(int i=0;i<9;i++)b.TickFrame(17);b.Pause(reason);for(int i=0;i<80;i++)b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out _,out var elapsed,out _));Assert.AreEqual(9,elapsed);b.Resume(reason);for(int i=0;i<20;i++)b.TickFrame(17);Assert.AreEqual(100,p.CurrentHp);b.TickFrame(17);Assert.AreEqual(90,p.CurrentHp);}
+        [NUnit.Framework.TestCase(0)] [NUnit.Framework.TestCase(1)] [NUnit.Framework.TestCase(2)]
+        public void 弓428はブレイク麻痺死亡で予約と予告を解除する(int kind)
+        {var b=Battle(out var p,out var e);b.TickFrame(17);b.RunLogicalFrame(()=>{if(kind==0)e.TakeDamage(1,ElementType.None,poiseDamage:10);else if(kind==1)e.ApplyStatus(new StatusEffect(StatusEffectType.Paralyze,1000));else e.TakeDamage(10000,ElementType.None);});b.TickFrame(17);Assert.IsEmpty(b.EnemyAttackTiles);for(int i=0;i<31;i++)b.TickFrame(17);Assert.AreEqual(100,p.CurrentHp);}
+        [NUnit.Framework.Test]
+        public void 弓428は他所有者の同じ予告を解除せず新ルートだけに配置する()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var e=new Enemy(DungeonCoreFactory.TrialArcherEnemyId,"ユミ1",60,ElementType.None,new Vector2Int(4,0));var other=new Enemy(DungeonCoreFactory.TrialArcherEnemyId,"ユミ2",60,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e,other},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.TickFrame(17);Assert.AreEqual(1,b.EnemyAttackTiles.Count);e.TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.AreEqual(1,b.EnemyAttackTiles.Count);other.TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.IsEmpty(b.EnemyAttackTiles);
+            var cards=new SimpleCardFactory();var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;var normal=new EnemyPoiseDefinition(30,18,180);var boss=new EnemyPoiseDefinition(60,18,180);var old=DungeonCoreFactory.CreateTrialCardRoute(legacy,cards,normal,boss).RouteHash;
+            var route=DungeonCoreFactory.CreateTrialArcherRoute(legacy,cards,normal,boss);Assert.AreEqual(DungeonCoreFactory.TrialArcherRouteId,route.RouteId);var map=route.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();CollectionAssert.AreEqual(new[]{3,17},map.MapCells.Where(c=>c.Enemy!=null).Select(c=>c.Index));Assert.AreEqual(DungeonCoreFactory.TrialArcherEnemyId,map.MapCells[3].Enemy.EnemyId);Assert.AreEqual(old,DungeonCoreFactory.CreateTrialCardRoute(legacy,cards,normal,boss).RouteHash);
+            var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(7),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());var game=factory.CreatePreview(map,new PlayerCharacter(100),cards.CreateStarterDeck(),cp);Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.AreEqual(DungeonCoreFactory.TrialArcherEnemyId,restored.Map.MapCells[3].Enemy.EnemyId);
+        }
+    }
+}
