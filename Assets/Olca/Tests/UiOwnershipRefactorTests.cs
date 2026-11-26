@@ -61,7 +61,9 @@ namespace Olca.Tests
                 Button Find(string name)=>view.GetComponentsInChildren<Button>().Single(v=>v.name==name);
                 var old=Find("AcquisitionCandidate_"+id);// 左側候補列の新配置を検証し、フォントと旧入力の寿命の期待値は維持する。
                 Assert.AreEqual(new Vector2(620,80),old.GetComponent<RectTransform>().sizeDelta);Assert.AreEqual(new Vector2(-620,255),old.GetComponent<RectTransform>().anchoredPosition);old.onClick.Invoke();
-                Assert.IsTrue(view.GetComponentsInChildren<Text>().All(v=>v.font==font));Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(0,received);
+                // 現行テーマはボタンの操作ラベルを太字にし、候補名・状態・本文は注入フォントを保持する。
+                var buttonFont=Resources.Load<Font>("OlcaUI/LINESeedJP-Bold");Assert.IsNotNull(buttonFont);
+                foreach(var text in view.GetComponentsInChildren<Text>()){var button=text.GetComponentInParent<Button>();bool actionLabel=button!=null&&text.name==button.name+"Label";Assert.AreSame(actionLabel?buttonFont:font,text.font,text.name);}Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(0,received);
                 Find("ClaimCustomizationAcquisition").onClick.Invoke();Assert.AreEqual(1,received);
                 view.Close();Assert.DoesNotThrow(()=>old.onClick.Invoke());Assert.AreEqual(1,received);
             }finally{UnityEngine.Object.DestroyImmediate(root);}
