@@ -79,6 +79,7 @@ namespace Olca.Application.Management
             return FloorSequenceDefinitions.WithSharedCardCatalog("trial-two-floor-v1","trial-v1",new[]{Floor(1,14,false),Floor(2,18,true)},cardCatalog);
         }
         // 新IDの試用定義だけを登録する。変更時は敵IDとroute revisionを新しくし、旧攻略へ上書きしない。
+        public const string TrialStepArcherRouteId="trial-dungeon-archer-step-route-v2";
         public const string TrialArcherEnemyId=DungeonTrialArrowAction.EnemyId,TrialArcherRouteId="trial-dungeon-archer-route-v1";
         public const string TrialSwordEnemyId="trial-sword-slime-v1",TrialBombEnemyId="trial-bomb-slime-v1";
         public static IEnemyAIProvider CreateTrialCardEnemyAI()
@@ -89,6 +90,7 @@ namespace Olca.Application.Management
                 return new EnemyAIRegistration(new[]{new EnemyActionPattern(0,EnemyActionPatternSamples.Slime(card,2000,database),EnemyPatternEndMode.Loop)},0);
             }
             return new EnemyAIRegistry(new Dictionary<string,Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{
+                [DungeonStepArcherAction.EnemyId]=(e,d)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0),
                 [TrialArcherEnemyId]=(e,d)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonTrialArrowAction()},EnemyPatternEndMode.Loop)},0),
                 [TrialSwordEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Sword),[TrialBombEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Bomb)});
         }
@@ -117,6 +119,17 @@ namespace Olca.Application.Management
             }
             var map=new DungeonConfig("trial-dungeon-archer-floor-v1","シヨウ ユミテキ（カリ）",18,cells);
             return FloorSequenceDefinitions.WithSharedCardCatalog(TrialArcherRouteId,"trial-dungeon-archer-v1",new[]{map},catalog);
+        }
+        /// <summary>旧弓攻略は保持する、反撃時間と一度の後退を比較する新しい任意出撃。</summary>
+        public static FloorSequenceDefinitions CreateTrialStepArcherRoute(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();
+            var cells=new List<MapCell>();for(int i=0;i<18;i++){
+                Enemy enemy=i==3?new Enemy(DungeonStepArcherAction.EnemyId,"ユミゴブリン（カリ）",60,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):
+                    i==17?new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(i,0),poiseDefinition:boss):null;
+                cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+            }
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialStepArcherRouteId,"trial-dungeon-archer-step-v2",new[]{new DungeonConfig("trial-dungeon-archer-step-floor-v2","シヨウ ユミ・マアイ（カリ）",18,cells)},catalog);
         }
         public const string TrialRewardMapId="trial-reward-floor-v1";
         /// <summary>旧試用を上書きしない、新しい実カード入手表の試走。</summary>

@@ -125,6 +125,9 @@ namespace Olca.Presentation.Field
             deathStarted=terminalDeathPresentation=false;deathCompletion=null;enemyView?.SetDeathPresentationActive(false);
         }
 
+        private bool archerStepInitialized,archerStepActive;
+        private int archerStepColumn;private long archerUnits,archerStepStarted;private float archerStepFromX;
+        private void ResetArcherStep(){archerStepInitialized=archerStepActive=false;archerUnits=0;}
         private bool positionAnimating;       // trueの間はRefreshによる位置上書きを禁止
         private bool hiddenForBattle;         // バトル不参加のため一時非表示中
         private CancellationTokenSource destroyCts;
@@ -154,7 +157,7 @@ namespace Olca.Presentation.Field
             }
             damageNumberPool?.SetOwnerVisible(this,!hidden);
         }
-        private void OnDisable(){ResetAttackWindup();deathBurst?.Clear();if(deathStarted)deathBurstSuppressed=true;UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
+        private void OnDisable(){ResetArcherStep();ResetAttackWindup();deathBurst?.Clear();if(deathStarted)deathBurstSuppressed=true;UnsubscribeFeedback();pendingContactFeedback.Clear();SetHiddenByBlindness(false);}
 
         private SpriteRenderer attackPoseBody;private Vector3 attackPosePosition,attackPoseScale;
         private void ResetAttackWindup()
@@ -164,7 +167,7 @@ namespace Olca.Presentation.Field
         /// <summary>読取済みの論理前隙だけを描く。時計/Root/grid/HP文字は変更しない。既存絵の仮屈伸。</summary>
         public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0)
         {
-            if(enemyView?.IsTrialArcher==true){ResetAttackWindup();enemyView.RenderTrialArcher(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits);return;}
+            if(enemyView?.IsTrialArcher==true){if(enemyView.IsStepArcher){archerUnits=logicalUnits;if(!positionAnimating)UpdatePosition();}ResetAttackWindup();enemyView.RenderTrialArcher(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits);return;}
             if(!active||totalFrames<=0||enemy==null||enemy.IsDead||deathStarted||hitReactionRunning||hiddenByBlindness||hiddenForBattle||!isActiveAndEnabled){ResetAttackWindup();return;}
             var body=enemyView?.EnsureAttackPoseBody();if(body==null){ResetAttackWindup();return;}
             if(attackPoseBody!=body){ResetAttackWindup();attackPoseBody=body;attackPosePosition=body.transform.localPosition;attackPoseScale=body.transform.localScale;}
@@ -193,6 +196,7 @@ namespace Olca.Presentation.Field
         /// <summary>ダンジョン配置時に呼ぶ</summary>
         public void Initialize(Enemy enemy, float dungeonX)
         {
+            ResetArcherStep();
             ResetAttackWindup();
             ResetDeathPresentation();
             destroyCts?.Cancel();destroyCts?.Dispose();destroyCts=new CancellationTokenSource();hitReactionRunning=false;
@@ -259,6 +263,7 @@ namespace Olca.Presentation.Field
         /// <summary>バトル開始時 - グリッド座標モードに切り替え（グリッド範囲内の敵のみ）</summary>
         public void OnBattleStarted(WorldBattleGridView grid, bool participates = true, System.Collections.Generic.IReadOnlyList<Enemy> occupants = null)
         {
+            ResetArcherStep();
             positionAnimating = false;
             battleEnemies = occupants;
             if (enemy == null) return;
@@ -286,6 +291,7 @@ namespace Olca.Presentation.Field
         /// <summary>バトル終了時 - ダンジョン座標モードに戻す。撃破済みの敵は非表示にする。</summary>
         public void OnBattleEnded()
         {
+            ResetArcherStep();
             battleStarted=false;pendingContactFeedback.Clear();pendingContactDamage=0;
             SetHiddenByBlindness(false);
             gridView = null;
@@ -403,6 +409,13 @@ namespace Olca.Presentation.Field
                 ? gridView.GridIndexToWorldX(enemy.GridPosition.X) + GetOverlapOffset()
                 : dungeonWorldX;
 
+            // 新V2の通常1マス移動だけを論理12fで滑らせる。判定位置はCoreに従い、旧敵・一時移動は変更しない。
+            if(gridView!=null&&enemyView?.IsStepArcher==true&&!enemy.IsInTemporaryMove&&!positionAnimating){
+                int column=enemy.GridPosition.X;
+                if(!archerStepInitialized){archerStepInitialized=true;archerStepColumn=column;}
+                else if(column!=archerStepColumn){archerStepActive=System.Math.Abs(column-archerStepColumn)==1;archerStepColumn=column;archerStepFromX=transform.position.x;archerStepStarted=archerUnits;}
+                if(archerStepActive){float t=Mathf.Clamp01((archerUnits-archerStepStarted)/(Olca.Core.Logic.Battle.DungeonStepArcherAction.StepPresentationFrames*50f));worldX=Mathf.Lerp(archerStepFromX,worldX,t);if(t>=1)archerStepActive=false;}
+            }
             transform.position = new Vector3(worldX, transform.position.y, transform.position.z);
         }
 

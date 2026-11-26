@@ -477,3 +477,63 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonArcher429Tests
+    {
+        private BattleSystem Battle(out PlayerCharacter player,out Enemy enemy,int playerX=1,int enemyX=4)
+        {
+            player=new PlayerCharacter(100,new Vector2Int(playerX,0));enemy=new Enemy(DungeonStepArcherAction.EnemyId,"ユミ",60,ElementType.None,new Vector2Int(enemyX,0));
+            return new BattleSystem(player,new System.Collections.Generic.List<Enemy>{enemy},new Deck(),customGaugeSpeed:0,randomProvider:new SeededBattleRandom(7),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());
+        }
+        private static void Frames(BattleSystem b,int count){for(int i=0;i<count;i++)b.TickFrame(17);}
+        [TestCase(false)] [TestCase(true)]
+        public void 弓429は発射後72フレームを反撃に残し一度だけ後退する(bool left)
+        {
+            var b=Battle(out var p,out var e,left?4:1,left?1:4);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var target,out _,out _));Assert.AreEqual(p.GridPosition,target);
+            p.MoveTo(new Vector2Int(left?2:3,0));Frames(b,30);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+            e.TakeDamage(10,ElementType.None);Assert.AreEqual(50,e.CurrentHp);Frames(b,71);Assert.AreEqual(left?1:4,e.GridPosition.X,"反撃時間内は移動しない");
+            Frames(b,1);Assert.AreEqual(left?0:5,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp,"後退自体にダメージなし");
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 弓429は初期隣接にも猶予を与え追跡されても連続後退しない(bool left)
+        {
+            var b=Battle(out var p,out var e,left?3:2,left?2:3);Frames(b,72);Assert.AreEqual(left?2:3,e.GridPosition.X);Frames(b,1);Assert.AreEqual(left?1:4,e.GridPosition.X);
+            p.MoveTo(new Vector2Int(left?2:3,0));Frames(b,300);Assert.AreEqual(left?1:4,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void 弓429は盤面端で止まり反対側へワープしない(bool left)
+        {var b=Battle(out var p,out var e,left?1:4,left?0:5);Frames(b,300);Assert.AreEqual(left?0:5,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);}
+        [Test] public void 弓429は障害物で退けず取り除いても同じ発射分を再試行しない()
+        {
+            var b=Battle(out var p,out var e,2,3);var obstacle=new FieldObstacle("block",1);b.Field.PlaceObstacle(new Vector2Int(4,0),obstacle);Frames(b,73);Assert.AreEqual(3,e.GridPosition.X);obstacle.TakeDamage(1);Frames(b,200);Assert.AreEqual(3,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [Test] public void 弓429は穴へ後退せず地形変更後も連続再試行しない()
+        {var b=Battle(out var p,out var e,2,3);b.Field.ChangePanelType(new Vector2Int(4,0),PanelType.Hole);Frames(b,73);Assert.AreEqual(3,e.GridPosition.X);b.Field.ChangePanelType(new Vector2Int(4,0),PanelType.Normal);Frames(b,200);Assert.AreEqual(3,e.GridPosition.X);}
+        [Test] public void 弓429は他の生存敵を通過しない()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(2,0));var e=new Enemy(DungeonStepArcherAction.EnemyId,"ユミ",60,ElementType.None,new Vector2Int(3,0));var blocker=new Enemy(DungeonCoreFactory.TrialArcherEnemyId,"旧ユミ",60,ElementType.None,new Vector2Int(4,0));
+            var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e,blocker},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());Frames(b,73);Assert.AreEqual(3,e.GridPosition.X);Assert.AreEqual(4,blocker.GridPosition.X);
+        }
+        [Test] public void 弓429の独立ルートは旧弓のIDと定義を上書きしない()
+        {
+            var cards=new SimpleCardFactory();var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;var normal=new EnemyPoiseDefinition(30,18,180);var boss=new EnemyPoiseDefinition(60,18,180);
+            var old=DungeonCoreFactory.CreateTrialArcherRoute(legacy,cards,normal,boss);var before=old.RouteHash;var next=DungeonCoreFactory.CreateTrialStepArcherRoute(legacy,cards,normal,boss);Assert.AreNotEqual(old.RouteId,next.RouteId);Assert.AreNotEqual(old.RouteHash,next.RouteHash);Assert.AreEqual(before,DungeonCoreFactory.CreateTrialArcherRoute(legacy,cards,normal,boss).RouteHash);
+            var map=next.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();CollectionAssert.AreEqual(new[]{3,17},map.MapCells.Where(c=>c.Enemy!=null).Select(c=>c.Index));Assert.AreEqual(DungeonStepArcherAction.EnemyId,map.MapCells[3].Enemy.EnemyId);Assert.AreEqual(DungeonCoreFactory.TrialArcherEnemyId,old.CreateInitialMap(0).MapCells[3].Enemy.EnemyId);
+        }
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void 弓429は反撃待ちをポーズで消費しない(BattlePauseReason reason)
+        {var b=Battle(out var p,out var e,3);Frames(b,40);b.Pause(reason);Frames(b,200);Assert.AreEqual(4,e.GridPosition.X);b.Resume(reason);Frames(b,32);Assert.AreEqual(4,e.GridPosition.X);Frames(b,1);Assert.AreEqual(5,e.GridPosition.X);}
+        [Test] public void 弓429の表示は12論理フレームで一マス進み時計停止中は動かない()
+        {
+            var go=new UnityEngine.GameObject("StepArcher429");var gridGo=new UnityEngine.GameObject("Grid429");try{
+                var renderer=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();var world=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();var grid=gridGo.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",flags).SetValue(view,renderer);typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView",flags).SetValue(world,view);
+                var e=new Enemy(DungeonStepArcherAction.EnemyId,"ユミ",60,ElementType.None,new Vector2Int(4,0));world.Initialize(e,0);world.OnBattleStarted(grid);world.SetAttackWindup(false,logicalUnits:1000);float from=go.transform.position.x;e.MoveTo(new Vector2Int(5,0));world.SetAttackWindup(false,logicalUnits:1000);Assert.AreEqual(from,go.transform.position.x,.0001f);world.SetAttackWindup(false,logicalUnits:1300);float middle=go.transform.position.x;Assert.AreEqual((from+grid.GridIndexToWorldX(5))*.5f,middle,.0001f);world.SetAttackWindup(false,logicalUnits:1300);Assert.AreEqual(middle,go.transform.position.x);Assert.AreEqual(5,e.GridPosition.X);world.SetAttackWindup(false,logicalUnits:1600);Assert.AreEqual(grid.GridIndexToWorldX(5),go.transform.position.x,.0001f);
+            }finally{UnityEngine.Object.DestroyImmediate(go);UnityEngine.Object.DestroyImmediate(gridGo);}
+        }
+        [Test] public void 弓429は死亡後に後退の予約を残さない()
+        {var b=Battle(out var p,out var e,3);Frames(b,40);e.TakeDamage(1000,ElementType.None);Frames(b,100);Assert.AreEqual(4,e.GridPosition.X);Assert.IsEmpty(b.EnemyAttackTiles);}
+    }
+}

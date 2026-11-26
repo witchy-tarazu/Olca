@@ -313,6 +313,7 @@ namespace Olca.Core.Logic.Battle
     public sealed class DungeonTrialArrowAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource
     {
         public const string EnemyId="trial-dungeon-archer-v1",TechniqueId="dungeon-trial-locked-arrow-v1";
+        public static bool IsArcherEnemyId(string id)=>id==EnemyId||id==DungeonStepArcherAction.EnemyId;
         private readonly Action<Vector2Int> onArrow;
         public DungeonTrialArrowAction(Action<Vector2Int> onArrow=null){this.onArrow=onArrow;}
         private System.Threading.CancellationTokenSource cancellation;private FrameTask task;private AIContext active;private long started;private object owner;private Vector2Int target;
@@ -329,5 +330,59 @@ namespace Olca.Core.Logic.Battle
         public void Tick(int ms,AIContext c,bool logicalFrame)=>Observe();
         public void Cancel(AIContext c){var source=cancellation;var ticket=owner;cancellation=null;owner=null;if(source==null)return;try{source.Cancel();}finally{source.Dispose();active.Battle?.ClearEnemyAttackTelegraph(ticket);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
         public int GetCooldownMs()=>1200;public float GetCooldown()=>1.2f;
+    }
+}
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>新IDだけの試用。発射後72fは反撃時間、一発射につき一度だけ通常1マス後退する。</summary>
+    public sealed class DungeonStepArcherAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource
+    {
+        public const string EnemyId="trial-dungeon-archer-step-v2";
+        public const int CounterWindowFrames=72,StepPresentationFrames=12;
+        private readonly DungeonTrialArrowAction shot;
+        private readonly EnemyMovementAction retreat=new EnemyMovementAction(EnemyMovementKind.Retreat,0);
+        private System.Threading.CancellationTokenSource cancellation;
+        private FrameTask task;
+        private AIContext active;
+        private long releasedAt=-1;
+        private bool retreatSpent;
+        public DungeonStepArcherAction(){shot=new DungeonTrialArrowAction(_=>{releasedAt=active.Battle.ActionPresentationTimeUnits;retreatSpent=false;});}
+        public bool IsRunning {get{Observe();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        private static bool Ready(AIContext c)=>c.Battle!=null&&!c.Battle.IsGameOver&&c.Self!=null&&c.Player!=null&&!c.Self.IsDead&&!c.Self.IsStunned&&!c.Self.IsParalyzed&&!c.Self.IsInTemporaryMove&&c.HasVisiblePlayer;
+        public bool CanExecute(AIContext c)=>Ready(c)&&!IsRunning&&(shot.CanExecute(c)||!retreatSpent&&c.GetDistanceToPlayer()==1);
+        public void Execute(AIContext c)
+        {
+            if(!CanExecute(c))return;active=c;releasedAt=-1;cancellation=new System.Threading.CancellationTokenSource();task=Run(c,cancellation.Token);Observe();
+        }
+        private async FrameTask Run(AIContext c,System.Threading.CancellationToken token)
+        {
+            try{
+                long readyAt=c.Battle.ActionPresentationTimeUnits+CounterWindowFrames*50L;
+                if(shot.CanExecute(c)){
+                    shot.Execute(c);
+                    while(shot.IsRunning)await c.Battle.WaitForActionFramesAsync(1,token);
+                    token.ThrowIfCancellationRequested();if(releasedAt<0)return;
+                    readyAt=releasedAt+CounterWindowFrames*50L;
+                }
+                long remaining=readyAt-c.Battle.ActionPresentationTimeUnits;
+                if(remaining>0)await c.Battle.WaitForActionFramesAsync((int)((remaining+49)/50),token);
+                token.ThrowIfCancellationRequested();
+                if(!Ready(c)||c.GetDistanceToPlayer()!=1||retreatSpent)return;
+                // 塞がっていても試行を消費。追われるたびに後退を再試行しない。
+                retreatSpent=true;
+                var from=c.Self.GetLogicalPosition();var target=c.Player.GetLogicalPosition();
+                var direction=c.ResolveDirectionalInput(new Vector2Int(Math.Sign(from.X-target.X),0));
+                var next=new Vector2Int(from.X+direction.X,from.Y);
+                if(direction.X==0||!c.Field.IsInBounds(next)||c.Field.IsHole(next)||!c.Field.CanMoveTo(next,c.Self.TerrainState))return;
+                // 参加者との衝突も既存の通常移動へ委ねる。一時移動/ワープは使用しない。
+                if(retreat.CanExecute(c))retreat.Execute(c);
+            }finally{shot.Cancel(c);}
+        }
+        private void Observe(){if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation.Dispose();cancellation=null;}
+        public void Tick(int ms,AIContext c,bool logicalFrame)=>Observe();
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview)=>shot.TryGetAttackPreview(out preview);
+        public void Cancel(AIContext c){var source=cancellation;cancellation=null;if(source==null)return;try{source.Cancel();}finally{source.Dispose();shot.Cancel(c);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
+        public int GetCooldownMs()=>0;public float GetCooldown()=>0;
     }
 }
