@@ -39,6 +39,54 @@ namespace Olca.Presentation.Battle
             if(customGaugeContainer!=null)customGaugeContainer.gameObject.SetActive(!hidden);
         }
 
+        private Text nextCardLabel, rangeGuideCaption;
+        private Button rangeGuideButton;
+        private bool rangeGuideRequested;
+        private Olca.Presentation.Field.WorldBattleGridView rangeGuideGrid;
+        private BattleSystem rangeGuideOwner;
+        private void ResetRangeGuide(){rangeGuideRequested=false;if(rangeGuideGrid!=null)rangeGuideGrid.SetCardPreviewRequested(rangeGuideOwner,false);rangeGuideOwner=null;if(rangeGuideButton!=null)rangeGuideButton.gameObject.SetActive(false);}
+        private void RefreshRangeGuide(bool visible)
+        {
+            bool supported=visible&&battleSystem.CardUsage.TryPreviewCurrentCard(out _,out _);
+            if(!supported){ResetRangeGuide();if(nextCardLabel!=null)((RectTransform)nextCardLabel.transform.parent).sizeDelta=new Vector2(520,82);return;}
+            if(rangeGuideButton==null){
+                var obj=new GameObject("CardRangeGuide",typeof(RectTransform),typeof(Image),typeof(Button));obj.transform.SetParent(transform,false);
+                var rect=(RectTransform)obj.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,0);rect.anchoredPosition=new Vector2(-380,140);rect.sizeDelta=new Vector2(210,82);
+                obj.GetComponent<Image>().color=new Color(.04f,.2f,.25f,.95f);rangeGuideButton=obj.GetComponent<Button>();rangeGuideButton.navigation=new Navigation{mode=Navigation.Mode.None};
+                rangeGuideButton.onClick.AddListener(()=>{rangeGuideRequested=!rangeGuideRequested;RefreshNextCard();});
+                rangeGuideCaption=PresentationText("RangeGuideCaption",obj.transform,Vector2.zero,new Vector2(200,78),24);rangeGuideCaption.font=Resources.Load<Font>("OlcaUI/MenuText");rangeGuideCaption.raycastTarget=false;rangeGuideCaption.color=Color.white;rangeGuideCaption.resizeTextForBestFit=true;rangeGuideCaption.resizeTextMinSize=18;rangeGuideCaption.resizeTextMaxSize=24;
+            }
+            rangeGuideButton.gameObject.SetActive(true);
+            if(rangeGuideGrid==null||!rangeGuideGrid.IsBoundTo(battleSystem)){
+                if(rangeGuideGrid!=null)rangeGuideGrid.SetCardPreviewRequested(rangeGuideOwner,false);rangeGuideGrid=null;
+                foreach(var grid in Object.FindObjectsByType<Olca.Presentation.Field.WorldBattleGridView>(FindObjectsSortMode.None))if(grid.IsBoundTo(battleSystem)){rangeGuideGrid=grid;break;}
+            }
+            if(rangeGuideGrid!=null){rangeGuideOwner=battleSystem;rangeGuideGrid.SetCardPreviewRequested(rangeGuideOwner,rangeGuideRequested);}
+            rangeGuideCaption.text=rangeGuideRequested?"シャテイ（カリ）\nトジル":"シャテイ（カリ）\nカクニン";
+            if(rangeGuideRequested){battleSystem.CardUsage.TryPreviewCurrentCard(out var guideTiles,out var landing);rangeGuideCaption.text=landing.HasValue?"チャクダン"+(landing.Value.X-battleSystem.Player.GridPosition.X)+"マスサキ\nトジル（カリ）":(guideTiles.Count>0?"シャテイ"+(guideTiles[0].X-battleSystem.Player.GridPosition.X)+"マス":"バンメンガイ")+"\nトジル（カリ）";nextCardLabel.text+="\nミズイロ＝メヤス / タテセン＝チャクダン\nイマのイチ・メイチュウホショウなし";if(landing.HasValue&&!battleSystem.Field.IsInBounds(landing.Value))nextCardLabel.text+="（チャクダンはバンメンガイ）";}
+            ((RectTransform)nextCardLabel.transform.parent).sizeDelta=new Vector2(520,rangeGuideRequested?115:82);
+        }
+        // 使用キューは変更せず、次に出るカードだけを毎描画で読み取る。
+        private void RefreshNextCard()
+        {
+            bool visible=isActiveAndEnabled&&!customInspectionHidden&&battleSystem!=null&&!battleSystem.IsGameOver&&!battleSystem.CustomScreen.IsOpen&&!isCustomScreenOpen;
+            if(!visible){if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);ResetRangeGuide();return;}
+            if(nextCardLabel==null){
+                var panel=new GameObject("NextBattleCard",typeof(RectTransform),typeof(Image));panel.transform.SetParent(transform,false);
+                var rect=(RectTransform)panel.transform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,0);rect.anchoredPosition=new Vector2(0,140);rect.sizeDelta=new Vector2(520,82);
+                var background=panel.GetComponent<Image>();background.color=new Color(.02f,.07f,.12f,.88f);background.raycastTarget=false;
+                var label=new GameObject("NextBattleCardLabel",typeof(RectTransform),typeof(Text));label.transform.SetParent(panel.transform,false);
+                nextCardLabel=label.GetComponent<Text>();nextCardLabel.font=Resources.Load<Font>("OlcaUI/MenuText");nextCardLabel.fontSize=26;nextCardLabel.color=Color.white;nextCardLabel.alignment=TextAnchor.MiddleCenter;nextCardLabel.raycastTarget=false;
+                nextCardLabel.resizeTextForBestFit=true;nextCardLabel.resizeTextMinSize=18;nextCardLabel.resizeTextMaxSize=26;
+                var lr=nextCardLabel.rectTransform;lr.anchorMin=Vector2.zero;lr.anchorMax=Vector2.one;lr.offsetMin=new Vector2(12,4);lr.offsetMax=new Vector2(-12,-4);
+            }
+            nextCardLabel.transform.parent.gameObject.SetActive(true);
+            var usage=battleSystem.CardUsage;var card=usage.CurrentCard;
+            nextCardLabel.text=card==null?"カードなし  /  カスタムでセンタク":
+                "ツギ："+Olca.Presentation.CustomScreen.CustomDisplay.Katakana(Olca.Presentation.CustomScreen.CustomDisplay.CardDisplayName(card))+"\nノコリ "+usage.RemainingCount+" マイ";
+            RefreshRangeGuide(true);
+        }
+
         private CombatStatusIconStrip statusIcons;
         private void RefreshStatusIcons()
         {
@@ -166,7 +214,7 @@ namespace Olca.Presentation.Battle
             RefreshCustomLayout();
         }
 
-        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();}
+        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();RefreshNextCard();}
 
         private void RefreshCustomLayout()
         {
@@ -282,7 +330,7 @@ namespace Olca.Presentation.Battle
             if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
-        private void OnBattleEnded(BattleResult result) {statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnBattleEnded(BattleResult result) {ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         /// <summary>撤退等でセッションを破棄する。古い開閉処理が再表示しないよう所有権を先に外す。</summary>
         public void EndSessionPresentation() => EndSessionPresentationCore(true);
@@ -302,12 +350,12 @@ namespace Olca.Presentation.Battle
                 SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
             }
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
-            DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();
+            DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();RefreshNextCard();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
             ResetGaugeVisual(); ResetTransformationVisual();
         }
 
-        private void OnDisable() {statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnDisable() {ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()
         {

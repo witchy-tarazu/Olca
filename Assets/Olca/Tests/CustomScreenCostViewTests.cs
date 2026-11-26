@@ -16,6 +16,86 @@ namespace Olca.Tests
 {
     public class CustomScreenCostViewTests
     {
+        [TestCase(false)][TestCase(true)]
+        public void 射程427は再接続で旧要求を消し古い画面の終了から新戦闘を保護する(bool disableOnly)
+        {
+            var root=new GameObject("RangeOwnerBoundary",typeof(RectTransform));
+            try{
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                BattleSystem Battle(){var c=Create("bomb",CardSeries.Bomb);var b=new BattleSystem(new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(0,0)),new List<Enemy>{new Enemy("e","e",100,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0))},new Deck(new List<Card>{c}));b.CardUsage.EnqueueCards(new List<Card>{c});return b;}
+                var a=Battle();var b=Battle();var gridObject=new GameObject("Grid");gridObject.transform.SetParent(root.transform,false);var grid=gridObject.AddComponent<Olca.Presentation.Field.WorldBattleGridView>();grid.GetType().GetMethod("Awake",flags).Invoke(grid,null);
+                Olca.Presentation.Battle.BattleView View(string name,BattleSystem battle){var go=new GameObject(name,typeof(RectTransform));go.transform.SetParent(root.transform,false);var view=go.AddComponent<Olca.Presentation.Battle.BattleView>();view.GetType().GetField("battleSystem",flags).SetValue(view,battle);view.GetType().GetField("rangeGuideGrid",flags).SetValue(view,grid);view.GetType().GetMethod("RefreshNextCard",flags).Invoke(view,null);go.GetComponentsInChildren<Button>(true).Single(x=>x.name=="CardRangeGuide").onClick.Invoke();return view;}
+                grid.Show(a.Field,0);grid.BindTelegraphs(a);var oldView=View("OldView",a);Assert.IsTrue(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf);
+                grid.Show(b.Field,0);grid.BindTelegraphs(b);Assert.IsTrue(grid.GetComponentsInChildren<Transform>(true).Where(t=>t.name.StartsWith("PlayerCardRange_")).All(t=>!t.gameObject.activeSelf),"別戦闘に旧ON要求を持ち込まない");
+                var newView=View("NewView",b);Assert.IsTrue(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf);
+                if(disableOnly)oldView.GetType().GetMethod("OnDisable",flags).Invoke(oldView,null);else oldView.ReleaseSessionPresentation();Assert.IsTrue(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf,"旧画面の終了または無効化で新ガイドを消さない");
+                Assert.IsFalse(grid.SetCardPreviewRequested(a,false));Assert.IsFalse(grid.SetCardPreviewRequested(a,true));Assert.IsTrue(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf);
+                grid.BindTelegraphs(b);Assert.IsTrue(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf,"同一戦闘の再bindは維持");
+                newView.ReleaseSessionPresentation();Assert.IsFalse(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf,"所有する現画面の終了は消去");
+                Assert.AreEqual(1,a.CardUsage.RemainingCount);Assert.AreEqual(1,b.CardUsage.RemainingCount);Assert.AreEqual(0,a.LogicalFrame);Assert.AreEqual(0,b.LogicalFrame);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
+        [Test]
+        public void 射程425の確認ボタンは通常キューを消費せず閉じると床目印を消す()
+        {
+            var root=new GameObject("RangeFixture",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(1920,1080);
+            var card=Create("bomb",CardSeries.Bomb);var player=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(0,0));
+            var battle=new BattleSystem(player,new List<Enemy>{new Enemy("e","e",100,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0))},new Deck(new List<Card>{card}));battle.CardUsage.EnqueueCards(new List<Card>{card});
+            try{
+                var gridObj=new GameObject("Grid",typeof(Olca.Presentation.Field.WorldBattleGridView));gridObj.transform.SetParent(root.transform,false);var grid=gridObj.GetComponent<Olca.Presentation.Field.WorldBattleGridView>();typeof(Olca.Presentation.Field.WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);grid.Show(battle.Field,0);grid.BindTelegraphs(battle);
+                var view=root.AddComponent<Olca.Presentation.Battle.BattleView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=view.GetType();type.GetField("battleSystem",flags).SetValue(view,battle);type.GetField("rangeGuideGrid",flags).SetValue(view,grid);
+                var refresh=type.GetMethod("RefreshNextCard",flags);refresh.Invoke(view,null);
+                var button=root.GetComponentsInChildren<Button>(true).Single(x=>x.name=="CardRangeGuide");Assert.IsTrue(button.gameObject.activeSelf);Assert.AreEqual(Color.white,button.GetComponentInChildren<Text>().color);
+                Assert.IsNull(grid.transform.Find("PlayerCardRange_3"));button.onClick.Invoke();
+                StringAssert.Contains("チャクダン3マスサキ",button.GetComponentInChildren<Text>().text);Assert.IsTrue(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf);Assert.IsTrue(grid.transform.Find("PlayerCardRange_3/Landing").gameObject.activeSelf);Assert.IsFalse(grid.transform.Find("PlayerCardRange_1").gameObject.activeSelf);
+                Assert.AreSame(card,battle.CardUsage.CurrentCard);Assert.AreEqual(1,battle.CardUsage.RemainingCount);Assert.AreEqual(0,battle.LogicalFrame);
+                button.onClick.Invoke();Assert.IsFalse(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf);
+                button.onClick.Invoke();view.SetCustomInspectionHidden(true);refresh.Invoke(view,null);Assert.IsFalse(grid.transform.Find("PlayerCardRange_3").gameObject.activeSelf);Assert.IsFalse(button.gameObject.activeSelf);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
+        [TestCase("sword",0,1,-1)][TestCase("sword",4,5,-1)][TestCase("sword",5,-1,-1)]
+        [TestCase("bomb",0,2,3)][TestCase("bomb",2,4,5)][TestCase("bomb",3,-1,6)][TestCase("bomb",5,-1,8)]
+        public void 射程425の目安は通常対象規則と盤面外着弾に従い消費しない(string id,int source,int firstTile,int landingX)
+        {
+            var card=Create(id,id=="bomb"?CardSeries.Bomb:CardSeries.Sword);
+            var player=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(source,0));
+            var enemy=new Enemy("e","e",100,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0));
+            var battle=new BattleSystem(player,new List<Enemy>{enemy},new Deck(new List<Card>{card}));battle.CardUsage.EnqueueCards(new List<Card>{card});
+            int notices=0;battle.CardUsage.OnCardUsed+=_=>notices++;
+            for(int i=0;i<3;i++){
+                Assert.IsTrue(battle.CardUsage.TryPreviewCurrentCard(out var tiles,out var landing));
+                Assert.AreEqual(landingX<0?(int?)null:landingX,landing?.X);
+                Assert.AreEqual(firstTile<0?0:id=="bomb"&&source==0?3:id=="bomb"?2:1,tiles.Count);
+                if(firstTile>=0)Assert.IsTrue(tiles.Any(t=>t.X==firstTile));
+            }
+            Assert.AreSame(card,battle.CardUsage.CurrentCard);Assert.AreEqual(1,battle.CardUsage.RemainingCount);Assert.AreEqual(0,notices);Assert.AreEqual(100,player.CurrentHp);Assert.AreEqual(100,enemy.CurrentHp);Assert.AreEqual(0,battle.LogicalFrame);
+        }
+
+        [TestCase(1440f)][TestCase(1920f)][TestCase(3840f)]
+        public void 通常戦闘424の次カード表示はキューを変えず閉鎖時に消える(float width)
+        {
+            var root=new GameObject("NextCardFixture",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(width,1080);
+            var first=Create("sword",CardSeries.Sword);var second=Create("shot",CardSeries.Canon);
+            var player=new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(0,0));
+            var battle=new BattleSystem(player,new List<Enemy>{new Enemy("e","e",50,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0))},new Deck(new List<Card>{first,second}));
+            try {
+                var view=root.AddComponent<Olca.Presentation.Battle.BattleView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                typeof(Olca.Presentation.Battle.BattleView).GetField("battleSystem",flags).SetValue(view,battle);
+                var refresh=typeof(Olca.Presentation.Battle.BattleView).GetMethod("RefreshNextCard",flags);
+                battle.CardUsage.EnqueueCards(new List<Card>{first,second});refresh.Invoke(view,null);
+                var label=root.GetComponentsInChildren<Text>(true).Single(x=>x.name=="NextBattleCardLabel");
+                StringAssert.Contains("ノコリ 2 マイ",label.text);StringAssert.Contains(CustomDisplay.Katakana(CustomDisplay.CardDisplayName(first)),label.text);
+                Assert.AreSame(first,battle.CardUsage.CurrentCard);Assert.AreEqual(2,battle.CardUsage.RemainingCount);Assert.IsFalse(label.raycastTarget);Assert.AreSame(Resources.Load<Font>("OlcaUI/MenuText"),label.font);
+                Assert.LessOrEqual(((RectTransform)label.transform.parent).rect.width,width);
+                battle.CardUsage.EnqueueCards(new List<Card>{second});refresh.Invoke(view,null);StringAssert.Contains("ノコリ 1 マイ",label.text);StringAssert.Contains(CustomDisplay.Katakana(CustomDisplay.CardDisplayName(second)),label.text);
+                view.SetCustomInspectionHidden(true);refresh.Invoke(view,null);Assert.IsFalse(label.transform.parent.gameObject.activeSelf);
+                view.SetCustomInspectionHidden(false);battle.CardUsage.EnqueueCards(new List<Card>());refresh.Invoke(view,null);StringAssert.Contains("カードなし",label.text);
+                view.ReleaseSessionPresentation();Assert.IsFalse(label.transform.parent.gameObject.activeSelf);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
         [Test]
         public void 再オープン直後は前回非零コストと確定無効を演出完了前に同期する()
         {

@@ -87,6 +87,25 @@ namespace Olca.Core.Logic.Battle
             try {card.GetFinalPower(battleSystem.Player.AttackPower);if(battleSystem.Player.IsConcentrating)card.WithPowerMultiplier(battleSystem.Player.NextCardMultiplier,battleSystem.Player.AttackPower);return true;}
             catch(System.OverflowException){return false;}
         }
+        /// <summary>通常ソード/ボムの現在位置からの目安。効果・時間・消費は発生させない。</summary>
+        public bool TryPreviewCurrentCard(out IReadOnlyList<Vector2Int> tiles, out Vector2Int? landing)
+        {
+            tiles=Array.Empty<Vector2Int>();landing=null;
+            var card=CurrentCard;
+            if(card==null||battleSystem.IsGameOver||(card.Id!="sword"&&card.Id!="bomb")||card.Modifier.AdditionalEffects.Count!=0||card.MoveMotionTime!=0||card.AttackMotionTime!=0)return false;
+            if(card.AttackPowerBasisPoints!=0)card=card.ResolveAttackPower(battleSystem.Player.AttackPower);
+            var effect=CardEffectFactory.CreateEffect(card) as Olca.Core.Logic.CardEffects.Effects.ModifiableCardEffect;
+            if(effect==null)return false;
+            var context=new BattleContext(battleSystem,card);
+            var result=new List<Vector2Int>();
+            foreach(var tile in effect.PreviewTargets(context))if(battleSystem.Field.IsInBounds(tile)&&!result.Contains(tile))result.Add(tile);
+            tiles=result.AsReadOnly();
+            if(card.Id=="bomb"&&card.Series==CardSeries.Bomb&&card.TargetType==Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single&&card.MoveMotionTime==0&&card.AttackMotionTime==0)
+                landing=new Vector2Int(context.GetEffectivePlayerPosition().X+3,context.GetEffectivePlayerPosition().Y);
+            if(landing.HasValue&&(!battleSystem.Field.IsInBounds(landing.Value)||battleSystem.Field.IsHole(landing.Value)))tiles=Array.Empty<Vector2Int>();
+            return true;
+        }
+
         public bool CanUseCurrentCard => !IsEmpty && CanResolveCard(CurrentCard) && (!isUsingCard || battleSystem.CanCancelPlayerRecovery) && battleSystem.CanPlayerBasicAttack;
 
         public bool TryUseCurrentCard()

@@ -33,7 +33,7 @@ namespace Olca.Presentation.Field
         private readonly System.Collections.Generic.HashSet<int> attackTiles=new System.Collections.Generic.HashSet<int>();
         private GameObject[] attackMarkers;
         private BattleSystem telegraphBattle;
-        public void BindTelegraphs(BattleSystem battle){telegraphBattle=battle;RefreshTelegraphs();}
+        public void BindTelegraphs(BattleSystem battle){if(!ReferenceEquals(telegraphBattle,battle))cardPreviewRequested=false;telegraphBattle=battle;RefreshTelegraphs();RefreshCardPreview();}
         public void ShowTelegraphs(System.Collections.Generic.IReadOnlyList<Vector2Int> tiles)
         {
             attackTiles.Clear();if(tiles!=null)foreach(var tile in tiles)if(tile.Y==0&&tile.X>=0&&tile.X<GRID_WIDTH)attackTiles.Add(tile.X);
@@ -108,6 +108,31 @@ namespace Olca.Presentation.Field
                 var root=magmaMarkers[x];root.SetActive(active);root.transform.position=new Vector3(GridIndexToWorldX(x),panelY-panelHeight*panelScale*.5f,panelZ-.005f);root.transform.localScale=new Vector3(panelSize*panelScale,panelHeight*panelScale,1);
             }
         }
+        private bool cardPreviewRequested;
+        private GameObject[] cardPreviewMarkers;
+        public bool IsBoundTo(BattleSystem battle)=>battle!=null&&ReferenceEquals(telegraphBattle,battle);
+        // 古いViewの終了通知は、再接続後の別戦闘の要求を変更しない。
+        public bool SetCardPreviewRequested(BattleSystem owner,bool requested){if(!IsBoundTo(owner))return false;cardPreviewRequested=requested;RefreshCardPreview();return true;}
+        private void RefreshCardPreview()
+        {
+            System.Collections.Generic.IReadOnlyList<Vector2Int> tiles=null;Vector2Int? landing=null;
+            bool visible=cardPreviewRequested&&battleField!=null&&telegraphBattle!=null&&!telegraphBattle.IsGameOver&&!telegraphBattle.CustomScreen.IsOpen&&telegraphBattle.CardUsage.TryPreviewCurrentCard(out tiles,out landing);
+            if(!visible){if(cardPreviewMarkers!=null)foreach(var marker in cardPreviewMarkers)if(marker!=null)marker.SetActive(false);return;}
+            if(cardPreviewMarkers==null){
+                cardPreviewMarkers=new GameObject[GRID_WIDTH];if(whiteSprite==null)whiteSprite=CreateWhiteSprite();
+                for(int x=0;x<GRID_WIDTH;x++){
+                    var root=new GameObject("PlayerCardRange_"+x);root.transform.SetParent(transform,false);cardPreviewMarkers[x]=root;
+                    for(int dash=0;dash<3;dash++)HazardPart(root.transform,"RangeDash"+dash,whiteSprite,new Vector2((dash-1)*panelSize*.22f,-panelHeight*.34f),new Vector2(panelSize*.13f,.035f),new Color(.4f,.95f,1f,.9f),5);
+                    HazardPart(root.transform,"Landing",whiteSprite,new Vector2(0,-panelHeight*.23f),new Vector2(.055f,.14f),new Color(.85f,.95f,1f,1),5);
+                }
+            }
+            for(int x=0;x<GRID_WIDTH;x++){
+                var root=cardPreviewMarkers[x];bool active=false;foreach(var tile in tiles)if(tile.X==x&&tile.Y==0)active=true;
+                root.SetActive(active);root.transform.position=new Vector3(GridIndexToWorldX(x),panelY,panelZ-.006f);
+                root.transform.Find("Landing").gameObject.SetActive(landing.HasValue&&landing.Value.X==x&&landing.Value.Y==0);
+            }
+        }
+
         private Sprite floorSprite;
         private SpriteRenderer[] surroundingPanels;
         private const int SURROUNDING_COUNT = 12; // 横7マスとカメラ移動の余白
@@ -156,7 +181,7 @@ namespace Olca.Presentation.Field
         /// <summary>戦闘の地形色を解除し、共通の探索床を描画し続ける</summary>
         public void Hide()
         {
-            battleField = null;telegraphBattle=null;attackTiles.Clear();
+            battleField = null;telegraphBattle=null;attackTiles.Clear();cardPreviewRequested=false;
             Refresh();
         }
 
@@ -166,6 +191,7 @@ namespace Olca.Presentation.Field
         private void OnEnable() => Refresh();
         private void OnDisable()
         {
+            cardPreviewRequested=false;if(cardPreviewMarkers!=null)foreach(var marker in cardPreviewMarkers)if(marker!=null)marker.SetActive(false);
             if(attackMarkers!=null)foreach(var marker in attackMarkers)if(marker!=null)marker.SetActive(false);
             if(magmaMarkers!=null)foreach(var marker in magmaMarkers)if(marker!=null)marker.SetActive(false);
         }
@@ -177,6 +203,7 @@ namespace Olca.Presentation.Field
             if (panelRenderers == null) return;
             RefreshTelegraphs();
             RefreshMagma();
+            RefreshCardPreview();
             for (int x = 0; x < GRID_WIDTH; x++)
             {
                 panelRenderers[x].enabled = battleField != null;
