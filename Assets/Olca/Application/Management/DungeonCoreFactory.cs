@@ -99,7 +99,14 @@ namespace Olca.Application.Management
             private readonly IEnemyAIProvider fallback;
             public PairEnemyProvider447(IEnemyAIProvider fallback){this.fallback=fallback;}
             public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
-                =>DungeonStepArcherAction.IsPairTrialBoss(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
+                =>DungeonFlyingDive455.Matches(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonFlyingDive455()},EnemyPatternEndMode.Loop)},0):DungeonStepArcherAction.IsPairTrialBoss(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
+        }
+        public const string TrialFlyingRoute455="trial-dungeon-flying-route-v1";
+        public static FloorSequenceDefinitions CreateTrialFlying455(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();var cells=new List<MapCell>();
+            for(int i=0;i<8;i++)cells.Add(i==3?new MapCell(i,new Enemy("boss",DungeonFlyingDive455.BossName,40,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal)):new MapCell(i));
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialFlyingRoute455,DungeonFlyingDive455.DefinitionId,new[]{new DungeonConfig("trial-dungeon-flying-floor-v1","シヨウ ヒコウ・チャクチ（カリ）",8,cells)},catalog);
         }
         public const string TrialPairRouteId447="trial-dungeon-pair-route-v1";
         /// <summary>二体だけの任意出撃。弓を既存の区間ボス枠へ登録し、通常接触と保存形式をそのまま使う。</summary>

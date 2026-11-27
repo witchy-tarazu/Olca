@@ -1,3 +1,4 @@
+using System.Linq;
 using Olca.Core.Domain;
 using System;
 using System.Threading;
@@ -399,5 +400,42 @@ namespace Olca.Core.Logic.Battle
         }
         public void Cancel(AIContext c){var source=cancellation;cancellation=null;if(source==null)return;try{source.Cancel();}finally{source.Dispose();shot.Cancel(c);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
         public int GetCooldownMs()=>0;public float GetCooldown()=>0;
+    }
+}
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>ダンジョン専用の飛行試用。固定予告マスが空けば着地し90f反撃時間。全数値は仮。</summary>
+    public sealed class DungeonFlyingDive455 : IContinuingEnemyAIAction,IEnemyAttackPreviewSource,IEnemyRecoveryPreviewSource
+    {
+        public const string DefinitionId="trial-dungeon-flying-dive-v1",BossName="ヒコウ キュウコウカ（カリ）";
+        public const int WarningFrames=42,RecoveryFrames=90;
+        public static bool Matches(Enemy e)=>e!=null&&e.EnemyId=="boss"&&e.Name==BossName&&e.MaxHp==40&&e.Element==ElementType.None&&!e.IsSummoned;
+        private System.Threading.CancellationTokenSource cancellation;private FrameTask task;private AIContext active;private Vector2Int target;private object owner;private long started,landed=-1;
+        public bool IsRunning{get{Observe();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        private static bool Ready(AIContext c)=>c.Battle!=null&&c.Field!=null&&!c.Battle.IsGameOver&&c.Self!=null&&c.Player!=null&&!c.Self.IsDead&&!c.Player.IsDead&&!c.Self.IsStunned&&!c.Self.IsParalyzed&&!c.Self.IsInTemporaryMove&&c.HasVisiblePlayer;
+        public bool CanExecute(AIContext c)=>Ready(c)&&!IsRunning;
+        public void Execute(AIContext c)
+        {
+            if(!CanExecute(c))return;active=c;target=c.Player.GridPosition;started=c.Battle.ActionPresentationTimeUnits;landed=-1;owner=new object();cancellation=new System.Threading.CancellationTokenSource();c.Battle.SetEnemyAttackTelegraph(owner,new[]{target});task=Run(c,target,owner,cancellation.Token);Observe();
+        }
+        private async FrameTask Run(AIContext c,Vector2Int locked,object ticket,System.Threading.CancellationToken token)
+        {
+            try{
+                await c.Battle.WaitForActionFramesAsync(WarningFrames,token);token.ThrowIfCancellationRequested();if(!Ready(c)||c.Self.IsStaggered)return;
+                // 予告したマスだけへ攻撃。プレイヤーを追尾せず、占有/穴/地形には重ならない。
+                if(c.Player.GridPosition.Equals(locked)&&c.Player.TryTakeDamage(10)&&!c.Player.IsDead)c.Player.SetInvincible(c.Battle.DefaultHitInvincibilityMs);
+                bool free=!c.Player.GetLogicalPosition().Equals(locked)&&!c.Player.GridPosition.Equals(locked)&&!c.Battle.Enemies.Any(e=>!ReferenceEquals(e,c.Self)&&!e.IsDead&&(e.GetLogicalPosition().Equals(locked)||e.GridPosition.Equals(locked)));
+                if(free&&c.Field.IsInBounds(locked)&&!c.Field.IsHole(locked)&&c.Field.CanMoveTo(locked,c.Self.TerrainState))c.Self.MoveTo(locked);
+                c.Battle.ClearEnemyAttackTelegraph(ticket);landed=c.Battle.ActionPresentationTimeUnits;
+                await c.Battle.WaitForActionFramesAsync(RecoveryFrames,token);
+            }finally{c.Battle.ClearEnemyAttackTelegraph(ticket);if(ReferenceEquals(owner,ticket))owner=null;}
+        }
+        private void Observe(){if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation.Dispose();cancellation=null;}
+        public void Tick(int ms,AIContext c,bool logicalFrame)=>Observe();
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview){preview=default;if(cancellation==null||task.Status!=FrameTaskStatus.Pending||landed>=0)return false;preview=new EnemyAttackPreview(target,(int)Math.Min(WarningFrames,Math.Max(0,(active.Battle.ActionPresentationTimeUnits-started)/50)),WarningFrames);return true;}
+        public bool TryGetRecoveryPreview(out int elapsedFrames,out int totalFrames){elapsedFrames=totalFrames=0;if(cancellation==null||task.Status!=FrameTaskStatus.Pending||landed<0||!Ready(active)||active.Self.IsStaggered)return false;long age=(active.Battle.ActionPresentationTimeUnits-landed)/50;if(age<0||age>=RecoveryFrames)return false;elapsedFrames=(int)age;totalFrames=RecoveryFrames;return true;}
+        public void Cancel(AIContext c){var source=cancellation;var ticket=owner;cancellation=null;owner=null;if(source==null)return;try{source.Cancel();}finally{source.Dispose();active.Battle?.ClearEnemyAttackTelegraph(ticket);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
+        public int GetCooldownMs()=>500;public float GetCooldown()=>.5f;
     }
 }

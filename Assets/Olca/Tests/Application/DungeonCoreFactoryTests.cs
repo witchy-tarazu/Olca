@@ -634,3 +634,61 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonFlying455Tests
+    {
+        private BattleSystem Battle(out PlayerCharacter p,out Enemy e,int column=1)
+        {
+            p=new PlayerCharacter(100,new Vector2Int(column,0));e=new Enemy("boss",DungeonFlyingDive455.BossName,40,ElementType.None,new Vector2Int(4,0));
+            return new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck(),customGaugeSpeed:0,randomProvider:new SeededBattleRandom(7),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());
+        }
+        private static void Frames(BattleSystem b,int n){for(int k=0;k<n;k++)b.TickFrame(17);}
+        [TestCase(0)][TestCase(2)]
+        public void 飛行455は実登録AIの固定マスを避けると空いた旧位置へ着地して反撃窓を作る(int dodge)
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var locked,out var age,out var total));Assert.AreEqual(new Vector2Int(1,0),locked);Assert.AreEqual(42,total);
+            p.MoveTo(new Vector2Int(dodge,0));Frames(b,41);Assert.AreEqual(4,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);Assert.IsTrue(b.EnemyAttackTiles.Contains(locked));
+            Frames(b,1);Assert.AreEqual(1,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out age,out total));Assert.AreEqual(0,age);Assert.AreEqual(90,total);
+            Frames(b,89);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out age,out total));Assert.AreEqual(89,age);Frames(b,1);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));
+        }
+        [Test]
+        public void 飛行455は予告に残ると一度10被弾し占有マスへ重ならず元位置で待つ()
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Frames(b,42);Assert.AreEqual(90,p.CurrentHp);Assert.AreEqual(4,e.GridPosition.X);Frames(b,60);Assert.AreEqual(90,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)]
+        public void 飛行455は予告と反撃窓を一括停止し読取では進めない(BattlePauseReason reason)
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Frames(b,12);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var tile,out var before,out _));b.Pause(reason);Frames(b,120);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var same,out var stopped,out _));Assert.AreEqual(tile,same);Assert.AreEqual(before,stopped);b.Resume(reason);p.MoveTo(new Vector2Int(2,0));Frames(b,42-before);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out before,out _));b.Pause(reason);Frames(b,120);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out stopped,out _));Assert.AreEqual(before,stopped);
+        }
+        [Test] public void 飛行455は中断死亡で自分の予告だけを消す()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var e=new Enemy("boss",DungeonFlyingDive455.BossName,40,ElementType.None,new Vector2Int(4,0));var other=new Enemy("boss",DungeonFlyingDive455.BossName,40,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e,other},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.TickFrame(17);e.TakeDamage(1000,ElementType.None);Frames(b,1);Assert.IsTrue(b.EnemyAttackTiles.Contains(new Vector2Int(1,0)));other.TakeDamage(1000,ElementType.None);Frames(b,1);Assert.IsEmpty(b.EnemyAttackTiles);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [Test] public void 飛行455は予告後に穴になった着地点へ移動せず別マスを攻撃しない()
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);p.MoveTo(new Vector2Int(2,0));b.Field.ChangePanelType(new Vector2Int(1,0),PanelType.Hole);Frames(b,42);Assert.AreEqual(4,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+        [Test] public void 飛行455は他敵が着地点を占有すると重ならず元位置に留まる()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var e=new Enemy("boss",DungeonFlyingDive455.BossName,40,ElementType.None,new Vector2Int(4,0));var other=new Enemy("blocker455","障害",40,ElementType.None,new Vector2Int(3,0));other.ApplyStun(10000);var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e,other},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.TickFrame(17);p.MoveTo(new Vector2Int(2,0));other.MoveTo(new Vector2Int(1,0));Frames(b,42);Assert.AreEqual(4,e.GridPosition.X);Assert.AreEqual(1,other.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [Test] public void 飛行455の共用絵は別AIの読取姿勢だけを描き旧敵を変えない()
+        {
+            var go=new UnityEngine.GameObject("Flying455View");try{
+                var renderer=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,renderer);var e=new Enemy("boss",DungeonFlyingDive455.BossName,40,ElementType.None,new Vector2Int(4,0));view.Initialize(e);Assert.IsTrue(view.IsTrialFlying455);Assert.IsFalse(view.IsTrialArcher);view.RenderTrialFlying455(true,31,1550);var body=view.BodyRenderer;Assert.AreEqual("trial_fly454_2",body.sprite.name);Assert.AreEqual(256,body.sprite.rect.width);Assert.AreEqual(UnityEngine.FilterMode.Point,body.sprite.texture.filterMode);var origin=body.transform.localPosition;for(int n=0;n<20;n++)view.RenderTrialFlying455(true,31,1550);Assert.AreEqual(origin,body.transform.localPosition);Assert.AreEqual(4,e.GridPosition.X);view.RenderTrialFlying455(false,0,2100,0,90,1);Assert.IsFalse(body.flipX);Assert.AreEqual("trial_fly454_3",body.sprite.name);Assert.Less(body.transform.localPosition.y,origin.y);
+                view.Initialize(new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(4,0)));Assert.IsFalse(view.IsTrialFlying455);var previous=body.transform.localPosition;view.RenderTrialFlying455(true,31,1550);Assert.AreEqual(previous,body.transform.localPosition);
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+        [Test] public void 飛行455の新出撃は旧定義と保存契約を変えず一体だけの最終階層を復元する()
+        {
+            var cards=new SimpleCardFactory();var normal=new EnemyPoiseDefinition(45,21,210);var boss=new EnemyPoiseDefinition(90,21,210);var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;
+            var old=DungeonCoreFactory.CreateTrialPairRoute447(legacy,cards,normal).RouteHash;var route=DungeonCoreFactory.CreateTrialFlying455(legacy,cards,normal);Assert.AreEqual(DungeonCoreFactory.TrialFlyingRoute455,route.RouteId);var initial=route.CreateInitialMap(0);initial.ValidateFinalFloorForDeparture();Assert.AreEqual(1,initial.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonFlyingDive455.Matches(initial.MapCells[3].Enemy));Assert.AreEqual(old,DungeonCoreFactory.CreateTrialPairRoute447(legacy,cards,normal).RouteHash);
+            Assert.IsFalse(DungeonFlyingDive455.Matches(new Enemy("boss","ボス",40,ElementType.None,new Vector2Int(4,0))));Assert.IsFalse(DungeonFlyingDive455.Matches(new Enemy("boss",DungeonFlyingDive455.BossName,41,ElementType.None,new Vector2Int(4,0))));
+            var go=new UnityEngine.GameObject("Flying455Entry");go.SetActive(false);try{var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();controller.ConfigureDungeonSelection(new[]{DungeonCoreFactory.CreateTrialPairRoute447(legacy,cards,normal),route});Assert.IsTrue((bool)typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("DungeonUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(controller,new object[]{1}),"新しい任意試用だけはクリア履歴なしで通常選択できる");}finally{UnityEngine.Object.DestroyImmediate(go);}
+            var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(7),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());var game=factory.CreatePreview(initial,new PlayerCharacter(100),cards.CreateStarterDeck(),cp);Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsTrue(DungeonFlyingDive455.Matches(restored.Map.MapCells[3].Enemy));
+        }
+    }
+}

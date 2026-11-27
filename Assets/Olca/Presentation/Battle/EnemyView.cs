@@ -22,6 +22,22 @@ namespace Olca.Presentation.Battle
         private long archerReleaseAt=-1000,archerExpectedRelease;
         public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId)||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy);
         public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy);
+        public bool IsTrialFlying455=>Olca.Core.Logic.Battle.DungeonFlyingDive455.Matches(enemy);
+        private Vector3 flyOrigin455;private bool flyOriginKnown455;
+        private Sprite FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454 phase,int age=0)
+        {
+            if(archerAssets==null)archerAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
+            // 共有するのは自作絵の姿勢選択だけ。探索の時計/AIは使用しない。
+            return Olca.Presentation.Exploration.FlyingTrialSprite454.Resolve(archerAssets,new Olca.Core.Logic.Integration.OutsideFlyingTrial454{Phase=phase,Age=age});
+        }
+        public void RenderTrialFlying455(bool warning,int elapsed,long units,int recovery=-1,int total=0,int facing=-1)
+        {
+            if(!IsTrialFlying455)return;var body=EnsureAttackPoseBody();if(body==null)return;
+            if(!flyOriginKnown455){flyOrigin455=body.transform.localPosition;flyOriginKnown455=true;}
+            bool down=recovery>=0&&total>0;bool dive=warning&&elapsed>=30;
+            var phase=down?Olca.Core.Logic.Integration.OutsideFlyingPhase454.Recovery:dive?Olca.Core.Logic.Integration.OutsideFlyingPhase454.Dive:warning?Olca.Core.Logic.Integration.OutsideFlyingPhase454.Windup:Olca.Core.Logic.Integration.OutsideFlyingPhase454.Hover;
+            body.sprite=FlyingSprite455(phase,(int)(units/50));if(facing!=0)body.flipX=facing<0;float foot=gruntSprite!=null?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(gruntSprite).min.y:0;body.transform.localPosition=flyOrigin455+Vector3.up*(foot+(enemy.IsDead||down?0:dive?.6f*Mathf.Clamp01((42-elapsed)/12f):.6f));
+        }
         private Sprite ArcherSprite(int frame)
         {
             if(archerAssets==null)archerAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
@@ -307,6 +323,7 @@ namespace Olca.Presentation.Battle
         public void Initialize(Enemy enemy)
         {
             ClearRecoveryHint();
+            if(flyOriginKnown455&&enemyImage!=null)enemyImage.transform.localPosition=flyOrigin455;flyOriginKnown455=false;
             guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             this.enemy = enemy;archerWindup=false;archerReleaseAt=-1000;displayedEnemyName=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
@@ -337,7 +354,7 @@ namespace Olca.Presentation.Battle
         /// <summary>既存の敵IDに対応する仮素材を表示する。戦闘データは変更しない。</summary>
         private void ApplyAppearance()
         {
-            var sprite = IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
+            var sprite = IsTrialFlying455 ? FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454.Hover) : IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
             if (enemyImage == null || sprite == null) return;
 
             enemyImage.sprite = sprite;
