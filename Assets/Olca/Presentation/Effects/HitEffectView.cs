@@ -404,13 +404,18 @@ namespace Olca.Presentation.Effects
         public static void Populate(UnityEngine.UI.VertexHelper vh,Rect area,ChargeParticleClock clock)
         {
             vh.Clear();if(!clock.Active)return;
-            for(int i=0;i<Count;i++){
-                var dot=Sample(i,clock.Age,clock.Fraction,clock.Gold);int first=vh.currentVertCount;var core=Color.Lerp(dot.Color,Color.white,.32f);core.a=dot.Color.a;vh.AddVert(At(area,dot.Position),core,Vector2.zero);var edge=dot.Color;edge.a=0;
-                for(int n=0;n<=12;n++){float a=n*Mathf.PI/6;vh.AddVert(At(area,dot.Position+new Vector2(Mathf.Cos(a)*dot.Size.x,Mathf.Sin(a)*dot.Size.y)),edge,Vector2.zero);if(n>0)vh.AddTriangle(first,first+n,first+n+1);}
+            void Disc(Dot dot,bool border){
+                int first=vh.currentVertCount;var core=border?new Color(.025f,.075f,.10f,dot.Color.a*.85f):Color.Lerp(dot.Color,Color.white,.32f);if(!border)core.a=dot.Color.a;
+                vh.AddVert(At(area,dot.Position),core,Vector2.zero);var edge=border?core:dot.Color;edge.a=0;var size=dot.Size+(border?Vector2.one*.007f:Vector2.zero);
+                for(int n=0;n<=12;n++){float a=n*Mathf.PI/6;vh.AddVert(At(area,dot.Position+new Vector2(Mathf.Cos(a)*size.x,Mathf.Sin(a)*size.y)),edge,Vector2.zero);if(n>0)vh.AddTriangle(first,first+n,first+n+1);}
             }
-            if(clock.FullAge<0||clock.FullAge>=RingFrames)return;float t=clock.FullAge/(float)RingFrames;float radius=.18f+.27f*t,width=.004f;var ink=new Color(1,.91f,.59f,.55f*(1-t));
-            // 細い楕円を一度だけ展開。大きな発光面や点滅でキャラ・足元を覆わない。
-            for(int n=0;n<48;n++){
+            // 元の粒の位相・色・寸法はそのまま。周囲のごく小さい暗い縁だけを先に描く。
+            for(int i=0;i<Count;i++)Disc(Sample(i,clock.Age,clock.Fraction,clock.Gold),true);
+            for(int i=0;i<Count;i++)Disc(Sample(i,clock.Age,clock.Fraction,clock.Gold),false);
+            if(clock.FullAge<0||clock.FullAge>=RingFrames)return;float t=clock.FullAge/(float)RingFrames;float radius=.18f+.27f*t;
+            // 一度だけの細い輪にも外縁を付け、黄色の敵予告のような面や点滅にはしない。
+            for(int pass=0;pass<2;pass++)for(int n=0;n<48;n++){
+                float width=pass==0?.008f:.004f;var ink=pass==0?new Color(.025f,.075f,.10f,.45f*(1-t)):new Color(1,.91f,.59f,.55f*(1-t));
                 int first=vh.currentVertCount;for(int side=0;side<2;side++)for(int end=0;end<2;end++){float a=(n+end)*Mathf.PI/24,r=radius+(side==0?-width:width);vh.AddVert(At(area,Vector2.one*.5f+new Vector2(Mathf.Cos(a)*r,Mathf.Sin(a)*r*.68f)),ink,Vector2.zero);}vh.AddTriangle(first,first+1,first+3);vh.AddTriangle(first,first+3,first+2);
             }
         }

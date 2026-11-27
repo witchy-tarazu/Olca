@@ -111,6 +111,10 @@ namespace Olca.Presentation.Exploration
             cardUseText=factory.Label("OutsideCardUseGuide",transform,new Vector2(1,0),new Vector2(-450,180),new Vector2(700,96));cardUseText.fontSize=20;cardUseText.alignment=TextAnchor.MiddleLeft;cardUseText.color=Color.white;cardUseText.raycastTarget=false;
             leftEnd=factory.Label("OutsideLeftBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));leftEnd.text="ヒダリ ハシ";leftEnd.fontSize=24;leftEnd.color=Color.white;leftEnd.raycastTarget=false;
             rightEnd=factory.Label("OutsideRightBoundary",transform,new Vector2(0,.21f),new Vector2(0,-35),new Vector2(140,60));rightEnd.text="ミギ ハシ";rightEnd.fontSize=24;rightEnd.color=Color.white;rightEnd.raycastTarget=false;
+            // 白い細字の周囲だけを濃紺で縁取り、ガラス窓や背景全体の明るさは維持する。
+            void OutlineHud(Text text){var edge=text.gameObject.AddComponent<Outline>();edge.effectColor=new Color(.025f,.075f,.10f,.85f);edge.effectDistance=new Vector2(1,-1);edge.useGraphicAlpha=true;}
+            foreach(var label in new[]{outsideHp,outsidePoise,gaugeLabel,movementGuideText,handHeading,selectionGuideText,cardUseText,leftEnd,rightEnd})OutlineHud(label);
+            foreach(var label in handNames)OutlineHud(label);foreach(var label in handCosts)OutlineHud(label);
             pause=factory.Button("PauseOutsideExploration","ポーズ",transform,Vector2.one,new Vector2(-430,-62));Olca.Presentation.Dungeon.UiLook.Button(pause);
             back=factory.Button("CloseOutsideExploration","戻る",transform,Vector2.one,new Vector2(-160,-62));Olca.Presentation.Dungeon.UiLook.Button(back);
             kamuiShortcut=factory.Button("OutsideKamuiShortcut","カムイ",transform,new Vector2(1,0),new Vector2(-160,70));kamuiShortcut.GetComponent<RectTransform>().sizeDelta=new Vector2(240,90);kamuiShortcut.navigation=new Navigation{mode=Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.Button(kamuiShortcut);kamuiShortcut.gameObject.SetActive(false);
