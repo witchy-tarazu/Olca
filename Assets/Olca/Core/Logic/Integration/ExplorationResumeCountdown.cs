@@ -156,7 +156,7 @@ namespace Olca.Core.Logic.Integration
             if(trialContactNextFrame<=Core.Frame)trialContactNextFrame=0;
             if(secondTrialContactNextFrame<=Core.Frame)secondTrialContactNextFrame=0;
             if(!trialContactDamageEnabled||Core.Definition.Id!=OutsideKickTrialDefinition.MapId||!OutsideTrialRoute.KnownMap(Core.TrialMapId)||Player.IsDead||Core.HasFallenOut||Core.TraversalProfile==null)return;
-            ApplyTrialContact(FirstTrialTargetX,TrialTarget,ref trialContactNextFrame,FirstTrialTargetHeight);
+            if(flyingTrial454==null)ApplyTrialContact(FirstTrialTargetX,TrialTarget,ref trialContactNextFrame,FirstTrialTargetHeight);
             ApplyTrialContact(SecondTrialTargetX,SecondTrialTarget,ref secondTrialContactNextFrame);
         }
         private void ApplyTrialContact(long x,Enemy enemy,ref long nextFrame,long y=0)
@@ -229,6 +229,7 @@ namespace Olca.Core.Logic.Integration
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;
             public bool TrialContactDamageEnabled=>IsCurrent&&owner.trialContactDamageEnabled;
+            public OutsideFlyingTrial454 FlyingTrial454=>IsCurrent?owner.flyingTrial454?.Copy():null;
             public OutsideSlimeTrialData SlimeTrial=>IsCurrent?owner.slimeTrial?.Copy():null;
             public long FirstTargetHeight=>IsCurrent?owner.FirstTrialTargetHeight:0;
             public bool StartSlimeTrial()=>IsCurrent&&owner.StartSlimeTrial();
@@ -264,8 +265,8 @@ namespace Olca.Core.Logic.Integration
         private long instantBombReleasedAt=-1;private int instantBombFacing=1;private bool instantBombAirborne;
         private void ClearBombReleaseVisual(){instantBombReleasedAt=-1;instantBombFacing=1;instantBombAirborne=false;}
         // 試用別マップの射撃確認用配置。正式敵配置ではなく、既存壁24worldの前後へ分離する。
-        public long FirstTrialTargetHeight=>slimeTrial?.Height??0;
-        public long FirstTrialTargetX=>slimeTrial?.X??goblinTrial?.X??(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1350000:TrialTargetX);
+        public long FirstTrialTargetHeight=>flyingTrial454?.Height??slimeTrial?.Height??0;
+        public long FirstTrialTargetX=>flyingTrial454?.X??slimeTrial?.X??goblinTrial?.X??(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1350000:TrialTargetX);
         public long SecondTrialTargetX=>PairStage445>0?31*60000:Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:trialSafeHomePlacement?14*60000:OutsideKickTrialDefinition.SecondTargetX;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
@@ -307,6 +308,7 @@ namespace Olca.Core.Logic.Integration
         public bool TrialEnemyHitInvincibilityEnabled=>trialEnemyAttack?.DefinitionId==OutsideTrialEnemyAttackData.V3DefinitionId;
         private OutsideKnockbackStateData AdvanceTrialEnemyAttack()
         {
+            if(flyingTrial454!=null){ObserveFlyingDeath454();return ResolveFlyingLanding454();}
             if(slimeTrial!=null){ObserveSlimeDeath();return ResolveSlimeLanding();}
             if(goblinTrial!=null){if(TrialTarget.IsDead){goblinTrial.Phase=OutsideGoblinPhase.Dead;goblinTrial.Age=0;pendingGoblinStrike=false;}return ResolveGoblinStrike();}
             if(trialEnemyAttack==null)return null;
@@ -627,7 +629,7 @@ namespace Olca.Core.Logic.Integration
             if(Core.IsGrounded==instantBombAirborne||Core.IsGrounded&&Core.IsMoving||Core.Facing!=instantBombFacing||value.IsActionPrevented)ClearBombReleaseVisual();
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
             OutsideKnockbackStateData pendingKnockback=null;
-            try{AdvanceFall();AdvanceWater();AdvanceGoblinTrial();AdvanceSlimeTrial();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();pendingKnockback=AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            try{AdvanceFall();AdvanceWater();AdvanceGoblinTrial();AdvanceSlimeTrial();AdvanceFlying454();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();pendingKnockback=AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{
                 value.CommitHpFrame();
                 // 共通被弾処理の確定結果だけを使い、HP通知からの退避にも開始済み移動を含める。
@@ -700,7 +702,7 @@ namespace Olca.Core.Logic.Integration
         private long? mapNameStartedAt;
         private bool mapEntryPending=true;
         public const int MapNameDisplayFrames=120,MapNameFadeFrames=60;
-        public string MapName=>PairStage445>0?"レンセン シヨウ（カリ・セーブなし）":Core.Definition.Id=="validation-landing-32"?(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?"シヨウ ベツマップ（カリ）":"ケンショウ エリア（カリ）"):null;
+        public string MapName=>flyingTrial454!=null?"ヒコウ シヨウ（カリ・セーブなし）":PairStage445>0?"レンセン シヨウ（カリ・セーブなし）":Core.Definition.Id=="validation-landing-32"?(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?"シヨウ ベツマップ（カリ）":"ケンショウ エリア（カリ）"):null;
         public double MapNameOpacity {
             get{if(mapEntryPending||!mapNameStartedAt.HasValue||MapName==null)return 0;long age=Math.Max(0,Core.Frame-mapNameStartedAt.Value);return age<MapNameDisplayFrames?1:Math.Max(0,1-(age-MapNameDisplayFrames)/(double)MapNameFadeFrames);}
         }
@@ -1751,6 +1753,7 @@ namespace Olca.Core.Logic.Integration
         private void AdvancePair445()
         {
             if(PairStage445==0||PairCompleted445||Player.IsDead||!TrialTarget.IsDead)return;
+            if(flyingTrial454!=null){PairCompleted445=true;CancelChargeInput();CancelAttackReservation();return;}
             if(PairStage445==2){PairCompleted445=true;CancelChargeInput();CancelAttackReservation();return;}
             if(pairClearedAt445<0){pairClearedAt445=Core.Frame;return;}
             if(Core.Frame-pairClearedAt445<60)return;
@@ -1758,6 +1761,60 @@ namespace Olca.Core.Logic.Integration
             initialShots.Clear();bombs.Clear();bombBlasts.Clear();ClearBombReleaseVisual();attackState=null;normalKick?.Reset();CancelChargeInput();CancelAttackReservation();
             goblinTrial=null;pendingGoblinStrike=false;trialEnemyAttack=null;PairStage445=2;trialTarget=CreatePairTarget445();trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialContactNextFrame=0;
             slimeTrial=new OutsideSlimeTrialData{DefinitionId=PairDefinition445+"-slime",StartX=1590000,LandingX=1590000,Facing=-1};pendingSlimeLanding=false;pairClearedAt445=-1;PairStage445=2;
+        }
+    }
+}
+
+namespace Olca.Core.Logic.Integration
+{
+    public enum OutsideFlyingPhase454 { Hover, Windup, Dive, Recovery, Rise, Dead }
+    /// <summary>保存しない飛行試用。高さと攻撃は同じ論理状態から読む。数値は全て試用値。</summary>
+    public sealed class OutsideFlyingTrial454
+    {
+        public OutsideFlyingPhase454 Phase;public int Age,Facing=-1;public long StartX=1290000,LandingX=1290000,DeadHeight;
+        public const long HoverHeight=192000,LandingRadius=48000;
+        public const int HoverFrames=60,WindupFrames=30,DiveFrames=18,RecoveryFrames=84,RiseFrames=30;
+        public long X=>Phase==OutsideFlyingPhase454.Dive?StartX+(LandingX-StartX)*Age/DiveFrames:Phase==OutsideFlyingPhase454.Recovery||Phase==OutsideFlyingPhase454.Rise?LandingX:StartX;
+        public long Height=>Phase==OutsideFlyingPhase454.Dead?DeadHeight:Phase==OutsideFlyingPhase454.Recovery?0:Phase==OutsideFlyingPhase454.Dive?HoverHeight*(DiveFrames-Age)/DiveFrames:Phase==OutsideFlyingPhase454.Rise?HoverHeight*Age/RiseFrames:HoverHeight;
+        public OutsideFlyingTrial454 Copy()=>(OutsideFlyingTrial454)MemberwiseClone();
+    }
+    public sealed partial class OutsideExplorationSession
+    {
+        public const string FlyingDefinition454="trial-flying-dive-v1";
+        private OutsideFlyingTrial454 flyingTrial454;private bool pendingFlyingLanding454;
+        public bool IsFlyingTrial454=>flyingTrial454!=null;
+        public static OutsideExplorationSession CreateFlyingTrial454(OutsideExplorationSession source,CheckpointDefinitions definitions)
+        {
+            var t=CreatePairTrial445(source,definitions);
+            t.goblinTrial=null;t.slimeTrial=null;t.trialEnemyAttack=null;
+            t.trialTarget=new Enemy(FlyingDefinition454+"-enemy","ヒコウ シヨウ（カリ）",30,ElementType.None,new Vector2Int(0,0));t.trialTarget.OnHitStopRequested+=t.RequestHitStop;
+            t.flyingTrial454=new OutsideFlyingTrial454();return t;
+        }
+        private void ObserveFlyingDeath454()
+        {
+            var s=flyingTrial454;if(s==null||!TrialTarget.IsDead||s.Phase==OutsideFlyingPhase454.Dead)return;
+            long x=s.X,y=s.Height;s.StartX=s.LandingX=x;s.DeadHeight=y;s.Phase=OutsideFlyingPhase454.Dead;s.Age=0;pendingFlyingLanding454=false;
+        }
+        private void AdvanceFlying454()
+        {
+            pendingFlyingLanding454=false;var s=flyingTrial454;if(s==null)return;ObserveFlyingDeath454();
+            if(Player.IsDead||Core.HasFallenOut||s.Phase==OutsideFlyingPhase454.Dead||TrialTarget.IsStaggered||TrialTarget.IsParalyzed)return;
+            if(s.Phase==OutsideFlyingPhase454.Hover&&Math.Abs(Core.Position-s.X)>6*60000)return;
+            s.Age++;
+            if(s.Phase==OutsideFlyingPhase454.Hover&&s.Age>=OutsideFlyingTrial454.HoverFrames){s.LandingX=Math.Max(16*60000,Math.Min(28*60000,Core.Position));s.Facing=s.LandingX==s.StartX?s.Facing:Math.Sign(s.LandingX-s.StartX);s.Phase=OutsideFlyingPhase454.Windup;s.Age=0;}
+            else if(s.Phase==OutsideFlyingPhase454.Windup&&s.Age>=OutsideFlyingTrial454.WindupFrames){s.Phase=OutsideFlyingPhase454.Dive;s.Age=0;}
+            else if(s.Phase==OutsideFlyingPhase454.Dive&&s.Age>=OutsideFlyingTrial454.DiveFrames){s.StartX=s.LandingX;s.Phase=OutsideFlyingPhase454.Recovery;s.Age=0;pendingFlyingLanding454=true;}
+            else if(s.Phase==OutsideFlyingPhase454.Recovery&&s.Age>=OutsideFlyingTrial454.RecoveryFrames){s.Phase=OutsideFlyingPhase454.Rise;s.Age=0;}
+            else if(s.Phase==OutsideFlyingPhase454.Rise&&s.Age>=OutsideFlyingTrial454.RiseFrames){s.StartX=s.LandingX;s.Phase=OutsideFlyingPhase454.Hover;s.Age=0;}
+        }
+        private OutsideKnockbackStateData ResolveFlyingLanding454()
+        {
+            if(!pendingFlyingLanding454)return null;pendingFlyingLanding454=false;var s=flyingTrial454;
+            if(s==null||TrialTarget.IsDead||Player.IsDead||Core.HasFallenOut||TrialTarget.IsStaggered||TrialTarget.IsParalyzed)return null;
+            long dx=Core.Position-s.X;int facing=dx<0?-1:1;
+            if(Math.Abs(dx)>OutsideFlyingTrial454.LandingRadius||Core.Height<0||Core.Height>TrialContactHeight||FirstSwordBlockingWall(s.X,0,facing,Math.Abs(dx)).HasValue)return null;
+            bool accepted=Player.TryTakeDamage(TrialEnemyDamage,attackElement:ElementType.None,affectsPoise:true,poiseDamage:TrialEnemyPoiseDamage);
+            return accepted?OutsideTrialEnemyAttackData.V2Knockback.Start(facing):null;
         }
     }
 }

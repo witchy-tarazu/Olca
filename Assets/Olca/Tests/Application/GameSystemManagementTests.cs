@@ -800,6 +800,27 @@ namespace Olca.Tests.Application
         }
 
         [TestCase(1920,1080)][TestCase(1440,1080)]
+        public async Task 飛行454は通常入口と独立Viewで翼と固定着地輪を表示し停止と帰還を保つ(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var source=system.OutsideExploration;var defs=PairSource445(source);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));int entered=0,returned=0;
+            using(var main=new OutsideExplorationPresentationBinding(views,source,factory,()=>true,()=>{})){
+                Assert.IsTrue((await main.OpenAsync()).Succeeded);main.View.ConfigureFlyingEntry454(()=>entered++);main.View.Render();var button=main.View.transform.Find("OutsideFlyingEntry454").GetComponent<Button>();Assert.IsTrue(button.gameObject.activeInHierarchy);Assert.IsTrue(button.interactable);button.onClick.Invoke();Assert.AreEqual(1,entered);var original=source.Cards.CaptureState(defs).Key();
+                using(var trial=Olca.Core.Logic.Integration.OutsideExplorationSession.CreateFlyingTrial454(source,defs))using(var child=new OutsideExplorationPresentationBinding(views,trial,factory,()=>true,()=>returned++,screenKey:Olca.Core.Logic.Integration.OutsideExplorationSession.FlyingDefinition454)){
+                    Assert.IsTrue((await child.OpenAsync()).Succeeded);child.View.ConfigurePairControls445(()=>{},()=>{},()=>"ヒコウ（カリ） / チャクチを ヨケテ ハンゲキ\nホゾン・ホウシュウなし");child.View.Render();Canvas.ForceUpdateCanvases();
+                    Assert.IsFalse(main.IsOpen);Assert.IsFalse(child.View.transform.Find("PairVariant446").gameObject.activeInHierarchy);Assert.IsFalse(child.View.transform.Find("OutsideReloadPoint").gameObject.activeInHierarchy);
+                    var image=child.View.GetComponentsInChildren<Image>(true).Single(i=>i.enabled&&i.sprite!=null&&i.sprite.name.StartsWith("trial_fly454_"));Assert.AreEqual(256,image.sprite.rect.width);Assert.AreEqual(256,image.sprite.rect.height);Assert.AreEqual(FilterMode.Point,image.sprite.texture.filterMode);Assert.Greater(image.rectTransform.anchoredPosition.y,0);
+                    long frame=trial.Core.Frame;var sprite=image.sprite;for(int n=0;n<5;n++)child.View.Render();Assert.AreEqual(frame,trial.Core.Frame);Assert.AreSame(sprite,image.sprite);
+                    for(int n=0;n<60;n++)trial.TickTraversal(0);child.View.Render();var ring=child.View.GetComponentInChildren<Olca.Presentation.Exploration.OutsideSlimeLandingGraphic>(true);Assert.IsTrue(ring.enabled);var locked=ring.rectTransform.anchoredPosition;
+                    for(int n=0;n<10;n++)child.View.Render();Assert.AreEqual(locked,ring.rectTransform.anchoredPosition);Assert.AreEqual(60,trial.Core.Frame);
+                    for(int n=0;n<48;n++)trial.TickTraversal(0);child.View.Render();Assert.AreEqual(0,trial.FirstTrialTargetHeight);Assert.AreEqual("trial_fly454_3",image.sprite.name);Assert.AreEqual(90,trial.Player.CurrentHp);
+                    Assert.IsTrue(child.ReturnToHub());Assert.AreEqual(1,returned);
+                }
+                Assert.IsTrue((await main.OpenAsync()).Succeeded);Assert.AreEqual(original,source.Cards.CaptureState(defs).Key());Assert.AreEqual(100,source.Player.CurrentHp);
+            }
+        }
+
+        [TestCase(1920,1080)][TestCase(1440,1080)]
         public async Task 連戦445は別screenで通常Viewとカードを使い施設を出さず戻りを保護する(int width,int height)
         {
             ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var source=system.OutsideExploration;var defs=PairSource445(source);

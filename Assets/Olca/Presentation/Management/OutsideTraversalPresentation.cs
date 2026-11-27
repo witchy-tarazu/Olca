@@ -1064,8 +1064,9 @@ namespace Olca.Presentation.Exploration
             RenderBombs(camera,viewport,verticalOffset);PaintAuthoredHits(camera,viewport,verticalOffset);
             bool combat=OutsideTrialRoute.KnownMap(presentation.Core.TrialMapId);foreach(var graphic in new Graphic[]{trialTargetImage,trialTargetName,trialTargetHp,trialTargetGauge,secondTrialImage,secondTrialHp,secondTrialGauge})if(graphic!=null)graphic.enabled=combat;
             slimeHopButton.gameObject.SetActive(combat&&presentation.Core.TrialMapId==OutsideTrialRoute.AnnexMapId);goblinApproachButton.gameObject.SetActive(combat&&presentation.Core.TrialMapId==OutsideTrialRoute.AnnexMapId);trialTargetPlate.gameObject.SetActive(combat);if(!combat){ClearTrialSword();RenderInitialShots(camera,viewport,verticalOffset);return;}RenderInitialShots(camera,viewport,verticalOffset);BindTrialTargetFeedback();var core=presentation.Core;var target=presentation.TrialTarget;float x=((float)presentation.FirstTargetX/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f)*pixelsPerWorldUnit;float y=-verticalOffset*pixelsPerWorldUnit;
-            var slime=presentation.SlimeTrial;float enemyHeight=presentation.FirstTargetHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit*pixelsPerWorldUnit;var shape=SlimeShape(slime);bool annex=core.TrialMapId==OutsideTrialRoute.AnnexMapId;Sprite goblin=null;if(annex&&slime==null){WarmAuthoredVfx();goblin=AnnexGoblinSprite.Resolve(authoredVfxAssets,GoblinFrame(presentation.GoblinTrial,core.Frame,presentation.TrialEnemyWindupFrames,presentation.TrialEnemyAttackEnabled,target.IsStaggered));}
-            trialTargetImage.sprite=goblin??trialOriginalEnemy;trialTargetImage.rectTransform.pivot=trialTargetImage.sprite.pivot/trialTargetImage.sprite.rect.size;trialTargetImage.rectTransform.sizeDelta=trialTargetImage.sprite.bounds.size*pixelsPerWorldUnit*.8f;trialTargetImage.rectTransform.localScale=new Vector3(slime!=null?slime.Facing*shape.x:goblin!=null?(presentation.GoblinTrial?.Facing??(core.Position<presentation.FirstTargetX?-1:1)):-1,shape.y,1);
+            var flying=presentation.FlyingTrial454;var slime=presentation.SlimeTrial;float enemyHeight=presentation.FirstTargetHeight/(float)OutsideMovementDefinition.UnitsPerWorldUnit*pixelsPerWorldUnit;var shape=SlimeShape(slime);bool annex=core.TrialMapId==OutsideTrialRoute.AnnexMapId;Sprite goblin=null;if(flying!=null){WarmAuthoredVfx();goblin=FlyingTrialSprite454.Resolve(authoredVfxAssets,flying);}
+            else if(annex&&slime==null){WarmAuthoredVfx();goblin=AnnexGoblinSprite.Resolve(authoredVfxAssets,GoblinFrame(presentation.GoblinTrial,core.Frame,presentation.TrialEnemyWindupFrames,presentation.TrialEnemyAttackEnabled,target.IsStaggered));}
+            trialTargetImage.sprite=goblin??trialOriginalEnemy;trialTargetImage.rectTransform.pivot=trialTargetImage.sprite.pivot/trialTargetImage.sprite.rect.size;trialTargetImage.rectTransform.sizeDelta=trialTargetImage.sprite.bounds.size*pixelsPerWorldUnit*.8f;trialTargetImage.rectTransform.localScale=new Vector3(slime!=null?slime.Facing*shape.x:goblin!=null?(flying?.Facing??presentation.GoblinTrial?.Facing??(core.Position<presentation.FirstTargetX?-1:1)):-1,shape.y,1);
             trialTargetImage.rectTransform.anchoredPosition=new Vector2(x,y+enemyHeight-(goblin!=null?0:Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(trialTargetImage.sprite).min.y*pixelsPerWorldUnit*.8f*shape.y));trialTargetImage.enabled=!target.IsDead;
             float top=TrialTargetTop()+44.55f+y;trialTargetHp.rectTransform.anchoredPosition=new Vector2(x,top+enemyHeight);trialTargetHp.text=target.CurrentHp.ToString();trialTargetHp.enabled=!target.IsDead;trialTargetGauge.rectTransform.anchoredPosition=new Vector2(x,top+enemyHeight);trialTargetGauge.SetFraction(target.CurrentHp/(float)target.MaxHp);trialTargetGauge.enabled=!target.IsDead;trialTargetName.rectTransform.anchoredPosition=new Vector2(x+210,top+50);
             trialTargetPlate.anchoredPosition=trialTargetName.rectTransform.anchoredPosition;
@@ -1076,7 +1077,7 @@ namespace Olca.Presentation.Exploration
             trialTargetName.rectTransform.sizeDelta=new Vector2(300,twoLineTargetName?60:40);trialTargetPlate.sizeDelta=new Vector2(316,twoLineTargetName?68:48);
             trialTargetName.text=presentation.Core.TrialMapId!=null?((target.IsDead&&second.IsDead)?"マップノ デイリデ サイセイ":((target.IsDead||second.IsDead)?"1タイ / セッショク10（カリ）\n":"シヨウテキ / セッショク10（カリ）\n")+(target.IsDead?"AIコウゲキOFF":presentation.TrialEnemyAttackEnabled?"AIコウゲキON / クリック":"AIコウゲキOFF / クリック")):presentation.TrialContactDamageEnabled?((target.IsDead&&second.IsDead)?"カイフクデ サイセイ":((target.IsDead||second.IsDead)?"1タイ":"2タイ")+" / セッショク10（カリ）\n"+(target.IsDead?"AIコウゲキOFF":presentation.TrialEnemyAttackEnabled?"AIコウゲキON / クリック":"AIコウゲキOFF / クリック")):target.IsDead?"カイフクデ サイセイ":presentation.TrialEnemyAttackEnabled?"コウゲキON / クリック（カリ）":"コウゲキOFF / クリック（カリ）";trialEnemyAttackButton.interactable=CanPlay&&OutsideTrialRoute.KnownMap(presentation.Core.TrialMapId)&&!target.IsDead;trialHitInvincibilityButton.interactable=trialEnemyAttackButton.interactable;trialHitInvincibilityButton.gameObject.SetActive(combat&&!target.IsDead);trialHitInvincibilityLabel.text="ムテキ"+Olca.Core.Domain.OutsideHitInvincibilityData.TrialDurationMs+"ms（カリ）\nV3 "+(presentation.TrialEnemyHitInvincibilityEnabled?"ON":"OFF")+" / クリック";trialTargetImage.color=presentation.TrialEnemyAttackEnabled&&presentation.TrialEnemyWindupFrames<=12?new Color(1,.45f,.45f):Color.white;// 既存の赤色予告12論理frameと同じ区間に文字を添える。攻撃予定や判定は変更しない。
             if(presentation.TrialEnemyAttackEnabled&&!target.IsDead&&presentation.TrialEnemyWindupFrames<=12)trialTargetName.text=trialTargetName.text.Replace("AIコウゲキON / クリック","コウゲキ チョクゼン / OFFデ トメル").Replace("コウゲキON / クリック（カリ）","コウゲキ チョクゼン / OFFデ トメル");
-            trialTargetName.rectTransform.anchoredPosition=new Vector2(x+(slime!=null?320:210),top+100);trialTargetPlate.anchoredPosition=trialTargetName.rectTransform.anchoredPosition;PlaceTrialTargetName();PlaceTrialHitInvincibilityButton();RenderGoblinTrial(x,y);RenderSlimeTrial(x,y);
+            trialTargetName.rectTransform.anchoredPosition=new Vector2(x+(slime!=null?320:210),top+100);trialTargetPlate.anchoredPosition=trialTargetName.rectTransform.anchoredPosition;PlaceTrialTargetName();PlaceTrialHitInvincibilityButton();RenderGoblinTrial(x,y);RenderSlimeTrial(x,y);RenderFlying454(x,y);
             if(!RenderPolishedSword(camera,viewport,verticalOffset)){
             var strike=presentation.TrialStrike;float swordAngle=0,swordAlpha=0;bool show=strike!=null&&OutsideSwordTrailGraphic.TrySample(core.Frame>=strike.Frame?core.Frame-strike.Frame:-1,strike.Facing,out swordAngle,out swordAlpha);trialSwordImage.enabled=show;trialSwordTrail.enabled=show;if(show){if(trialSwordAssets==null)trialSwordAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);if(trialSwordImage.sprite==null){if(!Olca.Presentation.Field.SharedAttackPropCatalog.TryGetSprite(Olca.Presentation.Field.SharedAttackPropCatalog.Sword,out var sprite,trialSwordAssets))throw new InvalidOperationException("共用ソード素材がありません");trialSwordImage.sprite=sprite;trialSwordImage.rectTransform.pivot=sprite.pivot/sprite.rect.size;trialSwordImage.rectTransform.sizeDelta=sprite.bounds.size*pixelsPerWorldUnit;}trialSwordImage.rectTransform.anchoredPosition=new Vector2(((float)strike.X/OutsideMovementDefinition.UnitsPerWorldUnit-camera+viewport*.5f+.35f*strike.Facing)*pixelsPerWorldUnit,((float)strike.Y/OutsideMovementDefinition.UnitsPerWorldUnit+1.2f-verticalOffset)*pixelsPerWorldUnit);float tip=(float)(strike.Reach>0?strike.Reach:OutsideExplorationSession.TrialSwordRange)/OutsideMovementDefinition.UnitsPerWorldUnit-.35f;float scale=tip/trialSwordImage.sprite.bounds.max.x;trialSwordImage.rectTransform.localScale=new Vector3(strike.Facing*scale,scale*(strike.VerticalScale>0?strike.VerticalScale:1),1);trialSwordImage.rectTransform.localRotation=Quaternion.Euler(0,0,swordAngle);trialSwordImage.color=new Color(1,1,1,swordAlpha);trialSwordTrail.rectTransform.anchoredPosition=trialSwordImage.rectTransform.anchoredPosition;trialSwordTrail.rectTransform.localScale=new Vector3(strike.Facing,strike.VerticalScale>0?strike.VerticalScale:1,1);trialSwordTrail.SetPose(swordAngle*strike.Facing,swordAlpha,tip*pixelsPerWorldUnit);}
             }
@@ -1820,9 +1821,14 @@ namespace Olca.Presentation.Exploration
 {
     public sealed partial class OutsideExplorationView
     {
+        private UnityEngine.UI.Button flyingEntry454;private System.Action flyingOpen454;
         private UnityEngine.UI.Button pairEntry445,pairRetry445,pairPause445,pairVariant446;
         private UnityEngine.UI.Text pairStatus445;private System.Action pairOpen445,pairRetryAction445,pairPauseAction445,pairVariantAction446;private System.Func<string> pairStatusProvider445;
         public bool CanEnterPair445=>presentation?.PairStage445==0&&CanOpenBranch441&&presentation.Cards?.TotalCount==30;
+        public void ConfigureFlyingEntry454(System.Action open)
+        {
+            flyingOpen454=open;if(flyingEntry454==null){var f=new Olca.Presentation.Management.GameplayPanelFactory(transform,gaugeLabel.font,null);flyingEntry454=f.Button("OutsideFlyingEntry454","ヒコウ シヨウ（カリ）",transform,new Vector2(0,.5f),new Vector2(195,-340));flyingEntry454.GetComponent<RectTransform>().sizeDelta=new Vector2(350,48);flyingEntry454.navigation=new Navigation{mode=Navigation.Mode.None};flyingEntry454.onClick.AddListener(()=>{if(CanEnterPair445)flyingOpen454?.Invoke();});}RenderPair445();
+        }
         public void ConfigurePairEntry445(System.Action open)
         {
             pairOpen445=open;
@@ -1838,11 +1844,12 @@ namespace Olca.Presentation.Exploration
             if(pairPause445==null)pairPause445=Button("PairPause445","トメル/サイカイ",-680,()=>pairPauseAction445?.Invoke());
             if(pairVariant446==null)pairVariant446=Button("PairVariant446","ベツテフダ",-910,()=>pairVariantAction446?.Invoke());
             if(pairStatus445==null){pairStatus445=f.Label("PairStatus445",transform,new UnityEngine.Vector2(.5f,0),new UnityEngine.Vector2(0,65),new UnityEngine.Vector2(1250,100));pairStatus445.fontSize=22;pairStatus445.lineSpacing=2;pairStatus445.alignment=UnityEngine.TextAnchor.MiddleCenter;pairStatus445.color=UnityEngine.Color.white;pairStatus445.raycastTarget=false;var outline=pairStatus445.gameObject.AddComponent<UnityEngine.UI.Outline>();outline.effectColor=new UnityEngine.Color(0,.03f,.06f,.9f);outline.effectDistance=new UnityEngine.Vector2(1,-1);}
-            transform.Find("OutsideExplorationTitle").GetComponent<UnityEngine.UI.Text>().text="レンセン（カリ）/ セーブなし";RenderPair445();
+            transform.Find("OutsideExplorationTitle").GetComponent<UnityEngine.UI.Text>().text=presentation.FlyingTrial454!=null?"ヒコウ（カリ）/ セーブなし":"レンセン（カリ）/ セーブなし";RenderPair445();
         }
         private void RenderPair445()
         {
             bool pair=IsOpen&&presentation.PairStage445>0;
+            if(flyingEntry454!=null){flyingEntry454.gameObject.SetActive(!pair&&flyingOpen454!=null&&IsOpen&&presentation.Core.TrialMapId==OutsideTrialRoute.AnnexMapId&&Math.Abs(presentation.Core.Position-OutsideTrialRoute.AnnexDoorX)<=60000);flyingEntry454.interactable=CanEnterPair445;}
             if(pairEntry445!=null){pairEntry445.gameObject.SetActive(!pair&&pairOpen445!=null&&IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000);pairEntry445.interactable=CanEnterPair445;}
             if(pairRetry445!=null)pairRetry445.gameObject.SetActive(pair);if(pairPause445!=null)pairPause445.gameObject.SetActive(pair);if(pairVariant446!=null)pairVariant446.gameObject.SetActive(pair&&pairVariantAction446!=null);if(pairStatus445!=null){pairStatus445.gameObject.SetActive(pair);pairStatus445.text=pair?pairStatusProvider445?.Invoke()??"レンセン シヨウ（カリ）":"";}
             if(!pair)return;
@@ -1851,6 +1858,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearPair445()
         {
+            flyingOpen454=null;if(flyingEntry454!=null)flyingEntry454.gameObject.SetActive(false);
             pairOpen445=pairRetryAction445=pairPauseAction445=pairVariantAction446=null;pairStatusProvider445=null;
             foreach(var b in new[]{pairEntry445,pairRetry445,pairPause445,pairVariant446})if(b!=null)b.gameObject.SetActive(false);if(pairStatus445!=null)pairStatus445.gameObject.SetActive(false);
         }
@@ -1867,6 +1875,49 @@ namespace Olca.Presentation.Exploration
             vh.Clear();var r=rectTransform.rect;
             void Quad(float left,float right,float bottom,float top,UnityEngine.Color color){int n=vh.currentVertCount;vh.AddVert(new UnityEngine.Vector2(left,bottom),color,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector2(left,top),color,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector2(right,top),color,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector2(right,bottom),color,UnityEngine.Vector2.zero);vh.AddTriangle(n,n+1,n+2);vh.AddTriangle(n,n+2,n+3);}
             Quad(r.xMin,r.xMax-r.width*.2f,-r.height*.3f,r.height*.3f,new UnityEngine.Color(.13f,.1f,.06f));Quad(r.xMin,r.xMax-r.width*.2f,-r.height*.12f,r.height*.12f,new UnityEngine.Color(1,.82f,.38f));int k=vh.currentVertCount;var ink=new UnityEngine.Color(1,.87f,.48f);vh.AddVert(new UnityEngine.Vector2(r.xMax,0),ink,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector2(r.xMax-r.width*.3f,r.yMax),ink,UnityEngine.Vector2.zero);vh.AddVert(new UnityEngine.Vector2(r.xMax-r.width*.3f,r.yMin),ink,UnityEngine.Vector2.zero);vh.AddTriangle(k,k+1,k+2);
+        }
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>オリジナルの小型コウモリ仮素材。256キャンバス、最近傍、論理姿勢だけを表示。</summary>
+    public static class FlyingTrialSprite454
+    {
+        public static Sprite Resolve(Olca.Unity.GeneratedSpriteAssets.Lease lease,OutsideFlyingTrial454 state)
+        {
+            int pose=state.Phase==OutsideFlyingPhase454.Recovery?3:state.Phase==OutsideFlyingPhase454.Dive?2:state.Phase==OutsideFlyingPhase454.Windup?0:state.Age/6%2;
+            bool warning=state.Phase==OutsideFlyingPhase454.Windup;
+            return lease.Get<Sprite>("Flying454-"+pose+"-"+warning,b=>{
+                var t=b.CreateTexture(256,256);t.filterMode=FilterMode.Point;t.wrapMode=TextureWrapMode.Clamp;
+                var pixels=new Color32[256*256];Color32 ink=new Color32(37,27,49,255),wing=new Color32(105,72,112,255),body=new Color32(168,124,112,255),eye=warning?new Color32(250,82,68,255):new Color32(255,209,104,255);
+                void Pixel(int x,int y,Color32 c){for(int yy=y*4;yy<y*4+4;yy++)for(int xx=x*4;xx<x*4+4;xx++)if(xx>=0&&xx<256&&yy>=0&&yy<256)pixels[yy*256+xx]=c;}
+                void Ellipse(int cx,int cy,int rx,int ry,Color32 c){for(int y=cy-ry;y<=cy+ry;y++)for(int x=cx-rx;x<=cx+rx;x++)if((x-cx)*(x-cx)*ry*ry+(y-cy)*(y-cy)*rx*rx<=rx*rx*ry*ry)Pixel(x,y,c);}
+                // 翼を上下・後方・折り畳みで区別。色だけで攻撃状態を伝えない。
+                for(int side=-1;side<=1;side+=2)for(int d=4;d<=(pose==3?9:24);d++){
+                    int cy=pose==0?23+d/3:pose==1?22-d/4:pose==2?27-d/5:20;
+                    int half=pose==3?5:Math.Max(1,8-d/4);
+                    for(int y=cy-half;y<=cy+half;y++)Pixel(32+side*d,y,y==cy-half||y==cy+half?ink:wing);
+                }
+                Ellipse(32,19,7,11,ink);Ellipse(33,19,5,8,body);
+                for(int y=28;y<36;y++){Pixel(27+(y-28)/3,y,ink);Pixel(36-(y-28)/3,y,ink);}
+                Ellipse(32,28,8,6,ink);Pixel(35,29,eye);Pixel(36,29,eye);Pixel(38,26,new Color32(239,226,202,255));
+                Pixel(28,7,ink);Pixel(35,7,ink);t.SetPixels32(pixels);t.Apply(false,true);var sprite=b.CreateSprite(t,new Rect(0,0,256,256),new Vector2(.5f,7f/64),100);sprite.name="trial_fly454_"+pose;return sprite;
+            });
+        }
+    }
+    public sealed partial class OutsideExplorationView
+    {
+        private void RenderFlying454(float x,float y)
+        {
+            var s=presentation.FlyingTrial454;if(s==null)return;
+            bool warning=s.Phase==OutsideFlyingPhase454.Windup||s.Phase==OutsideFlyingPhase454.Dive;
+            bool landed=s.Phase==OutsideFlyingPhase454.Recovery&&s.Age<12;
+            slimeLanding.enabled=!presentation.TrialTarget.IsDead&&(warning||landed);
+            if(!slimeLanding.enabled)return;
+            float t=landed?s.Age/12f:0;float radius=OutsideFlyingTrial454.LandingRadius/60000f*pixelsPerWorldUnit;
+            slimeLanding.rectTransform.anchoredPosition=new Vector2(x+(s.LandingX-s.X)/60000f*pixelsPerWorldUnit,y+4);
+            slimeLanding.rectTransform.sizeDelta=new Vector2(radius*2,Mathf.Max(10,radius*.25f));slimeLanding.SetLanding(landed,t);
         }
     }
 }

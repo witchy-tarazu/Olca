@@ -10,6 +10,45 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [Test]
+        public void 飛行454は高さと固定着地点を同じ論理時計で進め着地一度だけ被弾する()
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var t=OutsideExplorationSession.CreateFlyingTrial454(source,Kick214Definitions(source)))using(var l=t.AttachPresentation()){
+                Assert.IsTrue(t.IsFlyingTrial454);Assert.IsNull(l.GoblinTrial);Assert.IsNull(l.SlimeTrial);Assert.AreEqual(192000,t.FirstTrialTargetHeight);
+                for(int n=0;n<59;n++)t.TickTraversal(0);Assert.AreEqual(OutsideFlyingPhase454.Hover,l.FlyingTrial454.Phase);
+                t.TickTraversal(0);Assert.AreEqual(OutsideFlyingPhase454.Windup,l.FlyingTrial454.Phase);long target=l.FlyingTrial454.LandingX;
+                for(int n=0;n<30;n++)t.TickTraversal(0);Assert.AreEqual(OutsideFlyingPhase454.Dive,l.FlyingTrial454.Phase);
+                for(int n=0;n<17;n++)t.TickTraversal(0);Assert.Greater(t.FirstTrialTargetHeight,0);Assert.AreEqual(100,t.Player.CurrentHp);
+                t.TickTraversal(0);Assert.AreEqual(OutsideFlyingPhase454.Recovery,l.FlyingTrial454.Phase);Assert.AreEqual(target,t.FirstTrialTargetX);Assert.AreEqual(0,t.FirstTrialTargetHeight);Assert.AreEqual(90,t.Player.CurrentHp);
+                for(int n=0;n<30;n++)t.TickTraversal(0);Assert.AreEqual(90,t.Player.CurrentHp,"接触や着地の再判定なし");
+            }
+        }
+        [TestCase(-1)][TestCase(1)]
+        public void 飛行454は予告位置を追尾せず左右回避後に地上反撃できる(int direction)
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var t=OutsideExplorationSession.CreateFlyingTrial454(source,Kick214Definitions(source)))using(var l=t.AttachPresentation()){
+                for(int n=0;n<60;n++)t.TickTraversal(0);long locked=l.FlyingTrial454.LandingX;
+                for(int n=0;n<20;n++)t.TickTraversal(direction);for(int n=0;n<28;n++)t.TickTraversal(0);
+                Assert.AreEqual(locked,l.FlyingTrial454.LandingX);Assert.AreEqual(100,t.Player.CurrentHp);Assert.AreEqual(OutsideFlyingPhase454.Recovery,l.FlyingTrial454.Phase);
+                t.TickTraversal(-direction);Assert.IsTrue(t.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out var error),error);
+                for(int n=0;n<35;n++)t.TickTraversal(0);Assert.AreEqual(20,t.TrialTarget.CurrentHp);
+            }
+        }
+        [Test]
+        public void 飛行454は地上蹴りが浮遊に届かず保存せず親と通常連戦を保つ()
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6)){
+                var defs=Kick214Definitions(source);string cards=source.Cards.CaptureState(defs).Key();var state=PortableCheckpointJson.Serialize(source.Core.CaptureState());
+                using(var t=OutsideExplorationSession.CreateFlyingTrial454(source,defs))using(var l=t.AttachPresentation()){
+                    for(int n=0;n<8;n++)t.TickTraversal(1);
+                    Assert.IsTrue(t.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out var error),error);
+                    for(int n=0;n<30;n++)t.TickTraversal(0);Assert.AreEqual(30,t.TrialTarget.CurrentHp);Assert.Throws<InvalidOperationException>(()=>t.CaptureRuntime(defs));
+                    var copy=l.FlyingTrial454;copy.Age=999;Assert.AreNotEqual(999,l.FlyingTrial454.Age);
+                }
+                Assert.AreEqual(cards,source.Cards.CaptureState(defs).Key());CollectionAssert.AreEqual(state,PortableCheckpointJson.Serialize(source.Core.CaptureState()));Assert.AreEqual(100,source.Player.CurrentHp);
+                using(var ordinary=OutsideExplorationSession.CreatePairTrial445(source,defs))using(var lease=ordinary.AttachPresentation()){Assert.IsFalse(ordinary.IsFlyingTrial454);Assert.IsNotNull(lease.GoblinTrial);Assert.IsNull(lease.FlyingTrial454);}
+            }
+        }
         [TestCase(false)][TestCase(true)]
         public void 連戦445は通常カードと蹴りで二体を倒し手札ゲージ時計を継続して親を変更しない(bool spendFirst)
         {
