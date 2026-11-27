@@ -1825,6 +1825,11 @@ namespace Olca.Presentation.Exploration
     public sealed partial class OutsideExplorationView
     {
         private UnityEngine.UI.Button flyingEntry454;private System.Action flyingOpen454;
+        private UnityEngine.UI.Button forestEntry460;private System.Action forestOpen460;
+        public void ConfigureForestEntry460(System.Action open)
+        {
+            forestOpen460=open;if(forestEntry460==null){var f=new Olca.Presentation.Management.GameplayPanelFactory(transform,gaugeLabel.font,null);forestEntry460=f.Button("OutsideForestEntry460","モリ タチマワリ（カリ）",transform,new Vector2(1,.5f),new Vector2(-195,50));forestEntry460.GetComponent<RectTransform>().sizeDelta=new Vector2(350,48);forestEntry460.navigation=new Navigation{mode=Navigation.Mode.None};forestEntry460.onClick.AddListener(()=>{if(CanEnterPair445)forestOpen460?.Invoke();});}RenderPair445();
+        }
         private UnityEngine.UI.Button pairEntry445,pairRetry445,pairPause445,pairVariant446;
         private UnityEngine.UI.Text pairStatus445;private System.Action pairOpen445,pairRetryAction445,pairPauseAction445,pairVariantAction446;private System.Func<string> pairStatusProvider445;
         public bool CanEnterPair445=>presentation?.PairStage445==0&&CanOpenBranch441&&presentation.Cards?.TotalCount==30;
@@ -1847,11 +1852,12 @@ namespace Olca.Presentation.Exploration
             if(pairPause445==null)pairPause445=Button("PairPause445","トメル/サイカイ",-680,()=>pairPauseAction445?.Invoke());
             if(pairVariant446==null)pairVariant446=Button("PairVariant446","ベツテフダ",-910,()=>pairVariantAction446?.Invoke());
             if(pairStatus445==null){pairStatus445=f.Label("PairStatus445",transform,new UnityEngine.Vector2(.5f,0),new UnityEngine.Vector2(0,65),new UnityEngine.Vector2(1250,100));pairStatus445.fontSize=22;pairStatus445.lineSpacing=2;pairStatus445.alignment=UnityEngine.TextAnchor.MiddleCenter;pairStatus445.color=UnityEngine.Color.white;pairStatus445.raycastTarget=false;var outline=pairStatus445.gameObject.AddComponent<UnityEngine.UI.Outline>();outline.effectColor=new UnityEngine.Color(0,.03f,.06f,.9f);outline.effectDistance=new UnityEngine.Vector2(1,-1);}
-            transform.Find("OutsideExplorationTitle").GetComponent<UnityEngine.UI.Text>().text=presentation.FlyingTrial454!=null?"ヒコウ（カリ）/ セーブなし":"レンセン（カリ）/ セーブなし";RenderPair445();
+            transform.Find("OutsideExplorationTitle").GetComponent<UnityEngine.UI.Text>().text=presentation.IsForest460?"モリ タチマワリ（カリ）/ セーブなし":presentation.FlyingTrial454!=null?"ヒコウ（カリ）/ セーブなし":"レンセン（カリ）/ セーブなし";RenderPair445();
         }
         private void RenderPair445()
         {
             bool pair=IsOpen&&presentation.PairStage445>0;
+            if(forestEntry460!=null){forestEntry460.gameObject.SetActive(!pair&&forestOpen460!=null&&IsOpen&&presentation.Core.TrialMapId==OutsideTrialRoute.AnnexMapId&&Math.Abs(presentation.Core.Position-OutsideTrialRoute.AnnexDoorX)<=60000);forestEntry460.interactable=CanEnterPair445;}
             if(flyingEntry454!=null){flyingEntry454.gameObject.SetActive(!pair&&flyingOpen454!=null&&IsOpen&&presentation.Core.TrialMapId==OutsideTrialRoute.AnnexMapId&&Math.Abs(presentation.Core.Position-OutsideTrialRoute.AnnexDoorX)<=60000);flyingEntry454.interactable=CanEnterPair445;}
             if(pairEntry445!=null){pairEntry445.gameObject.SetActive(!pair&&pairOpen445!=null&&IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000);pairEntry445.interactable=CanEnterPair445;}
             if(pairRetry445!=null)pairRetry445.gameObject.SetActive(pair);if(pairPause445!=null)pairPause445.gameObject.SetActive(pair);if(pairVariant446!=null)pairVariant446.gameObject.SetActive(pair&&pairVariantAction446!=null);if(pairStatus445!=null){pairStatus445.gameObject.SetActive(pair);pairStatus445.text=pair?pairStatusProvider445?.Invoke()??"レンセン シヨウ（カリ）":"";}
@@ -1861,6 +1867,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearPair445()
         {
+            forestOpen460=null;if(forestEntry460!=null)forestEntry460.gameObject.SetActive(false);
             flyingOpen454=null;if(flyingEntry454!=null)flyingEntry454.gameObject.SetActive(false);
             pairOpen445=pairRetryAction445=pairPauseAction445=pairVariantAction446=null;pairStatusProvider445=null;
             foreach(var b in new[]{pairEntry445,pairRetry445,pairPause445,pairVariant446})if(b!=null)b.gameObject.SetActive(false);if(pairStatus445!=null)pairStatus445.gameObject.SetActive(false);

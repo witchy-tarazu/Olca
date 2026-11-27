@@ -858,6 +858,25 @@ namespace Olca.Tests.Application
         }
 
         [TestCase(1920,1080)][TestCase(1440,1080)]
+        public async Task 森460の入口と別Viewは森を表示し施設と別試用を隠して親を保つ(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var source=system.OutsideExploration;var defs=PairSource445(source);var saved=source.Cards.CaptureState(defs).Key();int entered=0;
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var main=new OutsideExplorationPresentationBinding(views,source,factory,()=>true,()=>{})){
+                Assert.IsTrue((await main.OpenAsync()).Succeeded);main.View.ConfigureForestEntry460(()=>entered++);main.View.ConfigurePairEntry445(()=>{});main.View.ConfigureFlyingEntry454(()=>{});main.View.ConfigureCombatFeedback(new Olca.Presentation.Effects.CombatNumberStyle(resources.GetShared<Font>("OlcaUI/MenuText"),FontStyle.Normal,Color.white,.2f,.01f,1,1));main.View.Render();Canvas.ForceUpdateCanvases();var button=main.View.transform.Find("OutsideForestEntry460").GetComponent<Button>();Assert.IsTrue(button.gameObject.activeInHierarchy);
+                Rect Bounds(RectTransform rt){var corners=new Vector3[4];rt.GetWorldCorners(corners);return Rect.MinMaxRect(corners.Min(v=>v.x),corners.Min(v=>v.y),corners.Max(v=>v.x),corners.Max(v=>v.y));}
+                var invulnerability=main.View.GetComponentsInChildren<Button>(true).Single(v=>v.name=="OutsideTrialHitInvincibilityButton");Assert.IsTrue(invulnerability.gameObject.activeInHierarchy,"実際に表示されるV3も検査する");
+                var entryBounds=Bounds((RectTransform)button.transform);foreach(var other in main.View.GetComponentsInChildren<Button>(true).Where(v=>v!=button&&v.gameObject.activeInHierarchy))Assert.IsFalse(entryBounds.Overlaps(Bounds((RectTransform)other.transform)),"森入口と重ならない: "+other.name);
+                button.onClick.Invoke();Assert.AreEqual(1,entered);
+                using(var trial=Olca.Core.Logic.Integration.OutsideExplorationSession.CreateForestTrial460(source,defs))using(var child=new OutsideExplorationPresentationBinding(views,trial,factory,()=>true,()=>{},screenKey:Olca.Core.Logic.Integration.OutsideExplorationSession.ForestDefinition460)){
+                    Assert.IsTrue((await child.OpenAsync()).Succeeded);child.View.ConfigurePairControls445(()=>{},()=>{},()=>"モリ / カードか ジャンプ\n1/2 ゴブリン / ホゾン・ホウシュウなし");child.View.Render();Canvas.ForceUpdateCanvases();Assert.IsTrue((bool)typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("forestPreview",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(child.View));Assert.IsFalse(child.View.transform.Find("OutsideReloadPoint").gameObject.activeInHierarchy);Assert.IsFalse(child.View.CanEnterPair445);StringAssert.Contains("モリ",child.View.transform.Find("OutsideExplorationTitle").GetComponent<Text>().text);
+                    long frame=trial.Core.Frame;for(int n=0;n<5;n++)child.View.Render();Assert.AreEqual(frame,trial.Core.Frame);
+                }
+                Assert.AreEqual(saved,source.Cards.CaptureState(defs).Key());
+            }
+        }
+
+        [TestCase(1920,1080)][TestCase(1440,1080)]
         public async Task 連戦445は別screenで通常Viewとカードを使い施設を出さず戻りを保護する(int width,int height)
         {
             ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var source=system.OutsideExploration;var defs=PairSource445(source);

@@ -318,6 +318,7 @@ namespace Olca.Presentation.Exploration
             if(outsideBackground.sprite!=sceneBackground){outsideBackground.sprite=sceneBackground;outsideBackground.color=sceneBackground==annexCaveBackground?new Color(.72f,.72f,.78f,1):Color.white;backgroundCover.aspectRatio=sceneBackground.rect.width/sceneBackground.rect.height;}
             bool annex=presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId;
             if(!annex)forestPreview=ruinsPreview=false;
+            if(presentation.IsForest460){forestPreview=true;ruinsPreview=false;}
             forestSwitch.gameObject.SetActive(annex);forestSwitch.interactable=CanPlay;
             forestSwitch.GetComponentInChildren<Text>().text=forestPreview?"ドウクツヘ（カリ）":"モリ ミホン（カリ）";
             foreach(var layer in forestLayers)layer.gameObject.SetActive(annex&&forestPreview);

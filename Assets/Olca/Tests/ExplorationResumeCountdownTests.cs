@@ -10,6 +10,39 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(false)][TestCase(true)] public void 森460は遮蔽で地上攻撃を止め空中射撃を通しジャンプで越せる(bool airborne)
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var t=OutsideExplorationSession.CreateForestTrial460(source,Kick214Definitions(source)))using(var l=t.AttachPresentation()){
+                Assert.IsTrue(t.IsForest460);Assert.AreEqual(OutsideExplorationSession.ForestDefinition460+"-1",t.TrialTarget.EnemyId);Assert.AreEqual(1,t.Core.TraversalProfile.Walls.Count);
+                for(int n=0;n<90;n++)t.TickTraversal(1);Assert.Less(t.Core.Position,20*60000);Assert.Greater(t.FirstTrialTargetX,20*60000);
+                Assert.IsTrue(t.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out _));for(int n=0;n<35;n++)t.TickTraversal(0);Assert.AreEqual(30,t.TrialTarget.CurrentHp,"遮蔽越しに蹴りを通さない");
+                int shot=t.Cards.Hand.ToList().FindIndex(c=>TrialInitialCardDefinitions.IsShot(c.Id));Assert.GreaterOrEqual(shot,0);t.Cards.TrySelect(shot);if(airborne){t.TickTraversal(0,true,true);t.TickTraversal(0,false,true);}Assert.IsTrue(t.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<60;n++)t.TickTraversal(0);Assert.AreEqual(airborne?20:30,t.TrialTarget.CurrentHp);Assert.AreEqual(29,t.Cards.Hand.Count+t.Cards.RemainingCount);
+                t.TickTraversal(1,true,true);for(int n=0;n<23;n++)t.TickTraversal(1,false,true);Assert.Greater(t.Core.Position,20*60000);Assert.Greater(t.Core.Height,0);
+                Assert.Throws<InvalidOperationException>(()=>t.CaptureRuntime(Kick214Definitions(source)));
+            }
+        }
+        [TestCase(false)][TestCase(true)] public void 森460の飛行は予告を固定し壁際での回避と失敗後の立て直しができる(bool moveRight)
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var t=OutsideExplorationSession.CreateForestTrial460(source,Kick214Definitions(source)))using(var l=t.AttachPresentation()){
+                t.TrialTarget.TakeDamage(30,ElementType.None);for(int n=0;n<181;n++)t.TickTraversal(0);Assert.AreEqual(OutsideFlyingPhase454.Hover,l.FlyingTrial454.Phase);Assert.AreEqual(0,l.FlyingTrial454.Age);
+                Position452(t,21*60000);for(int n=0;n<60;n++)t.TickTraversal(0);Assert.AreEqual(OutsideFlyingPhase454.Windup,l.FlyingTrial454.Phase);long target=l.FlyingTrial454.LandingX;Assert.GreaterOrEqual(target,20*60000+OutsideFlyingTrial454.LandingRadius);
+                for(int n=0;n<20;n++)t.TickTraversal(moveRight?1:-1);for(int n=0;n<28;n++)t.TickTraversal(0);Assert.AreEqual(target,l.FlyingTrial454.LandingX);Assert.AreEqual(OutsideFlyingPhase454.Recovery,l.FlyingTrial454.Phase);Assert.GreaterOrEqual(t.FirstTrialTargetX,20*60000+OutsideFlyingTrial454.LandingRadius);Assert.AreEqual(moveRight?100:90,t.Player.CurrentHp);for(int n=0;n<60;n++)t.TickTraversal(1);Assert.Greater(t.Core.Position,22*60000);Assert.AreEqual(moveRight?100:90,t.Player.CurrentHp);
+            }
+        }
+        [Test] public void 森460はゴブリン撃破から飛行へHP手札と地形を継続し旧連戦と親保存を変えない()
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6)){
+                var defs=Kick214Definitions(source);var original=PortableCheckpointJson.Serialize(source.Core.CaptureState());string cards=source.Cards.CaptureState(defs).Key();
+                using(var t=OutsideExplorationSession.CreateForestTrial460(source,defs))using(var l=t.AttachPresentation()){
+                    string hand=t.Cards.CaptureState(defs).Key();t.Player.SetHp(80);t.TrialTarget.TakeDamage(30,ElementType.None);for(int n=0;n<61;n++)t.TickTraversal(0);
+                    Assert.AreEqual(2,t.PairStage445);Assert.IsNull(l.GoblinTrial);Assert.IsNull(l.SlimeTrial);Assert.IsNotNull(l.FlyingTrial454);Assert.AreEqual(192000,t.FirstTrialTargetHeight);Assert.AreEqual(80,t.Player.CurrentHp);Assert.AreEqual(hand,t.Cards.CaptureState(defs).Key());Assert.AreEqual(1,t.Core.TraversalProfile.Walls.Count);
+                    t.TrialTarget.TakeDamage(30,ElementType.None);t.TickTraversal(0);Assert.IsTrue(t.PairCompleted445);
+                }
+                using(var old=OutsideExplorationSession.CreatePairTrial445(source,defs)){Assert.IsFalse(old.IsForest460);Assert.AreEqual(0,old.Core.TraversalProfile.Walls.Count);}
+                CollectionAssert.AreEqual(original,PortableCheckpointJson.Serialize(source.Core.CaptureState()));Assert.AreEqual(cards,source.Cards.CaptureState(defs).Key());Assert.AreEqual(100,source.Player.CurrentHp);
+            }
+        }
+
         [Test]
         public void 飛行454は高さと固定着地点を同じ論理時計で進め着地一度だけ被弾する()
         {

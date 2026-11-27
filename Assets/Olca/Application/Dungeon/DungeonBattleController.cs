@@ -558,6 +558,7 @@ namespace Olca.Application.Dungeon
             if(outsideLandingRoute)gameSystem.OutsideExploration.EnableTrialCardPolish();
             outsideExploration.View.ConfigurePairEntry445(()=>OpenPair445Async().Forget());
             outsideExploration.View.ConfigureFlyingEntry454(()=>OpenTrial445Async(false,null,0,true).Forget());
+            outsideExploration.View.ConfigureForestEntry460(()=>OpenTrial445Async(false,null,0,false,true).Forget());
             outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);
             outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);
             outsideExploration.View.ConfigureMiniMap(()=>clearReturnSession.InventoryRevision,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(clearReturnSession.Snapshot,gameSystem.OutsideExploration.Core));
@@ -572,24 +573,24 @@ namespace Olca.Application.Dungeon
         private bool PairRequestCurrent445(long epoch,object owner,Olca.Application.Management.OutsideExplorationPresentationBinding binding,Olca.Core.Logic.Integration.OutsideExplorationSession session)
             =>this!=null&&epoch==pairEpoch445&&ReferenceEquals(owner,gameSystemSession)&&ReferenceEquals(binding,pairBinding445)&&ReferenceEquals(session,pairSession445);
         private UniTask OpenPair445Async(bool retry=false,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<GameObject>> factory=null,int handVariant=0)=>OpenTrial445Async(retry,factory,handVariant,false);
-        private async UniTask OpenTrial445Async(bool retry,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<GameObject>> factory,int handVariant,bool flying)
+        private async UniTask OpenTrial445Async(bool retry,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<GameObject>> factory,int handVariant,bool flying,bool forest=false)
         {
             if(pairSession445!=null||pairOpening445||!CustomizationUiLive||!OutsideHubEligible||!retry&&outsideExploration?.View?.CanEnterPair445!=true)return;
             pairOpening445=true;var owner=gameSystemSession;long epoch=++pairEpoch445;
             Olca.Application.Management.OutsideExplorationPresentationBinding openingBinding=null;Olca.Core.Logic.Integration.OutsideExplorationSession openingSession=null;
             bool Current()=>PairRequestCurrent445(epoch,owner,openingBinding,openingSession);
             try{
-                openingSession=pairSession445=flying?Olca.Core.Logic.Integration.OutsideExplorationSession.CreateFlyingTrial454(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions):Olca.Core.Logic.Integration.OutsideExplorationSession.CreatePairTrial445(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions,handVariant);
+                openingSession=pairSession445=forest?Olca.Core.Logic.Integration.OutsideExplorationSession.CreateForestTrial460(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions):flying?Olca.Core.Logic.Integration.OutsideExplorationSession.CreateFlyingTrial454(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions):Olca.Core.Logic.Integration.OutsideExplorationSession.CreatePairTrial445(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions,handVariant);
                 pairRuntime445=new Olca.Application.Management.OutsideExplorationRuntime(pairSession445);pairPaused445=false;
                 var services=gameSystem;var font=panelFactory.GameplayFont;
                 openingBinding=pairBinding445=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,pairSession445,
                     factory??(ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources));}),
                     ()=>Current(),()=>{if(Current())ReturnPair445Async().Forget();},pairRuntime445,inputProvider,
-                    icon:card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,screenKey:flying?Olca.Core.Logic.Integration.OutsideExplorationSession.FlyingDefinition454:Olca.Core.Logic.Integration.OutsideExplorationSession.PairDefinition445);
+                    icon:card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,screenKey:forest?Olca.Core.Logic.Integration.OutsideExplorationSession.ForestDefinition460:flying?Olca.Core.Logic.Integration.OutsideExplorationSession.FlyingDefinition454:Olca.Core.Logic.Integration.OutsideExplorationSession.PairDefinition445);
                 var result=await openingBinding.OpenAsync();
                 if(!Current())return;
                 if(!result.Succeeded)throw new System.InvalidOperationException(result.Error??"連戦試用を開けませんでした");
-                pairBinding445.View.ConfigurePairControls445(()=>RestartPair445(),()=>pairPaused445=!pairPaused445,()=>PairStatus445(),flying?(System.Action)null:()=>RestartPair445((pairSession445.PairHandVariant445+1)%3));
+                pairBinding445.View.ConfigurePairControls445(()=>RestartPair445(),()=>pairPaused445=!pairPaused445,()=>PairStatus445(),flying||forest?(System.Action)null:()=>RestartPair445((pairSession445.PairHandVariant445+1)%3));
                 pairBinding445.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);pairBinding445.ResetInputForFocus(applicationFocused);
             }catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OperationCanceledException){
                 if(!Current())return;ReleasePair445();if(ReferenceEquals(owner,gameSystemSession)&&CustomizationUiLive){logger?.LogWarning("連戦試用: "+e.Message);ReturnPair445Async().Forget();}
@@ -598,6 +599,7 @@ namespace Olca.Application.Dungeon
         private string PairStatus445()
         {
             var s=pairSession445;if(s==null)return "";
+            if(s.IsForest460)return "モリ / カベは ジャンプ・タマは クウチュウから\n"+(s.Player.IsDead?"HP0 / モウイチド":s.PairCompleted445?"2タイ ゲキハ / モドる":pairPaused445?"テイシチュウ":s.PairStage445==1?"1/2 ゴブリン / コエテ ケルか カード":"2/2 ヒコウ / クウチュウか チャクチを ネラう")+" / ホゾン・ホウシュウなし";
             if(s.IsFlyingTrial454)return "ヒコウ（カリ） / ハセンの チャクチを ヨケテ ハンゲキ\n"+(s.Player.IsDead?"HP0 / モウイチド":s.PairCompleted445?"ゲキハ / モウイチド・モドる":pairPaused445?"テイシチュウ":"フユウは タカい / チャクチゴに スキ")+" / ホゾン・ホウシュウなし";
             string state=s.Player.IsDead?"HP0 / モウイチド":s.PairCompleted445?"2タイ ゲキハ / モウイチド・モドる":pairPaused445?"テイシチュウ":s.PairIntermissionRemaining445>0?"ゴブリン ゲキハ / ツギは スライム":s.PairStage445==1?"1/2 ゴブリン / カードを ツカうか ノコす":"2/2 スライム / チャクチを ヨム";
             return "テフダ "+(s.PairHandVariant445==0?"キホン":s.PairHandVariant445==1?"A":"B")+" / ベツテフダで ハジメカラ・モウイチドは キホン\n"+state+"  |  ノコリ "+(s.Cards.Hand.Count+s.Cards.RemainingCount)+"マイ / ホゾン・ホウシュウなし";
@@ -607,7 +609,7 @@ namespace Olca.Application.Dungeon
             pairEpoch445++;var binding=pairBinding445;var runtime=pairRuntime445;var session=pairSession445;pairBinding445=null;pairRuntime445=null;pairSession445=null;pairPaused445=false;pairOpening445=false;
             binding?.Dispose();runtime?.Dispose();session?.Dispose();
         }
-        private void RestartPair445(int handVariant=0){if(pairOpening445||pairSession445==null)return;bool flying=pairSession445.IsFlyingTrial454;ReleasePair445();OpenTrial445Async(true,null,handVariant,flying).Forget();}
+        private void RestartPair445(int handVariant=0){if(pairOpening445||pairSession445==null)return;bool flying=pairSession445.IsFlyingTrial454,forest=pairSession445.IsForest460;ReleasePair445();OpenTrial445Async(true,null,handVariant,flying,forest).Forget();}
         private async UniTask ReturnPair445Async()
         {
             ReleasePair445();if(!CustomizationUiLive||!OutsideHubEligible||outsideExploration==null)return;

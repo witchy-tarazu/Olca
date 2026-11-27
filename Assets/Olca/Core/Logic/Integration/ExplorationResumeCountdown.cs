@@ -184,6 +184,7 @@ namespace Olca.Core.Logic.Integration
             public OutsideExplorationCards Cards=>owner?.Cards;
             public string MapName=>IsCurrent?owner.MapName:null;
             public int PairStage445=>IsCurrent?owner.PairStage445:0;
+            public bool IsForest460=>IsCurrent&&owner.IsForest460;
             public double MapNameOpacity=>IsCurrent?owner.MapNameOpacity:0;
             public bool ShouldShowBreath=>IsCurrent&&owner.ShouldShowBreath;
             public int BreathFramesRemaining=>owner?.BreathFramesRemaining??0;public int BreathMaximumFrames=>owner?.BreathMaximumFrames??0;
@@ -707,7 +708,7 @@ namespace Olca.Core.Logic.Integration
         private long? mapNameStartedAt;
         private bool mapEntryPending=true;
         public const int MapNameDisplayFrames=120,MapNameFadeFrames=60;
-        public string MapName=>flyingTrial454!=null?"ヒコウ シヨウ（カリ・セーブなし）":PairStage445>0?"レンセン シヨウ（カリ・セーブなし）":Core.Definition.Id=="validation-landing-32"?(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?"シヨウ ベツマップ（カリ）":"ケンショウ エリア（カリ）"):null;
+        public string MapName=>IsForest460?"モリ タチマワリ（カリ・セーブなし）":flyingTrial454!=null?"ヒコウ シヨウ（カリ・セーブなし）":PairStage445>0?"レンセン シヨウ（カリ・セーブなし）":Core.Definition.Id=="validation-landing-32"?(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?"シヨウ ベツマップ（カリ）":"ケンショウ エリア（カリ）"):null;
         public double MapNameOpacity {
             get{if(mapEntryPending||!mapNameStartedAt.HasValue||MapName==null)return 0;long age=Math.Max(0,Core.Frame-mapNameStartedAt.Value);return age<MapNameDisplayFrames?1:Math.Max(0,1-(age-MapNameDisplayFrames)/(double)MapNameFadeFrames);}
         }
@@ -1730,6 +1731,19 @@ namespace Olca.Core.Logic.Integration
     public sealed partial class OutsideExplorationSession
     {
         public const string PairDefinition445="trial-pair-goblin-slime-v1";
+        public const string ForestDefinition460="trial-forest-cover-flight-v1";
+        public bool IsForest460 {get;private set;}
+        /// <summary>森の保存しないコピー。低い遮蔽の通過と、射撃/蹴りの選択を既存判定で試す。</summary>
+        public static OutsideExplorationSession CreateForestTrial460(OutsideExplorationSession source,CheckpointDefinitions definitions)
+        {
+            var t=CreatePairTrial445(source,definitions);
+            try{
+                t.IsForest460=true;var p=t.Core.TraversalProfile;
+                var cover=new OutsideTraversalProfile(ForestDefinition460+"-geometry",p.DashSpeedPerSecond,p.DashFrames,p.DashCooldownFrames,p.DashResetFrames,p.DashJumpSpeedPerSecond,p.BodyHalfWidth,p.BodyHeight,p.WallSlidePerFrame,p.WallKickVelocity,p.WallKickSpeedPerSecond,p.WallKickPushFrames,p.WallKickMotionFrames,p.WallActionsUnlocked,new OutsideValidationWall("forest-low-cover",20*60000,0,84000,false,false));
+                if(!t.TryConfigureTraversal(p.DoubleJumpUnlocked?cover.WithDoubleJump(cover.Id):cover))throw new InvalidOperationException("森の遮蔽を配置できませんでした");
+                t.trialTarget=t.CreatePairTarget445();t.goblinTrial.DefinitionId=ForestDefinition460+"-goblin";return t;
+            }catch{t.Dispose();throw;}
+        }
         public int PairStage445 {get;private set;}
         public int PairHandVariant445 {get;private set;}
         public bool PairCompleted445 {get;private set;}
@@ -1760,7 +1774,7 @@ namespace Olca.Core.Logic.Integration
             }catch{trial.Dispose();throw;}
         }
         // この保存しない短い区間だけ、既存分岐回廊と同じHP30を調整可能な仮値として使う。
-        private Enemy CreatePairTarget445(){var e=new Enemy(PairDefinition445+"-"+PairStage445,"レンセン シヨウ（カリ）",30,ElementType.None,new Vector2Int(0,0));e.OnHitStopRequested+=RequestHitStop;return e;}
+        private Enemy CreatePairTarget445(){var e=new Enemy((IsForest460?ForestDefinition460:PairDefinition445)+"-"+PairStage445,"レンセン シヨウ（カリ）",30,ElementType.None,new Vector2Int(0,0));e.OnHitStopRequested+=RequestHitStop;return e;}
         private void AdvancePair445()
         {
             if(PairStage445==0||PairCompleted445||Player.IsDead||!TrialTarget.IsDead)return;
@@ -1771,7 +1785,8 @@ namespace Olca.Core.Logic.Integration
             // 一体目の飛翔物や命中済み印を二体目へ持ち越さず、手札/HP/ゲージ/論理時計はそのまま。
             initialShots.Clear();bombs.Clear();bombBlasts.Clear();ClearBombReleaseVisual();attackState=null;normalKick?.Reset();CancelChargeInput();CancelAttackReservation();
             goblinTrial=null;pendingGoblinStrike=false;trialEnemyAttack=null;PairStage445=2;trialTarget=CreatePairTarget445();trialTargetHits=0;trialTargetChanged=false;trialStrike=null;Array.Clear(kickImpacts,0,kickImpacts.Length);trialContactNextFrame=0;
-            slimeTrial=new OutsideSlimeTrialData{DefinitionId=PairDefinition445+"-slime",StartX=1590000,LandingX=1590000,Facing=-1};pendingSlimeLanding=false;pairClearedAt445=-1;PairStage445=2;
+            if(IsForest460)flyingTrial454=new OutsideFlyingTrial454{StartX=1590000,LandingX=1590000};
+            else slimeTrial=new OutsideSlimeTrialData{DefinitionId=PairDefinition445+"-slime",StartX=1590000,LandingX=1590000,Facing=-1};pendingSlimeLanding=false;pairClearedAt445=-1;PairStage445=2;
         }
     }
 }
@@ -1810,9 +1825,10 @@ namespace Olca.Core.Logic.Integration
         {
             pendingFlyingLanding454=false;var s=flyingTrial454;if(s==null)return;ObserveFlyingDeath454();
             if(Player.IsDead||Core.HasFallenOut||s.Phase==OutsideFlyingPhase454.Dead||TrialTarget.IsStaggered||TrialTarget.IsParalyzed)return;
-            if(s.Phase==OutsideFlyingPhase454.Hover&&Math.Abs(Core.Position-s.X)>6*60000)return;
+            // 森コピーだけは遮蔽の向こうへ進んでから起動。降下軌道を低壁の反対側へ通さない。
+            if(s.Phase==OutsideFlyingPhase454.Hover&&(Math.Abs(Core.Position-s.X)>6*60000||IsForest460&&Core.Position<20*60000+OutsideFlyingTrial454.LandingRadius))return;
             s.Age++;
-            if(s.Phase==OutsideFlyingPhase454.Hover&&s.Age>=OutsideFlyingTrial454.HoverFrames){s.LandingX=Math.Max(16*60000,Math.Min(28*60000,Core.Position));s.Facing=s.LandingX==s.StartX?s.Facing:Math.Sign(s.LandingX-s.StartX);s.Phase=OutsideFlyingPhase454.Windup;s.Age=0;}
+            if(s.Phase==OutsideFlyingPhase454.Hover&&s.Age>=OutsideFlyingTrial454.HoverFrames){s.LandingX=Math.Max(IsForest460?20*60000+OutsideFlyingTrial454.LandingRadius:16*60000,Math.Min(28*60000,Core.Position));s.Facing=s.LandingX==s.StartX?s.Facing:Math.Sign(s.LandingX-s.StartX);s.Phase=OutsideFlyingPhase454.Windup;s.Age=0;}
             else if(s.Phase==OutsideFlyingPhase454.Windup&&s.Age>=OutsideFlyingTrial454.WindupFrames){s.Phase=OutsideFlyingPhase454.Dive;s.Age=0;}
             else if(s.Phase==OutsideFlyingPhase454.Dive&&s.Age>=OutsideFlyingTrial454.DiveFrames){s.StartX=s.LandingX;s.Phase=OutsideFlyingPhase454.Recovery;s.Age=0;pendingFlyingLanding454=true;}
             else if(s.Phase==OutsideFlyingPhase454.Recovery&&s.Age>=OutsideFlyingTrial454.RecoveryFrames){s.Phase=OutsideFlyingPhase454.Rise;s.Age=0;}
