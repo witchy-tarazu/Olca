@@ -46,6 +46,7 @@ namespace Olca.Presentation.Exploration
         private Func<int,Sprite> authoredStaggerSprite;
         private Sprite StaggerSprite(){var actor=presentation?.Player;return actor?.IsStaggered==true?authoredStaggerSprite?.Invoke(Math.Max(0,actor.StaggerDurationFrames-actor.StaggerRemainingFrames)):null;}
         private Image outsideBackground;private AspectRatioFitter backgroundCover;private Sprite originalOutsideBackground,annexCaveBackground;
+        private bool forestPreview;private Button forestSwitch;private readonly Image[] forestLayers=new Image[3];
         private Sprite idleSprite,riseSprite,apexSprite,fallSprite;private AnimationClip moveClip,idleClip;private SpriteRenderer motionSample;
         private readonly System.Collections.Generic.List<(Image image,Text label)> landingViews=new System.Collections.Generic.List<(Image,Text)>();
         private Image player,terrain;private Text leftEnd,rightEnd,gaugeLabel;private RectTransform gaugeFill;private long lastGaugeUnits=-1,lastGaugeMaximum=-1;private float pixelsPerWorldUnit;
@@ -64,6 +65,11 @@ namespace Olca.Presentation.Exploration
             Sprite Find(string name){foreach(var sr in source.GetComponentsInChildren<SpriteRenderer>(true))if(sr.name==name)return sr.sprite;throw new InvalidOperationException("外界入口の共有素材がありません: "+name);}
             Image Picture(string name,Sprite sprite,Vector2 min,Vector2 max){if(sprite==null)throw new InvalidOperationException("外界入口の画像がありません: "+name);var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=sprite;image.raycastTarget=false;var r=image.rectTransform;r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;return image;}
             var background=outsideBackground=Picture("OutsideOriginalBackground",originalOutsideBackground=Find("DungeonBackground"),Vector2.zero,Vector2.one);annexCaveBackground=resources.FindShared<Sprite>("OlcaUI/AnnexCaveSpritePilot");var cover=backgroundCover=background.gameObject.AddComponent<AspectRatioFitter>();cover.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;cover.aspectRatio=background.sprite.rect.width/background.sprite.rect.height;
+            // 自作の三層は地形・敵より後ろ。同じ中央coverで比率を保つ。保存対象にはしない。
+            for(int layer=0;layer<3;layer++){
+                var image=forestLayers[layer]=Picture("OutsideForestLayer"+layer,CreateForestLayer(layer),Vector2.zero,Vector2.one);
+                var fit=image.gameObject.AddComponent<AspectRatioFitter>();fit.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;fit.aspectRatio=384f/216;image.gameObject.SetActive(false);
+            }
             terrain=Picture("OutsideEntryGround",Find("Ground"),Vector2.zero,new Vector2(1,.21f));terrain.type=Image.Type.Tiled;
             var field=source.GetComponent<Olca.Presentation.Field.GameFieldView>();var idle=idleSprite=field.AuthoredIdlePlayerSprite;authoredStaggerSprite=field.AuthoredStaggerSprite;
             riseSprite=field.AuthoredJumpRiseSprite;apexSprite=field.AuthoredJumpApexSprite;fallSprite=field.AuthoredJumpFallSprite;moveClip=field.AuthoredMoveClip;idleClip=field.AuthoredIdleClip;
@@ -73,6 +79,9 @@ namespace Olca.Presentation.Exploration
             var header=Picture("OutsideHeadingSurface",resources.GetShared<Sprite>("OlcaUI/window"),new Vector2(0,1),Vector2.one);header.type=Image.Type.Sliced;header.rectTransform.pivot=new Vector2(.5f,1);header.rectTransform.sizeDelta=new Vector2(0,120);
             var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);var title=factory.Label("OutsideExplorationTitle",transform,new Vector2(0,1),new Vector2(630,-62),new Vector2(1180,70));title.text="ガイカイ タンサク  /  ケンショウ チケイ";title.alignment=TextAnchor.MiddleLeft;title.fontSize=28;title.color=Olca.Presentation.Dungeon.UiLook.Ink;title.rectTransform.anchorMin=new Vector2(0,1);title.rectTransform.anchorMax=Vector2.one;title.rectTransform.offsetMin=new Vector2(40,-97);title.rectTransform.offsetMax=new Vector2(-580,-27);
             InitializeItemHud(factory);
+            forestSwitch=factory.Button("OutsideForestPreview","モリ ミホン（カリ）",transform,new Vector2(0,.5f),new Vector2(195,-130));forestSwitch.GetComponent<RectTransform>().sizeDelta=new Vector2(350,48);forestSwitch.navigation=new Navigation{mode=Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.Button(forestSwitch);forestSwitch.gameObject.SetActive(false);
+            forestSwitch.onClick.AddListener(()=>{if(CanPlay&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId){forestPreview=!forestPreview;Render();ClearFocus();}});
+
             recoveryPoint=factory.Button("OutsideRecoveryPoint","ケンショウ カイフク（カリ）",transform,new Vector2(0,.21f),Vector2.zero);recoveryPoint.GetComponent<RectTransform>().sizeDelta=new Vector2(350,104);Olca.Presentation.Dungeon.UiLook.Button(recoveryPoint);recoveryPoint.gameObject.SetActive(false);
             recoveryMarker=Picture("OutsideRecoveryMarker",resources.GetShared<Sprite>("OlcaUI/window"),new Vector2(0,.21f),new Vector2(0,.21f));recoveryMarker.type=Image.Type.Sliced;recoveryMarker.color=new Color(.25f,.85f,.95f,.75f);recoveryMarker.rectTransform.pivot=new Vector2(.5f,0);recoveryMarker.rectTransform.sizeDelta=new Vector2(96,10);recoveryMarker.transform.SetSiblingIndex(player.transform.GetSiblingIndex());recoveryMarker.gameObject.SetActive(false);
             outsideHp=factory.Label("OutsidePlayerHp",transform,new Vector2(1,1),new Vector2(-255,-320),new Vector2(470,42));outsideHp.fontSize=24;outsideHp.color=Color.white;outsideHp.resizeTextForBestFit=true;outsideHp.resizeTextMinSize=18;outsideHp.resizeTextMaxSize=24;outsideHp.raycastTarget=false;
@@ -292,6 +301,11 @@ namespace Olca.Presentation.Exploration
             // Annexの遠景だけを差し替え、移動先では共有の元背景へ戻す。
             var sceneBackground=presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&annexCaveBackground!=null?annexCaveBackground:originalOutsideBackground;
             if(outsideBackground.sprite!=sceneBackground){outsideBackground.sprite=sceneBackground;outsideBackground.color=sceneBackground==annexCaveBackground?new Color(.72f,.72f,.78f,1):Color.white;backgroundCover.aspectRatio=sceneBackground.rect.width/sceneBackground.rect.height;}
+            bool annex=presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId;
+            if(!annex)forestPreview=false;
+            forestSwitch.gameObject.SetActive(annex);forestSwitch.interactable=CanPlay;
+            forestSwitch.GetComponentInChildren<Text>().text=forestPreview?"ドウクツヘ（カリ）":"モリ ミホン（カリ）";
+            foreach(var layer in forestLayers)layer.gameObject.SetActive(annex&&forestPreview);
             RefreshItemHud();RenderMiniMap();
             RefreshOutsideStatusIcons();
             // Custom詳細と同じ残強靭度の読取。のけぞり/回復の計算は既存Playerが所有する。
@@ -364,10 +378,31 @@ namespace Olca.Presentation.Exploration
         private void ClearFocus(){var selected=UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;if(this!=null&&selected!=null&&selected.transform.IsChildOf(transform))UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);}
         private void ClearHandActions(){foreach(var button in handButtons)if(button!=null)button.onClick=new Button.ButtonClickedEvent();}
         private void ClearHandIcons(){foreach(var image in handIcons)if(image!=null){image.sprite=null;image.enabled=false;}}
-        public void Hide(){if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
+        public void Hide(){ClearForestPreview();if(player!=null)player.color=Color.white;if(outsideStatusIcons!=null)outsideStatusIcons.Clear();ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();if(this!=null)gameObject.SetActive(false);}
         private void LateUpdate(){if(context!=null&&!context.IsCurrent){Hide();return;}menu?.Tick();}
-        private void OnDisable(){Olca.Unity.BattleVisualClock.SetPaused(this,false);if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
-        private void OnDestroy(){OnDisable();ReleaseTraversalReferences();back=null;pause=null;kamuiShortcut=null;}
+        private void ClearForestPreview(){forestPreview=false;foreach(var layer in forestLayers)if(layer!=null)layer.gameObject.SetActive(false);if(forestSwitch!=null)forestSwitch.gameObject.SetActive(false);}
+        private void OnDisable(){ClearForestPreview();Olca.Unity.BattleVisualClock.SetPaused(this,false);if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
+        private void OnDestroy(){OnDisable();ReleaseTraversalReferences();foreach(var layer in forestLayers)if(layer!=null&&layer.sprite!=null){var sprite=layer.sprite;var texture=sprite.texture;if(UnityEngine.Application.isPlaying){Destroy(sprite);Destroy(texture);}else{DestroyImmediate(sprite);DestroyImmediate(texture);}}back=null;pause=null;kamuiShortcut=null;}
+        // 固定整数の描画なので外部画像・共有Art・乱数状態を使わず再現できる仮の森。
+        private static Sprite CreateForestLayer(int layer)
+        {
+            const int w=384,h=216;var pixels=new Color32[w*h];
+            void Rect(int x,int y,int width,int height,Color32 c){for(int yy=Math.Max(0,y);yy<Math.Min(h,y+height);yy++)for(int xx=Math.Max(0,x);xx<Math.Min(w,x+width);xx++)pixels[yy*w+xx]=c;}
+            if(layer==0){
+                for(int y=0;y<h;y++){byte t=(byte)(y/12);Rect(0,y,w,1,new Color32((byte)(151+t),(byte)(161+t*2),(byte)(163+t*3),255));}
+                // 遠い山と林。中央下部は低彩度の霧色で敵・予告・白金の輪を分離。
+                for(int x=0;x<w;x++){int top=91+(int)(20*Math.Sin(x*.023)+11*Math.Cos(x*.051));Rect(x,0,1,top,new Color32(121,144,145,255));}
+                Rect(0,0,w,68,new Color32(137,146,132,255));
+                for(int x=2;x<w;x+=13){int top=70+(x*17%19);Rect(x,60,2,top-60,new Color32(118,137,132,255));for(int y=70;y<top;y+=4)Rect(x-(top-y)/5,y,2+(top-y)*2/5,3,new Color32(126,144,137,255));}
+            }else if(layer==1){
+                foreach(int x in new[]{13,65,308,365}){int height=146+x%29;Rect(x,0,7,height,new Color32(99,100,90,255));Rect(x+2,0,2,height,new Color32(132,126,106,255));for(int cluster=0;cluster<5;cluster++){int cx=x+(cluster-2)*12,cy=height+18+(cluster*13+x)%24,rx=22+(cluster*7)%12,ry=22+cluster%3*4;for(int yy=-ry;yy<=ry;yy+=2){int half=(int)(rx*Math.Sqrt(Math.Max(0,1-yy*yy/(double)(ry*ry))));Rect(cx-half,cy+yy,half*2,2,new Color32(95,119,105,255));if(yy>2&&half>8)Rect(cx-half+3,cy+yy,half*2-8,2,new Color32(122,145,115,255));}}}
+            }else{
+                // 控えめな近景も背景レイヤー。足場や敵の手前には描かない。
+                foreach(int x in new[]{0,379}){Rect(x,0,5,h,new Color32(68,78,73,255));for(int y=168;y<216;y+=6)Rect(x-18,y,36,4,new Color32(79,105,84,255));}
+                for(int x=0;x<w;x+=7){int height=3+x*11%6;Rect(x,0,4,height,new Color32(96,113,91,255));}
+            }
+            var texture=new Texture2D(w,h,TextureFormat.RGBA32,false){name="OriginalForestTrialLayer"+layer,filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};texture.SetPixels32(pixels);texture.Apply(false,true);var result=Sprite.Create(texture,new Rect(0,0,w,h),new Vector2(.5f,.5f),100);result.name=texture.name;return result;
+        }
     }
 }
 

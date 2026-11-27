@@ -102,6 +102,25 @@ namespace Olca.Tests.Application
                 model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("annexCaveBackground",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(view,null);view.Render();Assert.AreSame(original,image.sprite,"任意遠景がない場合は元背景を維持する");
             }
         }
+        [TestCase(1920,1080)][TestCase(1440,1080)] public async Task 森433はAnnexだけの保存しない三層背景で地形と時計を変えず退出で解除する(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{})){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();var button=view.transform.Find("OutsideForestPreview").GetComponent<Button>();Assert.IsFalse(button.gameObject.activeSelf);
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);view.Render();Assert.IsTrue(button.gameObject.activeSelf);var before=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());var ground=view.transform.Find("OutsideEntryGround").GetComponent<Image>().sprite;var frame=model.Core.Frame;
+                // 開いた当フレームは既存の入力バリアを守る。ボタン操作は通常の次フレームから。
+                typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetField("uncoveredFrame",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(view,-1);
+                button.onClick.Invoke();view.Render();Canvas.ForceUpdateCanvases();
+                for(int n=0;n<3;n++){var image=view.transform.Find("OutsideForestLayer"+n).GetComponent<Image>();Assert.IsTrue(image.gameObject.activeSelf);Assert.IsFalse(image.raycastTarget);Assert.AreEqual(new Vector2(384,216),image.sprite.rect.size);Assert.AreEqual(FilterMode.Point,image.sprite.texture.filterMode);Assert.Less(image.transform.GetSiblingIndex(),view.transform.Find("OutsideEntryGround").GetSiblingIndex());Assert.That(image.rectTransform.rect.width/image.rectTransform.rect.height,Is.EqualTo(384f/216).Within(.001f));}
+                CollectionAssert.AreEqual(before,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.AreEqual(frame,model.Core.Frame);Assert.AreSame(ground,view.transform.Find("OutsideEntryGround").GetComponent<Image>().sprite);
+                button.onClick.Invoke();Assert.IsFalse(view.transform.Find("OutsideForestLayer0").gameObject.activeSelf);button.onClick.Invoke();Assert.IsTrue(view.transform.Find("OutsideForestLayer0").gameObject.activeSelf);
+                model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint);view.Render();Assert.IsFalse(button.gameObject.activeSelf);Assert.IsFalse(view.transform.Find("OutsideForestLayer0").gameObject.activeSelf);model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);view.Render();Assert.IsFalse(view.transform.Find("OutsideForestLayer0").gameObject.activeSelf);
+                var owned=new List<UnityEngine.Object>();for(int n=0;n<3;n++){var sprite=view.transform.Find("OutsideForestLayer"+n).GetComponent<Image>().sprite;owned.Add(sprite);owned.Add(sprite.texture);}button.onClick.Invoke();Assert.IsTrue(view.transform.Find("OutsideForestLayer0").gameObject.activeSelf);view.Hide();Assert.IsFalse(view.transform.Find("OutsideForestLayer0").gameObject.activeSelf);
+                // EditModeではMonoBehaviourの破棄callbackを明示実行して所有資源を検査する。
+                typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(view,null);UnityEngine.Object.DestroyImmediate(view.gameObject);Assert.IsTrue(owned.All(o=>o==null),"View所有のSprite/Textureだけを破棄する");
+            }
+        }
         [TestCase("trial_slash_1_0",1,-1)][TestCase("trial_slash_1_1",-1,1)][TestCase("trial_slash_3_1",1,1)][TestCase("trial_wide_sword_effect_1",-1,-1)][TestCase(null,1,1)] public void 斬撃413は共有下振り原画だけ画像の左右を補正する(string sprite,int facing,int expected){Assert.AreEqual(expected,Olca.Presentation.Exploration.OutsideSwordSwingVisual.TrailScale(sprite,facing));}
         [TestCase(0,6)][TestCase(1,4)][TestCase(2,6)] public void 自作攻撃演出413は透過連番を共有借用し破棄と無効フレームを保つ(int kind,int count)
         {
