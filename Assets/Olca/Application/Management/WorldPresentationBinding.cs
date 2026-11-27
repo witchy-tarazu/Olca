@@ -62,6 +62,7 @@ namespace Olca.Application.Management
     public sealed class OutsideExplorationPresentationBinding : IDisposable
     {
         public const string ScreenKey="outside-exploration-entry";
+        private readonly string screenKey;
         private readonly object registrationOwner=new object();
         private readonly ViewManager layer;
         private readonly Olca.Core.Logic.Integration.OutsideExplorationSession session;
@@ -90,10 +91,10 @@ namespace Olca.Application.Management
         private string MovementGuide(){SelectionGuide();return movementGuide??"";}
         public bool IsOpen=>!disposed&&View!=null&&View.IsOpen;
         public bool HasLostView=>!disposed&&!ReferenceEquals(View,null)&&View==null;
-        public OutsideExplorationPresentationBinding(ViewManager views,Olca.Core.Logic.Integration.OutsideExplorationSession session,Func<CancellationToken,Task<GameObject>> factory,Func<bool> allowed,Action returned,OutsideExplorationRuntime runtime=null,UnityInputProvider input=null,Action paused=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Action entered=null,Func<bool> canEnter=null,Func<bool> trialRoute=null,Func<bool> inputBlocked=null,Func<bool> restoreAllowed=null,Action<int> useItem=null)
+        public OutsideExplorationPresentationBinding(ViewManager views,Olca.Core.Logic.Integration.OutsideExplorationSession session,Func<CancellationToken,Task<GameObject>> factory,Func<bool> allowed,Action returned,OutsideExplorationRuntime runtime=null,UnityInputProvider input=null,Action paused=null,Func<Olca.Core.Domain.Card,Sprite> icon=null,Action entered=null,Func<bool> canEnter=null,Func<bool> trialRoute=null,Func<bool> inputBlocked=null,Func<bool> restoreAllowed=null,Action<int> useItem=null,string screenKey=null)
         {
-            this.restoreAllowed=restoreAllowed;this.runtime=runtime;this.input=input;this.paused=paused;this.icon=icon;this.session=session??throw new ArgumentNullException(nameof(session));this.allowed=allowed??throw new ArgumentNullException(nameof(allowed));this.returned=returned;layer=views.GetLayer("return-hub");
-            layer.Register(registrationOwner,ScreenKey,factory,(panel,context)=>{
+            this.screenKey=screenKey??ScreenKey;this.restoreAllowed=restoreAllowed;this.runtime=runtime;this.input=input;this.paused=paused;this.icon=icon;this.session=session??throw new ArgumentNullException(nameof(session));this.allowed=allowed??throw new ArgumentNullException(nameof(allowed));this.returned=returned;layer=views.GetLayer("return-hub");
+            layer.Register(registrationOwner,this.screenKey,factory,(panel,context)=>{
                 if(disposed||(!this.allowed()&&this.restoreAllowed?.Invoke()!=true))throw new OperationCanceledException();
                 View=panel.GetComponent<Olca.Presentation.Exploration.OutsideExplorationView>()??throw new InvalidOperationException("外界Viewがありません");
                 Context=context;var lease=session.AttachPresentation();try{runtime?.Attach(this,input,useItem);View.Show(context,lease,()=>{if(disposed||!context.IsCurrent||!lease.IsCurrent||!this.allowed())return;layer.CloseCurrent();this.returned?.Invoke();},this.paused==null?(Action)null:()=>{if(!disposed&&context.IsCurrent&&lease.IsCurrent&&this.allowed())this.paused?.Invoke();},this.icon,SelectionGuide,MovementGuide,entered,canEnter,()=>input?.OutsideInteractionLabel??"Enter",trialRoute,inputBlocked,runtime!=null&&input!=null?(Action<Olca.Core.Logic.Integration.OutsideExplorationSession.PresentationLease,Olca.Core.Logic.Integration.OutsideExplorationCards,int,long>)input.QueueOutsideHandPress:null,CardUseGuide);}catch{runtime?.Detach(this);lease.Dispose();throw;}
@@ -105,7 +106,7 @@ namespace Olca.Application.Management
             });
         }
         public async Task<ScreenOpenResult> OpenAsync(CancellationToken cancellation=default)
-        {if(disposed||(!allowed()&&restoreAllowed?.Invoke()!=true))return await layer.ShowAsync(ScreenKey,new CancellationToken(true));var result=await layer.ShowAsync(ScreenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
+        {if(disposed||(!allowed()&&restoreAllowed?.Invoke()!=true))return await layer.ShowAsync(screenKey,new CancellationToken(true));var result=await layer.ShowAsync(screenKey,cancellation);if(!result.Succeeded&&View==null)View=null;return result;}
         // 表示世代だけを交換し、Root所有Sessionと保存結果は維持する。
         public async Task<ScreenOpenResult> ReopenAfterMapTravelAsync()
         {if(disposed)throw new ObjectDisposedException(nameof(OutsideExplorationPresentationBinding));layer.CloseCurrent();return await OpenAsync();}

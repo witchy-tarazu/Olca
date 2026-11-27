@@ -157,7 +157,7 @@ namespace Olca.Application.Dungeon
             if(!focused)StopGamepadVibration();
             ResetTouchInput();
             // PCは継続するが、復帰同期で到着した古い押下edgeは再生しない。
-            outsideExploration?.ResetInputForFocus(focused);
+            outsideExploration?.ResetInputForFocus(focused);pairBinding445?.ResetInputForFocus(focused);
             inputProvider?.ResetCapturedInput();
         }
         private bool applicationInactive;
@@ -332,7 +332,7 @@ namespace Olca.Application.Dungeon
         }
         private void ReleasePresentationBindings()
         {
-            explorationDeckLibrary?.Dispose();explorationDeckLibrary=null;ResetOutsideMapTravel();AbortOutsideFastTravel();AbortOutsideObjectives();
+            ReleasePair445();explorationDeckLibrary?.Dispose();explorationDeckLibrary=null;ResetOutsideMapTravel();AbortOutsideFastTravel();AbortOutsideObjectives();
             outsideExploration?.Dispose();outsideExploration=null;outsideExplorationOpening=false;gameplayChrome?.SetCovered(false);gameplayChrome=null;
             if(dialogueViews!=null&&dialogueView!=null)dialogueView.HideManaged();dialogueViews=null;
             currencyChoice?.TrySetCanceled();itemRewardChoice?.TrySetCanceled();CloseResourceReward(currencyOverlay);CloseResourceReward(itemRewardOverlay);
@@ -556,6 +556,7 @@ namespace Olca.Application.Dungeon
         private void BindOutsidePresentation()
         {
             if(outsideLandingRoute)gameSystem.OutsideExploration.EnableTrialCardPolish();
+            outsideExploration.View.ConfigurePairEntry445(()=>OpenPair445Async().Forget());
             outsideExploration.ResetInputForFocus(applicationFocused);outsideExploration.View.ConfigureItemInventory(()=>clearReturnSession.OutsideInventorySnapshot,()=>clearReturnSession.InventoryRevision,outsideItemDefinitions);
             outsideExploration.View.ConfigureItemUse(slot=>inputProvider.QueueOutsideItemPress(slot),id=>gameSystem.OutsideExploration.ItemCooldownRemaining(id),OutsideItemKeyLabel,id=>OutsideUseDefinition(id)?.CooldownFrames??0);
             outsideExploration.View.ConfigureMiniMap(()=>clearReturnSession.InventoryRevision,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(clearReturnSession.Snapshot,gameSystem.OutsideExploration.Core));
@@ -563,6 +564,55 @@ namespace Olca.Application.Dungeon
             outsideExploration.View.ConfigureKamuiShortcut(OpenOutsideWheelFromHud);
             outsideExploration.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);BindOutsideRecovery();BindOutsideSupply();BindOutsideCardSupply();BindOutsideTrialPoison();BindOutsideShop();BindOutsideMapDoor();
         }
+        private Olca.Application.Management.OutsideExplorationPresentationBinding pairBinding445;
+        private Olca.Application.Management.OutsideExplorationRuntime pairRuntime445;
+        private Olca.Core.Logic.Integration.OutsideExplorationSession pairSession445;
+        private bool pairOpening445,pairPaused445;private long pairEpoch445;
+        private bool PairRequestCurrent445(long epoch,object owner,Olca.Application.Management.OutsideExplorationPresentationBinding binding,Olca.Core.Logic.Integration.OutsideExplorationSession session)
+            =>this!=null&&epoch==pairEpoch445&&ReferenceEquals(owner,gameSystemSession)&&ReferenceEquals(binding,pairBinding445)&&ReferenceEquals(session,pairSession445);
+        private async UniTask OpenPair445Async(bool retry=false,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<GameObject>> factory=null)
+        {
+            if(pairSession445!=null||pairOpening445||!CustomizationUiLive||!OutsideHubEligible||!retry&&outsideExploration?.View?.CanEnterPair445!=true)return;
+            pairOpening445=true;var owner=gameSystemSession;long epoch=++pairEpoch445;
+            Olca.Application.Management.OutsideExplorationPresentationBinding openingBinding=null;Olca.Core.Logic.Integration.OutsideExplorationSession openingSession=null;
+            bool Current()=>PairRequestCurrent445(epoch,owner,openingBinding,openingSession);
+            try{
+                openingSession=pairSession445=Olca.Core.Logic.Integration.OutsideExplorationSession.CreatePairTrial445(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions);
+                pairRuntime445=new Olca.Application.Management.OutsideExplorationRuntime(pairSession445);pairPaused445=false;
+                var services=gameSystem;var font=panelFactory.GameplayFont;
+                openingBinding=pairBinding445=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,pairSession445,
+                    factory??(ct=>{ct.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(services.UI.ViewParent,font,services.Resources));}),
+                    ()=>Current(),()=>{if(Current())ReturnPair445Async().Forget();},pairRuntime445,inputProvider,
+                    icon:card=>customScreenView!=null?customScreenView.GetCardIconForCard(card):null,screenKey:Olca.Core.Logic.Integration.OutsideExplorationSession.PairDefinition445);
+                var result=await openingBinding.OpenAsync();
+                if(!Current())return;
+                if(!result.Succeeded)throw new System.InvalidOperationException(result.Error??"連戦試用を開けませんでした");
+                pairBinding445.View.ConfigurePairControls445(()=>RestartPair445(),()=>pairPaused445=!pairPaused445,()=>PairStatus445());
+                pairBinding445.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);pairBinding445.ResetInputForFocus(applicationFocused);
+            }catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OperationCanceledException){
+                if(!Current())return;ReleasePair445();if(ReferenceEquals(owner,gameSystemSession)&&CustomizationUiLive){logger?.LogWarning("連戦試用: "+e.Message);ReturnPair445Async().Forget();}
+            }finally{if(Current())pairOpening445=false;}
+        }
+        private string PairStatus445()
+        {
+            var s=pairSession445;if(s==null)return "";
+            string state=s.Player.IsDead?"HP0 / モウイチド":s.PairCompleted445?"2タイ ゲキハ / モウイチド・モドる":pairPaused445?"テイシチュウ":s.PairIntermissionRemaining445>0?"ゴブリン ゲキハ / ツギは スライム":s.PairStage445==1?"1/2 ゴブリン / カードを ツカうか ノコす":"2/2 スライム / チャクチを ヨム";
+            return state+"  |  ノコリ "+(s.Cards.Hand.Count+s.Cards.RemainingCount)+"マイ / ホゾン・ホウシュウなし";
+        }
+        private void ReleasePair445()
+        {
+            pairEpoch445++;var binding=pairBinding445;var runtime=pairRuntime445;var session=pairSession445;pairBinding445=null;pairRuntime445=null;pairSession445=null;pairPaused445=false;pairOpening445=false;
+            binding?.Dispose();runtime?.Dispose();session?.Dispose();
+        }
+        private void RestartPair445(){if(pairOpening445||pairSession445==null)return;ReleasePair445();OpenPair445Async(true).Forget();}
+        private async UniTask ReturnPair445Async()
+        {
+            ReleasePair445();if(!CustomizationUiLive||!OutsideHubEligible||outsideExploration==null)return;
+            long epoch=pairEpoch445;var owner=gameSystemSession;var binding=outsideExploration;
+            bool Current()=>this!=null&&epoch==pairEpoch445&&ReferenceEquals(owner,gameSystemSession)&&ReferenceEquals(binding,outsideExploration);
+            outsideExplorationOpening=true;try{var result=await binding.OpenAsync();if(Current()&&result.Succeeded&&binding.View!=null){ResetOutsideRouteInput();BindOutsidePresentation();}}finally{if(Current())outsideExplorationOpening=false;}
+        }
+
         private string outsideCardSupplyMessage;private int outsideCardSupplyAttemptFrame=-1;
         private bool OutsideCardSupplyReady=>OutsideHubEligible&&!GameplayPause.InputBlocked&&outsideLandingRoute&&outsideExploration?.IsOpen==true&&outsideExploration.View.CanPlay&&!IsUserPaused&&!outsideWheelPaused&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0&&Time.frameCount!=outsideCardSupplyAttemptFrame&&gameSystem.OutsideExploration.Player?.IsDead==false&&Olca.Core.Logic.Integration.OutsideTrialRoute.CanClaimCardSupply(gameSystem.OutsideExploration.Core)&&!clearReturnSession.HasClaimedOutsideSupply(Olca.Core.Logic.Integration.OutsideTrialRoute.CardSupplyId);
         private void ClaimOutsideCardSupply(){if(!OutsideCardSupplyReady)return;outsideCardSupplyAttemptFrame=Time.frameCount;outsideExploration.Pump(false);outsideCardSupplyMessage=clearReturnSession.TryClaimTrialExplorationCards(ReturnSettings(),out var count,out var tokens,out var error)?"カード "+count+"マイ / チョウカ "+tokens+"トークン\nヘンセイチテンに モドって30マイへ":error;outsideExploration.View.Render();}
@@ -608,7 +658,7 @@ namespace Olca.Application.Dungeon
         }
         private Olca.Presentation.Management.GameplayPanelFactory.ChromeBinding gameplayChrome;
         private int outsideClosedFrame=-1;
-        private bool OutsideRouteBusy=>outsideMapTravelBusy||outsideMapTravelNeedsBind||outsideExplorationOpening||outsideExploration?.IsOpen==true;
+        private bool OutsideRouteBusy=>pairSession445!=null||pairOpening445||outsideMapTravelBusy||outsideMapTravelNeedsBind||outsideExplorationOpening||outsideExploration?.IsOpen==true;
         private Olca.Presentation.Management.OutsideKamuiWheelDialog outsideWheel;
         private bool outsideWheelPaused,outsideWheelHeld;private object outsideWheelInputContext;
         private enum OutsideWheelInputOwner{None,Pad,Pc,Menu,Hud}
@@ -1243,7 +1293,9 @@ namespace Olca.Application.Dungeon
         }
         private void RequestAutomaticPause()
         {
-            if (this == null || manager == null) return;
+            if(this==null)return;
+            if(pairSession445!=null||pairOpening445){pairPaused445=true;pairBinding445?.ResetInputForFocus(applicationFocused&&!applicationInactive);return;}
+            if (manager == null) return;
             // 勝敗演出中はメニューを開かず、同じ攻略の演出完了後へ要求を引き継ぐ。
             if (manager.IsBattleEndPresentationPending) { automaticPauseOwner = manager; return; }
             SetUserPaused(true);
@@ -1728,7 +1780,7 @@ namespace Olca.Application.Dungeon
             // 保存成功の同じ通知を再受信しても、現世代の表示や入力を再度破棄しない。
             var generation=clearReturnSession.Snapshot.CheckpointGeneration;
             if(gameSystem!=null&&gameSystem.OutsideProgressGeneration!=generation){
-                ResetOutsideMapTravel();AbortOutsideShop();AbortOutsideFastTravel();AbortOutsideObjectives();AbortOutsideWheel(release:true);outsideExploration?.Dispose();outsideExploration=null;
+                ReleasePair445();ResetOutsideMapTravel();AbortOutsideShop();AbortOutsideFastTravel();AbortOutsideObjectives();AbortOutsideWheel(release:true);outsideExploration?.Dispose();outsideExploration=null;
                 gameSystem.ResetOutsideForNewProgress(generation);
                 outsideClosedFrame=Time.frameCount;ResetOutsideRouteInput();
             }
@@ -2448,11 +2500,11 @@ namespace Olca.Application.Dungeon
             gamepadVibration=new GamepadVibrationAdapter();
             vibrationSettings=new GamepadVibrationSettingsStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             vibrationSettings.TryRead(out gamepadVibrationEnabled,out vibrationSettingsError);gamepadVibration.Enabled=gamepadVibrationEnabled;
-            inputProvider.GamepadGameplayActive=()=>(outsideExploration?.IsOpen==true&&CustomizationUiLive&&!IsUserPaused&&!GameplayPause.InputBlocked&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0)||(manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
+            inputProvider.GamepadGameplayActive=()=>(pairBinding445?.IsOpen==true&&!pairPaused445&&applicationFocused)||(outsideExploration?.IsOpen==true&&CustomizationUiLive&&!IsUserPaused&&!GameplayPause.InputBlocked&&!DialogueOpen&&gameSystem.Dialogs.ActiveCount==0)||(manager!=null&&!clearReturnVisible&&!DialogueOpen&&!IsUserPaused&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&
                 (manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&battleFieldReady&&!manager.CurrentBattle.IsPaused));
             inputProvider.OutsidePcWheelInputOwned=()=>outsideWheelInputOwner==OutsideWheelInputOwner.Pc&&outsideWheel?.IsOpen==true&&outsideExploration?.IsOpen==true;
             inputProvider.GamepadContext=()=>OutsideRouteBusy?"outside":manager?.CurrentPhase==GamePhase.Dungeon?"exploration":"battle";
-            inputProvider.GamepadPauseAvailable=()=>manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&((outsideExploration?.IsOpen==true&&gameSystem.Dialogs.ActiveCount==0)||(!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen)));
+            inputProvider.GamepadPauseAvailable=()=>(pairBinding445?.IsOpen==true)||manager!=null&&(!IsUserPaused||IsExplorationResumeCounting)&&((outsideExploration?.IsOpen==true&&gameSystem.Dialogs.ActiveCount==0)||(!clearReturnVisible&&!DialogueOpen&&!awaitingCheckpointChoice&&!manager.Dungeon.IsCheckpointBlocked&&manager.Dungeon.ActiveVisit==null&&(manager.CurrentPhase==GamePhase.Dungeon||manager.CurrentPhase==GamePhase.Battle&&!manager.CurrentBattle.CustomScreen.IsOpen)));
             gamepadSettings=gameSystemSession?.Storage.Gamepad ?? new GamepadBindingFileStore(gameplaySettingsDirectoryOverride??System.IO.Path.Combine(UnityEngine.Application.persistentDataPath,"Olca","settings"));
             inputProvider.TryRestoreGamepadProfile(UnityInputProvider.CreateDefaultGamepadProfile(),out _);
             if(gamepadSettings.TryRead(out var padProfile,out var padError))inputProvider.TryRestoreGamepadProfile(padProfile,out padError);GameplayGamepadSettingsError=padError;
@@ -2646,6 +2698,12 @@ namespace Olca.Application.Dungeon
         {
             gamepadVibration?.Tick();
             if (manager == null) return;
+            if(pairSession445!=null||pairOpening445){
+                logicalLoop.Observe(false);gameplayChrome?.SetCovered(true);
+                if(inputProvider.ConsumeGamepadPause())pairPaused445=!pairPaused445;
+                if(!pairOpening445&&pairBinding445?.IsOpen!=true){ReturnPair445Async().Forget();return;}
+                pairBinding445?.Pump(!pairPaused445&&applicationFocused&&!applicationInactive&&!pairSession445.Player.IsDead&&Time.timeScale>0);return;
+            }
             UpdateOutsideWheel();
             if(outsideExploration?.HasLostView==true||CanRestoreOutsideRecovery&&outsideExploration?.IsOpen!=true)OpenOutsideExplorationAsync().Forget();
             gameplayChrome?.SetCovered(OutsideRouteBusy);

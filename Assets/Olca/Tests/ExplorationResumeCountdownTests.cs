@@ -10,6 +10,50 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(false)][TestCase(true)]
+        public void 連戦445は通常カードと蹴りで二体を倒し手札ゲージ時計を継続して親を変更しない(bool spendFirst)
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6)){
+                var defs=Kick214Definitions(source);var originalCards=source.Cards.CaptureState(defs).Key();var originalCore=PortableCheckpointJson.Serialize(source.Core.CaptureState());var originalActor=OutsidePlayerSaveData.Capture(source.Player);
+                using(var trial=OutsideExplorationSession.CreatePairTrial445(source,defs))using(var lease=trial.AttachPresentation()){
+                    Assert.AreEqual(1,trial.PairStage445);Assert.AreEqual(30,trial.TrialTarget.MaxHp);Assert.IsTrue(trial.SecondTrialTarget.IsDead);Assert.IsFalse(trial.IsDeckEditingLocation);Assert.AreNotSame(source.Player,trial.Player);Assert.AreNotSame(source.Cards,trial.Cards);
+                    int index=trial.Cards.Hand.ToList().FindIndex(c=>TrialInitialCardDefinitions.IsShot(c.Id));Assert.GreaterOrEqual(index,0,"固定試用seedの初期デッキに射撃を含む");trial.Cards.TrySelect(index);var held=trial.Cards.SelectedCard;
+                    void Tick(float move=0){trial.TickTraversal(move);}
+                    void Fire(){Assert.IsTrue(trial.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);}
+                    if(spendFirst){Fire();for(int n=0;n<90&&trial.TrialTarget.CurrentHp==30;n++)Tick();Assert.AreEqual(20,trial.TrialTarget.CurrentHp);Assert.AreEqual(29,trial.Cards.Hand.Count+trial.Cards.RemainingCount);Assert.IsFalse(trial.Cards.Hand.Contains(held));}
+                    for(int n=0;n<600&&trial.PairStage445==1;n++){
+                        Tick();var g=lease.GoblinTrial;
+                        if(g!=null&&!trial.TrialTarget.IsDead&&Math.Abs(trial.Core.Position-trial.FirstTrialTargetX)<=OutsideKickTrialDefinition.Range&&trial.CanPerformAttack)trial.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out _);
+                    }
+                    Assert.AreEqual(2,trial.PairStage445);Assert.IsNotNull(lease.SlimeTrial);Assert.IsNull(lease.GoblinTrial);Assert.AreEqual(30,trial.TrialTarget.CurrentHp);Assert.Greater(trial.FirstTrialTargetX,24*60000);Assert.AreEqual(spendFirst?29:30,trial.Cards.Hand.Count+trial.Cards.RemainingCount);Assert.AreEqual(0,trial.InitialShots.Count);Assert.AreEqual(0,trial.Bombs.Count);
+                    if(!spendFirst){Assert.IsTrue(trial.Cards.Hand.Contains(held));for(int n=0;n<60&&trial.Core.Position<20*60000;n++)Tick(1);trial.Cards.TrySelect(trial.Cards.Hand.ToList().IndexOf(held));Fire();for(int n=0;n<90&&trial.TrialTarget.CurrentHp==30;n++)Tick();Assert.AreEqual(20,trial.TrialTarget.CurrentHp);}
+                    for(int n=0;n<1000&&!trial.PairCompleted445&&!trial.Player.IsDead;n++){
+                        Tick(trial.Core.Position<23*60000?1:0);var slime=lease.SlimeTrial;
+                        if(slime!=null&&slime.Phase==OutsideSlimePhase.Recovery&&trial.CanPerformAttack&&Math.Abs(trial.Core.Position-trial.FirstTrialTargetX)<=OutsideKickTrialDefinition.Range)trial.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out _);
+                    }
+                    Assert.IsTrue(trial.PairCompleted445);Assert.IsFalse(trial.Player.IsDead);Assert.AreEqual(29,trial.Cards.Hand.Count+trial.Cards.RemainingCount);Assert.AreEqual(6000,trial.Core.CardGauge.CurrentUnits);
+                }
+                Assert.AreEqual(originalCards,source.Cards.CaptureState(defs).Key());CollectionAssert.AreEqual(originalCore,PortableCheckpointJson.Serialize(source.Core.CaptureState()));var afterActor=OutsidePlayerSaveData.Capture(source.Player);afterActor.Id=originalActor.Id;Assert.AreEqual(originalActor.Key(),afterActor.Key(),"新しい捕捉操作のGUID以外の親個体データは不変");Assert.AreEqual(120,source.TrialTarget.MaxHp);
+            }
+        }
+        [Test] public void 連戦445の撃破間隔は60論理frameでHPと手札を補充せずゲージを通常回復だけ進める()
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var trial=OutsideExplorationSession.CreatePairTrial445(source,Kick214Definitions(source)))using(var lease=trial.AttachPresentation()){
+                var defs=Kick214Definitions(source);string hand=trial.Cards.CaptureState(defs).Key();trial.Player.SetHp(64);Assert.IsTrue(trial.Core.CardGauge.TrySpend(90));trial.TrialTarget.TakeDamage(30,ElementType.None);
+                trial.TickTraversal(0);Assert.AreEqual(60,trial.PairIntermissionRemaining445);for(int n=0;n<59;n++)trial.TickTraversal(0);Assert.AreEqual(1,trial.PairStage445);Assert.AreEqual(1,trial.PairIntermissionRemaining445);long frame=trial.Core.Frame,gauge=trial.Core.CardGauge.CurrentUnits;
+                trial.TickTraversal(0);Assert.AreEqual(2,trial.PairStage445);Assert.AreEqual(frame+1,trial.Core.Frame);Assert.AreEqual(gauge+10,trial.Core.CardGauge.CurrentUnits);Assert.Less(trial.Core.CardGauge.CurrentUnits,6000);Assert.AreEqual(64,trial.Player.CurrentHp);Assert.AreEqual(hand,trial.Cards.CaptureState(defs).Key());Assert.AreEqual(30,trial.TrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void 連戦445は再試行の手札を再現し保存と通常の保存形式を混同しない()
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6)){
+                var defs=Kick214Definitions(source);string key;
+                using(var a=OutsideExplorationSession.CreatePairTrial445(source,defs)){key=a.Cards.CaptureState(defs).Key();Assert.Throws<InvalidOperationException>(()=>a.CaptureRuntime(defs));using(var lease=a.AttachPresentation()){for(int n=0;n<20;n++)a.TickTraversal(1);}Assert.Throws<InvalidOperationException>(()=>a.CaptureRuntime(defs));}
+                using(var b=OutsideExplorationSession.CreatePairTrial445(source,defs)){Assert.AreEqual(key,b.Cards.CaptureState(defs).Key());Assert.AreEqual(0,b.Core.Frame);Assert.AreEqual(1080000,b.Core.Position);}
+                Assert.DoesNotThrow(()=>source.CaptureRuntime(defs));Assert.AreEqual(0,source.PairStage445);
+            }
+        }
+
         [TestCase(1,false)][TestCase(-1,false)][TestCase(1,true)][TestCase(-1,true)]
         public void 別マップ通常蹴りは可視標的位置へ一度だけ命中しカードを消費しない(int facing,bool air)
         {

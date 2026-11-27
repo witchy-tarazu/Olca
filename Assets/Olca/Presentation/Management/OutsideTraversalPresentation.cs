@@ -1802,3 +1802,43 @@ namespace Olca.Presentation.Exploration
         }
     }
 }
+
+namespace Olca.Presentation.Exploration
+{
+    public sealed partial class OutsideExplorationView
+    {
+        private UnityEngine.UI.Button pairEntry445,pairRetry445,pairPause445;
+        private UnityEngine.UI.Text pairStatus445;private System.Action pairOpen445,pairRetryAction445,pairPauseAction445;private System.Func<string> pairStatusProvider445;
+        public bool CanEnterPair445=>presentation?.PairStage445==0&&CanOpenBranch441&&presentation.Cards?.TotalCount==30;
+        public void ConfigurePairEntry445(System.Action open)
+        {
+            pairOpen445=open;
+            if(pairEntry445==null){var f=new Olca.Presentation.Management.GameplayPanelFactory(transform,gaugeLabel.font,null);pairEntry445=f.Button("OutsidePairEntry445","レンセン シヨウ（カリ）",transform,new UnityEngine.Vector2(0,.5f),new UnityEngine.Vector2(195,-280));pairEntry445.GetComponent<UnityEngine.RectTransform>().sizeDelta=new UnityEngine.Vector2(350,48);pairEntry445.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};pairEntry445.onClick.AddListener(()=>{if(CanEnterPair445)pairOpen445?.Invoke();});}
+            RenderPair445();
+        }
+        public void ConfigurePairControls445(System.Action retry,System.Action pause,System.Func<string> status)
+        {
+            if(presentation==null||presentation.PairStage445<=0)throw new System.InvalidOperationException("連戦コピーの表示が必要です");pairRetryAction445=retry;pairPauseAction445=pause;pairStatusProvider445=status;
+            var f=new Olca.Presentation.Management.GameplayPanelFactory(transform,gaugeLabel.font,null);
+            UnityEngine.UI.Button Button(string name,string text,float x,System.Action action){var b=f.Button(name,text,transform,UnityEngine.Vector2.one,new UnityEngine.Vector2(x,-62));b.GetComponent<UnityEngine.RectTransform>().sizeDelta=new UnityEngine.Vector2(190,60);b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};b.onClick.AddListener(()=>{if(IsOpen)action();});return b;}
+            if(pairRetry445==null)pairRetry445=Button("PairRetry445","モウイチド",-450,()=>pairRetryAction445?.Invoke());
+            if(pairPause445==null)pairPause445=Button("PairPause445","トメル/サイカイ",-680,()=>pairPauseAction445?.Invoke());
+            if(pairStatus445==null){pairStatus445=f.Label("PairStatus445",transform,new UnityEngine.Vector2(.5f,0),new UnityEngine.Vector2(0,65),new UnityEngine.Vector2(1250,100));pairStatus445.fontSize=22;pairStatus445.alignment=UnityEngine.TextAnchor.MiddleCenter;pairStatus445.color=UnityEngine.Color.white;pairStatus445.raycastTarget=false;var outline=pairStatus445.gameObject.AddComponent<UnityEngine.UI.Outline>();outline.effectColor=new UnityEngine.Color(0,.03f,.06f,.9f);outline.effectDistance=new UnityEngine.Vector2(1,-1);}
+            transform.Find("OutsideExplorationTitle").GetComponent<UnityEngine.UI.Text>().text="レンセン（カリ）/ セーブなし";RenderPair445();
+        }
+        private void RenderPair445()
+        {
+            bool pair=IsOpen&&presentation.PairStage445>0;
+            if(pairEntry445!=null){pairEntry445.gameObject.SetActive(!pair&&pairOpen445!=null&&IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000);pairEntry445.interactable=CanEnterPair445;}
+            if(pairRetry445!=null)pairRetry445.gameObject.SetActive(pair);if(pairPause445!=null)pairPause445.gameObject.SetActive(pair);if(pairStatus445!=null){pairStatus445.gameObject.SetActive(pair);pairStatus445.text=pair?pairStatusProvider445?.Invoke()??"レンセン シヨウ（カリ）":"";}
+            if(!pair)return;
+            // 通常マップの施設や別の試用入口を、この保存しないコピーでは案内しない。
+            foreach(var value in new UnityEngine.GameObject[]{reloadPoint?.gameObject,branchButton441?.gameObject,goblinApproachButton?.gameObject,slimeHopButton?.gameObject,forestSwitch?.gameObject,ruinsSwitch?.gameObject,trialTargetPlate?.gameObject,trialTargetName?.gameObject,trialHitInvincibilityButton?.gameObject})if(value!=null)value.SetActive(false);
+        }
+        private void ClearPair445()
+        {
+            pairOpen445=pairRetryAction445=pairPauseAction445=null;pairStatusProvider445=null;
+            foreach(var b in new[]{pairEntry445,pairRetry445,pairPause445})if(b!=null)b.gameObject.SetActive(false);if(pairStatus445!=null)pairStatus445.gameObject.SetActive(false);
+        }
+    }
+}

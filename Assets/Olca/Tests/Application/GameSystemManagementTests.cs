@@ -749,6 +749,45 @@ namespace Olca.Tests.Application
                 var ended=branch.Runtime.Session;branch.Close();Assert.IsTrue(ended.IsDisposed);
             }
         }
+        private static Olca.Core.Logic.Dungeon.CheckpointDefinitions PairSource445(Olca.Core.Logic.Integration.OutsideExplorationSession source)
+        {
+            source.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var cards=new Olca.Application.Battle.SimpleCardFactory().CreateTrialInitialLoadout().Outside.ToArray();var owned=cards.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            Assert.IsTrue(source.QueueSelectedDeck("pair445-test",cards,owned,new Olca.Core.Logic.Battle.SeededBattleRandom(445),out var error),error);
+            using(var lease=source.AttachPresentation())for(int n=0;n<100&&source.Cards==null;n++)source.TickTraversal(1);
+            Assert.IsNotNull(source.Cards);source.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            return Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(Olca.Core.Domain.DungeonConfig.CreateTestDungeon(8,30,2),new Olca.Core.Domain.Deck(cards.ToList())).Definitions;
+        }
+        [TestCase(false)][TestCase(true)]
+        public async Task 連戦445の実Controllerは旧Openの遅延完了と失敗で新しい再試行を閉じない(bool fail)
+        {
+            var source=system.OutsideExploration;var defs=PairSource445(source);var factory=new Olca.Application.Battle.SimpleCardFactory();var checkpoint=Olca.Core.Logic.Dungeon.DungeonCheckpointSession.CreateDefault(Olca.Core.Domain.DungeonConfig.CreateTestDungeon(8,30,2),new Olca.Core.Domain.Deck(factory.CreateTrialInitialLoadout().Outside.ToList()));var go=new GameObject("Pair445Controller");go.SetActive(false);var c=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=c.GetType();void Set(string n,object v)=>type.GetField(n,flags).SetValue(c,v);object Get(string n)=>type.GetField(n,flags).GetValue(c);void Release()=>type.GetMethod("ReleasePair445",flags).Invoke(c,null);
+            var gate=new TaskCompletionSource<GameObject>();var input=new UnityInputProvider();Task old=null;CancellationToken token=default;
+            Func<CancellationToken,Task<GameObject>> immediate=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            Task Open(Func<CancellationToken,Task<GameObject>> create)=>((UniTask)type.GetMethod("OpenPair445Async",flags).Invoke(c,new object[]{true,create})).AsTask();
+            try{
+                Set("gameSystem",system);Set("initialHub",true);Set("clearReturnSession",new Olca.Core.Domain.ClearReturnSession(new DoorBoundaryStore()));Set("memoryCheckpoints",checkpoint);Set("panelFactory",new GameplayPanelFactory(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),null));Set("inputProvider",input);Set("runtimeStarted",true);go.SetActive(true);
+                old=Open(ct=>{token=ct;return gate.Task;});Assert.IsFalse(old.IsCompleted);var first=(Olca.Core.Logic.Integration.OutsideExplorationSession)Get("pairSession445");Assert.IsNotNull(first);Release();Assert.IsTrue(first.IsEnded);Assert.IsTrue(token.IsCancellationRequested);
+                await Open(immediate);var next=Get("pairSession445");var binding=(OutsideExplorationPresentationBinding)Get("pairBinding445");Assert.IsTrue(binding.IsOpen);float scale=Time.timeScale;type.GetMethod("RequestAutomaticPause",flags).Invoke(c,null);Assert.IsTrue((bool)Get("pairPaused445"));Assert.AreEqual(scale,Time.timeScale);
+                if(fail)gate.SetException(new IOException("late old pair"));else gate.SetResult(await immediate(CancellationToken.None));await old;
+                Assert.AreSame(next,Get("pairSession445"));Assert.AreSame(binding,Get("pairBinding445"));Assert.IsTrue(binding.IsOpen);Assert.IsFalse((bool)Get("pairOpening445"));Assert.IsTrue((bool)Get("pairPaused445"));Assert.IsFalse(((Olca.Core.Logic.Integration.OutsideExplorationSession)next).IsEnded);
+            }finally{if(!gate.Task.IsCompleted)gate.TrySetCanceled();if(old!=null)await old;Release();Set("inputProvider",null);Set("gameSystem",null);Set("memoryCheckpoints",null);UnityEngine.Object.DestroyImmediate(go);input.Dispose();}
+        }
+
+        [TestCase(1920,1080)][TestCase(1440,1080)]
+        public async Task 連戦445は別screenで通常Viewとカードを使い施設を出さず戻りを保護する(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var source=system.OutsideExploration;var defs=PairSource445(source);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));int entered=0,retried=0,paused=0,returned=0;
+            using(var main=new OutsideExplorationPresentationBinding(views,source,factory,()=>true,()=>{})){
+                Assert.IsTrue((await main.OpenAsync()).Succeeded);main.View.ConfigurePairEntry445(()=>entered++);main.View.Render();Assert.IsTrue(main.View.CanEnterPair445);main.View.transform.Find("OutsidePairEntry445").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(1,entered);var original=source.Cards.CaptureState(defs).Key();
+                using(var trial=Olca.Core.Logic.Integration.OutsideExplorationSession.CreatePairTrial445(source,defs))using(var pair=new OutsideExplorationPresentationBinding(views,trial,factory,()=>true,()=>returned++,screenKey:Olca.Core.Logic.Integration.OutsideExplorationSession.PairDefinition445)){
+                    Assert.IsTrue((await pair.OpenAsync()).Succeeded);Assert.IsFalse(main.IsOpen);pair.View.ConfigurePairControls445(()=>retried++,()=>paused++,()=>"1/2 ゴブリン / ホゾンなし");pair.View.Render();Canvas.ForceUpdateCanvases();Assert.IsTrue(pair.View.transform.Find("PairStatus445").gameObject.activeInHierarchy);Assert.IsFalse(pair.View.transform.Find("OutsideBranchEntry441").gameObject.activeInHierarchy);Assert.IsFalse(pair.View.transform.Find("OutsideReloadPoint").gameObject.activeInHierarchy);Assert.IsFalse(pair.View.CanEnterPair445);
+                    pair.View.transform.Find("PairRetry445").GetComponent<Button>().onClick.Invoke();pair.View.transform.Find("PairPause445").GetComponent<Button>().onClick.Invoke();Assert.AreEqual(1,retried);Assert.AreEqual(1,paused);Assert.IsTrue(pair.ReturnToHub());Assert.AreEqual(1,returned);
+                }
+                Assert.IsTrue((await main.OpenAsync()).Succeeded);Assert.AreEqual(original,source.Cards.CaptureState(defs).Key());Assert.IsTrue(main.IsOpen);
+            }
+        }
+
         [Test] public async Task 命中443は命中時のみ透過火花を12論理frame出し停止と再試行で漏らさない()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);

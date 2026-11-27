@@ -181,6 +181,7 @@ namespace Olca.Core.Logic.Integration
             public OutsideCameraPolicy Camera=>owner?.Camera;
             public OutsideExplorationCards Cards=>owner?.Cards;
             public string MapName=>IsCurrent?owner.MapName:null;
+            public int PairStage445=>IsCurrent?owner.PairStage445:0;
             public double MapNameOpacity=>IsCurrent?owner.MapNameOpacity:0;
             public bool ShouldShowBreath=>IsCurrent&&owner.ShouldShowBreath;
             public int BreathFramesRemaining=>owner?.BreathFramesRemaining??0;public int BreathMaximumFrames=>owner?.BreathMaximumFrames??0;
@@ -263,7 +264,7 @@ namespace Olca.Core.Logic.Integration
         // 試用別マップの射撃確認用配置。正式敵配置ではなく、既存壁24worldの前後へ分離する。
         public long FirstTrialTargetHeight=>slimeTrial?.Height??0;
         public long FirstTrialTargetX=>slimeTrial?.X??goblinTrial?.X??(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1350000:TrialTargetX);
-        public long SecondTrialTargetX=>Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:OutsideKickTrialDefinition.SecondTargetX;
+        public long SecondTrialTargetX=>PairStage445>0?31*60000:Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:OutsideKickTrialDefinition.SecondTargetX;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
         private Enemy trialTarget;private bool trialTargetChanged;private int trialTargetHits;private OutsideTrialStrike trialStrike;
@@ -633,7 +634,7 @@ namespace Olca.Core.Logic.Integration
                 value.EndParalysisFrame(true);value.EndConfusionFrame(true);value.EndBlindnessFrame(true);value.PublishHpFrame();
             }
             if(value.IsDead){CancelChargeInput();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();}
-            ObserveMapVisit(value);ObserveRecoveryVisit(value);attackAllowed&=!value.IsDead;return true;
+            ObserveMapVisit(value);ObserveRecoveryVisit(value);AdvancePair445();attackAllowed&=!value.IsDead;return true;
         }
         public OutsideExplorationCore Core {get;}=new OutsideExplorationCore(OutsideMovementDefinition.ValidationLandingTerrain,OutsideTraversalProfile.ValidationDash);
         public OutsideCameraPolicy Camera {get;private set;}=OutsideCameraPolicy.Follow;
@@ -697,7 +698,7 @@ namespace Olca.Core.Logic.Integration
         private long? mapNameStartedAt;
         private bool mapEntryPending=true;
         public const int MapNameDisplayFrames=120,MapNameFadeFrames=60;
-        public string MapName=>Core.Definition.Id=="validation-landing-32"?(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?"シヨウ ベツマップ（カリ）":"ケンショウ エリア（カリ）"):null;
+        public string MapName=>PairStage445>0?"レンセン シヨウ（カリ・セーブなし）":Core.Definition.Id=="validation-landing-32"?(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?"シヨウ ベツマップ（カリ）":"ケンショウ エリア（カリ）"):null;
         public double MapNameOpacity {
             get{if(mapEntryPending||!mapNameStartedAt.HasValue||MapName==null)return 0;long age=Math.Max(0,Core.Frame-mapNameStartedAt.Value);return age<MapNameDisplayFrames?1:Math.Max(0,1-(age-MapNameDisplayFrames)/(double)MapNameFadeFrames);}
         }
@@ -1244,6 +1245,7 @@ namespace Olca.Core.Logic.Integration
         // 呼出元の退避可否判定は保ち、通常退避と即時保存の項目集合だけを共有する。
         private OutsideRuntimeSaveData BuildRuntimeSnapshot(CheckpointDefinitions definitions,OutsideKickStateData kick)
         {
+            if(PairStage445>0)throw new InvalidOperationException("連戦試用は保存しません");
             if((goblinTrial!=null||slimeTrial!=null)&&(pendingGoblinStrike||pendingSlimeLanding||Player.HasPendingHpFrame))throw new InvalidOperationException("試用敵の被害確定前には保存できません");
             var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,ChargeKick=normalKick?.IsCharged==true?normalKick.ActiveChargePlan.Copy():null,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy(),GoblinTrial=goblinTrial?.Copy(),SlimeTrial=slimeTrial?.Copy(),Knockback=knockback?.Copy(),TrialContact=CaptureTrialContact(),InitialShots=CaptureInitialShots(),Bombs=CaptureBombs(),HitStopFrames=HitStopRemainingFrames};value.Validate();return value;
         }
@@ -1588,9 +1590,9 @@ namespace Olca.Core.Logic.Integration
     {
         private OutsideGoblinTrialData goblinTrial;
         private bool pendingGoblinStrike;
-        private static bool GoblinSafePosition(OutsideExplorationCore core,long x)
+        private static bool GoblinSafePosition(OutsideExplorationCore core,long x,long min=OutsideGoblinTrialData.MinX,long max=OutsideGoblinTrialData.MaxX)
         {
-            if(core?.Definition.Id!="validation-landing-32"||core.TrialMapId!=OutsideTrialRoute.AnnexMapId||core.TraversalProfile==null||x<OutsideGoblinTrialData.MinX||x>OutsideGoblinTrialData.MaxX)return false;
+            if(core?.Definition.Id!="validation-landing-32"||core.TrialMapId!=OutsideTrialRoute.AnnexMapId||core.TraversalProfile==null||x<min||x>max)return false;
             long left=x-TrialContactHalfWidth,right=x+TrialContactHalfWidth;
             return !core.TraversalProfile.Walls.Any(w=>w.X>=left&&w.X<=right&&w.Bottom<=OutsideGoblinTrialData.Height&&w.Top>=0)
                 &&!core.TraversalProfile.FloorGaps.Any(g=>right>g.Left&&left<g.Right)
@@ -1614,7 +1616,7 @@ namespace Olca.Core.Logic.Integration
                 if(Math.Abs(delta)<=OutsideGoblinTrialData.StopRange&&Core.Height>=0&&Core.Height<=OutsideGoblinTrialData.Height){g.Phase=OutsideGoblinPhase.Windup;g.Age=0;return;}
                 if(Math.Abs(delta)<=OutsideGoblinTrialData.StopRange||Math.Abs(delta)>6*60000)return;
                 long step=Math.Min(OutsideGoblinTrialData.Speed,Math.Abs(delta)-OutsideGoblinTrialData.StopRange)*g.Facing,next=g.X+step;
-                if(GoblinSafePosition(Core,next))g.X=next;
+                if(GoblinSafePosition(Core,next,PairStage445==1?16*60000:OutsideGoblinTrialData.MinX,OutsideGoblinTrialData.MaxX))g.X=next;
                 return;
             }
             g.Age++;
@@ -1661,9 +1663,9 @@ namespace Olca.Core.Logic.Integration
     {
         private OutsideSlimeTrialData slimeTrial;
         private bool pendingSlimeLanding;
-        private static bool SlimeSafeSpan(OutsideExplorationCore core,long start,long end)
+        private static bool SlimeSafeSpan(OutsideExplorationCore core,long start,long end,long min=OutsideSlimeTrialData.MinX,long max=OutsideSlimeTrialData.MaxX)
         {
-            if(core?.Definition.Id!="validation-landing-32"||core.TrialMapId!=OutsideTrialRoute.AnnexMapId||core.TraversalProfile==null||start<OutsideSlimeTrialData.MinX||start>OutsideSlimeTrialData.MaxX||end<OutsideSlimeTrialData.MinX||end>OutsideSlimeTrialData.MaxX)return false;
+            if(core?.Definition.Id!="validation-landing-32"||core.TrialMapId!=OutsideTrialRoute.AnnexMapId||core.TraversalProfile==null||start<min||start>max||end<min||end>max)return false;
             long left=Math.Min(start,end)-TrialContactHalfWidth,right=Math.Max(start,end)+TrialContactHalfWidth;
             return !core.TraversalProfile.Walls.Any(w=>w.X>=left&&w.X<=right&&w.Bottom<=OutsideSlimeTrialData.Peak+TrialContactHeight&&w.Top>=0)
                 &&!core.TraversalProfile.FloorGaps.Any(g=>right>g.Left&&left<g.Right)
@@ -1686,8 +1688,9 @@ namespace Olca.Core.Logic.Integration
             ObserveSlimeDeath();if(s.Phase==OutsideSlimePhase.Dead||TrialTarget.IsStaggered||TrialTarget.IsParalyzed)return;
             if(s.Phase==OutsideSlimePhase.Idle){
                 if(Math.Abs(Core.Position-s.X)>6*60000)return;
-                long target=Math.Max(OutsideSlimeTrialData.MinX,Math.Min(OutsideSlimeTrialData.MaxX,Core.Position));
-                if(!SlimeSafeSpan(Core,s.StartX,target))return;
+                long min=PairStage445==2?25*60000:OutsideSlimeTrialData.MinX,max=PairStage445==2?28*60000:OutsideSlimeTrialData.MaxX;
+                long target=Math.Max(min,Math.Min(max,Core.Position));
+                if(!SlimeSafeSpan(Core,s.StartX,target,min,max))return;
                 s.LandingX=target;s.Facing=target==s.StartX?s.Facing:Math.Sign(target-s.StartX);s.Phase=OutsideSlimePhase.Squash;s.Age=0;return;
             }
             s.Age++;
@@ -1703,6 +1706,54 @@ namespace Olca.Core.Logic.Integration
             if(Math.Abs(dx)>OutsideSlimeTrialData.LandingRadius||Core.Height<0||Core.Height>TrialContactHeight||FirstSwordBlockingWall(s.X,0,facing,Math.Abs(dx)).HasValue)return null;
             bool accepted=Player.TryTakeDamage(TrialEnemyDamage,attackElement:ElementType.None,affectsPoise:true,poiseDamage:TrialEnemyPoiseDamage);
             return accepted?OutsideTrialEnemyAttackData.V2Knockback.Start(facing):null;
+        }
+    }
+}
+
+namespace Olca.Core.Logic.Integration
+{
+    public sealed partial class OutsideExplorationSession
+    {
+        public const string PairDefinition445="trial-pair-goblin-slime-v1";
+        public int PairStage445 {get;private set;}
+        public bool PairCompleted445 {get;private set;}
+        private long pairClearedAt445=-1;
+        public long PairIntermissionRemaining445=>pairClearedAt445<0?0:Math.Max(0,60-(Core.Frame-pairClearedAt445));
+        /// <summary>通常個体とRNGを変更しない、保存不可の連戦コピー。カードの使用/補充は既存Sessionに一任する。</summary>
+        public static OutsideExplorationSession CreatePairTrial445(OutsideExplorationSession source,CheckpointDefinitions definitions)
+        {
+            if(source==null||source.IsEnded||source.Player==null||source.Player.IsDead||source.Cards==null||definitions==null)throw new ArgumentException("連戦には通常の生存個体と登録デッキが必要です");
+            var actor=OutsidePlayerSaveData.Capture(source.Player).Restore();
+            var copy=OutsideExplorationCards.RestoreState(source.Cards.CaptureState(definitions),definitions);
+            // 同じ30枚の構成を試用開始時だけ通常シャッフル。親の手札/RNGや使用済み履歴は変えない。
+            var all=Enumerable.Range(0,copy.TotalCount).Select(copy.ActionCard).OrderBy(c=>c.Id,StringComparer.Ordinal).ThenBy(c=>c.ExceedLevel).ToArray();
+            var owned=all.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
+            if(!DepartureDeckRules.TryCreateForSize(all,owned,ExplorationDeckRules.RequiredCards,out var deck,out var failure))throw new ArgumentException(failure);
+            var random=new Olca.Core.Logic.Battle.SeededBattleRandom(446);deck.Shuffle(random);var cards=new OutsideExplorationCards(deck,random);
+            var trial=new OutsideExplorationSession(true);
+            try{
+                trial.TryInitializePlayer(()=>actor);trial.Cards=cards;trial.PairStage445=1;
+                var original=source.Core.TraversalProfile??OutsideTraversalProfile.ValidationDash;
+                var flat=new OutsideTraversalProfile(PairDefinition445+"-geometry",original.DashSpeedPerSecond,original.DashFrames,original.DashCooldownFrames,original.DashResetFrames,original.DashJumpSpeedPerSecond,original.BodyHalfWidth,original.BodyHeight,original.WallSlidePerFrame,original.WallKickVelocity,original.WallKickSpeedPerSecond,original.WallKickPushFrames,original.WallKickMotionFrames,original.WallActionsUnlocked);
+                trial.TryConfigureTraversal(original.DoubleJumpUnlocked?flat.WithDoubleJump(flat.Id):flat);
+                trial.Core.SetRecoveryMap(OutsideTrialRoute.DoorAnnexPoint);trial.Core.RestoreRecoveryPosition(18*60000);
+                trial.Core.CardGauge.Restore(source.Core.CardGauge.Maximum,source.Core.CardGauge.RecoveryPerSecond,source.Core.CardGauge.CurrentUnits);
+                trial.trialTarget=trial.CreatePairTarget445();trial.secondTrialTarget=trial.CreateSecondTrialTarget(null);trial.secondTrialTarget.RestoreCheckpointHp(0);
+                trial.goblinTrial=new OutsideGoblinTrialData{DefinitionId=PairDefinition445+"-goblin",X=1350000,Facing=-1};trial.EnableTrialNormalKick();trial.EnableTrialHitStop();trial.EnableTrialCardPolish();return trial;
+            }catch{trial.Dispose();throw;}
+        }
+        // この保存しない短い区間だけ、既存分岐回廊と同じHP30を調整可能な仮値として使う。
+        private Enemy CreatePairTarget445(){var e=new Enemy(PairDefinition445+"-"+PairStage445,"レンセン シヨウ（カリ）",30,ElementType.None,new Vector2Int(0,0));e.OnHitStopRequested+=RequestHitStop;return e;}
+        private void AdvancePair445()
+        {
+            if(PairStage445==0||PairCompleted445||Player.IsDead||!TrialTarget.IsDead)return;
+            if(PairStage445==2){PairCompleted445=true;CancelChargeInput();CancelAttackReservation();return;}
+            if(pairClearedAt445<0){pairClearedAt445=Core.Frame;return;}
+            if(Core.Frame-pairClearedAt445<60)return;
+            // 一体目の飛翔物や命中済み印を二体目へ持ち越さず、手札/HP/ゲージ/論理時計はそのまま。
+            initialShots.Clear();bombs.Clear();bombBlasts.Clear();ClearBombReleaseVisual();attackState=null;normalKick?.Reset();CancelChargeInput();CancelAttackReservation();
+            goblinTrial=null;pendingGoblinStrike=false;trialEnemyAttack=null;PairStage445=2;trialTarget=CreatePairTarget445();trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialContactNextFrame=0;
+            slimeTrial=new OutsideSlimeTrialData{DefinitionId=PairDefinition445+"-slime",StartX=1590000,LandingX=1590000,Facing=-1};pendingSlimeLanding=false;pairClearedAt445=-1;PairStage445=2;
         }
     }
 }
