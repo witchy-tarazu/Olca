@@ -89,10 +89,28 @@ namespace Olca.Application.Management
                 // 登録factory内で行動を毎回生成。隣接を待つStayは0、カード終了後の待ちは既存2秒を暫定借用。
                 return new EnemyAIRegistration(new[]{new EnemyActionPattern(0,EnemyActionPatternSamples.Slime(card,2000,database),EnemyPatternEndMode.Loop)},0);
             }
-            return new EnemyAIRegistry(new Dictionary<string,Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{
+            return new PairEnemyProvider447(new EnemyAIRegistry(new Dictionary<string,Func<Enemy,Olca.Core.Logic.CardEffects.ICardDatabase,EnemyAIRegistration>>{
                 [DungeonStepArcherAction.EnemyId]=(e,d)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0),
                 [TrialArcherEnemyId]=(e,d)=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonTrialArrowAction()},EnemyPatternEndMode.Loop)},0),
-                [TrialSwordEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Sword),[TrialBombEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Bomb)});
+                [TrialSwordEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Sword),[TrialBombEnemyId]=(e,d)=>Definition(d,SimpleCardFactory.Bomb)}));
+        }
+        private sealed class PairEnemyProvider447:IEnemyAIProvider
+        {
+            private readonly IEnemyAIProvider fallback;
+            public PairEnemyProvider447(IEnemyAIProvider fallback){this.fallback=fallback;}
+            public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
+                =>DungeonStepArcherAction.IsPairTrialBoss(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
+        }
+        public const string TrialPairRouteId447="trial-dungeon-pair-route-v1";
+        /// <summary>二体だけの任意出撃。弓を既存の区間ボス枠へ登録し、通常接触と保存形式をそのまま使う。</summary>
+        public static FloorSequenceDefinitions CreateTrialPairRoute447(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();var cells=new List<MapCell>();
+            for(int i=0;i<8;i++){
+                var enemy=i==3?new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,60,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):i==4?new Enemy(TrialSwordEnemyId,"ソードスライム（カリ）",50,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):null;
+                cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+            }
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialPairRouteId447,"trial-dungeon-pair-v1",new[]{new DungeonConfig("trial-dungeon-pair-floor-v1","シヨウ ユミ・ソード（カリ）",8,cells)},catalog);
         }
         public static FloorSequenceDefinitions CreateTrialCardRoute(CheckpointDefinitions cardCatalog,SimpleCardFactory cards,EnemyPoiseDefinition normal,EnemyPoiseDefinition boss)
         {

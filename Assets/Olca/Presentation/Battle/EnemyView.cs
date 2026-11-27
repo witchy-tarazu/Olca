@@ -20,8 +20,8 @@ namespace Olca.Presentation.Battle
         private Olca.Unity.GeneratedSpriteAssets.Lease archerAssets;
         private bool archerWindup;
         private long archerReleaseAt=-1000,archerExpectedRelease;
-        public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId);
-        public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId;
+        public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId)||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy);
+        public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy);
         private Sprite ArcherSprite(int frame)
         {
             if(archerAssets==null)archerAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);

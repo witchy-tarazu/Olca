@@ -341,6 +341,10 @@ namespace Olca.Core.Logic.Battle
     public sealed class DungeonStepArcherAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource,IEnemyRecoveryPreviewSource
     {
         public const string EnemyId="trial-dungeon-archer-step-v2";
+        // 独立した二体試用の終了対象。旧bossや旧弓の定義は一致しない。
+        public const string PairTrialBossName="レンケイ ユミ（カリ）";
+        // HP/属性はこの名義の固定値。強靭度は通常敵の調整値を引き継ぎ、現在値や有無では表示を変えない。
+        public static bool IsPairTrialBoss(Enemy enemy)=>enemy!=null&&enemy.EnemyId=="boss"&&enemy.Name==PairTrialBossName&&!enemy.IsSummoned&&enemy.MaxHp==60&&enemy.Element==ElementType.None;
         public const int CounterWindowFrames=72,StepPresentationFrames=12;
         private readonly DungeonTrialArrowAction shot;
         private readonly EnemyMovementAction retreat=new EnemyMovementAction(EnemyMovementKind.Retreat,0);

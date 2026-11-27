@@ -573,3 +573,64 @@ namespace Olca.Tests.Application
         {var b=Battle(out var p,out var e,3);Frames(b,40);e.TakeDamage(1000,ElementType.None);Frames(b,100);Assert.AreEqual(4,e.GridPosition.X);Assert.IsEmpty(b.EnemyAttackTiles);}
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonPair447Tests
+    {
+        private static FloorSequenceDefinitions Route(out SimpleCardFactory cards)
+        {
+            cards=new SimpleCardFactory();var catalog=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;
+            return DungeonCoreFactory.CreateTrialPairRoute447(catalog,cards,new EnemyPoiseDefinition(30,18,180));
+        }
+        private static BattleSystem Pair(out PlayerCharacter p,out Enemy archer,out Enemy sword,int column=2,int swordStartupFrames=0)
+        {
+            p=new PlayerCharacter(1000,new Vector2Int(column,0));archer=new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,60,ElementType.None,new Vector2Int(4,0));sword=new Enemy(DungeonCoreFactory.TrialSwordEnemyId,"ソードスライム（カリ）",50,ElementType.None,new Vector2Int(3,0));
+            return new BattleSystem(p,new System.Collections.Generic.List<Enemy>{archer,sword},new Deck(),customGaugeSpeed:0,cardDatabase:new SimpleCardFactory(cardTimings:new System.Collections.Generic.Dictionary<string,PlayerAttackTiming>{{SimpleCardFactory.Sword,new PlayerAttackTiming(swordStartupFrames,0)}}),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());
+        }
+        private static void Frames(BattleSystem b,int count){for(int n=0;n<count;n++)b.TickFrame(17);}
+        [Test] public void 連携447は二体だけの別ルートで旧ルートと通常ボスAIを変更せず保存復元できる()
+        {
+            var route=Route(out var cards);var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;var normal=new EnemyPoiseDefinition(30,18,180);var boss=new EnemyPoiseDefinition(60,18,180);var before=DungeonCoreFactory.CreateTrialStepArcherRoute(legacy,cards,normal,boss).RouteHash;
+            var map=route.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();Assert.AreEqual(8,map.TotalCellCount);Assert.AreEqual(2,map.MapCells.Count(c=>c.Enemy!=null));Assert.AreEqual(CellType.Boss,map.MapCells[3].Type);Assert.IsTrue(DungeonStepArcherAction.IsPairTrialBoss(map.MapCells[3].Enemy));Assert.AreEqual(DungeonCoreFactory.TrialSwordEnemyId,map.MapCells[4].Enemy.EnemyId);Assert.AreEqual(before,DungeonCoreFactory.CreateTrialStepArcherRoute(legacy,cards,normal,boss).RouteHash);
+            var provider=DungeonCoreFactory.CreateTrialCardEnemyAI();Assert.IsNull(provider.Create(new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(4,0)),cards));Assert.IsNull(provider.Create(new Enemy("boss",DungeonStepArcherAction.PairTrialBossName+"X",60,ElementType.None,new Vector2Int(4,0)),cards));Assert.IsNotNull(provider.Create(map.MapCells[3].Enemy,cards));Assert.IsNull(provider.Create(new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,61,ElementType.None,new Vector2Int(4,0)),cards));Assert.IsNull(provider.Create(new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,60,ElementType.Fire,new Vector2Int(4,0)),cards));Assert.IsNull(provider.Create(new Enemy("other",DungeonStepArcherAction.PairTrialBossName,60,ElementType.None,new Vector2Int(4,0)),cards));Assert.IsNull(provider.Create(new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,60,ElementType.None,new Vector2Int(4,0),isSummoned:true),cards));Assert.IsNotNull(provider.Create(new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,60,ElementType.None,new Vector2Int(4,0),poiseDefinition:new EnemyPoiseDefinition(45,21,210)),cards),"強靭は既存の通常調整を許し、IDと名義と固定HP属性で行動を識別する");
+            var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(447),new UnityLogger(),()=>cards,enemies:provider);var manager=factory.Create(new DungeonCoreFactory.Launch{Map=map,Player=new PlayerCharacter(100),Deck=cards.CreateStarterDeck(),Checkpoints=cp});
+            Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsTrue(DungeonStepArcherAction.IsPairTrialBoss(restored.Map.MapCells[3].Enemy));Assert.AreEqual(CellType.Boss,restored.Map.MapCells[3].Type);Assert.AreEqual(2,restored.Map.MapCells.Count(c=>c.Enemy!=null));
+        }
+        [Test] public void 連携447は通常歩行接触で視界内の二体が参加し前衛三と弓四と主人公一へ配置する()
+        {
+            var route=Route(out var cards);var map=route.CreateInitialMap(0);var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(447),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());var manager=factory.Create(new DungeonCoreFactory.Launch{Map=map,Player=new PlayerCharacter(100),Deck=cards.CreateStarterDeck(),Checkpoints=cp});
+            for(int n=0;n<1200&&manager.CurrentBattle==null;n++)manager.TickFrame(17);var battle=manager.CurrentBattle;Assert.IsNotNull(battle,"接触を直接呼ばず通常の歩行から開始する");Assert.AreEqual(2,battle.Enemies.Count);Assert.AreEqual(1,battle.Player.GridPosition.X);Assert.AreEqual(4,battle.Enemies.Single(DungeonStepArcherAction.IsPairTrialBoss).GridPosition.X);Assert.AreEqual(3,battle.Enemies.Single(e=>e.EnemyId==DungeonCoreFactory.TrialSwordEnemyId).GridPosition.X);
+        }
+        [TestCase(true)][TestCase(false)] public void 連携447の実登録AIを検証用12frame前隙で重ね片方の死亡でも他方の印を保つ(bool cancelArcher)
+        {
+            var b=Pair(out var p,out var a,out var s,swordStartupFrames:12);var field=typeof(BattleSystem).GetField("enemyAttackTelegraphs",BindingFlags.Instance|BindingFlags.NonPublic);
+            int Owners()=>((System.Collections.IDictionary)field.GetValue(b)).Count;
+            for(int n=0;n<50&&Owners()<2;n++)b.TickFrame(17);Assert.AreEqual(2,Owners());Assert.Contains(new Vector2Int(2,0),b.EnemyAttackTiles.ToList());Assert.AreEqual(1,b.EnemyAttackTiles.Count,"重なっても表示マスは一つ");
+            (cancelArcher?a:s).TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.AreEqual(1,Owners());Assert.Contains(new Vector2Int(2,0),b.EnemyAttackTiles.ToList());(cancelArcher?s:a).TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+        [Test] public void 連携447は既定の即時ソード攻撃で同じマスの持続する弓予告を消さない()
+        {
+            var b=Pair(out var p,out var a,out var s);b.TickFrame(17);Assert.AreEqual(1000,p.CurrentHp);Assert.Contains(new Vector2Int(2,0),b.EnemyAttackTiles.ToList());b.TickFrame(17);Assert.AreEqual(970,p.CurrentHp);Assert.Contains(new Vector2Int(2,0),b.EnemyAttackTiles.ToList());Assert.IsTrue(b.TryGetEnemyAttackPreview(a,out var target,out _,out _));Assert.AreEqual(new Vector2Int(2,0),target);s.TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.Contains(target,b.EnemyAttackTiles.ToList());a.TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+        [TestCase(false)][TestCase(true)] public void 連携447はどちらを先に倒しても二体撃破後だけ通常勝利とクリアを保存する(bool archerFirst)
+        {
+            var route=Route(out var cards);var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(447),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());var manager=factory.Create(new DungeonCoreFactory.Launch{Map=route.CreateInitialMap(0),Player=new PlayerCharacter(100),Deck=cards.CreateStarterDeck(),Checkpoints=cp});manager.OnCardRewardPresented+=_=>manager.SelectCardReward(null);
+            for(int n=0;n<1200&&manager.CurrentBattle==null;n++)manager.TickFrame(17);var b=manager.CurrentBattle;Assert.IsNotNull(b);if(b.CustomScreen.IsOpen){b.CustomScreen.Confirm();b.CustomScreen.Close();b.Resume(BattlePauseReason.CustomScreen);}var archer=b.Enemies.Single(DungeonStepArcherAction.IsPairTrialBoss);var sword=b.Enemies.Single(e=>e.EnemyId==DungeonCoreFactory.TrialSwordEnemyId);
+            (archerFirst?archer:sword).TakeDamage(10000,ElementType.None);manager.TickFrame(17);Assert.IsFalse(b.IsGameOver);Assert.IsFalse(manager.Dungeon.IsDungeonCleared,"区間終了対象が先に死んでも残敵がいる間はクリアしない");(archerFirst?sword:archer).TakeDamage(10000,ElementType.None);
+            for(int n=0;n<2000&&manager.CurrentPhase!=GamePhase.DungeonCleared;n++){
+                manager.TickFrame(17);if(manager.IsBattleEndPresentationPending)manager.CompleteBattleEndPresentation();if(manager.Dungeon.PendingCurrencyReward>0)manager.SelectCurrencyReward(true);if(manager.Dungeon.PendingItemReward!=null)manager.SelectItemReward(false);if(manager.CurrentPhase==GamePhase.Dungeon&&!manager.Dungeon.IsInBattle)manager.ResumeAfterBattle();
+            }
+            Assert.AreEqual(GamePhase.DungeonCleared,manager.CurrentPhase);Assert.IsTrue(manager.Dungeon.IsDungeonCleared);Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsNull(restored.Map.MapCells[3].Enemy);Assert.IsNull(restored.Map.MapCells[4].Enemy);
+        }
+        [TestCase(false)][TestCase(true)] public void 連携447は既存ソードとボムの実使用で当たる相手を変え性能を変更しない(bool bomb)
+        {
+            var b=Pair(out var p,out var a,out var s,bomb?1:2);var cards=new SimpleCardFactory();b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{cards.CreateById(bomb?SimpleCardFactory.Bomb:SimpleCardFactory.Sword)});Assert.IsTrue(b.UseCurrentCard());for(int n=0;n<120&&s.CurrentHp==50;n++)b.TickFrame(17);
+            Assert.AreEqual(bomb?10:20,s.CurrentHp);Assert.AreEqual(bomb?20:60,a.CurrentHp,"範囲外や未命中を複数命中と扱わない");
+        }
+        [Test] public void 連携447の区間ボスだけが既存の後退弓連番を表示し通常ボス表示を維持する()
+        {
+            var go=new UnityEngine.GameObject("PairArcher447");try{var renderer=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,renderer);view.Initialize(new Enemy("boss",DungeonStepArcherAction.PairTrialBossName,60,ElementType.None,new Vector2Int(4,0)));Assert.IsTrue(view.IsTrialArcher&&view.IsStepArcher&&view.IsBossGauge);Assert.AreEqual(256,renderer.sprite.rect.width);view.RenderTrialArcher(true,20,1000);Assert.AreEqual(6*256,renderer.sprite.rect.x);view.Initialize(new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(4,0)));Assert.IsFalse(view.IsTrialArcher||view.IsStepArcher);Assert.IsTrue(view.IsBossGauge);}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+    }
+}
