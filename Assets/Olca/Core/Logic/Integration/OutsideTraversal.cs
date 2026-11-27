@@ -664,7 +664,14 @@ namespace Olca.Core.Logic.Integration
         public const string DefinitionId="trial-branch-corridor-v1",GuardId="trial-branch-goblin-v1";
         public const long Unit=60000,GuardX=570000,GateX=576000,Reach=180000,AttackHeight=90000,ExitX=1080000;
         public const string RuinsDefinitionId="trial-ruins-arrow-crossing-v1";
-        public bool IsRuins {get;} public long EnemyX=>IsRuins?18*Unit:GuardX;public long GoalX=>IsRuins?22*Unit:ExitX;
+        public const string WaterwayDefinition464="trial-waterway-pulse-v1";
+        public const long WaterJetX464=360000,WaterJetHeight464=60000;
+        public const int WaterWarning464=30,WaterActiveEnd464=90,WaterCycle464=210;
+        public bool IsWaterway464 {get;}public int WaterAge464=>(int)(Frame%WaterCycle464);
+        public bool WaterWarningNow464=>IsWaterway464&&WaterAge464<WaterWarning464;
+        public bool WaterActiveNow464=>IsWaterway464&&WaterAge464>=WaterWarning464&&WaterAge464<WaterActiveEnd464;
+        public long LastWaterContactCycle464 {get;private set;}=-1;
+        public bool IsRuins {get;} public long EnemyX=>IsRuins?18*Unit:GuardX;public long GoalX=>IsWaterway464?630000:IsRuins?22*Unit:ExitX;
         public bool ReachedSecondPlatform {get;private set;}
         public bool ArrowActive {get;private set;}public long ArrowX {get;private set;}public int ArrowFacing {get;private set;}private int arrowAge;
         public const long ArrowHeight=39000,ArrowStep=8000; // 既存の探索弓試用と同じ低い矢。
@@ -680,13 +687,15 @@ namespace Olca.Core.Logic.Integration
         private readonly OutsideTraversalProfile closed,open;
         private readonly OutsideChargeHoldInput charge=new OutsideChargeHoldInput();
         public int ChargeFrames=>charge.Frames; public bool IsCharging=>charge.IsAccumulating;
-        public OutsideBranchTrial441(bool ruins=false)
+        public OutsideBranchTrial441(bool ruins=false,bool waterway464=false)
         {
+            if(ruins&&waterway464)throw new System.ArgumentException("独立試用は一種類だけ選びます");IsWaterway464=waterway464;
             OutsideTraversalProfile Profile(string id,params OutsideValidationWall[] walls)=>new OutsideTraversalProfile(id,720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12,false,walls);
             IsRuins=ruins;
             closed=Profile(DefinitionId+"-closed",new OutsideValidationWall("branch-guard-gate",GateX,0,AttackHeight,false,false));open=Profile(DefinitionId+"-open");
             if(ruins){closed=open=Profile(RuinsDefinitionId+"-open");}
-            Core=new OutsideExplorationCore(ruins?new OutsideMovementDefinition(RuinsDefinitionId,24*Unit,2*Unit,6*Unit,new OutsideLandingSurface("ruins-upper-first",4*Unit,9*Unit,2*Unit),new OutsideLandingSurface("ruins-upper-second",11*Unit,17*Unit,2*Unit)):new OutsideMovementDefinition(DefinitionId,20*Unit,2*Unit,6*Unit,new OutsideLandingSurface("branch-upper",4*Unit,14*Unit,2*Unit)),closed);
+            if(waterway464){closed=Profile(WaterwayDefinition464+"-on",new OutsideValidationWall("waterway-jet",WaterJetX464,0,WaterJetHeight464,false,false));open=Profile(WaterwayDefinition464+"-off");GateOpen=true;}
+            Core=new OutsideExplorationCore(waterway464?new OutsideMovementDefinition(WaterwayDefinition464,12*Unit,2*Unit,6*Unit,new OutsideLandingSurface("waterway-upper",3*Unit,9*Unit,84000)):ruins?new OutsideMovementDefinition(RuinsDefinitionId,24*Unit,2*Unit,6*Unit,new OutsideLandingSurface("ruins-upper-first",4*Unit,9*Unit,2*Unit),new OutsideLandingSurface("ruins-upper-second",11*Unit,17*Unit,2*Unit)):new OutsideMovementDefinition(DefinitionId,20*Unit,2*Unit,6*Unit,new OutsideLandingSurface("branch-upper",4*Unit,14*Unit,2*Unit)),waterway464?open:closed);
             Player=new Olca.Core.Domain.PlayerCharacter(100);Guard=new Olca.Core.Domain.Enemy(ruins?"trial-ruins-archer-v1":GuardId,ruins?"イセキ ユミ（カリ）":"モンバン ゴブリン（カリ）",GuardHp,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(0,0));
             Kick=new OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());Kick.Configure(OutsideKickTrialDefinition.Timings());
         }
@@ -694,6 +703,10 @@ namespace Olca.Core.Logic.Integration
         public bool StrikeContainsPlayer()=>!Guard.IsDead&&(Core.Position-EnemyX)*GuardFacing>=0&&(Core.Position-EnemyX)*GuardFacing<=Reach&&Core.Height>=0&&Core.Height<=AttackHeight;
         private void RefreshGate()
         {
+            if(IsWaterway464){int age=(int)((Frame+1)%WaterCycle464);bool active=age>=WaterWarning464&&age<WaterActiveEnd464;
+                // 身体をまたいで閉鎖しない。旧門と同様に抜けるまで保留する。
+                bool waterClear=!active||System.Math.Abs(Core.Position-WaterJetX464)<closed.BodyHalfWidth;
+                if(waterClear!=GateOpen){GateOpen=waterClear;Core.ConfigureTraversal(waterClear?open:closed);}return;}
             if(IsRuins){GateOpen=true;return;}
             if(Core.Position>GateX+closed.BodyHalfWidth)GatePassed=true;
             // 閉じる時に身体が重なる場合は、身体が抜けるまで閉鎖を保留する。押出し/転移はしない。
@@ -711,6 +724,15 @@ namespace Olca.Core.Logic.Integration
             if(release==OutsideBasicRelease.Normal)Kick.TryRequest(Frame,Core.IsGrounded,Core.Facing,bodyAllowed:allowed);
             if(release==OutsideBasicRelease.Charged)Kick.TryStartCharge(Frame,Core.IsGrounded,Core.Facing,OutsideChargeKickData.Create(Player,Core.IsGrounded),allowed);
             Kick.TryExecuteReserved(Frame,Core.IsGrounded,Core.Facing,allowed);
+            if(IsWaterway464){
+                Player.BeginHpFrame();try{
+                    bool contact=!GateOpen&&WaterActiveNow464&&Core.Height<WaterJetHeight464&&System.Math.Abs(Core.Position-WaterJetX464)==closed.BodyHalfWidth&&System.Math.Sign(input.Horizontal)==System.Math.Sign(WaterJetX464-Core.Position);
+                    long cycle=Frame/WaterCycle464;
+                    if(contact&&LastWaterContactCycle464!=cycle){LastWaterContactCycle464=cycle;if(Player.TryTakeDamage(10,affectsPoise:false))LastHurtFrame=Frame;}
+                }finally{Player.CommitHpFrame();Player.PublishHpFrame();}
+                if(Core.SupportId=="waterway-upper")UsedUpper=true;
+                if(!Player.IsDead&&Core.Position>=GoalX&&Core.IsGrounded&&Core.Height==0){Completed=true;CancelInput();}return;
+            }
             bool contains=Kick.IsActive&&(Kick.IsCharged?Kick.ChargePlan.Contains(Core.Position,Core.Height,Kick.AttackFacing,EnemyX):OutsideKickTrialDefinition.Contains(Kick.Kind,Core.Position,Core.Height,Kick.AttackFacing,EnemyX));
             if(!Guard.IsDead&&Kick.IsHitWindow&&contains&&Kick.TryMarkHit(0)){
                 Guard.TakeDamage(Kick.IsCharged?Kick.ChargePlan.Power:OutsideKickTrialDefinition.DamageFor(Kick.Kind),Olca.Core.Domain.ElementType.None);LastHitFrame=Frame;

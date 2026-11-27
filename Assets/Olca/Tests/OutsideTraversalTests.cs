@@ -617,3 +617,56 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class OutsideWaterway464Tests
+    {
+        private static Olca.Core.Logic.Integration.LogicalInput I(float x=0,bool jump=false,bool held=false)=>new Olca.Core.Logic.Integration.LogicalInput{Horizontal=x,JumpButtonDown=jump,JumpButton=held};
+        private static Olca.Core.Logic.Integration.OutsideBranchTrial441 New()=>new Olca.Core.Logic.Integration.OutsideBranchTrial441(false,true);
+        private static void TickTo(Olca.Core.Logic.Integration.OutsideBranchTrial441 s,long frame){while(s.Frame<frame)s.Tick(I());}
+        private static void Walk(Olca.Core.Logic.Integration.OutsideBranchTrial441 s,long x){for(int n=0;n<250&&!s.Completed&&s.Core.Position<x;n++)s.Tick(I(1));NUnit.Framework.Assert.GreaterOrEqual(s.Core.Position,x);}
+        [NUnit.Framework.Test] public void 水路464は独立IDで旧回廊と遺跡と保存キーを変えない()
+        {
+            string key=Olca.Core.Logic.Integration.OutsideKickTrialDefinition.SaveDefinitionKey;using(var old=new Olca.Core.Logic.Integration.OutsideBranchTrial441())using(var ruins=new Olca.Core.Logic.Integration.OutsideBranchTrial441(true))using(var s=New()){
+                NUnit.Framework.Assert.IsTrue(s.IsWaterway464);NUnit.Framework.Assert.AreEqual("trial-waterway-pulse-v1",s.Core.Definition.Id);NUnit.Framework.Assert.AreEqual("trial-branch-corridor-v1",old.Core.Definition.Id);NUnit.Framework.Assert.AreEqual("trial-ruins-arrow-crossing-v1",ruins.Core.Definition.Id);NUnit.Framework.Assert.AreEqual(key,Olca.Core.Logic.Integration.OutsideKickTrialDefinition.SaveDefinitionKey);NUnit.Framework.Assert.Throws<System.ArgumentException>(()=>new Olca.Core.Logic.Integration.OutsideBranchTrial441(true,true));
+            }
+        }
+        [NUnit.Framework.Test] public void 水路464は予告30噴出60安全120の境界を固定frameで巡回する()
+        {
+            using(var s=New()){NUnit.Framework.Assert.IsTrue(s.WaterWarningNow464);TickTo(s,29);NUnit.Framework.Assert.IsTrue(s.WaterWarningNow464);TickTo(s,30);NUnit.Framework.Assert.IsTrue(s.WaterActiveNow464);NUnit.Framework.Assert.IsFalse(s.GateOpen);TickTo(s,89);NUnit.Framework.Assert.IsTrue(s.WaterActiveNow464);TickTo(s,90);NUnit.Framework.Assert.IsFalse(s.WaterActiveNow464);NUnit.Framework.Assert.IsTrue(s.GateOpen);TickTo(s,210);NUnit.Framework.Assert.IsTrue(s.WaterWarningNow464);}
+        }
+        [NUnit.Framework.Test] public void 水路464は停止中に予告も位置もHPも進まず再開後に一frameだけ進む()
+        {
+            using(var s=New()){TickTo(s,29);s.Paused=true;for(int n=0;n<1000;n++)s.Tick(I(1,true,true));NUnit.Framework.Assert.AreEqual(29,s.Frame);NUnit.Framework.Assert.AreEqual(120000,s.Core.Position);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);s.Paused=false;s.Tick(I());NUnit.Framework.Assert.AreEqual(30,s.Frame);NUnit.Framework.Assert.IsTrue(s.WaterActiveNow464);}
+        }
+        [NUnit.Framework.Test] public void 水路464は噴出へ歩き続けても一周期一回の被害で止まり静まると出口へ抜けられる()
+        {
+            using(var s=New()){for(int n=0;n<89;n++)s.Tick(I(1));NUnit.Framework.Assert.AreEqual(328800,s.Core.Position);NUnit.Framework.Assert.AreEqual(90,s.Player.CurrentHp);NUnit.Framework.Assert.IsFalse(s.UsedUpper);Walk(s,s.GoalX);NUnit.Framework.Assert.IsTrue(s.Completed);NUnit.Framework.Assert.AreEqual(90,s.Player.CurrentHp);NUnit.Framework.Assert.AreEqual(30,s.Guard.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 水路464は安全時間を見て地上を渡れば無被害で終わる()
+        {
+            using(var s=New()){TickTo(s,90);Walk(s,s.GoalX);NUnit.Framework.Assert.IsTrue(s.Completed);NUnit.Framework.Assert.IsFalse(s.UsedUpper);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);NUnit.Framework.Assert.Less(s.Frame,210);}
+        }
+        [NUnit.Framework.Test] public void 水路464は既存ジャンプの上段で噴出中を越えて無被害で終わる()
+        {
+            using(var s=New()){Walk(s,150000);s.Tick(I(1,true,true));for(int n=0;n<100&&!s.UsedUpper;n++)s.Tick(I(s.Core.Position<270000?1:0,held:true));NUnit.Framework.Assert.IsTrue(s.UsedUpper);NUnit.Framework.Assert.AreEqual(84000,s.Core.Height);bool activeCross=false;for(int n=0;n<200&&!s.Completed;n++){s.Tick(I(1));if(s.WaterActiveNow464&&s.Core.Position>=360000&&s.Core.Position<390000){activeCross=true;NUnit.Framework.Assert.Greater(s.Core.Height,60000);}}NUnit.Framework.Assert.IsTrue(activeCross);NUnit.Framework.Assert.IsTrue(s.Completed);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 水路464は接触後に後退でき次周期まで追加被害を出さない()
+        {
+            using(var s=New()){for(int n=0;n<40;n++)s.Tick(I(1));NUnit.Framework.Assert.AreEqual(90,s.Player.CurrentHp);s.Tick(I(-1));NUnit.Framework.Assert.Less(s.Core.Position,328800);TickTo(s,90);Walk(s,328800);TickTo(s,240);s.Tick(I(1));NUnit.Framework.Assert.AreEqual(80,s.Player.CurrentHp);for(int n=0;n<20;n++)s.Tick(I(1));NUnit.Framework.Assert.AreEqual(80,s.Player.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 水路464は身体が閉鎖面をまたぐ瞬間に押し出さず抜けるまで待つ()
+        {
+            using(var s=New()){TickTo(s,90);Walk(s,336000);TickTo(s,239);long x=s.Core.Position;s.Tick(I());NUnit.Framework.Assert.AreEqual(x,s.Core.Position);NUnit.Framework.Assert.IsTrue(s.GateOpen);for(int n=0;n<12;n++)s.Tick(I(1));NUnit.Framework.Assert.Greater(s.Core.Position,391200);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 水路464は終了と破棄後に時間も入力も進めない()
+        {
+            var s=New();TickTo(s,90);Walk(s,s.GoalX);long frame=s.Frame,x=s.Core.Position;for(int n=0;n<100;n++)s.Tick(I(-1,true,true));NUnit.Framework.Assert.AreEqual(frame,s.Frame);NUnit.Framework.Assert.AreEqual(x,s.Core.Position);s.Dispose();s.Dispose();NUnit.Framework.Assert.IsTrue(s.IsDisposed);
+        }
+        [NUnit.Framework.Test] public void 水路464は再試行で同じ独立モードの開始へ戻る()
+        {
+            using(var runtime=new Olca.Unity.OutsideBranchRuntime441(()=>false,false,true)){var old=runtime.Session;for(int n=0;n<40;n++)old.Tick(I(1));NUnit.Framework.Assert.AreEqual(90,old.Player.CurrentHp);runtime.Reset();NUnit.Framework.Assert.IsTrue(old.IsDisposed);NUnit.Framework.Assert.IsTrue(runtime.Session.IsWaterway464);NUnit.Framework.Assert.AreEqual(0,runtime.Session.Frame);NUnit.Framework.Assert.AreEqual(100,runtime.Session.Player.CurrentHp);}
+        }
+    }
+}

@@ -1691,7 +1691,7 @@ namespace Olca.Presentation.Exploration
 {
     public sealed partial class OutsideExplorationView
     {
-        private UnityEngine.UI.Button branchButton441,ruinsEntry450;private OutsideBranchView441 branchView441;
+        private UnityEngine.UI.Button branchButton441,ruinsEntry450,waterwayEntry464;private OutsideBranchView441 branchView441;
         private bool CanOpenBranch441=>CanPlay&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000&&presentation.Core.IsGrounded&&!presentation.Core.IsMoving&&!presentation.HasAttackAction&&!presentation.IsCharging&&presentation.NormalKickKind==null&&presentation.Bombs.Count==0&&presentation.InitialShots.Count==0&&presentation.Player?.IsActionPrevented==false;
         private void InitializeBranch441(Olca.Presentation.Management.GameplayPanelFactory factory)
         {
@@ -1699,16 +1699,18 @@ namespace Olca.Presentation.Exploration
             branchButton441.onClick.AddListener(()=>{if(CanOpenBranch441&&branchView441==null)branchView441=OutsideBranchView441.Open(this,gaugeLabel.font,idleSprite,riseSprite,apexSprite,fallSprite,idleClip,moveClip,pixelsPerWorldUnit);});
             ruinsEntry450=factory.Button("OutsideRuinsCrossing450","イセキ ワタリ（カリ）",transform,new UnityEngine.Vector2(.5f,1),new UnityEngine.Vector2(0,-345));ruinsEntry450.GetComponent<UnityEngine.RectTransform>().sizeDelta=new UnityEngine.Vector2(350,48);ruinsEntry450.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.Button(ruinsEntry450);
             ruinsEntry450.onClick.AddListener(()=>{if(CanOpenBranch441&&branchView441==null)branchView441=OutsideBranchView441.Open(this,gaugeLabel.font,idleSprite,riseSprite,apexSprite,fallSprite,idleClip,moveClip,pixelsPerWorldUnit,true);});
+            waterwayEntry464=factory.Button("OutsideWaterway464","スイロ タイミング（カリ）",transform,new UnityEngine.Vector2(.5f,1),new UnityEngine.Vector2(0,-285));waterwayEntry464.GetComponent<UnityEngine.RectTransform>().sizeDelta=new UnityEngine.Vector2(350,48);waterwayEntry464.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.Button(waterwayEntry464);
+            waterwayEntry464.onClick.AddListener(()=>{if(CanOpenBranch441&&branchView441==null)branchView441=OutsideBranchView441.Open(this,gaugeLabel.font,idleSprite,riseSprite,apexSprite,fallSprite,idleClip,moveClip,pixelsPerWorldUnit,false,true);});
         }
-        private void RenderBranchEntry441(){if(branchButton441==null)return;branchButton441.gameObject.SetActive(IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000);branchButton441.interactable=CanOpenBranch441;if(ruinsEntry450!=null){ruinsEntry450.gameObject.SetActive(branchButton441.gameObject.activeSelf);ruinsEntry450.interactable=CanOpenBranch441;}}
+        private void RenderBranchEntry441(){if(waterwayEntry464!=null){bool show=IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000;waterwayEntry464.gameObject.SetActive(show);waterwayEntry464.interactable=CanOpenBranch441;}if(branchButton441==null)return;branchButton441.gameObject.SetActive(IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000);branchButton441.interactable=CanOpenBranch441;if(ruinsEntry450!=null){ruinsEntry450.gameObject.SetActive(branchButton441.gameObject.activeSelf);ruinsEntry450.interactable=CanOpenBranch441;}}
         internal void ReleaseBranch441(OutsideBranchView441 view){if(branchView441!=view)return;branchView441=null;if(IsOpen)SetCovered(false);}
-        private void ClearBranch441(){if(branchView441!=null)branchView441.Close();branchView441=null;if(branchButton441!=null)branchButton441.gameObject.SetActive(false);if(ruinsEntry450!=null)ruinsEntry450.gameObject.SetActive(false);}
+        private void ClearBranch441(){if(waterwayEntry464!=null)waterwayEntry464.gameObject.SetActive(false);if(branchView441!=null)branchView441.Close();branchView441=null;if(branchButton441!=null)branchButton441.gameObject.SetActive(false);if(ruinsEntry450!=null)ruinsEntry450.gameObject.SetActive(false);}
     }
     /// <summary>新しい独立区間の投影。既存のActor素材・モーションと追従カメラ式を借用する。</summary>
     public sealed class OutsideBranchView441 : UnityEngine.MonoBehaviour
     {
         public Olca.Unity.OutsideBranchRuntime441 Runtime {get;private set;}
-        private OutsideExplorationView owner;private bool disposed,closed,paused,focused=true,ruins;private readonly List<UnityEngine.Sprite> ruinSprites=new List<UnityEngine.Sprite>();private UnityEngine.UI.Image secondPlatform,secondEdge;private OutsideRuinsArrow450 arrow;private float pixels;
+        private OutsideExplorationView owner;private bool disposed,closed,paused,focused=true,ruins,waterway464;private OutsideWaterPulseGraphic464 waterJet464;private UnityEngine.UI.Image waterLine464;private readonly List<UnityEngine.Sprite> ruinSprites=new List<UnityEngine.Sprite>();private UnityEngine.UI.Image secondPlatform,secondEdge;private OutsideRuinsArrow450 arrow;private float pixels;
         private UnityEngine.Sprite idle,rise,apex,fall;private UnityEngine.AnimationClip idleClip,moveClip;private UnityEngine.SpriteRenderer sample;
         private Olca.Unity.GeneratedSpriteAssets.Lease assets;private Olca.Unity.MenuPadScope menu;
         private readonly TrialGroundComboMotion combo=new TrialGroundComboMotion();
@@ -1717,10 +1719,10 @@ namespace Olca.Presentation.Exploration
         private UnityEngine.UI.Text heading,help,status,guardLabel,upperLabel,exitLabel,warningLabel;
         private UnityEngine.UI.Button close,retry,pause;private Olca.Presentation.Effects.ProvisionalCombatGraphic chargeFx;private UnityEngine.UI.Image hitFx;
         public bool Live=>!disposed&&this!=null&&gameObject.activeInHierarchy&&owner!=null&&owner.IsOpen;
-        public static OutsideBranchView441 Open(OutsideExplorationView owner,UnityEngine.Font font,UnityEngine.Sprite idle,UnityEngine.Sprite rise,UnityEngine.Sprite apex,UnityEngine.Sprite fall,UnityEngine.AnimationClip idleClip,UnityEngine.AnimationClip moveClip,float pixels,bool ruins=false)
+        public static OutsideBranchView441 Open(OutsideExplorationView owner,UnityEngine.Font font,UnityEngine.Sprite idle,UnityEngine.Sprite rise,UnityEngine.Sprite apex,UnityEngine.Sprite fall,UnityEngine.AnimationClip idleClip,UnityEngine.AnimationClip moveClip,float pixels,bool ruins=false,bool waterway464=false)
         {
             var go=new UnityEngine.GameObject("OutsideBranch441",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));go.transform.SetParent(owner.transform,false);var r=(UnityEngine.RectTransform)go.transform;r.anchorMin=UnityEngine.Vector2.zero;r.anchorMax=UnityEngine.Vector2.one;r.offsetMin=r.offsetMax=UnityEngine.Vector2.zero;go.GetComponent<UnityEngine.UI.Image>().color=new UnityEngine.Color(.09f,.12f,.15f,1);
-            var v=go.AddComponent<OutsideBranchView441>();v.owner=owner;v.ruins=ruins;v.idle=idle;v.rise=rise;v.apex=apex;v.fall=fall;v.idleClip=idleClip;v.moveClip=moveClip;v.pixels=pixels;
+            var v=go.AddComponent<OutsideBranchView441>();v.owner=owner;v.ruins=ruins;v.waterway464=waterway464;v.idle=idle;v.rise=rise;v.apex=apex;v.fall=fall;v.idleClip=idleClip;v.moveClip=moveClip;v.pixels=pixels;
             try{owner.SetCovered(true);v.Initialize(font);go.transform.SetAsLastSibling();return v;}catch{v.Close();owner.SetCovered(false);throw;}
         }
         private UnityEngine.UI.Image Box(string name,UnityEngine.Color color)
@@ -1739,6 +1741,7 @@ namespace Olca.Presentation.Exploration
             platform=Box("BranchUpperPlatform",new UnityEngine.Color(.25f,.45f,.51f,1));platformEdge=Box("BranchUpperEdge",new UnityEngine.Color(.8f,.96f,1,1));gate=Box("BranchGate",new UnityEngine.Color(.8f,.43f,.17f,1));
             warning=Box("BranchLowWarning",new UnityEngine.Color(.9f,.18f,.12f,.2f));warningTop=Box("BranchWarningTop",new UnityEngine.Color(1,.35f,.2f,1));warningBottom=Box("BranchWarningBottom",new UnityEngine.Color(1,.35f,.2f,1));exit=Box("BranchExit",new UnityEngine.Color(.25f,.7f,.48f,1));
             if(ruins){floor.color=new UnityEngine.Color(.25f,.28f,.29f,1);platform.color=new UnityEngine.Color(.3f,.39f,.43f,1);secondPlatform=Box("RuinsSecondPlatform",platform.color);secondEdge=Box("RuinsSecondEdge",new UnityEngine.Color(.8f,.96f,1,1));var ar=new UnityEngine.GameObject("RuinsLowArrow450",typeof(UnityEngine.RectTransform),typeof(OutsideRuinsArrow450));ar.transform.SetParent(transform,false);arrow=ar.GetComponent<OutsideRuinsArrow450>();arrow.raycastTarget=false;arrow.rectTransform.anchorMin=arrow.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);}
+            if(waterway464){waterLine464=Box("WaterwayChannel",new UnityEngine.Color(.1f,.46f,.55f,1));var jet=new UnityEngine.GameObject("WaterwayPulse464",typeof(UnityEngine.RectTransform),typeof(OutsideWaterPulseGraphic464));jet.transform.SetParent(transform,false);waterJet464=jet.GetComponent<OutsideWaterPulseGraphic464>();waterJet464.raycastTarget=false;waterJet464.rectTransform.anchorMin=waterJet464.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);waterJet464.rectTransform.pivot=new UnityEngine.Vector2(.5f,0);floor.color=new UnityEngine.Color(.36f,.42f,.43f,1);}
             playerImage=Box("BranchPlayer",UnityEngine.Color.white);guardImage=Box("BranchGoblin",UnityEngine.Color.white);
             var trace=new UnityEngine.GameObject("BranchGroundKickTrace442",typeof(UnityEngine.RectTransform),typeof(OutsideGroundKickTrace442));trace.transform.SetParent(transform,false);kickTrace442=trace.GetComponent<OutsideGroundKickTrace442>();kickTrace442.raycastTarget=false;kickTrace442.rectTransform.anchorMin=kickTrace442.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);kickTrace442.rectTransform.pivot=UnityEngine.Vector2.zero;kickTrace442.enabled=false;
             guardLabel=Label("BranchGuardLabel","",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(330,52),20);
@@ -1757,7 +1760,8 @@ namespace Olca.Presentation.Exploration
             // 命中時だけ既存の透過火花を借用し、敵を隠す白い矩形を残さない。
             Olca.Presentation.Effects.AuthoredAttackVfx.Resolve(assets,2,0);
             menu=new Olca.Unity.MenuPadScope(()=>Live){CancelOnly=true,SuppressPadCancel=true};menu.Bind(transform,close.name,Close);
-            Runtime=new Olca.Unity.OutsideBranchRuntime441(()=>Live&&!paused&&focused,ruins);Render();
+            if(waterway464){heading.text="スイロ タイミング（カリ・セーブなし）";help.text="←→ イドウ / Space ジャンプ / アワの アトに フンシュツ / マツか ウエを マワル";}
+            Runtime=new Olca.Unity.OutsideBranchRuntime441(()=>Live&&!paused&&focused,ruins,waterway464);Render();
         }
         private void Update(){if(!Live){if(!disposed)Close();return;}Runtime.Pump(!paused&&focused&&UnityEngine.Application.isFocused);Render();}
         private void LateUpdate(){menu?.Tick();}
@@ -1769,30 +1773,31 @@ namespace Olca.Presentation.Exploration
         public void Render()
         {
             if(disposed||Runtime==null)return;var s=Runtime.Session;var core=s.Core;var r=(UnityEngine.RectTransform)transform;float width=r.rect.width,height=r.rect.height,viewport=width/pixels;
-            var camera=Olca.Core.Logic.Integration.OutsideCameraPolicy.Follow;float center=camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
-            float actorTop=UnityEngine.Mathf.Max(idle.bounds.max.y,UnityEngine.Mathf.Max(rise.bounds.max.y,UnityEngine.Mathf.Max(apex.bounds.max.y,fall.bounds.max.y)));float vertical=camera.ResolveVerticalOffset(core.Height,height/pixels,height*.21f/pixels,144/pixels,actorTop);
+            var camera=Olca.Core.Logic.Integration.OutsideCameraPolicy.Follow;float center=waterway464?6f:camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
+            float actorTop=UnityEngine.Mathf.Max(idle.bounds.max.y,UnityEngine.Mathf.Max(rise.bounds.max.y,UnityEngine.Mathf.Max(apex.bounds.max.y,fall.bounds.max.y)));float vertical=waterway464?.25f:camera.ResolveVerticalOffset(core.Height,height/pixels,height*.21f/pixels,144/pixels,actorTop);
             float X(long x)=>(x/60000f-center+viewport*.5f)*pixels;float Y(long y)=>(y/60000f-vertical)*pixels;
             void Rect(UnityEngine.UI.Image im,float x,float y,float w,float h){im.rectTransform.anchoredPosition=new UnityEngine.Vector2(x,y);im.rectTransform.sizeDelta=new UnityEngine.Vector2(w,h);}
             Rect(floor,0,Y(0),width,height*.21f);Rect(platform,X(9*60000),Y(2*60000)-9,10*pixels,18);Rect(platformEdge,X(9*60000),Y(2*60000),10*pixels,3);
+            if(waterway464){Rect(platform,X(360000),Y(84000)-9,6*pixels,18);Rect(platformEdge,X(360000),Y(84000),6*pixels,3);Rect(waterLine464,X(360000),Y(0)-.16f*pixels,2*pixels,.15f*pixels);waterJet464.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(360000),Y(0));waterJet464.rectTransform.sizeDelta=new UnityEngine.Vector2(.8f,1f)*pixels;waterJet464.Project(s.WaterActiveNow464&&!s.GateOpen?2:s.WaterWarningNow464||s.WaterActiveNow464?1:0,s.WaterAge464);}
             if(ruins){Rect(platform,X(390000),Y(120000)-9,5*pixels,18);Rect(platformEdge,X(390000),Y(120000),5*pixels,3);Rect(secondPlatform,X(840000),Y(120000)-9,6*pixels,18);Rect(secondEdge,X(840000),Y(120000),6*pixels,3);}
-            Rect(gate,X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GateX),Y(45000),12,1.5f*pixels);gate.enabled=!ruins&&!s.GateOpen;
+            Rect(gate,X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GateX),Y(45000),12,1.5f*pixels);gate.enabled=!ruins&&!waterway464&&!s.GateOpen;
             Rect(exit,X(s.GoalX),Y(0)+.7f*pixels,.12f*pixels,1.4f*pixels);exitLabel.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(s.GoalX),Y(0)+1.8f*pixels);exitLabel.gameObject.SetActive(System.Math.Abs(core.Position-s.GoalX)>72000);
             upperLabel.gameObject.SetActive(false);
-            bool danger=!s.Guard.IsDead&&(s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup||s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike);warning.enabled=warningTop.enabled=warningBottom.enabled=danger;warningLabel.gameObject.SetActive(danger);
+            bool danger=!waterway464&&!s.Guard.IsDead&&(s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup||s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike);warning.enabled=warningTop.enabled=warningBottom.enabled=danger;warningLabel.gameObject.SetActive(danger);
             float mid=X(s.EnemyX+s.GuardFacing*Olca.Core.Logic.Integration.OutsideBranchTrial441.Reach/2);Rect(warning,mid,Y(45000),3*pixels,1.5f*pixels);Rect(warningTop,mid,Y(90000),3*pixels,4);Rect(warningBottom,mid,Y(0),3*pixels,4);warningLabel.rectTransform.anchoredPosition=new UnityEngine.Vector2(UnityEngine.Mathf.Clamp(mid,160,width-160),UnityEngine.Mathf.Max(140,Y(0)-50));
             if(ruins){bool aiming=!s.Guard.IsDead&&s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup;warning.enabled=warningBottom.enabled=false;warningTop.enabled=aiming;warningLabel.gameObject.SetActive(aiming);float lane=X(s.EnemyX+s.GuardFacing*8*60000);Rect(warningTop,lane,Y(Olca.Core.Logic.Integration.OutsideBranchTrial441.ArrowHeight),16*pixels,3);warningLabel.text="ヒクい ヤ / ジャンプで カイヒ";warningLabel.rectTransform.anchoredPosition=new UnityEngine.Vector2(UnityEngine.Mathf.Clamp(X(s.EnemyX),180,width-180),UnityEngine.Mathf.Max(140,Y(0)-50));arrow.enabled=s.ArrowActive;arrow.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(s.ArrowX),Y(Olca.Core.Logic.Integration.OutsideBranchTrial441.ArrowHeight));arrow.rectTransform.sizeDelta=new UnityEngine.Vector2(.85f,.18f)*pixels;arrow.rectTransform.localScale=new UnityEngine.Vector3(s.ArrowFacing,1,1);}
             var body=idle;if(!core.IsGrounded)body=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apex:core.VerticalVelocity>0?rise:fall;else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null){clip.SampleAnimation(sample.gameObject,(float)(((core.IsMoving?core.MovementFrame:core.IdleFrame)/60d)%clip.length));body=sample.sprite??idle;}}
             UnityEngine.Sprite kick=null;if(s.Kick.IsActive)kick=combo.Resolve(s.Kick.Kind,s.Kick.ElapsedFrames,s.Kick.ActiveTiming,false);if(kick!=null)body=kick;
             Place(playerImage,body,X(core.Position),Y(core.Height),s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,kick!=null);playerImage.color=s.Frame-s.LastHurtFrame<12?new UnityEngine.Color(1,.45f,.4f):UnityEngine.Color.white;
-            int frame=s.Guard.IsDead?9:s.Frame-s.LastHitFrame<12?8:s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup?4+System.Math.Min(2,s.Age/8):s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike?7:(int)(s.Frame/10%4);var goblin=ruins?RuinsArcherSprite(frame):AnnexGoblinSprite.Resolve(assets,frame);
-            Place(guardImage,goblin,X(s.EnemyX),Y(0),s.GuardFacing,true);guardImage.color=s.Guard.IsDead?new UnityEngine.Color(1,1,1,UnityEngine.Mathf.Clamp01(1-(s.Frame-s.DeathFrame)/18f)):UnityEngine.Color.white;
+            int frame=s.Guard.IsDead?9:s.Frame-s.LastHitFrame<12?8:s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup?4+System.Math.Min(2,s.Age/8):s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike?7:(int)(s.Frame/10%4);var goblin=waterway464?null:ruins?RuinsArcherSprite(frame):AnnexGoblinSprite.Resolve(assets,frame);
+            Place(guardImage,waterway464?null:goblin,X(s.EnemyX),Y(0),s.GuardFacing,true);guardImage.color=s.Guard.IsDead?new UnityEngine.Color(1,1,1,UnityEngine.Mathf.Clamp01(1-(s.Frame-s.DeathFrame)/18f)):UnityEngine.Color.white;
             // 実際の足元と実射程から描画。有効3frameだけで、接触/HPの判断には使わない。
             kickTrace442.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height));kickTrace442.rectTransform.sizeDelta=new UnityEngine.Vector2(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Range/60000f,.5f)*pixels;kickTrace442.rectTransform.localScale=new UnityEngine.Vector3(s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,1,1);kickTrace442.Project(s.Kick);
             guardLabel.text="モンバン（カリ） HP "+s.Guard.CurrentHp+" / 30";guardLabel.gameObject.SetActive(false);
             chargeFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height)+1.1f*pixels);chargeFx.rectTransform.sizeDelta=new UnityEngine.Vector2(3.2f,3.2f)*pixels;if(s.IsCharging)chargeFx.ShowChargeParticles(s.Frame,s.ChargeFrames,60);else chargeFx.ClearChargeParticles();
             long hitAge=s.Frame-s.LastHitFrame;hitFx.enabled=hitAge>=0&&hitAge<12;hitFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(s.EnemyX),Y(0)+.8f*pixels);hitFx.rectTransform.sizeDelta=new UnityEngine.Vector2(150,150);if(hitFx.enabled)hitFx.sprite=Olca.Presentation.Effects.AuthoredAttackVfx.Resolve(assets,2,(int)hitAge/2);else hitFx.sprite=null;
             heading.rectTransform.sizeDelta=new UnityEngine.Vector2(UnityEngine.Mathf.Max(250,width-700),50);heading.rectTransform.anchoredPosition=new UnityEngine.Vector2((width-700)*.5f,-36);help.rectTransform.sizeDelta=new UnityEngine.Vector2(width-50,68);status.rectTransform.sizeDelta=new UnityEngine.Vector2(width-50,90);
-            status.text="HP "+s.Player.CurrentHp+" /100  |  テキ "+s.Guard.CurrentHp+" /30  |  "+(s.Completed?((ruins?s.ReachedSecondPlatform:s.UsedUpper)?"ウワミチで トウタツ":"シタミチで トウタツ")+" / モドるか モウイチド":s.Player.IsDead?"HP0 / モウイチド":paused?"テイシチュウ":s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery?(ruins?"ハッシャゴ / ハンゲキか ツウカ":"コウチョク / モンが アイています"):s.Guard.IsDead?(ruins?"ゲキハ / デグチへ":"ゲキハ / モンが アキました"):(ruins?"アシバの キレメと ヒクい ヤに チュウイ":"アカい ハンイに チュウイ"));pause.GetComponentInChildren<UnityEngine.UI.Text>().text=paused?"サイカイ":"トメル";
+            status.text="HP "+s.Player.CurrentHp+" /100  |  テキ "+s.Guard.CurrentHp+" /30  |  "+(s.Completed?((ruins?s.ReachedSecondPlatform:s.UsedUpper)?"ウワミチで トウタツ":"シタミチで トウタツ")+" / モドるか モウイチド":s.Player.IsDead?"HP0 / モウイチド":paused?"テイシチュウ":s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery?(ruins?"ハッシャゴ / ハンゲキか ツウカ":"コウチョク / モンが アイています"):s.Guard.IsDead?(ruins?"ゲキハ / デグチへ":"ゲキハ / モンが アキました"):(ruins?"アシバの キレメと ヒクい ヤに チュウイ":"アカい ハンイに チュウイ"));if(waterway464)status.text="HP "+s.Player.CurrentHp+" /100  |  "+(s.Completed?(s.UsedUpper?"ウワミチで トウタツ":"タイミングを ミテ トウタツ")+" / モドるか モウイチド":s.Player.IsDead?"HP0 / モウイチド・モドる":paused?"テイシチュウ":s.WaterWarningNow464?"アワ / マモナク フンシュツ":s.WaterActiveNow464?"フンシュツ / シタは マツ・ウエは トオレル":"シズマッタ / シタを ワタレル");pause.GetComponentInChildren<UnityEngine.UI.Text>().text=paused?"サイカイ":"トメル";
         }
         private UnityEngine.Sprite RuinsArcherSprite(int frame)
         {
@@ -1939,6 +1944,25 @@ namespace Olca.Presentation.Exploration
             float t=landed?s.Age/12f:0;float radius=OutsideFlyingTrial454.LandingRadius/60000f*pixelsPerWorldUnit;
             slimeLanding.rectTransform.anchoredPosition=new Vector2(x+(s.LandingX-s.X)/60000f*pixelsPerWorldUnit,y+4);
             slimeLanding.rectTransform.sizeDelta=new Vector2(radius*2,Mathf.Max(10,radius*.25f));slimeLanding.SetLanding(landed,t);
+        }
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>水・泡・石を自作のUIメッシュで描く。論理frameだけから形を決める。</summary>
+    public sealed class OutsideWaterPulseGraphic464:UnityEngine.UI.MaskableGraphic
+    {
+        private int phase=-1,age=-1;
+        public void Project(int nextPhase,int nextAge){if(phase==nextPhase&&age==nextAge)return;phase=nextPhase;age=nextAge;SetVerticesDirty();}
+        protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper mesh)
+        {
+            mesh.Clear();var r=rectTransform.rect;
+            void Box(float x,float y,float w,float h,UnityEngine.Color c){int n=mesh.currentVertCount;mesh.AddVert(new UnityEngine.Vector3(r.xMin+x*r.width,r.yMin+y*r.height),c,UnityEngine.Vector2.zero);mesh.AddVert(new UnityEngine.Vector3(r.xMin+x*r.width,r.yMin+(y+h)*r.height),c,UnityEngine.Vector2.zero);mesh.AddVert(new UnityEngine.Vector3(r.xMin+(x+w)*r.width,r.yMin+(y+h)*r.height),c,UnityEngine.Vector2.zero);mesh.AddVert(new UnityEngine.Vector3(r.xMin+(x+w)*r.width,r.yMin+y*r.height),c,UnityEngine.Vector2.zero);mesh.AddTriangle(n,n+1,n+2);mesh.AddTriangle(n,n+2,n+3);}
+            Box(0,0,1,.08f,new UnityEngine.Color(.65f,.72f,.72f,1));Box(.12f,.025f,.76f,.035f,new UnityEngine.Color(.05f,.18f,.23f,1));
+            if(phase==2){Box(.35f,.08f,.3f,.86f,new UnityEngine.Color(.15f,.62f,.75f,.9f));Box(.46f,.08f,.1f,.92f,new UnityEngine.Color(.65f,.95f,1,.9f));}
+            if(phase<=0)return;
+            for(int i=0;i<5;i++){float t=((age*3+i*13)%45)/45f;float y=phase==2?.12f+t*.8f:.09f+t*.14f;float x=.2f+(i%3)*.23f;float size=phase==2?.07f:.09f;Box(x,y,size,size,new UnityEngine.Color(.8f,.97f,1,1-t*.5f));}
         }
     }
 }

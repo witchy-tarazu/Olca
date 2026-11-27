@@ -18,6 +18,23 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
+        public async Task 水路464は入口を既存UIから離し独立区画の停止再試行と親保存を保つ(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},runtime:runtime,input:input,trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;var mapSave=new Olca.Core.Domain.ClearReturnSession(new DoorBoundaryStore());view.ConfigureMiniMap(()=>mapSave.InventoryRevision,()=>Olca.Core.Logic.Integration.OutsideTrialMapOverview.Build(mapSave.Snapshot,model.Core));view.ConfigurePairEntry445(()=>{});view.Render();Canvas.ForceUpdateCanvases();var entry=view.transform.Find("OutsideWaterway464").GetComponent<Button>();Assert.IsTrue(entry.gameObject.activeInHierarchy);Assert.IsTrue(entry.interactable);
+                Rect Area(Transform t){var c=new Vector3[4];((RectTransform)t).GetWorldCorners(c);return Rect.MinMaxRect(c.Min(v=>v.x),c.Min(v=>v.y),c.Max(v=>v.x),c.Max(v=>v.y));}
+                var area=Area(entry.transform);var bounds=Area(view.transform);Assert.IsTrue(bounds.Contains(area.min)&&bounds.Contains(area.max));
+                foreach(var other in view.GetComponentsInChildren<Button>(true).Where(v=>v!=entry&&v.gameObject.activeInHierarchy))Assert.IsFalse(area.Overlaps(Area(other.transform)),other.name);
+                foreach(string name in new[]{"OutsideMiniMap","OutsideMapName"}){var other=view.transform.Find(name);Assert.NotNull(other);Assert.IsTrue(other.gameObject.activeInHierarchy,name);Assert.IsFalse(area.Overlaps(Area(other)),name);}
+                var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());long frame=model.Core.Frame;entry.onClick.Invoke();var child=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.NotNull(child);Assert.IsTrue(child.Runtime.Session.IsWaterway464);Assert.IsFalse(view.CanPlay);var trial=child.Runtime.Session;
+                for(int n=0;n<40;n++)trial.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});child.Render();Assert.AreEqual(90,trial.Player.CurrentHp);Assert.IsFalse(child.transform.Find("BranchGoblin").GetComponent<Image>().enabled);var jet=child.transform.Find("WaterwayPulse464").GetComponent<Olca.Presentation.Exploration.OutsideWaterPulseGraphic464>();Assert.IsFalse(jet.raycastTarget);
+                child.transform.Find("BranchPause").GetComponent<Button>().onClick.Invoke();long stopped=trial.Frame;for(int n=0;n<100;n++)trial.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1,JumpButton=true});child.Render();Assert.AreEqual(stopped,trial.Frame);Assert.AreEqual(90,trial.Player.CurrentHp);
+                child.transform.Find("BranchRetry").GetComponent<Button>().onClick.Invoke();Assert.IsTrue(trial.IsDisposed);Assert.IsTrue(child.Runtime.Session.IsWaterway464);Assert.AreEqual(0,child.Runtime.Session.Frame);Assert.AreEqual(100,child.Runtime.Session.Player.CurrentHp);child.Close();Assert.AreEqual(frame,model.Core.Frame);Assert.AreEqual(100,model.Player.CurrentHp);CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+            }
+        }
+
         private static IEnumerable<object[]> 探索のけぞり表示行列()
         {foreach(bool fire in new[]{false,true})foreach(bool airborne in new[]{false,true})foreach(int facing in new[]{-1,1})foreach(var size in new[]{new Vector2Int(1920,1080),new Vector2Int(3840,2160),new Vector2Int(1440,1080)})yield return new object[]{fire,airborne,facing,size.x,size.y};}
         [TestCaseSource(nameof(探索のけぞり表示行列))]
