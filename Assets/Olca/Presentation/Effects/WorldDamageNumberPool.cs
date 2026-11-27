@@ -44,6 +44,10 @@ namespace Olca.Presentation.Effects
         public void ShowFeedback(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner=null)
             =>ShowFeedbackAsync(feedback,position,ct,owner).Forget();
         public CombatNumberStyle FeedbackStyle=>prefab!=null?prefab.FeedbackStyle:null;
+        public void ShowBattlePlayerFeedback(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner)
+            =>ShowBattlePlayerFeedbackAsync(feedback,position,ct,owner).Forget();
+        private UniTask ShowBattlePlayerFeedbackAsync(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner)
+            =>ShowOwnedTextAsync(CombatNumberPresentation.FormatBattlePlayer(feedback),position,ct,owner,true);
         private UniTask ShowFeedbackAsync(CombatFeedback feedback,Vector3 position,CancellationToken ct,object owner)
         {
             string text=CombatNumberPresentation.Format(feedback);

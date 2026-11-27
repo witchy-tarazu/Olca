@@ -12,6 +12,8 @@ namespace Olca.Presentation.Effects
     }
     public static class CombatNumberPresentation
     {
+        // HP被害とバリア耐久の減少を読み分ける。敵・探索Canvasの既存表記は変えない。
+        public static string FormatBattlePlayer(Olca.Core.Domain.CombatFeedback value)=>value.Kind==Olca.Core.Domain.CombatFeedbackKind.BarrierDamage?"バリア "+value.Amount:Format(value);
         public static string Format(Olca.Core.Domain.CombatFeedback value)=>value.Kind==Olca.Core.Domain.CombatFeedbackKind.Immune?"ムコウ":value.Kind==Olca.Core.Domain.CombatFeedbackKind.Guard?"ガード":value.Kind==Olca.Core.Domain.CombatFeedbackKind.Healing?"+"+value.Amount:value.Amount.ToString();
         public static float Rise(float speed,float duration,float elapsed){float t=Mathf.Clamp01(elapsed/duration);return speed*duration*(1f-(1f-t)*(1f-t));}
         public static float Alpha(float duration,float elapsed)=>1f-Mathf.Clamp01(elapsed/duration);

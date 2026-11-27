@@ -69,6 +69,33 @@ namespace Olca.Tests
         private void Return(WorldDamageNumberView view) => Invoke("Return", view);
         private Task Show(int damage, CancellationToken ct) => ((UniTask)Invoke("ShowDamageAsync", damage, Vector3.zero, ct)).AsTask();
 
+        [TestCase(Olca.Core.Domain.CombatFeedbackKind.Damage,"30")]
+        [TestCase(Olca.Core.Domain.CombatFeedbackKind.Healing,"+30")]
+        [TestCase(Olca.Core.Domain.CombatFeedbackKind.Immune,"ムコウ")]
+        [TestCase(Olca.Core.Domain.CombatFeedbackKind.Guard,"ガード")]
+        [TestCase(Olca.Core.Domain.CombatFeedbackKind.BarrierDamage,"バリア 30")]
+        public void 戦闘463の主人公だけバリアへの被害を明示し他の結果を変えない(Olca.Core.Domain.CombatFeedbackKind kind,string expected)
+        {
+            var feedback=new Olca.Core.Domain.CombatFeedback(kind,30);
+            Assert.AreEqual(expected,CombatNumberPresentation.FormatBattlePlayer(feedback));
+            if(kind==Olca.Core.Domain.CombatFeedbackKind.BarrierDamage)Assert.AreEqual("30",CombatNumberPresentation.Format(feedback),"敵と探索Canvasは従来表記");
+        }
+        [Test] public async Task 戦闘463のバリアと本体被害を別表示し書体と所有と取消を維持する()
+        {
+            // このfixtureはinactiveな合成Prefabを複製するため、文字参照設定後のAwakeを明示する。
+            var font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");source.GetComponent<TextMesh>().font=font;
+            foreach(var v in Waiting){v.GetComponent<TextMesh>().font=font;typeof(WorldDamageNumberView).GetMethod("Awake",Private).Invoke(v,null);}
+            using var cts=new CancellationTokenSource();var owner=new object();
+            Olca.Unity.BattleVisualClock.SetPaused(owner,true);
+            try{
+            var barrier=((UniTask)Invoke("ShowBattlePlayerFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.BarrierDamage,30),Vector3.zero,cts.Token,owner)).AsTask();
+            var damage=((UniTask)Invoke("ShowFeedbackAsync",new Olca.Core.Domain.CombatFeedback(Olca.Core.Domain.CombatFeedbackKind.Damage,10),Vector3.zero,cts.Token,owner)).AsTask();
+            CollectionAssert.AreEquivalent(new[]{"バリア 30","10"},Active.Select(v=>v.GetComponent<TextMesh>().text));
+            foreach(var v in Active){Assert.AreSame(source.GetComponent<TextMesh>().font,v.GetComponent<TextMesh>().font);Assert.AreEqual(source.GetComponent<TextMesh>().color,v.GetComponent<TextMesh>().color);}
+            cts.Cancel();await Completed(Task.WhenAll(barrier,damage));Assert.AreEqual(0,Active.Count);
+            }finally{cts.Cancel();Olca.Unity.BattleVisualClock.SetPaused(owner,false);}
+        }
+
         [SetUp]
         public void SetUp()
         {

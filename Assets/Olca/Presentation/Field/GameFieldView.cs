@@ -731,7 +731,8 @@ namespace Olca.Presentation.Field
             playerDamageCts ??= new CancellationTokenSource();
             var bounds=playerSprite.bounds;
             var position=new Vector3(bounds.center.x,bounds.max.y+.2f,bounds.center.z-.5f);
-            worldDamageNumberPool?.ShowFeedback(feedback,position,playerDamageCts.Token,damageTrackedPlayer);
+            if(currentBattle!=null)worldDamageNumberPool?.ShowBattlePlayerFeedback(feedback,position,playerDamageCts.Token,damageTrackedPlayer);
+            else worldDamageNumberPool?.ShowFeedback(feedback,position,playerDamageCts.Token,damageTrackedPlayer);
             if(feedback.Kind==CombatFeedbackKind.BarrierDamage && currentBattle!=null)
                 (barrierImpact??(barrierImpact=new Olca.Presentation.Effects.BattleBarrierImpactVisual())).Notify(currentBattle);
             if(feedback.Kind!=CombatFeedbackKind.Damage)return;
