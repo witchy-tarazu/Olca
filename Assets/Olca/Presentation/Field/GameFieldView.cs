@@ -37,6 +37,7 @@ namespace Olca.Presentation.Field
             UnbindPlayerDamage();
             if(currentBattle!=null){currentBattle.OnSummonAdded-=OnSummonAdded;currentBattle.OnBattleEnd-=OnSummonBattleEnd;}
             basicKickVisual?.Bind(null);currentBattle=null;dungeonSystem=null;cameraObservedDungeon=null;
+            foreach(var view in enemyViews)view?.ClearRecoveryHint();
             enemyViews.Clear();visualResources=null;fieldCamera=null;ConfigureDungeonHud(null);
         }
 
@@ -870,7 +871,7 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
             RefreshEnemyPerception(); RefreshBombVisuals(); RefreshTerrainVisuals();
             battleGridView?.ShowTelegraphs(currentBattle!=null&&!currentBattle.IsGameOver?currentBattle.EnemyAttackTiles:System.Array.Empty<Olca.Core.Domain.Vector2Int>());
-            foreach(var view in enemyViews){if(view==null)continue;int elapsed=0,total=0;bool active=currentBattle!=null&&!currentBattle.IsGameOver&&currentBattle.TryGetEnemyAttackPreview(view.TrackedEnemy,out _,out elapsed,out total);view.SetAttackWindup(active,elapsed,total,(currentBattle?.LogicalFrame??0)*50);}
+            foreach(var view in enemyViews){if(view==null)continue;int elapsed=0,total=0;bool active=currentBattle!=null&&!currentBattle.IsGameOver&&currentBattle.TryGetEnemyAttackPreview(view.TrackedEnemy,out _,out elapsed,out total);int rest=0,length=0;bool recovering=currentBattle!=null&&currentBattle.TryGetEnemyRecoveryPreview(view.TrackedEnemy,out rest,out length);view.SetAttackWindup(active,elapsed,total,(currentBattle?.LogicalFrame??0)*50,recovering?rest:-1,length);}
 
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();

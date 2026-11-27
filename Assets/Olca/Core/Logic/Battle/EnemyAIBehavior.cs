@@ -80,6 +80,10 @@ namespace Olca.Core.Logic.Battle
 
         /// <summary>管理している敵</summary>
         public Enemy Enemy => enemy;
+        public bool TryGetRecoveryPreview(out int elapsedFrames,out int totalFrames)
+        {
+            elapsedFrames=totalFrames=0;return !disposed&&runningAction is IEnemyRecoveryPreviewSource source&&source.TryGetRecoveryPreview(out elapsedFrames,out totalFrames);
+        }
         public bool TryGetAttackPreview(out EnemyAttackPreview preview)
         {
             preview=default;return !disposed&&runningAction is IEnemyAttackPreviewSource source&&source.TryGetAttackPreview(out preview);

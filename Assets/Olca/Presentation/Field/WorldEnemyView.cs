@@ -135,6 +135,7 @@ namespace Olca.Presentation.Field
 
         /// <summary>この View が追跡している Enemy（ContactAnimator のルックアップ用）</summary>
         public Enemy TrackedEnemy => enemy;
+        public void ClearRecoveryHint()=>enemyView?.ClearRecoveryHint();
 
         /// <summary>アニメーション中フラグ。trueの間 Refresh は位置を更新しない。</summary>
         public void SetPositionAnimating(bool value) { positionAnimating = value; }
@@ -162,12 +163,13 @@ namespace Olca.Presentation.Field
         private SpriteRenderer attackPoseBody;private Vector3 attackPosePosition,attackPoseScale;
         private void ResetAttackWindup()
         {
+            enemyView?.ClearRecoveryHint();
             if(attackPoseBody!=null){attackPoseBody.transform.localPosition=attackPosePosition;attackPoseBody.transform.localScale=attackPoseScale;}
         }
         /// <summary>読取済みの論理前隙だけを描く。時計/Root/grid/HP文字は変更しない。既存絵の仮屈伸。</summary>
-        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0)
+        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0,int recoveryElapsed=-1,int recoveryTotal=0)
         {
-            if(enemyView?.IsTrialArcher==true){if(enemyView.IsStepArcher){archerUnits=logicalUnits;if(!positionAnimating)UpdatePosition();}ResetAttackWindup();enemyView.RenderTrialArcher(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits);return;}
+            if(enemyView?.IsTrialArcher==true){if(enemyView.IsStepArcher){archerUnits=logicalUnits;if(!positionAnimating)UpdatePosition();}ResetAttackWindup();enemyView.RenderTrialArcher(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits,isActiveAndEnabled&&!hiddenForBattle&&!hiddenByBlindness&&!deathStarted&&!hitReactionRunning?recoveryElapsed:-1,recoveryTotal);return;}
             if(!active||totalFrames<=0||enemy==null||enemy.IsDead||deathStarted||hitReactionRunning||hiddenByBlindness||hiddenForBattle||!isActiveAndEnabled){ResetAttackWindup();return;}
             var body=enemyView?.EnsureAttackPoseBody();if(body==null){ResetAttackWindup();return;}
             if(attackPoseBody!=body){ResetAttackWindup();attackPoseBody=body;attackPosePosition=body.transform.localPosition;attackPoseScale=body.transform.localScale;}
@@ -291,6 +293,7 @@ namespace Olca.Presentation.Field
         /// <summary>バトル終了時 - ダンジョン座標モードに戻す。撃破済みの敵は非表示にする。</summary>
         public void OnBattleEnded()
         {
+            ClearRecoveryHint();
             ResetArcherStep();
             battleStarted=false;pendingContactFeedback.Clear();pendingContactDamage=0;
             SetHiddenByBlindness(false);

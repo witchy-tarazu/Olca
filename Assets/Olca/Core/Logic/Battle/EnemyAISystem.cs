@@ -63,6 +63,12 @@ namespace Olca.Core.Logic.Battle
             var behavior=aiBehaviors.Find(value=>ReferenceEquals(value.Enemy,enemy));return behavior!=null&&behavior.TrySwitchRegisteredPattern(patternId);
         }
 
+        public bool TryGetRecoveryPreview(Enemy enemy,out int elapsedFrames,out int totalFrames)
+        {
+            elapsedFrames=totalFrames=0;
+            foreach(var behavior in aiBehaviors)if(ReferenceEquals(behavior.Enemy,enemy))return behavior.TryGetRecoveryPreview(out elapsedFrames,out totalFrames);
+            return false;
+        }
         public bool TryGetAttackPreview(Enemy enemy,out EnemyAttackPreview preview)
         {
             preview=default;

@@ -36,8 +36,9 @@ namespace Olca.Presentation.Battle
             });return frames==null?null:frames[Mathf.Clamp(frame,0,9)];
         }
         /// <summary>専用試用敵だけの論理時計による構え/放ち。判定や待機時間を更新しない。</summary>
-        public void RenderTrialArcher(bool active,int elapsed,long logicalUnits)
+        public void RenderTrialArcher(bool active,int elapsed,long logicalUnits,int recoveryElapsed=-1,int recoveryTotal=0)
         {
+            ClearRecoveryHint();
             if(!IsTrialArcher||enemyImage==null)return;
             bool live=!enemy.IsDead&&!enemy.IsStunned&&!enemy.IsParalyzed;
             if(active)archerExpectedRelease=logicalUnits-elapsed*50L+1500;
@@ -46,8 +47,21 @@ namespace Olca.Presentation.Battle
             archerWindup=active&&live;
             int frame=enemy.IsStaggered?8:archerWindup?4+Mathf.Min(2,elapsed/10):logicalUnits>=archerReleaseAt&&logicalUnits-archerReleaseAt<400?7:(int)(logicalUnits/500%4);
             var sprite=ArcherSprite(frame);if(sprite!=null)enemyImage.sprite=sprite;
+            if(live&&!enemy.IsStaggered&&!active)RenderRecoveryHint(recoveryElapsed,recoveryTotal);
         }
 
+        private LineRenderer recoveryHint;
+        public void ClearRecoveryHint(){if(recoveryHint!=null)recoveryHint.enabled=false;}
+        // 武器脇の短い息継ぎ。危険マスや弱点マークを描かず、実際の待ちの時計だけへ追従する。
+        private void RenderRecoveryHint(int elapsed,int total)
+        {
+            if(!IsStepArcher||elapsed<0||total<=0||elapsed>=total||enemyImage==null)return;
+            if(recoveryHint==null){var obj=new GameObject("ArcherRecoveryBreath439");obj.transform.SetParent(enemyImage.transform,false);recoveryHint=obj.AddComponent<LineRenderer>();recoveryHint.useWorldSpace=false;recoveryHint.positionCount=4;recoveryHint.numCapVertices=2;recoveryHint.sharedMaterial=enemyImage.sharedMaterial;recoveryHint.startWidth=recoveryHint.endWidth=.035f;}
+            float phase=elapsed/(float)total,sign=enemyImage.flipX?1:-1;
+            var bounds=Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(enemyImage.sprite);float x=sign*(Mathf.Abs(bounds.center.x)+bounds.extents.x+.07f),y=bounds.center.y;
+            float rise=.10f*phase;var color=new Color(.82f,.58f,.50f,.8f-.35f*phase);recoveryHint.startColor=recoveryHint.endColor=color;recoveryHint.sortingLayerID=enemyImage.sortingLayerID;recoveryHint.sortingOrder=enemyImage.sortingOrder+1;
+            recoveryHint.SetPosition(0,new Vector3(x,y,0));recoveryHint.SetPosition(1,new Vector3(x+sign*.08f,y+.045f+rise,0));recoveryHint.SetPosition(2,new Vector3(x+sign*.16f,y+rise,0));recoveryHint.SetPosition(3,new Vector3(x+sign*.24f,y+.045f+rise,0));recoveryHint.enabled=true;
+        }
         private string displayedEnemyName;
         private LineRenderer bodyLink;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
@@ -255,7 +269,7 @@ namespace Olca.Presentation.Battle
         }
         private void RegisterGauge(){var list=IsBossGauge?bossGauges:normalGauges;if(!list.Contains(this))list.Add(this);}
         private void OnEnable(){if(hpVisible)RegisterGauge();}
-        private void OnDisable(){if(bodyLink!=null)bodyLink.enabled=false;guardVisual?.Clear();paralysisVisual?.Clear();defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
+        private void OnDisable(){ClearRecoveryHint();if(bodyLink!=null)bodyLink.enabled=false;guardVisual?.Clear();paralysisVisual?.Clear();defensiveField?.Clear();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);}
         private void LateUpdate(){if(hpVisible)RefreshGauges();RefreshDefensiveField();RefreshConditionVisuals();}
         private void OnDestroy(){archerAssets?.Dispose();archerAssets=null;guardVisual?.Dispose();paralysisVisual?.Dispose();defensiveField?.Dispose();HideStatusIcons();bossGauges.Remove(this);normalGauges.Remove(this);if(gaugeMaterial!=null){if(UnityEngine.Application.isPlaying)Destroy(gaugeMaterial);else DestroyImmediate(gaugeMaterial);}}
 
@@ -292,6 +306,7 @@ namespace Olca.Presentation.Battle
 
         public void Initialize(Enemy enemy)
         {
+            ClearRecoveryHint();
             guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear();
             this.enemy = enemy;archerWindup=false;archerReleaseAt=-1000;displayedEnemyName=Olca.Presentation.CustomScreen.CustomDisplay.Katakana(enemy.Name);
             if(hpText!=null&&hpLocalScale!=Vector3.zero){hpText.transform.localScale=hpLocalScale;hpText.transform.localPosition=hpLocalPosition;}
@@ -369,6 +384,7 @@ namespace Olca.Presentation.Battle
         /// <summary>バトル終了時に呼ぶ（名前・HP非表示）</summary>
         public void HideHp()
         {
+            ClearRecoveryHint();
             hpVisible=false;bossGauges.Remove(this);normalGauges.Remove(this);
             RefreshGauges();
             if (hpText != null) hpText.gameObject.SetActive(false);

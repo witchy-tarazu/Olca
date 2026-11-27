@@ -336,7 +336,9 @@ namespace Olca.Core.Logic.Battle
 namespace Olca.Core.Logic.Battle
 {
     /// <summary>新IDだけの試用。発射後72fは反撃時間、一発射につき一度だけ通常1マス後退する。</summary>
-    public sealed class DungeonStepArcherAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource
+    /// <summary>行動中の待ち状態だけを読む表示契約。命中保証や防御低下を意味しない。</summary>
+    public interface IEnemyRecoveryPreviewSource { bool TryGetRecoveryPreview(out int elapsedFrames,out int totalFrames); }
+    public sealed class DungeonStepArcherAction : IContinuingEnemyAIAction,IEnemyAttackPreviewSource,IEnemyRecoveryPreviewSource
     {
         public const string EnemyId="trial-dungeon-archer-step-v2";
         public const int CounterWindowFrames=72,StepPresentationFrames=12;
@@ -382,6 +384,15 @@ namespace Olca.Core.Logic.Battle
         private void Observe(){if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation.Dispose();cancellation=null;}
         public void Tick(int ms,AIContext c,bool logicalFrame)=>Observe();
         public bool TryGetAttackPreview(out EnemyAttackPreview preview)=>shot.TryGetAttackPreview(out preview);
+        public bool TryGetRecoveryPreview(out int elapsedFrames,out int totalFrames)
+        {
+            elapsedFrames=totalFrames=0;
+            // Observe/時計更新/予約変更は行わず、発射済みの実行中状態だけを読む。
+            if(cancellation==null||cancellation.IsCancellationRequested||task.Status!=FrameTaskStatus.Pending||releasedAt<0||!Ready(active)||active.Self.IsStaggered)return false;
+            long units=active.Battle.ActionPresentationTimeUnits-releasedAt;
+            if(units<0||units>=CounterWindowFrames*50L)return false;
+            elapsedFrames=(int)(units/50);totalFrames=CounterWindowFrames;return true;
+        }
         public void Cancel(AIContext c){var source=cancellation;cancellation=null;if(source==null)return;try{source.Cancel();}finally{source.Dispose();shot.Cancel(c);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
         public int GetCooldownMs()=>0;public float GetCooldown()=>0;
     }

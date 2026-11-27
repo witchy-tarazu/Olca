@@ -71,6 +71,11 @@ namespace Olca.Core.Logic.Battle
         private readonly PlayerMovementSystem playerMovement;
         private readonly PanelEffectSystem panelEffects;
         private readonly EnemyAISystem enemyAI;
+        public bool TryGetEnemyRecoveryPreview(Enemy enemy,out int elapsedFrames,out int totalFrames)
+        {
+            elapsedFrames=totalFrames=0;
+            return !IsGameOver&&enemy!=null&&!enemy.IsDead&&enemyAI.TryGetRecoveryPreview(enemy,out elapsedFrames,out totalFrames);
+        }
         public bool TryGetEnemyAttackPreview(Enemy enemy,out Vector2Int target,out int elapsedFrames,out int totalFrames)
         {
             target=default;elapsedFrames=totalFrames=0;

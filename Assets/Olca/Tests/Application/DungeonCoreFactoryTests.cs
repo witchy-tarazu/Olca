@@ -488,6 +488,42 @@ namespace Olca.Tests.Application
             return new BattleSystem(player,new System.Collections.Generic.List<Enemy>{enemy},new Deck(),customGaugeSpeed:0,randomProvider:new SeededBattleRandom(7),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());
         }
         private static void Frames(BattleSystem b,int count){for(int i=0;i<count;i++)b.TickFrame(17);}
+        [TestCase(false)][TestCase(true)]
+        public void 隙439は発射後の実待ちだけを副作用なく読み72境界で後退表示から分離する(bool left)
+        {
+            var b=Battle(out var p,out var e,left?4:1,left?1:4);b.TickFrame(17);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));p.MoveTo(new Vector2Int(left?2:3,0));Frames(b,30);
+            Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out var elapsed,out var total));Assert.AreEqual(0,elapsed);Assert.AreEqual(72,total);Assert.AreEqual(100,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+            for(int i=0;i<100;i++){Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out var same,out _));Assert.AreEqual(elapsed,same);}Assert.AreEqual(left?1:4,e.GridPosition.X);
+            Frames(b,71);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out elapsed,out total));Assert.AreEqual(71,elapsed);Frames(b,1);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));Assert.AreEqual(left?0:5,e.GridPosition.X);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)]
+        public void 隙439はポーズ中に色形と残りを進めず解除後も同じ期限を守る(BattlePauseReason reason)
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);p.MoveTo(new Vector2Int(2,0));Frames(b,40);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out var elapsed,out var total));b.Pause(reason);Frames(b,200);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out var stopped,out _));Assert.AreEqual(elapsed,stopped);b.Resume(reason);Frames(b,total-elapsed);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));
+        }
+        [Test] public void 隙439は未発射の隣接待ちと旧弓と中断死亡を反撃窓と表示しない()
+        {
+            var b=Battle(out var p,out var e,3);Frames(b,40);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));
+            b=Battle(out p,out e);b.TickFrame(17);p.MoveTo(new Vector2Int(2,0));Frames(b,30);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out _,out _));e.ApplyStun(10000);Frames(b,1);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));e.TakeDamage(1000,ElementType.None);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));
+            p=new PlayerCharacter(100,new Vector2Int(1,0));e=new Enemy(DungeonCoreFactory.TrialArcherEnemyId,"旧ユミ",60,ElementType.None,new Vector2Int(4,0));b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());Frames(b,40);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 隙439の息継ぎは同じ論理時点で静止し予告と期限と無効化では残さない(bool flip)
+        {
+            var go=new UnityEngine.GameObject("Recovery439");try{
+                var renderer=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,renderer);view.Initialize(new Enemy(DungeonStepArcherAction.EnemyId,"ユミ",60,ElementType.None,new Vector2Int(4,0)));renderer.flipX=flip;
+                var position=renderer.transform.localPosition;var scale=renderer.transform.localScale;view.RenderTrialArcher(false,0,2000,10,72);var line=go.transform.Find("ArcherRecoveryBreath439");
+                if(line==null)line=renderer.transform.Find("ArcherRecoveryBreath439");Assert.IsNotNull(line);var cue=line.GetComponent<UnityEngine.LineRenderer>();Assert.IsTrue(cue.enabled);var point=cue.GetPosition(1);var color=cue.startColor;var material=renderer.sharedMaterial;Assert.AreSame(material,cue.sharedMaterial);
+                view.RenderTrialArcher(false,0,2000,10,72);Assert.AreEqual(point,cue.GetPosition(1));Assert.AreEqual(color,cue.startColor);Assert.AreEqual(position,renderer.transform.localPosition);Assert.AreEqual(scale,renderer.transform.localScale);
+                view.RenderTrialArcher(false,0,2500,20,72);Assert.AreNotEqual(point,cue.GetPosition(1));view.RenderTrialArcher(true,20,2500,20,72);Assert.IsFalse(cue.enabled);view.RenderTrialArcher(false,0,3000,72,72);Assert.IsFalse(cue.enabled);view.RenderTrialArcher(false,0,3000,10,72);Assert.IsTrue(cue.enabled);
+                var world=go.AddComponent<Olca.Presentation.Field.WorldEnemyView>();typeof(Olca.Presentation.Field.WorldEnemyView).GetField("enemyView",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(world,view);
+                world.Initialize((Enemy)typeof(Olca.Presentation.Battle.EnemyView).GetField("enemy",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(view),0);view.RenderTrialArcher(false,0,3000,10,72);Assert.IsTrue(cue.enabled);
+                var field=go.AddComponent<Olca.Presentation.Field.GameFieldView>();var list=(System.Collections.Generic.List<Olca.Presentation.Field.WorldEnemyView>)typeof(Olca.Presentation.Field.GameFieldView).GetField("enemyViews",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(field);list.Add(world);field.ReleasePresentation();Assert.IsFalse(cue.enabled);Assert.IsNotNull(renderer.sprite);Assert.AreSame(material,renderer.sharedMaterial);
+                view.RenderTrialArcher(false,0,3000,10,72);world.OnBattleEnded();Assert.IsFalse(cue.enabled);view.RenderTrialArcher(false,0,3000,10,72);view.HideHp();Assert.IsFalse(cue.enabled);
+                view.RenderTrialArcher(false,0,3000,10,72);typeof(Olca.Presentation.Battle.EnemyView).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.IsFalse(cue.enabled);Assert.IsNotNull(material);
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void 弓429は発射後72フレームを反撃に残し一度だけ後退する(bool left)
         {
