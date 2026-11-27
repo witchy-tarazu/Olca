@@ -57,7 +57,7 @@ namespace Olca.Tests
             public readonly DelayedEffect Shot;
             private WorldBattleGridView grid;
             private bool disposed;
-            public BombDisplayFixture(int enemyHp)
+            public BombDisplayFixture(int enemyHp,int enemyX=4)
             {
                 Root=new GameObject("bomb-impact-display-fixture");
                 try {
@@ -67,7 +67,7 @@ namespace Olca.Tests
                     typeof(WorldBattleGridView).GetMethod("Awake",Flags).Invoke(grid,null);
                 View=Root.AddComponent<GameFieldView>();
                 typeof(GameFieldView).GetField("battleGridView",Flags).SetValue(View,grid);
-                Enemy=new Enemy("impact-target","対象",enemyHp,ElementType.None,new Cell(4,0));
+                Enemy=new Enemy("impact-target","対象",enemyHp,ElementType.None,new Cell(enemyX,0));
                 Battle=new BattleSystem(new PlayerCharacter(100,new Cell(1,0)),new List<Enemy>{Enemy},new Deck(),logger:new Olca.Tests.Mocks.MockLogger());
                 View.OnBattleStarted(Battle,0);
                 var card=new Olca.Application.Battle.SimpleCardFactory().CreateById("bomb");
@@ -106,6 +106,28 @@ namespace Olca.Tests
             }
         }
 
+        [TestCase(2,false)][TestCase(3,true)][TestCase(4,true)][TestCase(5,true)]
+        public void ボム451は既存範囲の内外を変えず着弾後だけ六コマを表示する(int enemyX,bool hit)
+        {
+            using(var fixture=new BombDisplayFixture(100,enemyX)){
+                fixture.Frames(89);fixture.Draw(0,100);Assert.AreEqual(0,fixture.Visible("Blast"));Assert.AreEqual(100,fixture.Enemy.CurrentHp);
+                fixture.Frames(1);long frame=fixture.Battle.LogicalFrame;fixture.Draw(0,101);Assert.AreEqual(hit?60:100,fixture.Enemy.CurrentHp);Assert.AreEqual(3,fixture.Visible("Blast"));
+                var parts=fixture.Root.GetComponentsInChildren<SpriteRenderer>().Where(x=>x.name.StartsWith("Blast")).ToArray();
+                Assert.AreEqual(3,parts.Length);Assert.IsTrue(parts.Single(x=>x.name=="Blast1").sprite.name.Contains("True-0"));
+                Assert.IsTrue(parts.All(x=>x.sprite.pivot.y==0));Assert.IsTrue(parts.All(x=>Mathf.Abs(x.transform.position.y-(fixture.Root.GetComponent<WorldBattleGridView>().GroundY+fixture.View.CharacterDisplayOffsetY+fixture.View.LogicalToWorld(.02f)))<.00001f),"爆風だけを実タイル上の敵の接地線へ合わせる");Assert.Greater(parts[1].transform.localScale.y,parts[0].transform.localScale.y);
+                fixture.Battle.Pause(BattlePauseReason.User);fixture.Frames(20);fixture.Draw(100,102);Assert.AreEqual(frame,fixture.Battle.LogicalFrame);Assert.IsTrue(parts[1].sprite.name.EndsWith("-0"));fixture.Battle.Resume(BattlePauseReason.User);
+                fixture.Battle.Pause(BattlePauseReason.CustomScreen);fixture.Frames(20);fixture.Draw(100,105);
+                Assert.AreEqual(frame,fixture.Battle.LogicalFrame);Assert.IsTrue(parts[1].sprite.name.EndsWith("-0"));Assert.AreEqual(hit?60:100,fixture.Enemy.CurrentHp);
+                fixture.Battle.Resume(BattlePauseReason.CustomScreen);
+                fixture.Frames(5);fixture.Draw(0,103);Assert.IsTrue(parts[1].sprite.name.EndsWith("-5"));Assert.AreEqual(hit?60:100,fixture.Enemy.CurrentHp);fixture.Frames(1);fixture.Draw(0,104);Assert.AreEqual(0,fixture.RootCount);
+            }
+        }
+        [Test] public void ボム451は自作の透過六コマを共有し側方と爆心を区別する()
+        {
+            var sprites=Enumerable.Range(0,6).Select(n=>BattleBombLayers451.Frame(n,true,generatedScope)).ToArray();
+            Assert.AreEqual(6,sprites.Distinct().Count());Assert.AreSame(sprites[0],BattleBombLayers451.Frame(0,true,generatedScope));Assert.AreNotSame(sprites[0],BattleBombLayers451.Frame(0,false,generatedScope));
+            foreach(var sprite in sprites){Assert.AreEqual(160,sprite.texture.width);Assert.AreEqual(128,sprite.texture.height);Assert.AreEqual(FilterMode.Bilinear,sprite.texture.filterMode);Assert.AreEqual(new Vector2(80,0),sprite.pivot);}
+        }
         [Test]
         public void 非致死ボムの爆風は描画時間で延長せず六論理frameで終了し停止中は保持する()
         {

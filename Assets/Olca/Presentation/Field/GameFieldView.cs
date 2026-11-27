@@ -693,12 +693,13 @@ namespace Olca.Presentation.Field
                     var part=root.transform.GetChild(i+1);int x=effect.TargetPosition.X+i-1;
                     part.gameObject.SetActive(blast&&x>=0&&x<BattleField.GRID_WIDTH);
                     if(!part.gameObject.activeSelf)continue;
-                    part.position=new Vector3(battleGridView.GridIndexToWorldX(x),ground+LogicalToWorld(.38f),0);
-                    var renderer=part.GetComponent<SpriteRenderer>();bool illustrated=renderer.sprite!=obstacleWhiteSprite;
-                    // 透明余白を除く素材の可視領域を、既存の1タイル内の爆風範囲へ合わせる。
-                    part.localScale=new Vector3(LogicalToWorld(.82f)/(illustrated?SharedAttackPropCatalog.BlastVisibleWidth:1f),LogicalToWorld(.18f)/(illustrated?SharedAttackPropCatalog.BlastVisibleHeight:1f),1);
+                    part.position=new Vector3(battleGridView.GridIndexToWorldX(x),ground+CharacterDisplayOffsetY+LogicalToWorld(.02f),0);
+                    var renderer=part.GetComponent<SpriteRenderer>();
+                    renderer.sprite=BattleBombLayers451.Frame(Mathf.FloorToInt(elapsed),i==1,generatedAssets??(generatedAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this)));
+                    // 中心は高い熱源、左右は低い広がり。各可視範囲は元の1マス内に留める。
+                    part.localScale=new Vector3(LogicalToWorld(.9f)/1.6f,LogicalToWorld(i==1?1.05f:.72f)/1.28f,1);
                     float alpha=.75f*(1f-elapsed/6f);
-                    renderer.color=illustrated?new Color(1,1,1,alpha):new Color(.4f,1f,1f,alpha);
+                    renderer.color=new Color(1,1,1,alpha);
                 }
             }
         }
