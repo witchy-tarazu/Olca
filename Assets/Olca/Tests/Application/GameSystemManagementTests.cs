@@ -701,6 +701,34 @@ namespace Olca.Tests.Application
                 long frame=model.Core.Frame;binding.View.Render();StringAssert.DoesNotStartWith("trial_charge_",binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);Assert.AreEqual(frame,model.Core.Frame);
             }
         }
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
+        public async Task 分岐441は通常入口で独立し狭い画面の予告と元探索を保ち閉鎖後の操作を拒否する(int width,int height)
+        {
+            async Task NextFrame(){int before=Time.frameCount;for(int n=0;n<100&&Time.frameCount==before;n++)await Task.Delay(10);Assert.AreNotEqual(before,Time.frameCount,"同フレーム復帰遮断の次フレームを実際に待つ");}
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},runtime:runtime,input:input,trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();var entry=view.transform.Find("OutsideBranchEntry441").GetComponent<Button>();Assert.IsTrue(entry.gameObject.activeSelf);Assert.IsTrue(entry.interactable);Canvas.ForceUpdateCanvases();Assert.IsFalse(Area(entry.GetComponent<RectTransform>()).Overlaps(Area(view.transform.Find("OutsideForestPreview").GetComponent<RectTransform>())),"入口は実4:3 Canvasの森ボタンに重ならない");var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());long frame=model.Core.Frame;
+                Assert.Throws<NullReferenceException>(()=>Olca.Presentation.Exploration.OutsideBranchView441.Open(view,resources.GetShared<Font>("OlcaUI/MenuText"),null,null,null,null,null,null,100));await NextFrame();Assert.IsTrue(view.CanPlay,"初期化失敗時にも親探索へ戻る");Assert.IsNull(view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>());view.Render();entry.onClick.Invoke();
+                var branch=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.IsNotNull(branch);Assert.IsFalse(view.CanPlay);view.SetCovered(false);Assert.IsFalse(view.CanPlay,"親Controllerの通常再評価でも独立区間中は覆いを維持する");var session=branch.Runtime.Session;
+                var ff=BindingFlags.Instance|BindingFlags.NonPublic;var loop=(Olca.Unity.UnityLogicalLoop)typeof(OutsideExplorationRuntime).GetField("loop",ff).GetValue(runtime);long frequency=System.Diagnostics.Stopwatch.Frequency,now=System.Diagnostics.Stopwatch.GetTimestamp()+frequency*10;typeof(Olca.Unity.UnityLogicalLoop).GetField("readTimestamp",ff).SetValue(loop,(Func<long>)(()=>now));
+                for(int n=0;n<20;n++){binding.SetCovered(false);now+=frequency/60+1;binding.Pump(true);Assert.IsFalse(view.CanPlay);Assert.AreEqual(frame,model.Core.Frame);}
+
+                for(int n=0;n<60;n++)session.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup,session.Phase);branch.Render();Canvas.ForceUpdateCanvases();
+                Rect Area(RectTransform rt){var c=new Vector3[4];rt.GetWorldCorners(c);return Rect.MinMaxRect(c.Min(v=>v.x),c.Min(v=>v.y),c.Max(v=>v.x),c.Max(v=>v.y));}
+                var bounds=Area((RectTransform)host.transform);var warning=branch.transform.Find("BranchLowWarning").GetComponent<Image>();Assert.IsTrue(warning.enabled);var wr=Area(warning.rectTransform);Assert.GreaterOrEqual(wr.xMin,bounds.xMin);Assert.LessOrEqual(wr.xMax,bounds.xMax);var platform=Area(branch.transform.Find("BranchUpperEdge").GetComponent<RectTransform>());Assert.Greater(platform.yMin,wr.yMax);
+                for(int n=0;n<3;n++)branch.Render();Assert.AreEqual(frame,model.Core.Frame);CollectionAssert.AreEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.AreEqual(100,model.Player.CurrentHp);
+                var closeAction=branch.transform.Find("BranchClose").GetComponent<Button>().onClick;closeAction.Invoke();Assert.IsTrue(session.IsDisposed);Assert.DoesNotThrow(()=>closeAction.Invoke());CollectionAssert.AreEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+                entry.onClick.Invoke();view.Render(); // 同フレームの復帰遮断中には再入しない。
+                Assert.IsNull(view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>());
+                await NextFrame();view.Render();entry.onClick.Invoke();branch=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.IsNotNull(branch);var next=branch.Runtime.Session;
+                branch.gameObject.SetActive(false);typeof(Olca.Presentation.Exploration.OutsideBranchView441).GetMethod("OnDisable",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(branch,null);Assert.IsTrue(next.IsDisposed);
+                await NextFrame();view.Render();entry.onClick.Invoke();branch=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.IsNotNull(branch,"外部Disable後も独立区間を再入できる");var last=branch.Runtime.Session;
+                binding.ReturnToHub();Assert.IsTrue(last.IsDisposed);CollectionAssert.AreEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+            }
+        }
+
         private GameObject host, events;
         private ResourceManager resources;
         private DialogManager dialogs;

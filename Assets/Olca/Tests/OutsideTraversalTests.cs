@@ -525,3 +525,64 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class OutsideBranch441Tests
+    {
+        private static Olca.Core.Logic.Integration.LogicalInput Input(float x=0,bool jump=false,bool held=false,bool attack=false)=>new Olca.Core.Logic.Integration.LogicalInput{Horizontal=x,JumpButtonDown=jump,JumpButton=held,BasicAttackButtonDown=attack,BasicAttackButton=attack};
+        private static void Walk(Olca.Core.Logic.Integration.OutsideBranchTrial441 s,long x){for(int n=0;n<500&&s.Core.Position<x;n++)s.Tick(Input(1));NUnit.Framework.Assert.GreaterOrEqual(s.Core.Position,x);}
+        private static void Upper(Olca.Core.Logic.Integration.OutsideBranchTrial441 s)
+        {
+            Walk(s,210000);s.Tick(Input(1,true,true));for(int n=0;n<180&&!s.UsedUpper;n++)s.Tick(Input(s.Core.Position<390000?1:0,held:true));NUnit.Framework.Assert.IsTrue(s.UsedUpper);NUnit.Framework.Assert.AreEqual(120000,s.Core.Height);
+        }
+        [NUnit.Framework.Test] public void 分岐441は既存ジャンプの上道で無被弾のまま出口へ届く()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){Upper(s);for(int n=0;n<500&&!s.Completed;n++)s.Tick(Input(1));NUnit.Framework.Assert.IsTrue(s.Completed);NUnit.Framework.Assert.IsTrue(s.UsedUpper);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);NUnit.Framework.Assert.AreEqual(30,s.Guard.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 分岐441は横移動だけでは上道と同じ無被弾にならずジャンプなしでも退出できる()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){for(int n=0;n<500&&!s.Completed;n++)s.Tick(Input(1));NUnit.Framework.Assert.IsTrue(s.Completed);NUnit.Framework.Assert.IsFalse(s.UsedUpper);NUnit.Framework.Assert.Less(s.Player.CurrentHp,100);NUnit.Framework.Assert.Greater(s.Player.CurrentHp,0);NUnit.Framework.Assert.AreEqual(30,s.Guard.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 分岐441は予告から下がり既存三段で反撃撃破しジャンプなしで進める()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){
+                Walk(s,402000);NUnit.Framework.Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup,s.Phase);while(s.Core.Position>378000)s.Tick(Input(-1));
+                for(int n=0;n<60&&s.Phase!=Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery;n++)s.Tick(Input());NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);NUnit.Framework.Assert.IsTrue(s.GateOpen);
+                Walk(s,396000);for(int n=0;n<43&&!s.Guard.IsDead;n++)s.Tick(Input(attack:n==0||n==15||n==30));NUnit.Framework.Assert.IsTrue(s.Guard.IsDead);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);
+                for(int n=0;n<500&&!s.Completed;n++)s.Tick(Input(1));NUnit.Framework.Assert.IsTrue(s.Completed);NUnit.Framework.Assert.IsFalse(s.UsedUpper);
+            }
+        }
+        [NUnit.Framework.Test] public void 分岐441は上足場の通常キックを偽の床位置へ命中させない()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){Upper(s);Walk(s,540000);s.Tick(Input(attack:true));for(int n=0;n<25;n++)s.Tick(Input());NUnit.Framework.Assert.AreEqual(30,s.Guard.CurrentHp);NUnit.Framework.Assert.AreEqual(100,s.Player.CurrentHp);NUnit.Framework.Assert.IsFalse(s.StrikeContainsPlayer());}
+        }
+        [NUnit.Framework.Test] public void 分岐441は範囲外と逆向きの蹴りを拒否する()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){Walk(s,378000);s.Tick(Input(attack:true));for(int n=0;n<25;n++)s.Tick(Input());NUnit.Framework.Assert.AreEqual(30,s.Guard.CurrentHp);Walk(s,420000);s.Tick(Input(-1));s.Tick(Input(attack:true));for(int n=0;n<10;n++)s.Tick(Input());NUnit.Framework.Assert.AreEqual(30,s.Guard.CurrentHp);}
+        }
+        [NUnit.Framework.Test] public void 分岐441の門は身体へ閉じず終了や破棄の後は時計を進めない()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){
+                Walk(s,402000);while(s.Core.Position>378000)s.Tick(Input(-1));while(s.Phase!=Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery)s.Tick(Input());Walk(s,576000);NUnit.Framework.Assert.IsFalse(s.GatePassed);
+                for(int n=0;n<60&&s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery;n++)s.Tick(Input());NUnit.Framework.Assert.IsTrue(s.GateOpen);long x=s.Core.Position;
+                while(s.Core.Position>528000){long old=s.Core.Position;s.Tick(Input(-1));NUnit.Framework.Assert.LessOrEqual(System.Math.Abs(s.Core.Position-old),6000);}NUnit.Framework.Assert.IsFalse(s.GateOpen);NUnit.Framework.Assert.Less(s.Core.Position,x);
+                long f=s.Frame;s.Dispose();for(int n=0;n<100;n++)s.Tick(Input(1,true,true,true));NUnit.Framework.Assert.AreEqual(f,s.Frame);
+            }
+        }
+        [NUnit.Framework.Test] public void 分岐441はポーズ中に予告とタメを進めず保持中も移動と跳躍ができる()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){
+                for(int n=0;n<10;n++){var v=Input(1,n==0,true);v.BasicAttackButton=true;s.Tick(v);}NUnit.Framework.Assert.Greater(s.Core.Position,120000);NUnit.Framework.Assert.Greater(s.Core.Height,0);NUnit.Framework.Assert.AreEqual(10,s.ChargeFrames);
+                long f=s.Frame,x=s.Core.Position,h=s.Core.Height;s.Paused=true;for(int n=0;n<200;n++)s.Tick(Input(1,true,true,true));NUnit.Framework.Assert.AreEqual(f,s.Frame);NUnit.Framework.Assert.AreEqual(x,s.Core.Position);NUnit.Framework.Assert.AreEqual(h,s.Core.Height);NUnit.Framework.Assert.AreEqual(10,s.ChargeFrames);s.Paused=false;s.Tick(Input());NUnit.Framework.Assert.AreEqual(f+1,s.Frame);
+            }
+        }
+        [NUnit.Framework.Test] public void 分岐441の地形と敵は旧保存の登録を変えず再開始は新しい個体になる()
+        {
+            string old=Olca.Core.Logic.Integration.OutsideKickTrialDefinition.SaveDefinitionKey;using(var a=new Olca.Core.Logic.Integration.OutsideBranchTrial441())using(var b=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){
+                NUnit.Framework.Assert.IsFalse(Olca.Core.Logic.Integration.OutsideTrialRoute.KnownMap(a.Core.Definition.Id));NUnit.Framework.Assert.AreEqual("validation-landing-32",Olca.Core.Logic.Integration.OutsideMovementDefinition.ValidationLandingTerrain.Id);NUnit.Framework.Assert.AreEqual(old,Olca.Core.Logic.Integration.OutsideKickTrialDefinition.SaveDefinitionKey);
+                for(int n=0;n<250;n++){a.Tick(Input(1));var v=a.StrikeContainsPlayer();a.StrikeContainsPlayer();b.Tick(Input(1));}NUnit.Framework.Assert.AreEqual(a.Core.Position,b.Core.Position);NUnit.Framework.Assert.AreEqual(a.Player.CurrentHp,b.Player.CurrentHp);NUnit.Framework.Assert.AreEqual(a.Phase,b.Phase);NUnit.Framework.Assert.AreNotSame(a.Player,b.Player);NUnit.Framework.Assert.AreNotSame(a.Guard,b.Guard);
+            }
+        }
+    }
+}

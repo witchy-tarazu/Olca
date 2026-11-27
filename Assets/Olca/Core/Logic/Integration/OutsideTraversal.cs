@@ -655,3 +655,75 @@ namespace Olca.Core.Logic.Integration
         public void ValidateActor(Olca.Core.Domain.PlayerCharacter actor){if(!Known(actor)||actor.DepartureStyle.Id!=StyleId||RequiredFor(actor)!=RequiredFrames)throw new System.ArgumentException("試用タメと復元するプレイヤーが一致しません");}
     }
 }
+
+namespace Olca.Core.Logic.Integration
+{
+    /// <summary>保存しない独立分岐。既存Annexの定義・Actor・経済へ接続しない。</summary>
+    public sealed class OutsideBranchTrial441 : System.IDisposable
+    {
+        public const string DefinitionId="trial-branch-corridor-v1",GuardId="trial-branch-goblin-v1";
+        public const long Unit=60000,GuardX=570000,GateX=576000,Reach=180000,AttackHeight=90000,ExitX=1080000;
+        public const int GuardHp=30; // この独立区間だけの調整可能な仮値。
+        public OutsideExplorationCore Core {get;} public Olca.Core.Domain.PlayerCharacter Player {get;}
+        public Olca.Core.Domain.Enemy Guard {get;} public OutsideNormalKickSequence Kick {get;}
+        public OutsideGoblinPhase Phase {get;private set;}=OutsideGoblinPhase.Approach;
+        public int Age {get;private set;} public int GuardFacing {get;private set;}=-1;
+        public bool GateOpen {get;private set;} public bool GatePassed {get;private set;}
+        public bool UsedUpper {get;private set;} public bool Completed {get;private set;} public bool Paused {get;set;}
+        public bool IsDisposed {get;private set;} public long Frame=>Core.Frame;
+        public long LastHitFrame {get;private set;}=-1000;public long LastHurtFrame {get;private set;}=-1000;public long DeathFrame {get;private set;}=-1000;
+        private readonly OutsideTraversalProfile closed,open;
+        private readonly OutsideChargeHoldInput charge=new OutsideChargeHoldInput();
+        public int ChargeFrames=>charge.Frames; public bool IsCharging=>charge.IsAccumulating;
+        public OutsideBranchTrial441()
+        {
+            OutsideTraversalProfile Profile(string id,params OutsideValidationWall[] walls)=>new OutsideTraversalProfile(id,720000,12,30,60,600000,31200,135000,1800,12000,480000,6,12,false,walls);
+            closed=Profile(DefinitionId+"-closed",new OutsideValidationWall("branch-guard-gate",GateX,0,AttackHeight,false,false));open=Profile(DefinitionId+"-open");
+            Core=new OutsideExplorationCore(new OutsideMovementDefinition(DefinitionId,20*Unit,2*Unit,6*Unit,new OutsideLandingSurface("branch-upper",4*Unit,14*Unit,2*Unit)),closed);
+            Player=new Olca.Core.Domain.PlayerCharacter(100);Guard=new Olca.Core.Domain.Enemy(GuardId,"モンバン ゴブリン（カリ）",GuardHp,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(0,0));
+            Kick=new OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());Kick.Configure(OutsideKickTrialDefinition.Timings());
+        }
+        public void CancelInput(){charge.Reset();Kick.Interrupt();}
+        public bool StrikeContainsPlayer()=>!Guard.IsDead&&(Core.Position-GuardX)*GuardFacing>=0&&(Core.Position-GuardX)*GuardFacing<=Reach&&Core.Height>=0&&Core.Height<=AttackHeight;
+        private void RefreshGate()
+        {
+            if(Core.Position>GateX+closed.BodyHalfWidth)GatePassed=true;
+            // 閉じる時に身体が重なる場合は、身体が抜けるまで閉鎖を保留する。押出し/転移はしない。
+            bool clear=Guard.IsDead||Phase==OutsideGoblinPhase.Recovery||GatePassed||GateOpen&&System.Math.Abs(Core.Position-GateX)<closed.BodyHalfWidth;
+            if(clear==GateOpen)return;GateOpen=clear;Core.ConfigureTraversal(clear?open:closed);
+        }
+        public void Tick(LogicalInput input)
+        {
+            if(IsDisposed||Paused||Completed||Player.IsDead)return;input=input??new LogicalInput();bool allowed=!Player.IsActionPrevented;
+            RefreshGate();Kick.Observe(Frame,Core.IsGrounded,Core.Facing,allowed);
+            Core.TickFrame(allowed?Kick.ResolveHorizontal(input.Horizontal):0,allowed&&!Kick.LocksGroundMotion&&input.JumpButtonDown,input.JumpButton,movementLocked:!allowed);
+            Kick.Observe(Frame,Core.IsGrounded,Core.Facing,allowed);
+            var release=charge.Advance(Frame,input.HasChargeHoldSample?input.ChargeHoldButton||input.BasicAttackButton:input.BasicAttackButton,input.BasicAttackButtonDown,allowed,allowed&&!Kick.IsActive,Kick.IsActive,OutsideChargeKickData.RequiredFor(Player),out bool reserve);
+            if(reserve)Kick.TryRequest(Frame,Core.IsGrounded,Core.Facing,bodyAllowed:allowed,otherAttack:true);
+            if(release==OutsideBasicRelease.Normal)Kick.TryRequest(Frame,Core.IsGrounded,Core.Facing,bodyAllowed:allowed);
+            if(release==OutsideBasicRelease.Charged)Kick.TryStartCharge(Frame,Core.IsGrounded,Core.Facing,OutsideChargeKickData.Create(Player,Core.IsGrounded),allowed);
+            Kick.TryExecuteReserved(Frame,Core.IsGrounded,Core.Facing,allowed);
+            bool contains=Kick.IsActive&&(Kick.IsCharged?Kick.ChargePlan.Contains(Core.Position,Core.Height,Kick.AttackFacing,GuardX):OutsideKickTrialDefinition.Contains(Kick.Kind,Core.Position,Core.Height,Kick.AttackFacing,GuardX));
+            if(!Guard.IsDead&&Kick.IsHitWindow&&contains&&Kick.TryMarkHit(0)){
+                Guard.TakeDamage(Kick.IsCharged?Kick.ChargePlan.Power:OutsideKickTrialDefinition.DamageFor(Kick.Kind),Olca.Core.Domain.ElementType.None);LastHitFrame=Frame;
+                if(Guard.IsDead){Phase=OutsideGoblinPhase.Dead;Age=0;DeathFrame=Frame;}
+            }
+            Player.BeginHpFrame();try{
+                if(!Guard.IsDead){
+                    if(Phase==OutsideGoblinPhase.Approach){
+                        if(System.Math.Abs(Core.Position-GuardX)<=Reach&&Core.Height>=0&&Core.Height<=AttackHeight){GuardFacing=Core.Position<GuardX?-1:1;Phase=OutsideGoblinPhase.Windup;Age=0;}
+                    }else{
+                        Age++;
+                        if(Phase==OutsideGoblinPhase.Windup&&Age>=OutsideGoblinTrialData.WindupFrames){Phase=OutsideGoblinPhase.Strike;Age=0;if(StrikeContainsPlayer()&&Player.TryTakeDamage(OutsideExplorationSession.TrialEnemyDamage,affectsPoise:true,poiseDamage:OutsideExplorationSession.TrialEnemyPoiseDamage))LastHurtFrame=Frame;}
+                        else if(Phase==OutsideGoblinPhase.Strike&&Age>=OutsideGoblinTrialData.StrikeFrames){Phase=OutsideGoblinPhase.Recovery;Age=0;}
+                        else if(Phase==OutsideGoblinPhase.Recovery&&Age>=OutsideGoblinTrialData.RecoveryFrames){Phase=OutsideGoblinPhase.Approach;Age=0;}
+                    }
+                }
+                Player.TickStagger(0,true);Player.TickPoiseRecovery(0,true);
+            }finally{Player.CommitHpFrame();Player.PublishHpFrame();}
+            if(Core.SupportId=="branch-upper")UsedUpper=true;RefreshGate();
+            if(!Player.IsDead&&Core.Position>=ExitX&&Core.IsGrounded&&Core.Height==0){Completed=true;CancelInput();}
+        }
+        public void Dispose(){if(IsDisposed)return;IsDisposed=true;CancelInput();}
+    }
+}

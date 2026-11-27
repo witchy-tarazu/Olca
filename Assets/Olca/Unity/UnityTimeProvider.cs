@@ -198,3 +198,31 @@ namespace Olca.Unity
         { Timestamp = timestamp; Input = input; Command = command; }
     }
 }
+
+namespace Olca.Unity
+{
+    /// <summary>独立試用だけの入力/時計。覆われた元の探索時計・保存には触れない。</summary>
+    public sealed class OutsideBranchRuntime441 : System.IDisposable
+    {
+        public Olca.Core.Logic.Integration.OutsideBranchTrial441 Session {get;private set;}
+        private readonly Olca.Unity.UnityInputProvider input;private readonly Olca.Unity.UnityLogicalLoop loop;
+        private bool disposed,blockJump,blockAttack,blockDirection;
+        public OutsideBranchRuntime441(System.Func<bool> active)
+        {
+            input=new Olca.Unity.UnityInputProvider{GamepadContext=()=>"outside",GamepadGameplayActive=active};input.StartEventCapture();loop=new Olca.Unity.UnityLogicalLoop(true,active);Reset();
+        }
+        public void Reset(){if(disposed)return;Session?.Dispose();Session=new Olca.Core.Logic.Integration.OutsideBranchTrial441();loop.StartNewTimeline();CaptureHeld();}
+        private void CaptureHeld(){var held=input.CaptureLogical();blockJump=held.JumpButton;blockAttack=held.BasicAttackButton||held.ChargeHoldButton;blockDirection=System.Math.Abs(held.Horizontal)>.01f;input.ResetCapturedInput();input.QueueSnapshot();}
+        public void Suspend(){if(disposed)return;Session.CancelInput();loop.ReleaseInput();CaptureHeld();}
+        public void Pump(bool active)
+        {
+            if(disposed)return;
+            loop.PumpTimestamped(active,input.CaptureTimestamped(),(f,ms,value)=>{
+                var v=value.Copy();if(!v.JumpButton)blockJump=false;if(!v.BasicAttackButton&&!v.ChargeHoldButton)blockAttack=false;if(System.Math.Abs(v.Horizontal)<.01f)blockDirection=false;
+                if(blockJump)v.JumpButton=v.JumpButtonDown=false;if(blockAttack){v.BasicAttackButton=v.BasicAttackButtonDown=v.ChargeHoldButton=false;}if(blockDirection)v.Horizontal=0;
+                Session.Tick(v);
+            },()=>!disposed&&!Session.Completed&&!Session.Player.IsDead);
+        }
+        public void Dispose(){if(disposed)return;disposed=true;Session.Dispose();loop.Dispose();input.Dispose();}
+    }
+}

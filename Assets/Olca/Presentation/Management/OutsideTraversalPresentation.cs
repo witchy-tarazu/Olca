@@ -1671,3 +1671,101 @@ namespace Olca.Presentation.Exploration
         }
     }
 }
+
+namespace Olca.Presentation.Exploration
+{
+    public sealed partial class OutsideExplorationView
+    {
+        private UnityEngine.UI.Button branchButton441;private OutsideBranchView441 branchView441;
+        private bool CanOpenBranch441=>CanPlay&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000&&presentation.Core.IsGrounded&&!presentation.Core.IsMoving&&!presentation.HasAttackAction&&!presentation.IsCharging&&presentation.NormalKickKind==null&&presentation.Bombs.Count==0&&presentation.InitialShots.Count==0&&presentation.Player?.IsActionPrevented==false;
+        private void InitializeBranch441(Olca.Presentation.Management.GameplayPanelFactory factory)
+        {
+            branchButton441=factory.Button("OutsideBranchEntry441","ブンキ カイロウ（カリ）",transform,new UnityEngine.Vector2(0,.5f),new UnityEngine.Vector2(195,-220));branchButton441.GetComponent<UnityEngine.RectTransform>().sizeDelta=new UnityEngine.Vector2(350,48);branchButton441.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};Olca.Presentation.Dungeon.UiLook.Button(branchButton441);
+            branchButton441.onClick.AddListener(()=>{if(CanOpenBranch441&&branchView441==null)branchView441=OutsideBranchView441.Open(this,gaugeLabel.font,idleSprite,riseSprite,apexSprite,fallSprite,idleClip,moveClip,pixelsPerWorldUnit);});
+        }
+        private void RenderBranchEntry441(){if(branchButton441==null)return;branchButton441.gameObject.SetActive(IsOpen&&presentation.Core.TrialMapId==Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexMapId&&System.Math.Abs(presentation.Core.Position-Olca.Core.Logic.Integration.OutsideTrialRoute.AnnexDoorX)<=60000);branchButton441.interactable=CanOpenBranch441;}
+        internal void ReleaseBranch441(OutsideBranchView441 view){if(branchView441!=view)return;branchView441=null;if(IsOpen)SetCovered(false);}
+        private void ClearBranch441(){if(branchView441!=null)branchView441.Close();branchView441=null;if(branchButton441!=null)branchButton441.gameObject.SetActive(false);}
+    }
+    /// <summary>新しい独立区間の投影。既存のActor素材・モーションと追従カメラ式を借用する。</summary>
+    public sealed class OutsideBranchView441 : UnityEngine.MonoBehaviour
+    {
+        public Olca.Unity.OutsideBranchRuntime441 Runtime {get;private set;}
+        private OutsideExplorationView owner;private bool disposed,closed,paused,focused=true;private float pixels;
+        private UnityEngine.Sprite idle,rise,apex,fall;private UnityEngine.AnimationClip idleClip,moveClip;private UnityEngine.SpriteRenderer sample;
+        private Olca.Unity.GeneratedSpriteAssets.Lease assets;private Olca.Unity.MenuPadScope menu;
+        private readonly TrialGroundComboMotion combo=new TrialGroundComboMotion();
+        private UnityEngine.UI.Image playerImage,guardImage,floor,platform,platformEdge,gate,warning,warningTop,warningBottom,exit;
+        private UnityEngine.UI.Text heading,help,status,guardLabel,upperLabel,exitLabel,warningLabel;
+        private UnityEngine.UI.Button close,retry,pause;private Olca.Presentation.Effects.ProvisionalCombatGraphic chargeFx,hitFx;
+        public bool Live=>!disposed&&this!=null&&gameObject.activeInHierarchy&&owner!=null&&owner.IsOpen;
+        public static OutsideBranchView441 Open(OutsideExplorationView owner,UnityEngine.Font font,UnityEngine.Sprite idle,UnityEngine.Sprite rise,UnityEngine.Sprite apex,UnityEngine.Sprite fall,UnityEngine.AnimationClip idleClip,UnityEngine.AnimationClip moveClip,float pixels)
+        {
+            var go=new UnityEngine.GameObject("OutsideBranch441",typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));go.transform.SetParent(owner.transform,false);var r=(UnityEngine.RectTransform)go.transform;r.anchorMin=UnityEngine.Vector2.zero;r.anchorMax=UnityEngine.Vector2.one;r.offsetMin=r.offsetMax=UnityEngine.Vector2.zero;go.GetComponent<UnityEngine.UI.Image>().color=new UnityEngine.Color(.09f,.12f,.15f,1);
+            var v=go.AddComponent<OutsideBranchView441>();v.owner=owner;v.idle=idle;v.rise=rise;v.apex=apex;v.fall=fall;v.idleClip=idleClip;v.moveClip=moveClip;v.pixels=pixels;
+            try{owner.SetCovered(true);v.Initialize(font);go.transform.SetAsLastSibling();return v;}catch{v.Close();owner.SetCovered(false);throw;}
+        }
+        private UnityEngine.UI.Image Box(string name,UnityEngine.Color color)
+        {
+            var g=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(UnityEngine.UI.Image));g.transform.SetParent(transform,false);var im=g.GetComponent<UnityEngine.UI.Image>();im.color=color;im.raycastTarget=false;im.rectTransform.anchorMin=im.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);return im;
+        }
+        private void Initialize(UnityEngine.Font font)
+        {
+            assets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);var factory=new Olca.Presentation.Management.GameplayPanelFactory(transform,font,null);
+            UnityEngine.UI.Text Label(string name,string text,UnityEngine.Vector2 anchor,UnityEngine.Vector2 at,UnityEngine.Vector2 size,int point){var t=factory.Label(name,transform,anchor,at,size);t.text=text;t.fontSize=point;t.color=UnityEngine.Color.white;t.raycastTarget=false;t.resizeTextForBestFit=true;t.resizeTextMinSize=16;t.resizeTextMaxSize=point;return t;}
+            for(int i=0;i<5;i++){var column=Box("BranchBackdropColumn"+i,new UnityEngine.Color(.13f,.16f,.18f,.5f));column.rectTransform.anchorMin=column.rectTransform.anchorMax=new UnityEngine.Vector2((i+.5f)/5,.21f);column.rectTransform.pivot=new UnityEngine.Vector2(.5f,0);column.rectTransform.sizeDelta=new UnityEngine.Vector2(90,650);}
+            floor=Box("BranchFloor",new UnityEngine.Color(.25f,.31f,.34f,1));floor.rectTransform.pivot=new UnityEngine.Vector2(0,1);
+            platform=Box("BranchUpperPlatform",new UnityEngine.Color(.25f,.45f,.51f,1));platformEdge=Box("BranchUpperEdge",new UnityEngine.Color(.8f,.96f,1,1));gate=Box("BranchGate",new UnityEngine.Color(.8f,.43f,.17f,1));
+            warning=Box("BranchLowWarning",new UnityEngine.Color(.9f,.18f,.12f,.2f));warningTop=Box("BranchWarningTop",new UnityEngine.Color(1,.35f,.2f,1));warningBottom=Box("BranchWarningBottom",new UnityEngine.Color(1,.35f,.2f,1));exit=Box("BranchExit",new UnityEngine.Color(.25f,.7f,.48f,1));
+            playerImage=Box("BranchPlayer",UnityEngine.Color.white);guardImage=Box("BranchGoblin",UnityEngine.Color.white);
+            guardLabel=Label("BranchGuardLabel","",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(330,52),20);
+            upperLabel=Label("BranchUpperLabel","ノレル ウワミチ",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(230,32),18);
+            exitLabel=Label("BranchExitLabel","デグチ",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(140,40),22);
+            warningLabel=Label("BranchWarningLabel","ヒクい フリオロシ",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(300,36),20);
+            heading=Label("BranchHeading","ブンキ カイロウ（カリ） / セーブ・ホウシュウなし",new UnityEngine.Vector2(0,1),new UnityEngine.Vector2(450,-36),new UnityEngine.Vector2(850,50),26);
+            help=Label("BranchGuide","ショキ: ←→/AD イドウ / Space ジャンプ / Z キック・ホジでタメ / ウエはカイヒ・シタはハンゲキ",new UnityEngine.Vector2(.5f,1),new UnityEngine.Vector2(0,-106),new UnityEngine.Vector2(1750,68),20);
+            status=Label("BranchStatus","",new UnityEngine.Vector2(.5f,0),new UnityEngine.Vector2(0,72),new UnityEngine.Vector2(1600,90),24);
+            UnityEngine.UI.Button Button(string name,string text,float x,System.Action action){var b=factory.Button(name,text,transform,new UnityEngine.Vector2(1,1),new UnityEngine.Vector2(x,-36));b.GetComponent<UnityEngine.RectTransform>().sizeDelta=new UnityEngine.Vector2(190,60);b.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};b.onClick.AddListener(()=>{if(Live)action();});return b;}
+            close=Button("BranchClose","モドる",-110,Close);retry=Button("BranchRetry","モウイチド",-320,()=>{paused=false;Runtime.Reset();});pause=Button("BranchPause","トメル",-530,()=>{paused=!paused;Runtime.Suspend();Runtime.Session.Paused=paused;});
+            var src=new UnityEngine.GameObject("BranchMotionSample",typeof(UnityEngine.SpriteRenderer),typeof(UnityEngine.Animator));src.transform.SetParent(transform,false);sample=src.GetComponent<UnityEngine.SpriteRenderer>();sample.enabled=false;src.GetComponent<UnityEngine.Animator>().enabled=false;
+            Olca.Presentation.Effects.ProvisionalCombatGraphic Effect(string name){var g=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(Olca.Presentation.Effects.ProvisionalCombatGraphic));g.transform.SetParent(transform,false);var fx=g.GetComponent<Olca.Presentation.Effects.ProvisionalCombatGraphic>();fx.raycastTarget=false;fx.rectTransform.anchorMin=fx.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);fx.enabled=false;return fx;}
+            chargeFx=Effect("BranchCharge");hitFx=Effect("BranchHit");
+            menu=new Olca.Unity.MenuPadScope(()=>Live){CancelOnly=true,SuppressPadCancel=true};menu.Bind(transform,close.name,Close);
+            Runtime=new Olca.Unity.OutsideBranchRuntime441(()=>Live&&!paused&&focused);Render();
+        }
+        private void Update(){if(!Live){if(!disposed)Close();return;}Runtime.Pump(!paused&&focused&&UnityEngine.Application.isFocused);Render();}
+        private void LateUpdate(){menu?.Tick();}
+        private void OnApplicationFocus(bool value){focused=value;if(!value){paused=true;if(Runtime!=null){Runtime.Suspend();Runtime.Session.Paused=true;}}}
+        private void Place(UnityEngine.UI.Image image,UnityEngine.Sprite sprite,float x,float y,int facing,bool authored)
+        {
+            image.sprite=sprite;if(sprite==null){image.enabled=false;return;}image.enabled=true;image.rectTransform.pivot=sprite.pivot/sprite.rect.size;image.rectTransform.sizeDelta=(UnityEngine.Vector2)sprite.bounds.size*pixels;image.rectTransform.anchoredPosition=new UnityEngine.Vector2(x,y);image.rectTransform.localScale=new UnityEngine.Vector3((authored?1:-1)*facing,1,1);
+        }
+        public void Render()
+        {
+            if(disposed||Runtime==null)return;var s=Runtime.Session;var core=s.Core;var r=(UnityEngine.RectTransform)transform;float width=r.rect.width,height=r.rect.height,viewport=width/pixels;
+            var camera=Olca.Core.Logic.Integration.OutsideCameraPolicy.Follow;float center=camera.ResolveHorizontalCenter(core.Position,core.Definition.Width,viewport);
+            float actorTop=UnityEngine.Mathf.Max(idle.bounds.max.y,UnityEngine.Mathf.Max(rise.bounds.max.y,UnityEngine.Mathf.Max(apex.bounds.max.y,fall.bounds.max.y)));float vertical=camera.ResolveVerticalOffset(core.Height,height/pixels,height*.21f/pixels,144/pixels,actorTop);
+            float X(long x)=>(x/60000f-center+viewport*.5f)*pixels;float Y(long y)=>(y/60000f-vertical)*pixels;
+            void Rect(UnityEngine.UI.Image im,float x,float y,float w,float h){im.rectTransform.anchoredPosition=new UnityEngine.Vector2(x,y);im.rectTransform.sizeDelta=new UnityEngine.Vector2(w,h);}
+            Rect(floor,0,Y(0),width,height*.21f);Rect(platform,X(9*60000),Y(2*60000)-9,10*pixels,18);Rect(platformEdge,X(9*60000),Y(2*60000),10*pixels,3);
+            Rect(gate,X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GateX),Y(45000),12,1.5f*pixels);gate.enabled=!s.GateOpen;
+            Rect(exit,X(18*60000),Y(0)+.7f*pixels,.12f*pixels,1.4f*pixels);exitLabel.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(18*60000),Y(0)+1.8f*pixels);exitLabel.gameObject.SetActive(System.Math.Abs(core.Position-18*60000)>72000);
+            upperLabel.gameObject.SetActive(false);
+            bool danger=!s.Guard.IsDead&&(s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup||s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike);warning.enabled=warningTop.enabled=warningBottom.enabled=danger;warningLabel.gameObject.SetActive(danger);
+            float mid=X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX+s.GuardFacing*Olca.Core.Logic.Integration.OutsideBranchTrial441.Reach/2);Rect(warning,mid,Y(45000),3*pixels,1.5f*pixels);Rect(warningTop,mid,Y(90000),3*pixels,4);Rect(warningBottom,mid,Y(0),3*pixels,4);warningLabel.rectTransform.anchoredPosition=new UnityEngine.Vector2(UnityEngine.Mathf.Clamp(mid,160,width-160),UnityEngine.Mathf.Max(140,Y(0)-50));
+            var body=idle;if(!core.IsGrounded)body=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apex:core.VerticalVelocity>0?rise:fall;else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null){clip.SampleAnimation(sample.gameObject,(float)(((core.IsMoving?core.MovementFrame:core.IdleFrame)/60d)%clip.length));body=sample.sprite??idle;}}
+            UnityEngine.Sprite kick=null;if(s.Kick.IsActive)kick=combo.Resolve(s.Kick.Kind,s.Kick.ElapsedFrames,s.Kick.ActiveTiming,false);if(kick!=null)body=kick;
+            Place(playerImage,body,X(core.Position),Y(core.Height),s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,kick!=null);playerImage.color=s.Frame-s.LastHurtFrame<12?new UnityEngine.Color(1,.45f,.4f):UnityEngine.Color.white;
+            int frame=s.Guard.IsDead?9:s.Frame-s.LastHitFrame<12?8:s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup?4+System.Math.Min(2,s.Age/8):s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike?7:(int)(s.Frame/10%4);var goblin=AnnexGoblinSprite.Resolve(assets,frame);
+            Place(guardImage,goblin,X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX),Y(0),s.GuardFacing,true);guardImage.color=s.Guard.IsDead?new UnityEngine.Color(1,1,1,UnityEngine.Mathf.Clamp01(1-(s.Frame-s.DeathFrame)/18f)):UnityEngine.Color.white;
+            guardLabel.text="モンバン（カリ） HP "+s.Guard.CurrentHp+" / 30";guardLabel.gameObject.SetActive(false);
+            chargeFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height)+1.1f*pixels);chargeFx.rectTransform.sizeDelta=new UnityEngine.Vector2(3.2f,3.2f)*pixels;if(s.IsCharging)chargeFx.ShowChargeParticles(s.Frame,s.ChargeFrames,60);else chargeFx.ClearChargeParticles();
+            long hitAge=s.Frame-s.LastHitFrame;hitFx.enabled=hitAge>=0&&hitAge<12;hitFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX),Y(0)+.8f*pixels);hitFx.rectTransform.sizeDelta=new UnityEngine.Vector2(150,150);if(hitFx.enabled)hitFx.Burst(hitAge/12f,new UnityEngine.Color(1,.7f,.3f));
+            heading.rectTransform.sizeDelta=new UnityEngine.Vector2(UnityEngine.Mathf.Max(250,width-700),50);heading.rectTransform.anchoredPosition=new UnityEngine.Vector2((width-700)*.5f,-36);help.rectTransform.sizeDelta=new UnityEngine.Vector2(width-50,68);status.rectTransform.sizeDelta=new UnityEngine.Vector2(width-50,90);
+            status.text="HP "+s.Player.CurrentHp+" /100  |  テキ "+s.Guard.CurrentHp+" /30  |  "+(s.Completed?(s.UsedUpper?"ウワミチで トウタツ":"シタミチで トウタツ")+" / モドるか モウイチド":s.Player.IsDead?"HP0 / モウイチド":paused?"テイシチュウ":s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery?"コウチョク / モンが アイています":s.Guard.IsDead?"ゲキハ / モンが アキました":"アカい ハンイに チュウイ");pause.GetComponentInChildren<UnityEngine.UI.Text>().text=paused?"サイカイ":"トメル";
+        }
+        public void Close(){if(closed)return;closed=true;DisposeTrial();gameObject.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(gameObject);else DestroyImmediate(gameObject);}
+        private void DisposeTrial(){if(disposed)return;disposed=true;menu?.Dispose();menu=null;Runtime?.Dispose();combo.Dispose();if(playerImage!=null)playerImage.sprite=null;if(guardImage!=null)guardImage.sprite=null;assets?.Dispose();assets=null;if(owner!=null)owner.ReleaseBranch441(this);}
+        private void OnDisable()=>Close();private void OnDestroy()=>DisposeTrial();
+    }
+}
