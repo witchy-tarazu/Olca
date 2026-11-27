@@ -165,6 +165,24 @@ namespace Olca.Tests.Application
                 var render=typeof(Olca.Presentation.Effects.AuthoredAttackVfx).GetMethod("Render",BindingFlags.NonPublic|BindingFlags.Static);var pixels=(Color32[])render.Invoke(null,new object[]{kind,2});Assert.IsTrue(pixels.Any(v=>v.a>0&&v.a<255),"非ドットの半透過縁を持つ");Assert.IsTrue(pixels.Take(256).All(v=>v.a==0));Assert.IsTrue(pixels.Skip(255*256).All(v=>v.a==0));
             }
         }
+        [TestCase(1)][TestCase(-1)] public async Task 蹴り命中火花457は実HP減少だけを描き空振りと停止と期限と保存を区別する(int facing)
+        {
+            var model=system.OutsideExploration;NeutralizeRelocatedSecondTargetForVisualFixture452(model);model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.EnableTrialNormalKick();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigureCombatFeedback(new Olca.Presentation.Effects.CombatNumberStyle(resources.GetShared<Font>("OlcaUI/MenuText"),FontStyle.Normal,Color.white,.2f,.01f,1,1));view.Render();
+                // 無関係なダメージでは蹴り火花を出さない。
+                model.TrialTarget.TakeDamage(1,Olca.Core.Domain.ElementType.None);view.Render();Assert.IsFalse(view.GetComponentsInChildren<Image>(true).Any(v=>v.name=="OutsideAuthoredHitSpark"&&v.enabled));
+                model.TickTraversal(-1);int missedHp=model.TrialTarget.CurrentHp;Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var missError),missError);for(int n=0;n<60;n++)model.TickTraversal(0);view.Render();Assert.AreEqual(missedHp,model.TrialTarget.CurrentHp);Assert.IsFalse(view.GetComponentsInChildren<Image>(true).Any(v=>v.name=="OutsideAuthoredHitSpark"&&v.enabled));
+                long desired=model.FirstTrialTargetX-facing*60000;while(model.Core.Position<desired)model.TickTraversal(1);model.TickTraversal(facing);
+                int before=model.TrialTarget.CurrentHp;Assert.IsTrue(model.ProcessCardUseInput(false,false,true,0,1,out var error),error);
+                for(int n=0;n<60&&model.TrialTarget.CurrentHp==before;n++)model.TickTraversal(0);
+                Assert.AreEqual(before-10,model.TrialTarget.CurrentHp);view.Render();var pulse=view.GetComponentsInChildren<Image>(true).Single(v=>v.name=="OutsideAuthoredHitSpark"&&v.enabled);Assert.AreEqual("authored_hit_0",pulse.sprite.name);Assert.IsFalse(pulse.raycastTarget);
+                long frame=model.Core.Frame;var sprite=pulse.sprite;var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());for(int n=0;n<3;n++)view.Render();Assert.AreEqual(frame,model.Core.Frame);Assert.AreSame(sprite,pulse.sprite);CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+                if(facing<0){model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorHomePoint);view.Render();view.Render();Assert.IsFalse(view.GetComponentsInChildren<Image>(true).Any(v=>v.name=="OutsideAuthoredHitSpark"&&v.enabled),"回復後の新個体へ古い命中を再演しない");return;}
+                for(int n=0;n<100&&model.Core.Frame-frame<12;n++)model.TickTraversal(0);Assert.GreaterOrEqual(model.Core.Frame-frame,12);view.Render();Assert.IsFalse(pulse.enabled);model.TrialTarget.TakeDamage(1,Olca.Core.Domain.ElementType.None);view.Render();Assert.IsFalse(pulse.enabled,"無関係なダメージで期限を再始動しない");
+            }
+        }
         [Test] public async Task 自作命中火花413は空振りで発生せず実被弾で発生し論理停止と期限と解除を保つ()
         {
             var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));var source=new Olca.Application.Battle.SimpleCardFactory().CreateStarterDeck().GetAllCards().ToArray();Assert.IsTrue(model.TryInitializeCards(source,source.GroupBy(v=>(v.Id,v.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count()),new Olca.Core.Logic.Battle.SeededBattleRandom(317),out _));for(int n=0;n<100&&!model.Cards.Hand.Any(v=>v.Id=="sword");n++)model.Cards.Reload();model.Cards.TrySelect(model.Cards.Hand.ToList().FindIndex(v=>v.Id=="sword"));model.EnableTrialCardPolish();Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));

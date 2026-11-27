@@ -189,6 +189,7 @@ namespace Olca.Core.Logic.Integration
             public int BreathFramesRemaining=>owner?.BreathFramesRemaining??0;public int BreathMaximumFrames=>owner?.BreathMaximumFrames??0;
             public bool IsDeckEditingLocation=>owner?.IsDeckEditingLocation==true;
             public bool IsHitStopped=>owner?.IsHitStopped==true;
+            public OutsideKickImpactVisual KickImpact(int target)=>IsCurrent&&target>=0&&target<2?owner.kickImpacts[target]:null;
             public long FirstTargetX=>owner?.FirstTrialTargetX??0;public long SecondTargetX=>owner?.SecondTrialTargetX??0;public Enemy TrialTarget=>owner?.TrialTarget;public Enemy SecondTrialTarget=>owner?.SecondTrialTarget;public OutsideTrialStrike TrialStrike=>owner?.TrialStrike;public IReadOnlyList<OutsideInitialShotData> InitialShots=>owner?.InitialShots??Array.Empty<OutsideInitialShotData>();
             public IReadOnlyList<OutsideBombFlightData> Bombs=>IsCurrent?owner.Bombs:Array.Empty<OutsideBombFlightData>();
             public IReadOnlyList<OutsideBombBlastData> BombBlasts=>IsCurrent?owner.BombBlasts:Array.Empty<OutsideBombBlastData>();
@@ -270,6 +271,8 @@ namespace Olca.Core.Logic.Integration
         public long SecondTrialTargetX=>PairStage445>0?31*60000:Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:trialSafeHomePlacement?14*60000:OutsideKickTrialDefinition.SecondTargetX;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
+        // 受理済みHP減少だけの表示通知。保存・判定・入力へ含めない。
+        private readonly OutsideKickImpactVisual[] kickImpacts=new OutsideKickImpactVisual[2];
         private Enemy trialTarget;private bool trialTargetChanged;private int trialTargetHits;private OutsideTrialStrike trialStrike;
         public Enemy TrialTarget=>trialTarget??(trialTarget=CreateTrialTarget(null));
         public OutsideTrialStrike TrialStrike=>trialStrike?.Copy();
@@ -285,8 +288,10 @@ namespace Olca.Core.Logic.Integration
                 // 別マップは剣と同じ試用壁で遮る。遮蔽された敵の命中済み印は消費しない。
                 long distance=(x-Core.Position)*normalKick.AttackFacing;
                 if(enemy.IsDead||!contains||FirstSwordBlockingWall(Core.Position,Core.Height,normalKick.AttackFacing,distance).HasValue||!normalKick.TryMarkHit(id))return;
+                int hpBefore=enemy.CurrentHp;
                 enemy.TakeDamage(normalKick.ActiveChargePlan?.Power??OutsideKickTrialDefinition.DamageFor(normalKick.Kind),normalKick.ActiveChargePlan?.Element??(Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id?ElementType.Fire:ElementType.None),
                     poiseDamage: normalKick.ActiveChargePlan?.PoiseDamage,hitStopFrames: normalKick.IsDashAttack||normalKick.IsCharged ? hitStopSettings.HeavyFrames : hitStopSettings.NormalFrames); // カエンの外界キックも明示試用。
+                if(enemy.CurrentHp<hpBefore)kickImpacts[id]=new OutsideKickImpactVisual(Core.Frame,x,id==0?FirstTrialTargetHeight:0,Core.Position,Core.Height,normalKick.AttackFacing);
                 if(id==0){trialTargetChanged=true;trialTargetHits=(int)Math.Min(int.MaxValue,(long)trialTargetHits+1);}else secondTrialHits=(int)Math.Min(int.MaxValue,(long)secondTrialHits+1);
             }
             Hit(0,FirstTrialTargetX,TrialTarget);Hit(1,SecondTrialTargetX,SecondTrialTarget);
@@ -495,7 +500,7 @@ namespace Olca.Core.Logic.Integration
         public bool IsAttacking=>attackState!=null||normalKick?.IsActive==true;
         private static int Startup(Card card)=>card.StartupFrames??(int)Math.Ceiling(card.StartupTime*60d-0.00001d);
         private static int Recovery(Card card)=>card.RecoveryFrames??(int)Math.Ceiling(card.RecoveryTime*60d-0.00001d);
-        private void ResetCardUseFeedback(){ClearBombReleaseVisual();chargeInput.Reset();lastProductAttackInputFrame=-1;HitStopRemainingFrames=0;CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=bodyPreventedFrame=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;normalKick?.Reset();CancelAttackReservation();}
+        private void ResetCardUseFeedback(){ClearBombReleaseVisual();chargeInput.Reset();lastProductAttackInputFrame=-1;HitStopRemainingFrames=0;CardUseMessage=null;CardUseMessageFrame=lastCardUseAttempt=bodyPreventedFrame=-1;attackState=null;lastAttackInputFrame=-1;trialStrike=null;Array.Clear(kickImpacts,0,kickImpacts.Length);normalKick?.Reset();CancelAttackReservation();}
         // Viewと独立した論理時計で一度だけ効果を確定する。停止/同frame再読込では進めない。
         private void AdvanceAttack(bool bodyAllowed)
         {
@@ -575,7 +580,7 @@ namespace Olca.Core.Logic.Integration
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
             long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);Core.SetRecoveryMap(pointId);itemCooldowns.Clear();
             if(relocate){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}Cards?.Reload();Core.CardGauge.RestoreFull();
-            initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();HitStopRemainingFrames=0;attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialEnemyAttack=null;goblinTrial=null;pendingGoblinStrike=false;slimeTrial=null;pendingSlimeLanding=false;knockback=null;trialContactNextFrame=secondTrialContactNextFrame=0;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.ClearInvincibility();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
+            initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();HitStopRemainingFrames=0;attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;Array.Clear(kickImpacts,0,kickImpacts.Length);trialEnemyAttack=null;goblinTrial=null;pendingGoblinStrike=false;slimeTrial=null;pendingSlimeLanding=false;knockback=null;trialContactNextFrame=secondTrialContactNextFrame=0;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.ClearInvincibility();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
         }
         private string savedPlayerId,savedPlayerKey;
         /// <summary>同じRoot/Actorの再表示では適用し直さない。coldは従来の復帰位置へ個体だけ復元する。</summary>
@@ -1055,6 +1060,12 @@ namespace Olca.Core.Logic.Integration
         public void Validate(long frame){if((DefinitionId!="trial-shield-enemy-v1"&&DefinitionId!="trial-shield-enemy-v2"&&DefinitionId!=V3DefinitionId)||frame<0||NextFrame<=frame||NextFrame-frame>OutsideExplorationSession.TrialEnemyInterval)throw new ArgumentException("試用敵攻撃の定義/時計が不正です");}
     }
     public sealed class OutsideTrialTargetData{public string Id="trial-sword-target-v1";public int Hp,Hits;public OutsideTrialTargetData Copy()=>(OutsideTrialTargetData)MemberwiseClone();public void Validate(string expectedId="trial-sword-target-v1"){if(Id!=expectedId||Hp<0||Hp>OutsideExplorationSession.TrialTargetMaximum||Hits<0)throw new ArgumentException("試用標的の保存が不正です");}}
+    /// <summary>蹴りでHPを削った位置と論理時刻だけを渡す、非保存の表示値。</summary>
+    public sealed class OutsideKickImpactVisual
+    {
+        public long Frame {get;} public long X {get;} public long Y {get;} public long SourceX {get;} public long SourceY {get;} public int Facing {get;}
+        public OutsideKickImpactVisual(long frame,long x,long y,long sourceX,long sourceY,int facing){Frame=frame;X=x;Y=y;SourceX=sourceX;SourceY=sourceY;Facing=facing;}
+    }
     public sealed class OutsideTrialStrike{public string CardId;public long Frame,X,Y,Reach;public float VerticalScale;public int Facing;public bool Hit,SpriteSwing;public OutsideTrialStrike Copy()=>(OutsideTrialStrike)MemberwiseClone();}
     public sealed class OutsideAfterimageStateData
     {public long X,Y,Frame;public int Facing;public OutsideAfterimagePose Pose;public OutsideAfterimageStateData Copy()=>(OutsideAfterimageStateData)MemberwiseClone();}
@@ -1190,7 +1201,7 @@ namespace Olca.Core.Logic.Integration
                     candidate.TryInitializePlayer(()=>OutsidePlayerSaveData.ForRecovery(Player).Restore());candidate.Cards=OutsideExplorationCards.RestoreState(cards,definitions);candidate.RecoverOutside(point);
                     var actor=OutsidePlayerSaveData.Capture(candidate.Player);var runtime=candidate.CaptureRuntime(definitions);runtime.Id=actor.Id;
                     if(!(recovery?save.TryCommitOutsideFastTravel(actor,runtime,out error):save.TryCommitOutsideMapTravel(point,actor,runtime,out error)))return false;
-                    current?.Dispose();normalKick?.Reset();trialStrike=null;RestoreSavedState(actor,runtime,point,definitions);
+                    current?.Dispose();normalKick?.Reset();trialStrike=null;Array.Clear(kickImpacts,0,kickImpacts.Length);RestoreSavedState(actor,runtime,point,definitions);
                     // 空CDも同世代として受領する。後の再表示で古い時計へ適用しない。
                     appliedItemStateId=actor.Id;return true;
                 }
@@ -1759,7 +1770,7 @@ namespace Olca.Core.Logic.Integration
             if(Core.Frame-pairClearedAt445<60)return;
             // 一体目の飛翔物や命中済み印を二体目へ持ち越さず、手札/HP/ゲージ/論理時計はそのまま。
             initialShots.Clear();bombs.Clear();bombBlasts.Clear();ClearBombReleaseVisual();attackState=null;normalKick?.Reset();CancelChargeInput();CancelAttackReservation();
-            goblinTrial=null;pendingGoblinStrike=false;trialEnemyAttack=null;PairStage445=2;trialTarget=CreatePairTarget445();trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialContactNextFrame=0;
+            goblinTrial=null;pendingGoblinStrike=false;trialEnemyAttack=null;PairStage445=2;trialTarget=CreatePairTarget445();trialTargetHits=0;trialTargetChanged=false;trialStrike=null;Array.Clear(kickImpacts,0,kickImpacts.Length);trialContactNextFrame=0;
             slimeTrial=new OutsideSlimeTrialData{DefinitionId=PairDefinition445+"-slime",StartX=1590000,LandingX=1590000,Facing=-1};pendingSlimeLanding=false;pairClearedAt445=-1;PairStage445=2;
         }
     }
