@@ -2361,6 +2361,21 @@ namespace Olca.Application.Dungeon
                 }
         }
 
+        private bool resumeCheckpointAtStartup;
+        // Titleで明示した再開要求だけを渡す。互換Sceneの直接起動は選択画面を維持する。
+        public void ConfigureStartupCheckpointResume()
+        {
+            if (runtimeStarting || runtimeStarted || manager != null) throw new System.InvalidOperationException("起動後は再開要求を変更できません");
+            resumeCheckpointAtStartup = true;
+        }
+        private void ResumeRequestedStartupCheckpoint()
+        {
+            bool requested = resumeCheckpointAtStartup; resumeCheckpointAtStartup = false;
+            // 帰還報酬や未完の保存は既存の専用導線を優先し、再開失敗も既存UIで止める。
+            if (!requested || !awaitingCheckpointChoice || progressStartupBlocked || clearReturnVisible || HasIncompleteReturn || manager.Dungeon.IsCheckpointBlocked) return;
+            ContinueCheckpointFromUi();
+        }
+
         public void StartManagedHost(Olca.Application.Management.GameSystem services)
         {
             if(runtimeReleased)throw new System.InvalidOperationException("終了済みhostは再起動できません");
@@ -2578,6 +2593,7 @@ namespace Olca.Application.Dungeon
             gameSystemSession?.Bind(manager, inputProvider);
             CreatePauseControls();
             ResumeClearReturnIfNeeded();
+            ResumeRequestedStartupCheckpoint();
             if(outsideLandingRoute&&OutsideHubEligible)OpenOutsideExplorationAsync().Forget();
             logicalLoop.Observe(false);
             if (applicationInactive) RequestAutomaticPause();

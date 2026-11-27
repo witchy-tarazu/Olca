@@ -2663,6 +2663,36 @@ namespace Olca.Tests.Integration
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
         }
+        [Test]
+        public void 再開436は明示要求時だけ旧チェックポイントを一度復元し保存を変更しない()
+        {
+            var first=Start();var saved=Model(first).Dungeon;var session=(DungeonCheckpointSession)Get(first,"memoryCheckpoints");
+            var before=session.Store.Read();Assert.IsNotNull(before);var bytes=System.IO.Directory.GetFiles(directory,"*.json").ToDictionary(f=>f,System.IO.File.ReadAllBytes);
+            var manual=Start();Assert.IsTrue((bool)Get(manual,"awaitingCheckpointChoice"));
+            var resumed=Start(configure:c=>c.ConfigureStartupCheckpointResume());
+            Assert.IsFalse((bool)Get(resumed,"awaitingCheckpointChoice"));Assert.AreEqual(saved.Player.CurrentHp,Model(resumed).Dungeon.Player.CurrentHp);
+            foreach(var f in bytes)CollectionAssert.AreEqual(f.Value,System.IO.File.ReadAllBytes(f.Key));
+            Assert.AreEqual(before.RunId,((DungeonCheckpointSession)Get(resumed,"memoryCheckpoints")).Store.Read().RunId);
+            var model=Model(resumed);Call(resumed,"ResumeRequestedStartupCheckpoint");Assert.AreSame(model,Model(resumed));
+            Assert.Throws<System.InvalidOperationException>(()=>resumed.ConfigureStartupCheckpointResume());
+        }
+        [Test]
+        public void 再開436は保存なしの開始を復元待ちにせず直接起動の契約を維持する()
+        {
+            var c=Start(configure:h=>h.ConfigureStartupCheckpointResume());Assert.IsFalse((bool)Get(c,"awaitingCheckpointChoice"));
+            var model=Model(c);Call(c,"ResumeRequestedStartupCheckpoint");Assert.AreSame(model,Model(c));
+        }
+        [Test]
+        public void 再開436は破損した旧保存を上書きせず再開画面で停止する()
+        {
+            var c=Start();var files=System.IO.Directory.GetFiles(directory,"*.json");Assert.IsNotEmpty(files);
+            foreach(var f in files)System.IO.File.WriteAllText(f,"{broken436");
+            var before=files.ToDictionary(f=>f,System.IO.File.ReadAllBytes);
+            c=Start(configure:h=>h.ConfigureStartupCheckpointResume());Assert.IsTrue((bool)Get(c,"awaitingCheckpointChoice"));
+            foreach(var f in files)CollectionAssert.AreEqual(before[f],System.IO.File.ReadAllBytes(f));
+            StringAssert.Contains("再開できないため進行を停止",(string)Get(c,"checkpointStatusOverride"));
+        }
+
         [Test] public void 同Host新規保存成功後だけ試用盤面と取得元を切替え再通知では再破棄しない()
         {
             var controller=Start(configure:c=>c.ConfigureTrialCustomizationDefaults(),production:true);var session=(ClearReturnSession)Get(controller,"clearReturnSession");var old=Get(controller,"customizationCatalog");Assert.AreEqual(Olca.Application.Management.TrialCustomizationDefinitions.BoardId,((Olca.Core.Logic.Customization.CustomizationCatalog)old).BoardId);
