@@ -759,11 +759,12 @@ namespace Olca.Tests.Application
             var panel=Panel("EntranceFocus");var view=panel.AddComponent<Olca.Presentation.Dungeon.ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),null,null,null,null);int opened=0,chosen=-1,confirmed=0;
             void Render(int selected)=>view.RenderDungeonSelection(Enumerable.Range(0,6).Select(n=>"試用"+n).ToArray(),Enumerable.Repeat(true,6).ToArray(),selected,n=>chosen=n,()=>confirmed++,()=>{},false,null,()=>{},outsideExploration:()=>opened++);
             Render(0);view.FocusMenuControl("OutsideExplorationEntry");Assert.AreEqual("OutsideExplorationEntry",EventSystem.current.currentSelectedGameObject.name);
-            if(otherPage)view.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDungeonPage").onClick.Invoke();
+            if(otherPage){view.GetComponentsInChildren<Button>().Single(b=>b.name=="NextDungeonPage").onClick.Invoke();Assert.AreEqual("2/2",view.GetComponentsInChildren<Text>().Single(t=>t.name=="DungeonPage").text);}
             Render(1);Assert.AreEqual("OutsideExplorationEntry",EventSystem.current.currentSelectedGameObject.name,"再描画だけでは記憶したfocusへ戻る");
             if(entrance){view.FocusMenuControl("ConfirmDungeonSelection");view.FocusMenuControl("DungeonChoice_1");}else view.FocusMenuControl("OutsideExplorationEntry");
-            Assert.AreEqual(!entrance?"OutsideExplorationEntry":otherPage?"ConfirmDungeonSelection":"DungeonChoice_1",EventSystem.current.currentSelectedGameObject.name);
-            EventSystem.current.currentSelectedGameObject.GetComponent<Button>().onClick.Invoke();Assert.AreEqual(entrance&&!otherPage?1:-1,chosen);Assert.AreEqual(entrance?0:1,opened);Assert.AreEqual(entrance&&otherPage?1:0,confirmed);
+            Assert.AreEqual("1/2",view.GetComponentsInChildren<Text>().Single(t=>t.name=="DungeonPage").text,"選択変更では新しい行き先を表示する");
+            Assert.AreEqual(!entrance?"OutsideExplorationEntry":"DungeonChoice_1",EventSystem.current.currentSelectedGameObject.name);
+            EventSystem.current.currentSelectedGameObject.GetComponent<Button>().onClick.Invoke();Assert.AreEqual(entrance?1:-1,chosen);Assert.AreEqual(entrance?0:1,opened);Assert.AreEqual(0,confirmed,"表示された選択行へfocusし自動出撃はしない");
         }
         [TestCase(false)][TestCase(true)] public async Task 地図訪問の実Controllerは世代集合を分離しCore時計を戻しても六十frameで再試行する(bool newGeneration)
         {

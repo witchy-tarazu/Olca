@@ -417,7 +417,7 @@ namespace Olca.Presentation.Dungeon
             Fit("ReturnSummary",summaryY,summaryHeight,stats,140);
         }
         private void LateUpdate(){FitReferenceLayout();FitExplorationSavedRows();FitSavedDeckReadingSurface();FitToolbarTitle();FitReturnPanels();FitRecipeReading();RefreshReadonlyLayout();if(CanOperateView)menu?.Tick();RefreshShopGuide();RefreshExplorationDeckGuide();RefreshOutsideDepartureGuide();}
-        private void OnDisable(){if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
+        private void OnDisable(){dungeonSelectionIndex=int.MinValue;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}if(ensureManagedVisible!=null){ManagementContext?.NotifyHidden();ManagementContext=null;StopMenu();}else{SaveMenuFocus();menu?.Suspend();}}
         private void OnDestroy(){ManagementContext?.NotifyHidden();ManagementContext=null;if(activeDialog!=null){activeDialog.Abort();activeDialog=null;}menu?.Dispose();ensureManagedVisible=hideManaged=null;dialogs=null;menuExtras=null;resolveOwned=null;resolveReturnIcon=null;}
         public void FocusMenuControl(string name){if(CanOperateView)FocusCurrentContent(name);}
         private void FocusCurrentContent(string name)
@@ -657,6 +657,8 @@ namespace Olca.Presentation.Dungeon
                 "　チケイ: "+(info.TerrainTypes.Count==0?"情報なし":string.Join(" / ",System.Linq.Enumerable.Select(info.TerrainTypes,Terrain)));
         }
         private int dungeonPage;
+        private int dungeonSelectionIndex=int.MinValue;
+        private bool dungeonSelectionValid;
         // 一覧行の文字だけを枠の内側へ収め、ボタン外形と入力領域を変えない。
         private static void InsetChoiceLabel(Button button)
         {
@@ -720,6 +722,11 @@ namespace Olca.Presentation.Dungeon
             if(names==null||unlocked==null||names.Length!=unlocked.Length||
                 (cleared!=null&&cleared.Length!=names.Length)||(unlockConditions!=null&&unlockConditions.Length!=names.Length)||(descriptions!=null&&descriptions.Length!=names.Length))
                 throw new ArgumentException("ダンジョン一覧の表示情報が一致しません");
+            // 初めて開く/選択が変わる時だけ選択先へ。手動ページ移動と費用取消では追い戻さない。
+            bool valid=selected>=0&&selected<names.Length&&unlocked[selected];
+            bool focusSelection=content==null||content.name!="DungeonSelectionContents"||!gameObject.activeInHierarchy||selected!=dungeonSelectionIndex||valid!=dungeonSelectionValid;
+            if(focusSelection)dungeonPage=valid?selected/5:0;
+            dungeonSelectionIndex=selected;dungeonSelectionValid=valid;
             BeginRender();
             if (content != null) { content.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(content); else DestroyImmediate(content); }
             content = new GameObject("DungeonSelectionContents", typeof(RectTransform)); content.transform.SetParent(transform, false);
@@ -734,7 +741,6 @@ namespace Olca.Presentation.Dungeon
             float actionY=Mathf.Max(-400,bottom-(preview?(pages>1?285:245):150)),auxiliaryY=actionY-93,pageY=actionY+115;
             float deckY=0,guideY=0;
             if(departureDeck!=null){float summaryTop=bottom-(preview?135:18);deckY=summaryTop-35;guideY=summaryTop-95;actionY=Mathf.Min(actionY,summaryTop-155);auxiliaryY=actionY-93;pageY=deckY;}
-            bool valid=selected>=0&&selected<names.Length&&unlocked[selected];
             string info = selected>=0&&selected<names.Length&&unlocked[selected]&&descriptions!=null ? descriptions[selected] : null;
             var help=Text("DungeonSelectionHelp",error??presentationNotice??("スタイル: "+styleName+(!preview&&!string.IsNullOrEmpty(info)?"\n"+info:"")),-245,305,1250,80,25);help.color=Color.white;help.alignment=TextAnchor.MiddleLeft;AddOverflowTextDetails(help,error==null?"シュツゲキのセツメイ":"ホゾンエラー",explorationDecks!=null||prepareDepartureDeck!=null);
             for (int row = 0; row < rows && dungeonPage * rows + row < names.Length; row++) {

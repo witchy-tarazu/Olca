@@ -1006,6 +1006,31 @@ namespace Olca.Tests
             Assert.AreEqual(before,JsonUtility.ToJson(basic.Capture()));Assert.AreEqual("basic",basic.Id);Assert.AreEqual("基本 / 無属性",basic.Name);Assert.IsNull(basic.Attack);var elements=new[]{ElementType.None,ElementType.Fire,ElementType.Water,ElementType.Wind,ElementType.Earth};var labels=new[]{"ムゾクセイ","ヒ","ミズ","カゼ","ツチ"};
             for(int i=0;i<elements.Length;i++){var value=new DepartureStyleDefinition("display-"+i,"ほのおA / test", "route-x",new TransformationAttackDefinition(elements[i]));string display=ClearReturnView.FormatDepartureStyleChoice(value);StringAssert.Contains(value.Name,display);StringAssert.Contains("ゾクセイ "+labels[i],display);StringAssert.Contains("route-x",display);Assert.AreEqual("ほのおA / test",value.Name);Assert.AreEqual(elements[i],value.Attack.Element);}
         }
+        [TestCase(0,true,0)][TestCase(7,true,1)][TestCase(-1,true,0)][TestCase(12,true,0)][TestCase(7,false,0)]
+        public void 出撃頁438は有効な選択先だけを初期表示し無効と未解放は既定頁にする(int selected,bool available,int page)
+        {
+            var root=new GameObject("DeparturePage438",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});var names=Enumerable.Range(0,10).Select(i=>"行き先"+i).ToArray();var unlocked=Enumerable.Repeat(true,10).ToArray();if(selected>=0&&selected<10)unlocked[selected]=available;int chosen=0,confirmed=0;
+                view.RenderDungeonSelection(names,unlocked,selected,_=>chosen++,()=>confirmed++,()=>{},false,null,()=>{});
+                Assert.AreEqual((page+1)+"/2",root.GetComponentsInChildren<Text>().Single(t=>t.name=="DungeonPage").text);
+                Assert.IsTrue(root.GetComponentsInChildren<Button>().Any(b=>b.name=="DungeonChoice_"+(page*5)));Assert.AreEqual(0,chosen);Assert.AreEqual(0,confirmed);
+                Assert.AreEqual(selected>=0&&selected<10&&available,root.GetComponentsInChildren<Button>().Single(b=>b.name=="ConfirmDungeonSelection").interactable);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 出撃頁438は手動移動を保持し閉じて開いた時だけ現在選択へ戻す()
+        {
+            var root=new GameObject("DeparturePage438Manual",typeof(RectTransform));try{
+                var view=root.AddComponent<ClearReturnView>();view.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});var names=Enumerable.Range(0,10).Select(i=>"行き先"+i).ToArray();var unlocked=Enumerable.Repeat(true,10).ToArray();int chosen=0,confirmed=0;
+                void Render(int selected=7){view.RenderDungeonSelection(names,unlocked,selected,_=>chosen++,()=>confirmed++,()=>{},false,null,()=>{});}
+                Button B(string name)=>root.GetComponentsInChildren<Button>().Single(b=>b.name==name);string Page()=>root.GetComponentsInChildren<Text>().Single(t=>t.name=="DungeonPage").text;
+                Render();Assert.AreEqual("2/2",Page());B("PreviousDungeonPage").onClick.Invoke();Assert.AreEqual("1/2",Page());Render();Assert.AreEqual("1/2",Page());B("NextDungeonPage").onClick.Invoke();Assert.AreEqual("2/2",Page());
+                B("PreviousDungeonPage").onClick.Invoke();root.SetActive(false);
+                // 非再生fixtureではUnityの寿命通知を明示する。実際の開閉は通常Playerで確認する。
+                typeof(ClearReturnView).GetMethod("OnDisable",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(view,null);root.SetActive(true);Render();Assert.AreEqual("2/2",Page());Render(1);Assert.AreEqual("1/2",Page());Assert.AreEqual(0,chosen);Assert.AreEqual(0,confirmed);
+                view.RenderDungeonSelection(new string[0],new bool[0],-1,_=>chosen++,()=>confirmed++,()=>{},false,null,()=>{});Assert.IsFalse(root.GetComponentsInChildren<Button>().Any(b=>b.name=="NextDungeonPage"));Assert.IsFalse(B("ConfirmDungeonSelection").interactable);
+            }finally{Object.DestroyImmediate(root);}
+        }
+
         [Test] public void 出撃先表示は出撃と行き先確定を区別し未解放と空一覧を漏らさない()
         {
             var root=new GameObject("DepartureHierarchy",typeof(RectTransform));try{var v=root.AddComponent<ClearReturnView>();v.Initialize(Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"),_=>{},()=>{},()=>{},()=>{});int calls=0;void Render(bool launch,int selected){v.RenderDungeonSelection(new[]{"テスト","secret"},new[]{true,false},selected,_=>{},()=>calls++,()=>{},false,null,()=>{},styleName:"キホン",descriptions:new[]{"テキのジョウホウ","secret-info"},startImmediately:launch);}Render(true,0);StringAssert.Contains("シュツゲキ",root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").GetComponentInChildren<Text>().text);StringAssert.Contains("テキのジョウホウ",root.GetComponentsInChildren<Text>().Single(x=>x.name=="DungeonPreviewInformation").text);Render(false,1);StringAssert.Contains("イきサキをカクテイ",root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").GetComponentInChildren<Text>().text);var all=string.Join("\n",root.GetComponentsInChildren<Text>().Select(x=>x.text));StringAssert.DoesNotContain("secret",all);Assert.IsFalse(all.Any(c=>c>='\u4e00'&&c<='\u9fff'));Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").interactable);Assert.AreEqual(0,calls);v.RenderDungeonSelection(new string[0],new bool[0],-1,_=>{},()=>calls++,()=>{},false,null,()=>{});Assert.IsTrue(root.GetComponentsInChildren<Text>().Any(x=>x.name=="NoDepartureDungeons"));Assert.IsFalse(root.GetComponentsInChildren<Text>().Any(t=>t.text.Any(c=>c>='\u4e00'&&c<='\u9fff')));Assert.IsFalse(root.GetComponentsInChildren<Button>().Single(x=>x.name=="ConfirmDungeonSelection").interactable);Assert.AreEqual(0,calls);
