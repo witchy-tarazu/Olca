@@ -692,3 +692,42 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonSequence456Tests
+    {
+        private static FloorSequenceDefinitions Route(out SimpleCardFactory cards,out EnemyPoiseDefinition normal,out CheckpointDefinitions legacy)
+        {
+            cards=new SimpleCardFactory();normal=new EnemyPoiseDefinition(45,21,210);
+            legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;
+            return DungeonCoreFactory.CreateTrialSequence456(legacy,cards,normal);
+        }
+        [Test] public void 連戦456は旧単体の定義を保ち二体から飛行への独立した任意出撃を作る()
+        {
+            var route=Route(out var cards,out var normal,out var legacy);
+            Assert.AreEqual(DungeonCoreFactory.TrialSequenceRoute456,route.RouteId);Assert.AreEqual(2,route.FloorCount);
+            var first=route.CreateInitialMap(0);var second=route.CreateInitialMap(1);
+            Assert.AreEqual(2,first.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonStepArcherAction.IsPairTrialBoss(first.MapCells[3].Enemy));
+            Assert.AreEqual(DungeonCoreFactory.TrialSwordEnemyId,first.MapCells[4].Enemy.EnemyId);
+            Assert.AreEqual(1,second.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonFlyingDive455.Matches(second.MapCells[3].Enemy));second.ValidateFinalFloorForDeparture();
+            Assert.AreEqual(DungeonCoreFactory.CreateTrialPairRoute447(legacy,cards,normal).CreateInitialMap(0).MapCells[3].Enemy.MaxHp,first.MapCells[3].Enemy.MaxHp);
+            var go=new UnityEngine.GameObject("Sequence456Entry");go.SetActive(false);try{
+                var c=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();c.ConfigureDungeonSelection(new[]{DungeonCoreFactory.CreateTrialFlying455(legacy,cards,normal),route});
+                Assert.IsTrue((bool)c.GetType().GetMethod("DungeonUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(c,new object[]{1}));
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+        [Test] public void 連戦456の階層移動と再読込はHPと攻略デッキを保持し敵だけ初期化する()
+        {
+            var route=Route(out var cards,out var normal,out var legacy);var cp=route.CreateDepartureSession();
+            var factory=new DungeonCoreFactory(new SeededBattleRandom(7),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());
+            factory.CreatePreview(route.CreateInitialMap(0),new PlayerCharacter(100),cards.CreateStarterDeck(),cp);
+            var store=new MemoryFloorSequenceStore(route);var run=new FloorSequenceSession(route,store);Assert.IsTrue(run.TryStart(cp.Store.Read(),out var error),error);
+            var completed=run.Current.Snapshot.State.Copy();completed.Sequence++;completed.Boundary=CheckpointBoundary.Terminal;completed.Player.Hp=37;foreach(var enemy in completed.Enemies)enemy.Hp=0;
+            Assert.IsTrue(run.TryTransferToNextFloor(0,completed,out error),error);Assert.AreEqual(1,run.Current.FloorIndex);Assert.AreEqual(37,run.Current.State.Player.CurrentHp);
+            CollectionAssert.AreEqual(completed.DeckOrder,run.Current.Snapshot.State.DeckOrder);Assert.AreEqual(40,run.Current.Snapshot.State.Enemies.Single().Hp);
+            var reopened=new FloorSequenceSession(route,store);Assert.IsTrue(reopened.TryLoad(out error),error);Assert.AreEqual(37,reopened.Current.State.Player.CurrentHp);Assert.AreEqual(1,reopened.Current.FloorIndex);
+            Assert.IsFalse(reopened.TryTransferToNextFloor(1,completed,out _));
+        }
+    }
+}

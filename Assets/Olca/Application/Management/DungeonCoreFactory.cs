@@ -101,6 +101,14 @@ namespace Olca.Application.Management
             public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
                 =>DungeonFlyingDive455.Matches(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonFlyingDive455()},EnemyPatternEndMode.Loop)},0):DungeonStepArcherAction.IsPairTrialBoss(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
         }
+        // 階層間のHP・攻略デッキは既存契約で引き継ぐ。旧単体試用の定義を上書きしない。
+        public const string TrialSequenceRoute456="trial-dungeon-pair-flying-route-v1";
+        public static FloorSequenceDefinitions CreateTrialSequence456(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            var first=CreateTrialPairRoute447(catalog,cards,normal).CreateInitialMap(0);
+            var second=CreateTrialFlying455(catalog,cards,normal).CreateInitialMap(0);
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialSequenceRoute456,"trial-pair-flying-sequence-v1",new[]{first,second},catalog);
+        }
         public const string TrialFlyingRoute455="trial-dungeon-flying-route-v1";
         public static FloorSequenceDefinitions CreateTrialFlying455(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
         {
