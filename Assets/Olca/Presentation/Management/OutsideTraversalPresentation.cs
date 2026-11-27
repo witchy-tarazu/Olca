@@ -1698,7 +1698,7 @@ namespace Olca.Presentation.Exploration
         private UnityEngine.UI.Image playerImage,guardImage,floor,platform,platformEdge,gate,warning,warningTop,warningBottom,exit;
         private OutsideGroundKickTrace442 kickTrace442;
         private UnityEngine.UI.Text heading,help,status,guardLabel,upperLabel,exitLabel,warningLabel;
-        private UnityEngine.UI.Button close,retry,pause;private Olca.Presentation.Effects.ProvisionalCombatGraphic chargeFx,hitFx;
+        private UnityEngine.UI.Button close,retry,pause;private Olca.Presentation.Effects.ProvisionalCombatGraphic chargeFx;private UnityEngine.UI.Image hitFx;
         public bool Live=>!disposed&&this!=null&&gameObject.activeInHierarchy&&owner!=null&&owner.IsOpen;
         public static OutsideBranchView441 Open(OutsideExplorationView owner,UnityEngine.Font font,UnityEngine.Sprite idle,UnityEngine.Sprite rise,UnityEngine.Sprite apex,UnityEngine.Sprite fall,UnityEngine.AnimationClip idleClip,UnityEngine.AnimationClip moveClip,float pixels)
         {
@@ -1731,7 +1731,9 @@ namespace Olca.Presentation.Exploration
             close=Button("BranchClose","モドる",-110,Close);retry=Button("BranchRetry","モウイチド",-320,()=>{paused=false;Runtime.Reset();});pause=Button("BranchPause","トメル",-530,()=>{paused=!paused;Runtime.Suspend();Runtime.Session.Paused=paused;});
             var src=new UnityEngine.GameObject("BranchMotionSample",typeof(UnityEngine.SpriteRenderer),typeof(UnityEngine.Animator));src.transform.SetParent(transform,false);sample=src.GetComponent<UnityEngine.SpriteRenderer>();sample.enabled=false;src.GetComponent<UnityEngine.Animator>().enabled=false;
             Olca.Presentation.Effects.ProvisionalCombatGraphic Effect(string name){var g=new UnityEngine.GameObject(name,typeof(UnityEngine.RectTransform),typeof(Olca.Presentation.Effects.ProvisionalCombatGraphic));g.transform.SetParent(transform,false);var fx=g.GetComponent<Olca.Presentation.Effects.ProvisionalCombatGraphic>();fx.raycastTarget=false;fx.rectTransform.anchorMin=fx.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);fx.enabled=false;return fx;}
-            chargeFx=Effect("BranchCharge");hitFx=Effect("BranchHit");
+            chargeFx=Effect("BranchCharge");hitFx=Box("BranchHit",UnityEngine.Color.white);hitFx.enabled=false;
+            // 命中時だけ既存の透過火花を借用し、敵を隠す白い矩形を残さない。
+            Olca.Presentation.Effects.AuthoredAttackVfx.Resolve(assets,2,0);
             menu=new Olca.Unity.MenuPadScope(()=>Live){CancelOnly=true,SuppressPadCancel=true};menu.Bind(transform,close.name,Close);
             Runtime=new Olca.Unity.OutsideBranchRuntime441(()=>Live&&!paused&&focused);Render();
         }
@@ -1764,7 +1766,7 @@ namespace Olca.Presentation.Exploration
             kickTrace442.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height));kickTrace442.rectTransform.sizeDelta=new UnityEngine.Vector2(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Range/60000f,.5f)*pixels;kickTrace442.rectTransform.localScale=new UnityEngine.Vector3(s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,1,1);kickTrace442.Project(s.Kick);
             guardLabel.text="モンバン（カリ） HP "+s.Guard.CurrentHp+" / 30";guardLabel.gameObject.SetActive(false);
             chargeFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height)+1.1f*pixels);chargeFx.rectTransform.sizeDelta=new UnityEngine.Vector2(3.2f,3.2f)*pixels;if(s.IsCharging)chargeFx.ShowChargeParticles(s.Frame,s.ChargeFrames,60);else chargeFx.ClearChargeParticles();
-            long hitAge=s.Frame-s.LastHitFrame;hitFx.enabled=hitAge>=0&&hitAge<12;hitFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX),Y(0)+.8f*pixels);hitFx.rectTransform.sizeDelta=new UnityEngine.Vector2(150,150);if(hitFx.enabled)hitFx.Burst(hitAge/12f,new UnityEngine.Color(1,.7f,.3f));
+            long hitAge=s.Frame-s.LastHitFrame;hitFx.enabled=hitAge>=0&&hitAge<12;hitFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX),Y(0)+.8f*pixels);hitFx.rectTransform.sizeDelta=new UnityEngine.Vector2(150,150);if(hitFx.enabled)hitFx.sprite=Olca.Presentation.Effects.AuthoredAttackVfx.Resolve(assets,2,(int)hitAge/2);else hitFx.sprite=null;
             heading.rectTransform.sizeDelta=new UnityEngine.Vector2(UnityEngine.Mathf.Max(250,width-700),50);heading.rectTransform.anchoredPosition=new UnityEngine.Vector2((width-700)*.5f,-36);help.rectTransform.sizeDelta=new UnityEngine.Vector2(width-50,68);status.rectTransform.sizeDelta=new UnityEngine.Vector2(width-50,90);
             status.text="HP "+s.Player.CurrentHp+" /100  |  テキ "+s.Guard.CurrentHp+" /30  |  "+(s.Completed?(s.UsedUpper?"ウワミチで トウタツ":"シタミチで トウタツ")+" / モドるか モウイチド":s.Player.IsDead?"HP0 / モウイチド":paused?"テイシチュウ":s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery?"コウチョク / モンが アイています":s.Guard.IsDead?"ゲキハ / モンが アキました":"アカい ハンイに チュウイ");pause.GetComponentInChildren<UnityEngine.UI.Text>().text=paused?"サイカイ":"トメル";
         }

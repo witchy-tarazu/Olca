@@ -749,6 +749,26 @@ namespace Olca.Tests.Application
                 var ended=branch.Runtime.Session;branch.Close();Assert.IsTrue(ended.IsDisposed);
             }
         }
+        [Test] public async Task 命中443は命中時のみ透過火花を12論理frame出し停止と再試行で漏らさない()
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);binding.View.Render();binding.View.transform.Find("OutsideBranchEntry441").GetComponent<Button>().onClick.Invoke();var branch=binding.View.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();var fx=branch.transform.Find("BranchHit").GetComponent<Image>();Assert.IsFalse(fx.raycastTarget);
+                for(int mode=0;mode<2;mode++){
+                    branch.Runtime.Reset();var session=branch.Runtime.Session;while(session.Core.Position<(mode==0?384000:396000))session.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});branch.Render();Assert.IsFalse(fx.enabled);Assert.IsNull(fx.sprite);
+                    Assert.IsTrue(session.Kick.TryRequest(session.Frame,true,1));for(int n=0;n<6;n++)session.Tick(new Olca.Core.Logic.Integration.LogicalInput());branch.Render();Assert.AreEqual(mode==1,fx.enabled);Assert.AreEqual(mode==1?20:30,session.Guard.CurrentHp);
+                    if(mode==0)continue;var first=fx.sprite;Assert.IsNotNull(first);Assert.AreEqual("authored_hit_0",first.name);Assert.IsNull(fx.GetComponent<Olca.Presentation.Effects.ProvisionalCombatGraphic>());
+                    // 元素材の透過を確認し、矩形の四隅が背景を隠さないことを保証する。
+                    var original=RenderTexture.active;var rt=RenderTexture.GetTemporary(first.texture.width,first.texture.height,0);var copy=new Texture2D(rt.width,rt.height,TextureFormat.RGBA32,false);
+                    try{Graphics.Blit(first.texture,rt);RenderTexture.active=rt;copy.ReadPixels(new Rect(0,0,rt.width,rt.height),0,0);copy.Apply();var rect=first.rect;Assert.Less(copy.GetPixel((int)rect.x,(int)rect.y).a,.01f);Assert.Less(copy.GetPixel((int)rect.xMax-1,(int)rect.yMax-1).a,.01f);}finally{RenderTexture.active=original;RenderTexture.ReleaseTemporary(rt);UnityEngine.Object.DestroyImmediate(copy);}
+                    long frame=session.Frame;session.Paused=true;for(int n=0;n<30;n++){session.Tick(new Olca.Core.Logic.Integration.LogicalInput());branch.Render();}Assert.AreEqual(frame,session.Frame);Assert.AreSame(first,fx.sprite);session.Paused=false;
+                    for(int age=1;age<=12;age++){session.Tick(new Olca.Core.Logic.Integration.LogicalInput());branch.Render();Assert.AreEqual(age<12,fx.enabled);if(age<12)Assert.AreEqual("authored_hit_"+age/2,fx.sprite.name);else Assert.IsNull(fx.sprite);}
+                    branch.Runtime.Reset();branch.Render();Assert.IsFalse(fx.enabled);Assert.IsNull(fx.sprite);
+                }
+            }
+        }
+
         [Test] public void 足元442は通常一段目の3有効frameだけ描画し頂点を実射程外へ出さない()
         {
             var go=new GameObject("Trace442Test",typeof(RectTransform),typeof(Olca.Presentation.Exploration.OutsideGroundKickTrace442));go.transform.SetParent(host.transform,false);var trace=go.GetComponent<Olca.Presentation.Exploration.OutsideGroundKickTrace442>();trace.rectTransform.pivot=Vector2.zero;trace.rectTransform.sizeDelta=new Vector2(324,54);
