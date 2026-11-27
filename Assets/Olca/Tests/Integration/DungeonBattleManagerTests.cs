@@ -2663,6 +2663,29 @@ namespace Olca.Tests.Integration
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
         }
+        [TestCase(false)][TestCase(true)]
+        public void 再出撃437は帰還済みの通常探索だけ行き先確定を出撃へ連続させる(bool outside)
+        {
+            var c=StartSelection(true);KeyboardButton(c,"ConfirmDungeonSelection");ToBattle(c);c.SetUserPaused(true);KeyboardButton(c,"RetreatButton");KeyboardButton(c,"ConfirmRetreat");
+            string oldRun=c.PersistentProgress.Flow.RunId;Set(c,"outsideLandingRoute",outside);KeyboardButton(c,"SelectDungeon");KeyboardButton(c,"DungeonChoice_1");
+            Assert.AreEqual(outside,Get(c,"SelectionStartsDeparture"));KeyboardButton(c,"ConfirmDungeonSelection");
+            Assert.AreEqual(1,Get(c,"selectedDungeon"));
+            if(outside){Assert.AreNotEqual(oldRun,c.PersistentProgress.NextDeparture.Start.RunId);Assert.AreEqual("selection-b",Store(c).Read().RouteId);}
+            else {Assert.AreEqual(oldRun,c.PersistentProgress.Flow.RunId);Assert.IsTrue((bool)Get(c,"clearReturnVisible"));}
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 再出撃437はTitle再開要求でも未精算クリアを優先し確定と再起動で二重付与しない(bool multipleFloors)
+        {
+            var final=DungeonConfig.CreateTestDungeon(5,30,4);var c=Start(multipleFloors?new[]{Empty(2),final}:new[]{final});ToBattle(c);var choices=Win(c);Model(c).SelectCardReward(choices[0]);
+            Assert.AreEqual(ClearReturnStage.Choosing,c.PersistentProgress.Flow.Stage);KeyboardButton(c,"CarryCard_0");
+            var file=(Olca.Unity.ClearReturnFileStore)Get(c,"clearReturnStore");var bytes=System.IO.File.ReadAllBytes(file.ActivePath);var gameplay=System.IO.File.ReadAllBytes(Store(c).ActivePath);
+            c=Start(configure:h=>h.ConfigureStartupCheckpointResume());Assert.AreEqual(ClearReturnStage.Choosing,c.PersistentProgress.Flow.Stage);Assert.IsTrue((bool)Get(c,"clearReturnVisible"));Assert.AreEqual(0,c.PersistentProgress.Experience);
+            CollectionAssert.AreEqual(bytes,System.IO.File.ReadAllBytes(file.ActivePath));CollectionAssert.AreEqual(gameplay,System.IO.File.ReadAllBytes(Store(c).ActivePath));Assert.IsFalse((bool)Get(c,"resumeCheckpointAtStartup"));
+            KeyboardButton(c,"ConfirmCarryHome");Assert.AreEqual(100,c.PersistentProgress.Experience);Call(c,"ConfirmCarryCards");Assert.AreEqual(100,c.PersistentProgress.Experience);
+            c=Start(configure:h=>h.ConfigureStartupCheckpointResume());Assert.AreEqual(ClearReturnStage.Awarded,c.PersistentProgress.Flow.Stage);KeyboardButton(c,"ConfirmReturn");
+            c=Start(configure:h=>h.ConfigureStartupCheckpointResume());Assert.AreEqual(ClearReturnStage.Returned,c.PersistentProgress.Flow.Stage);Assert.AreEqual(100,c.PersistentProgress.Experience);Assert.AreEqual(1,c.PersistentProgress.Owned.Single().Count);CollectionAssert.AreEqual(gameplay,System.IO.File.ReadAllBytes(Store(c).ActivePath));
+        }
+
         [Test]
         public void 再開436は明示要求時だけ旧チェックポイントを一度復元し保存を変更しない()
         {

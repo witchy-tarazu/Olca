@@ -754,6 +754,8 @@ namespace Olca.Application.Dungeon
             if(profile.EquippedDeckId!=null){var saved=SavedDecks.SingleOrDefault(d=>d.Id==profile.EquippedDeckId);bool valid=TryResolveSavedDeck(saved,out var deck,out var error);return ClearReturnView.FormatDepartureDeckDisplay(saved?.Name??"ソウビデッキがありません",valid?deck.GetAllCards().Count:saved?.Cards?.Length??0,valid?null:error);}
             return ClearReturnView.FormatDepartureDeckDisplay("キテイデッキ",CreateInitialDeck().GetAllCards().Count);
         }
+        // 通常探索から帰還済みHubへ戻った場合も、選んだ行き先の費用確認へ連続させる。
+        private bool SelectionStartsDeparture => initialHub || outsideDungeonSelection || (outsideLandingRoute && OutsideHubEligible);
         private void ShowDungeonSelection()=>ShowDungeonSelectionWithNotice(null);
         private void ShowDungeonSelectionWithNotice(string presentationNotice)
         {
@@ -763,7 +765,7 @@ namespace Olca.Application.Dungeon
             clearReturnView.RenderDungeonSelection(dungeonChoices.Select(c => c.Label).ToArray(),
                 Enumerable.Range(0, dungeonChoices.Count).Select(DungeonUnlocked).ToArray(), selectedDungeon,
                 i => { if (!exchangeOpen && !styleSelectionOpen && dungeonSelectionOpen && CanSelectDungeon && DungeonUnlocked(i)) { selectedDungeon = i; outsideDepartureError=null; ShowDungeonSelection(); } },
-                () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; bool depart=initialHub||outsideDungeonSelection;if(depart)StartNextDeparture();else{dungeonSelectionOpen=false;outsideDungeonSelection=false;ShowClearReturn();} },
+                () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon || !DungeonUnlocked(selectedDungeon)) return; bool depart=SelectionStartsDeparture;if(depart)StartNextDeparture();else{dungeonSelectionOpen=false;outsideDungeonSelection=false;ShowClearReturn();} },
                 () => { if (exchangeOpen || styleSelectionOpen || !dungeonSelectionOpen || !CanSelectDungeon) return; selectedDungeon = selectionBeforeOpen; dungeonSelectionOpen = false;
                     if(outsideDungeonSelection){outsideDungeonSelection=false;OpenOutsideExplorationAsync().Forget();return;}
                     if (initialHub) { dungeonSelectionOpen = true; ShowDungeonSelection(); } else ShowClearReturn(); },
@@ -772,7 +774,7 @@ namespace Olca.Application.Dungeon
                 dungeonChoices.Select(c => clearReturnSession.Snapshot.ClearedDungeons.Contains(c.Id)).ToArray(),
                 Enumerable.Range(0,dungeonChoices.Count).Select(i => i==0 ? "最初から解放" : "一つ前のダンジョンをクリア").ToArray(),
                 dungeonChoices.Select((c,i) => !DungeonUnlocked(i) ? null : ClearReturnView.FormatDungeonInformation(new DungeonDeparturePreview(
-                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), (initialHub||outsideDungeonSelection), gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null,outsideDungeonSelection?(System.Action)OpenOutsideDepartureDeckMenu:null,CanEditOwnedDeparture,retrySaveAvailable:!CanSelectDungeon||outsideDepartureError==null||clearReturnError!=null||clearReturnSession.Error!=null||clearReturnSession.HasPendingSave,presentationNotice:presentationNotice);
+                    c.Floors==null ? new[]{c.Map()} : Enumerable.Range(0,c.Floors.FloorCount).Select(f=>c.Floors.CreateInitialMap(f))))).ToArray(), SelectionStartsDeparture, gameSystem!=null&&OutsideHubEligible?(System.Action)(()=>OpenOutsideExplorationAsync().Forget()):null,CanManageExplorationDeck?(System.Action)OpenExplorationDeckLibrary:null,outsideDungeonSelection?OutsideDepartureDeckDisplay():null,outsideDungeonSelection?(System.Action)OpenOutsideDepartureDeckMenu:null,CanEditOwnedDeparture,retrySaveAvailable:!CanSelectDungeon||outsideDepartureError==null||clearReturnError!=null||clearReturnSession.Error!=null||clearReturnSession.HasPendingSave,presentationNotice:presentationNotice);
         }
 
         /// <summary>外部で確定した階層列だけを使用する。既定シーンは従来の単階層経路。</summary>
