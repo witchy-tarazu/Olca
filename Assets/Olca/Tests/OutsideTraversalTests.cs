@@ -586,3 +586,34 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class RuinsCrossing450Tests
+    {
+        private static LogicalInput I(float x=0,bool jump=false,bool held=false,bool attack=false)=>new LogicalInput{Horizontal=x,JumpButtonDown=jump,JumpButton=held,BasicAttackButtonDown=attack,BasicAttackButton=attack};
+        private static void Walk(OutsideBranchTrial441 s,long x){for(int n=0;n<400&&s.Core.Position<x;n++)s.Tick(I(1));Assert.GreaterOrEqual(s.Core.Position,x);}
+        private static void Land(OutsideBranchTrial441 s,long x){for(int n=0;n<150;n++){s.Tick(I(s.Core.Position<x?1:0,held:true));if(s.Core.IsGrounded)return;}Assert.Fail("着地しない");}
+        [Test] public void 遺跡450は分離した二足場を跳び継ぎ矢に当たらず同じ出口へ届く()
+        {
+            using(var s=new OutsideBranchTrial441(true)){Walk(s,210000);s.Tick(I(1,true,true));Land(s,390000);Assert.AreEqual("ruins-upper-first",s.Core.SupportId);Walk(s,510000);s.Tick(I(1,true,true));Land(s,810000);Assert.IsTrue(s.ReachedSecondPlatform);Walk(s,990000);s.Tick(I(1,true,true));Land(s,1260000);Walk(s,s.GoalX);Assert.IsTrue(s.Completed);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(30,s.Guard.CurrentHp);}
+        }
+        [Test] public void 遺跡450は下道で低い矢を跳んで背後から通常三段で反撃できる()
+        {
+            using(var s=new OutsideBranchTrial441(true)){Walk(s,990000);Assert.AreEqual(OutsideGoblinPhase.Windup,s.Phase);s.Tick(I(1,true,true));Land(s,1140000);s.Tick(I(-1));for(int n=0;n<55&&!s.Guard.IsDead;n++)s.Tick(I(attack:n==0||n==15||n==30||n==45));Assert.AreEqual(100,s.Player.CurrentHp);Assert.IsTrue(s.Guard.IsDead);Assert.IsFalse(s.ReachedSecondPlatform);Walk(s,s.GoalX);Assert.IsTrue(s.Completed);}
+        }
+        [Test] public void 遺跡450は上段で落ちても下から出口へ進め横移動のみでは被弾する()
+        {
+            using(var s=new OutsideBranchTrial441(true)){Walk(s,210000);s.Tick(I(1,true,true));Land(s,390000);Walk(s,s.GoalX);Assert.IsTrue(s.Completed);Assert.IsFalse(s.ReachedSecondPlatform);Assert.Less(s.Player.CurrentHp,100);Assert.Greater(s.Player.CurrentHp,0);}
+            using(var s=new OutsideBranchTrial441(true)){Walk(s,s.GoalX);Assert.IsTrue(s.Completed);Assert.AreEqual(90,s.Player.CurrentHp);Assert.IsFalse(s.UsedUpper);}
+        }
+        [Test] public void 遺跡450は上から地面への偽のキック命中を起こさず矢の予告は固定方向になる()
+        {
+            using(var s=new OutsideBranchTrial441(true)){Walk(s,210000);s.Tick(I(1,true,true));Land(s,390000);Walk(s,510000);s.Tick(I(1,true,true));Land(s,810000);Walk(s,1010000);for(int n=0;n<30;n++)s.Tick(I(attack:n==0));Assert.AreEqual(30,s.Guard.CurrentHp);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(-1,s.GuardFacing);Assert.IsTrue(s.ArrowActive);Assert.AreEqual(-1,s.ArrowFacing);}
+        }
+        [Test] public void 遺跡450はポーズと破棄で矢と入力の時計を進めず旧定義を変更しない()
+        {
+            using(var s=new OutsideBranchTrial441(true))using(var old=new OutsideBranchTrial441()){Walk(s,840000);for(int n=0;n<31;n++)s.Tick(I());Assert.IsTrue(s.ArrowActive);long frame=s.Frame,x=s.ArrowX;s.Paused=true;for(int n=0;n<100;n++)s.Tick(I(1,true,true,true));Assert.AreEqual(frame,s.Frame);Assert.AreEqual(x,s.ArrowX);s.Paused=false;s.Tick(I());Assert.AreEqual(x-8000,s.ArrowX);s.Dispose();frame=s.Frame;s.Tick(I(1));Assert.AreEqual(frame,s.Frame);Assert.IsFalse(OutsideTrialRoute.KnownMap(s.Core.Definition.Id));Assert.AreEqual(OutsideBranchTrial441.RuinsDefinitionId,s.Core.Definition.Id);Assert.AreEqual(OutsideBranchTrial441.DefinitionId,old.Core.Definition.Id);Assert.AreEqual(1,old.Core.Definition.LandingSurfaces.Count);Assert.AreEqual(2,s.Core.Definition.LandingSurfaces.Count);}
+        }
+    }
+}

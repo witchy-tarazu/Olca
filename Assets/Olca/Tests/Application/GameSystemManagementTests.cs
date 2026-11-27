@@ -701,6 +701,24 @@ namespace Olca.Tests.Application
                 long frame=model.Core.Frame;binding.View.Render();StringAssert.DoesNotStartWith("trial_charge_",binding.View.transform.Find("OutsideEntryPlayer").GetComponent<Image>().sprite.name);Assert.AreEqual(frame,model.Core.Frame);
             }
         }
+
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
+        public async Task 遺跡450は通常入口から独立し背景と足場と矢を投影して親の保存を保つ(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var input=new Olca.Unity.UnityInputProvider())using(var runtime=new OutsideExplorationRuntime(model))using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},runtime:runtime,input:input,trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();var entry=view.transform.Find("OutsideRuinsCrossing450").GetComponent<Button>();Assert.IsTrue(entry.interactable);
+                view.ConfigurePairEntry445(()=>{});view.Render();Canvas.ForceUpdateCanvases();
+                Rect Area450(RectTransform rt){var corners=new Vector3[4];rt.GetWorldCorners(corners);return Rect.MinMaxRect(corners.Min(v=>v.x),corners.Min(v=>v.y),corners.Max(v=>v.x),corners.Max(v=>v.y));}
+                var area450=Area450((RectTransform)entry.transform);Assert.IsTrue(view.transform.Find("OutsideGoblinApproachTrial").gameObject.activeInHierarchy,"隠して検査から除外しない");
+                foreach(var existing in view.GetComponentsInChildren<Button>(true).Where(v=>v!=entry&&v.gameObject.activeInHierarchy))Assert.IsFalse(area450.Overlaps(Area450((RectTransform)existing.transform)),"新入口と既存入口が重なる: "+existing.name);
+                var name450=view.transform.Find("OutsideMapName");if(name450!=null&&name450.gameObject.activeInHierarchy)Assert.IsFalse(area450.Overlaps(Area450((RectTransform)name450)),"地名の表示中も新入口が隠れない");
+                var bytes=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());long frame=model.Core.Frame;entry.onClick.Invoke();var child=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.IsNotNull(child);Assert.IsTrue(child.Runtime.Session.IsRuins);Assert.IsFalse(view.CanPlay);view.SetCovered(false);Assert.IsFalse(view.CanPlay);
+                var s=child.Runtime.Session;for(int n=0;n<120;n++)s.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});child.Render();Canvas.ForceUpdateCanvases();Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup,s.Phase);var line=child.transform.Find("BranchWarningTop").GetComponent<Image>();Assert.IsTrue(line.enabled);Assert.IsFalse(line.raycastTarget);var edge=child.transform.Find("RuinsSecondEdge").GetComponent<Image>();Assert.Greater(edge.rectTransform.anchoredPosition.y,line.rectTransform.anchoredPosition.y);
+                var textures=Enumerable.Range(0,3).Select(n=>child.transform.Find("RuinsCrossingBackground"+n).GetComponent<Image>().sprite.texture).ToArray();Assert.IsTrue(textures.All(t=>t.width==384&&t.height==216));child.transform.Find("BranchRetry").GetComponent<Button>().onClick.Invoke();Assert.IsTrue(child.Runtime.Session.IsRuins);Assert.AreEqual(100,child.Runtime.Session.Player.CurrentHp);child.Close();Assert.IsTrue(s.IsDisposed);Assert.IsTrue(textures.All(t=>t==null));Assert.AreEqual(frame,model.Core.Frame);CollectionAssert.AreEqual(bytes,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));Assert.AreEqual(100,model.Player.CurrentHp);
+            }
+        }
         [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
         public async Task 分岐441は通常入口で独立し狭い画面の予告と元探索を保ち閉鎖後の操作を拒否する(int width,int height)
         {

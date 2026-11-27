@@ -404,7 +404,7 @@ namespace Olca.Presentation.Exploration
         private void OnDisable(){ClearPair445();ClearBranch441();ClearForestPreview();Olca.Unity.BattleVisualClock.SetPaused(this,false);if(player!=null)player.color=Color.white;ClearOutsideDefensiveField();ClearOutsideKamui();ClearCombatFeedback();ClearTrialSword();ClearKickEffects();ClearMapDoor();ClearMiniMap();ClearKamuiShortcut();ClearRecovery();ClearSupply();ClearItemProviders();ClearTraversalDisplay();ClearHandActions();ClearFocus();context?.NotifyHidden();menu?.Dispose();menu=null;presentation?.Dispose();presentation=null;context=null;returned=null;entered=null;canEnter=null;interactionHint=null;trialRoute=null;transientInputBlocked=null;cardIcon=null;selectionGuide=null;movementGuide=null;handPressed=null;cardUseGuide=null;renderedCards=null;ClearHandIcons();}
         private void OnDestroy(){OnDisable();ReleaseTraversalReferences();foreach(var layer in System.Linq.Enumerable.Concat(forestLayers,ruinsLayers))if(layer!=null&&layer.sprite!=null){var sprite=layer.sprite;var texture=sprite.texture;if(UnityEngine.Application.isPlaying){Destroy(sprite);Destroy(texture);}else{DestroyImmediate(sprite);DestroyImmediate(texture);}}back=null;pause=null;kamuiShortcut=null;}
         // 自作の暖色の遠景。薄い柱に実足場と同じ縁を付けず、接触面のような強い上端も作らない。
-        private static Sprite CreateRuinsLayer(int layer)
+        internal static Sprite CreateRuinsLayer(int layer)
         {
             const int w=384,h=216;var pixels=new Color32[w*h];
             void Rect(int x,int y,int width,int height,Color32 c){for(int yy=Math.Max(0,y);yy<Math.Min(h,y+height);yy++)for(int xx=Math.Max(0,x);xx<Math.Min(w,x+width);xx++)pixels[yy*w+xx]=c;}

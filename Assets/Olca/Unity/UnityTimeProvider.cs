@@ -206,12 +206,12 @@ namespace Olca.Unity
     {
         public Olca.Core.Logic.Integration.OutsideBranchTrial441 Session {get;private set;}
         private readonly Olca.Unity.UnityInputProvider input;private readonly Olca.Unity.UnityLogicalLoop loop;
-        private bool disposed,blockJump,blockAttack,blockDirection;
-        public OutsideBranchRuntime441(System.Func<bool> active)
+        private bool disposed,blockJump,blockAttack,blockDirection;private readonly bool ruins;
+        public OutsideBranchRuntime441(System.Func<bool> active,bool ruins=false)
         {
-            input=new Olca.Unity.UnityInputProvider{GamepadContext=()=>"outside",GamepadGameplayActive=active};input.StartEventCapture();loop=new Olca.Unity.UnityLogicalLoop(true,active);Reset();
+            this.ruins=ruins;input=new Olca.Unity.UnityInputProvider{GamepadContext=()=>"outside",GamepadGameplayActive=active};input.StartEventCapture();loop=new Olca.Unity.UnityLogicalLoop(true,active);Reset();
         }
-        public void Reset(){if(disposed)return;Session?.Dispose();Session=new Olca.Core.Logic.Integration.OutsideBranchTrial441();loop.StartNewTimeline();CaptureHeld();}
+        public void Reset(){if(disposed)return;Session?.Dispose();Session=new Olca.Core.Logic.Integration.OutsideBranchTrial441(ruins);loop.StartNewTimeline();CaptureHeld();}
         private void CaptureHeld(){var held=input.CaptureLogical();blockJump=held.JumpButton;blockAttack=held.BasicAttackButton||held.ChargeHoldButton;blockDirection=System.Math.Abs(held.Horizontal)>.01f;input.ResetCapturedInput();input.QueueSnapshot();}
         public void Suspend(){if(disposed)return;Session.CancelInput();loop.ReleaseInput();CaptureHeld();}
         public void Pump(bool active)
