@@ -145,7 +145,9 @@ namespace Olca.Core.Logic.Integration
         }
         private readonly bool trialContactDamageEnabled;
         // 通常Rootでのみ明示登録する試用接触。既存の純粋Session fixtureへ自動追加しない。
-        public OutsideExplorationSession(bool trialContactDamage = false){trialContactDamageEnabled=trialContactDamage;}
+        private readonly bool trialSafeHomePlacement;
+        // 通常Rootの試用配置だけを分離し、旧fixture/既存攻撃定義の座標と保存keyは維持する。
+        public OutsideExplorationSession(bool trialContactDamage = false,bool trialSafeHomePlacement = false){trialContactDamageEnabled=trialContactDamage;this.trialSafeHomePlacement=trialSafeHomePlacement;}
         private long trialContactNextFrame,secondTrialContactNextFrame;
         public const int TrialContactDamage=10,TrialContactInterval=60;
         public const long TrialContactHalfWidth=24000,TrialContactHeight=90000;
@@ -264,7 +266,7 @@ namespace Olca.Core.Logic.Integration
         // 試用別マップの射撃確認用配置。正式敵配置ではなく、既存壁24worldの前後へ分離する。
         public long FirstTrialTargetHeight=>slimeTrial?.Height??0;
         public long FirstTrialTargetX=>slimeTrial?.X??goblinTrial?.X??(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1350000:TrialTargetX);
-        public long SecondTrialTargetX=>PairStage445>0?31*60000:Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:OutsideKickTrialDefinition.SecondTargetX;
+        public long SecondTrialTargetX=>PairStage445>0?31*60000:Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:trialSafeHomePlacement?14*60000:OutsideKickTrialDefinition.SecondTargetX;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
         private Enemy trialTarget;private bool trialTargetChanged;private int trialTargetHits;private OutsideTrialStrike trialStrike;

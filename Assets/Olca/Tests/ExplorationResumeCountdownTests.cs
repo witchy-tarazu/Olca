@@ -1184,6 +1184,64 @@ namespace Olca.Tests
                 }
             }
         }
+        private static void Position452(OutsideExplorationSession s,long x){var state=s.Core.CaptureState();state.Position=x;state.Height=0;state.SupportId="floor";state.Velocity=0;typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});}
+        [TestCase(1140000L)][TestCase(1200000L)][TestCase(1260000L)][TestCase(1218000L)]
+        public void 入口452は左右端と中心と旧帰還位置で待機しても試用接触を受けない(long x)
+        {
+            using(var s=new OutsideExplorationSession(trialContactDamage:true,trialSafeHomePlacement:true)){
+                s.TryInitializePlayer(()=>new PlayerCharacter(35));Position452(s,x);Assert.IsTrue(OutsideTrialRoute.CanInspect(s.Core));Assert.AreEqual(14*60000,s.SecondTrialTargetX);
+                using(var lease=s.AttachPresentation())for(int n=0;n<180;n++)s.TickTraversal(0);
+                Assert.AreEqual(35,s.Player.CurrentHp);Assert.IsFalse(s.Player.IsInvincible);Assert.AreEqual(x,s.Core.Position);Assert.AreEqual(0,s.Core.Height);
+                var runtime=s.CaptureRuntime(null);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                using(var restored=new OutsideExplorationSession(trialContactDamage:true,trialSafeHomePlacement:true)){
+                    Assert.IsTrue(restored.RestoreSavedState(actor,runtime,null));using(var lease=restored.AttachPresentation())for(int n=0;n<180;n++)restored.TickTraversal(0);Assert.AreEqual(35,restored.Player.CurrentHp);Assert.AreEqual(x,restored.Core.Position);
+                }
+            }
+        }
+        [TestCase(840000L)][TestCase(1080000L)]
+        public void 配置452は両試用敵の通常接触十ダメージと六十フレームを維持する(long x)
+        {
+            using(var s=new OutsideExplorationSession(trialContactDamage:true,trialSafeHomePlacement:true)){
+                s.TryInitializePlayer(()=>new PlayerCharacter(100));Position452(s,x);using(var lease=s.AttachPresentation()){
+                    s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);s.TickTraversal(0);Assert.AreEqual(80,s.Player.CurrentHp);Assert.IsFalse(s.Player.IsInvincible);
+                }
+            }
+        }
+        [Test] public void 配置452は旧配置とAnnexと保存された座標キーを変更しない()
+        {
+            using(var old=new OutsideExplorationSession(trialContactDamage:true))using(var safe=new OutsideExplorationSession(trialContactDamage:true,trialSafeHomePlacement:true)){
+                old.TryInitializePlayer(()=>new PlayerCharacter(100));safe.TryInitializePlayer(()=>new PlayerCharacter(100));Assert.AreEqual(OutsideKickTrialDefinition.SecondTargetX,old.SecondTrialTargetX);Assert.AreEqual(old.Core.StateDefinitionKey(),safe.Core.StateDefinitionKey());
+                safe.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);Assert.AreEqual(1560000,safe.SecondTrialTargetX);Assert.AreEqual(1350000,safe.FirstTrialTargetX);
+            }
+        }
+        [Test] public void 配置452は旧保存の座標手札ゲージとpayloadを変えず接触を再開しない()
+        {
+            using(var old=new OutsideExplorationSession(trialContactDamage:true)){
+                old.TryInitializePlayer(()=>new PlayerCharacter(100));var cards=Deck155();var defs=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(8,30,2),new Deck(cards.ToList())).Definitions;
+                Assert.IsTrue(old.QueueSelectedDeck("placement452",cards,Owned(cards),new SeededBattleRandom(452),out _));Walk155(old,10*60000);Assert.AreEqual(30,old.Cards.TotalCount);old.Core.CardGauge.Configure(100,0);old.Core.CardGauge.TrySpend(30);Position452(old,1218000);
+                using(var lease=old.AttachPresentation())for(int n=0;n<36;n++)old.TickTraversal(0);old.Player.SetHp(35);
+                var runtime=old.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(old.Player);actor.Id=runtime.Id;var bytes=PortableCheckpointJson.Serialize(runtime);var actorBytes=PortableCheckpointJson.Serialize(actor);var key=runtime.Cards.Key();long gauge=runtime.Core.GaugeUnits;
+                Assert.AreEqual(25,runtime.TrialContact.SecondNextFrame-runtime.Core.Frame);
+                using(var safe=new OutsideExplorationSession(trialContactDamage:true,trialSafeHomePlacement:true)){
+                    Assert.IsTrue(safe.RestoreSavedState(actor,runtime,null,defs));using(var lease=safe.AttachPresentation())for(int n=0;n<180;n++)safe.TickTraversal(0);
+                    Assert.AreEqual(35,safe.Player.CurrentHp);Assert.AreEqual(1218000,safe.Core.Position);Assert.AreEqual(gauge,safe.Core.CardGauge.CurrentUnits);Assert.AreEqual(key,safe.Cards.CaptureState(defs).Key());CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(runtime));CollectionAssert.AreEqual(actorBytes,PortableCheckpointJson.Serialize(actor));
+                    var next=safe.CaptureRuntime(defs).ForRun(Guid.NewGuid().ToString("N"));Assert.AreEqual(1218000,next.Core.Position);Assert.AreEqual(gauge,next.Core.GaugeUnits);Assert.AreEqual(key,next.Cards.Key());
+                }
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 配置452の旧途中攻撃は保存の軌道を保持し移動後標的へ偽命中しない(bool bomb)
+        {
+            using(var old=bomb?Bomb289():Sword161(190,1,startup:3,recovery:8))using(var safe=new OutsideExplorationSession(trialContactDamage:true,trialSafeHomePlacement:true)){
+                old.TrialTarget.TakeDamage(120,ElementType.None);int power=old.Cards.SelectedCard.GetFinalPower();
+                using(var lease=old.AttachPresentation()){Assert.IsTrue(old.TryUseSelectedCard(old.Cards.SelectedCard,old.Cards.HandRevision,out _));old.TickTraversal(0);}
+                var defs=Kick214Definitions(old);var runtime=old.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(old.Player);actor.Id=runtime.Id;var bytes=PortableCheckpointJson.Serialize(runtime);
+                Assert.IsTrue(safe.RestoreSavedState(actor,runtime,null,defs));Assert.AreEqual(old.Core.Position,safe.Core.Position);Assert.AreEqual(120,safe.SecondTrialTarget.CurrentHp);
+                if(bomb)CollectionAssert.AreEqual(PortableCheckpointJson.Serialize(old.Bombs.Single()),PortableCheckpointJson.Serialize(safe.Bombs.Single()));
+                using(var a=old.AttachPresentation())using(var b=safe.AttachPresentation())for(int n=0;n<120;n++){old.TickTraversal(0);safe.TickTraversal(0);}
+                Assert.AreEqual(120-power,old.SecondTrialTarget.CurrentHp);Assert.AreEqual(120,safe.SecondTrialTarget.CurrentHp);Assert.AreEqual(old.Player.CurrentHp,safe.Player.CurrentHp);Assert.AreEqual(old.Cards.CaptureState(defs).Key(),safe.Cards.CaptureState(defs).Key());CollectionAssert.AreEqual(bytes,PortableCheckpointJson.Serialize(runtime));
+            }
+        }
         private static OutsideExplorationSession Contact266(long offset=0,long height=0)
         {
             var s=new OutsideExplorationSession(trialContactDamage:true);s.TryInitializePlayer(()=>new PlayerCharacter(100));
