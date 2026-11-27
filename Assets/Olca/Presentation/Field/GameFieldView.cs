@@ -32,6 +32,7 @@ namespace Olca.Presentation.Field
         /// <summary>表示返却ではmodel/camera参照だけを外し、論理状態を変更しない。</summary>
         public void ReleasePresentation()
         {
+            ClearBattleMoveCues();
             basicChargeVisual=default;RestoreTrialBody();trialBasicKick?.Clear();
             UnbindPlayerDamage();
             if(currentBattle!=null){currentBattle.OnSummonAdded-=OnSummonAdded;currentBattle.OnBattleEnd-=OnSummonBattleEnd;}
@@ -166,6 +167,40 @@ namespace Olca.Presentation.Field
             if (!visible && !battleMoveHidden) { battleMoveRendererWasEnabled = playerSprite.enabled; battleMoveHidden = true; }
             if (battleMoveHidden) playerSprite.enabled = visible && battleMoveRendererWasEnabled;
             if (visible) battleMoveHidden = false;
+        }
+
+
+        private SpriteRenderer[] battleMoveCues;
+        private void ClearBattleMoveCues()
+        {
+            if(battleMoveCues==null)return;
+            foreach(var cue in battleMoveCues)if(cue!=null){cue.enabled=false;cue.sprite=null;}
+        }
+        private void DisposeBattleMoveCues()
+        {
+            if(battleMoveCues==null)return;
+            foreach(var cue in battleMoveCues)if(cue!=null){cue.sprite=null;if(UnityEngine.Application.isPlaying)Destroy(cue.gameObject);else DestroyImmediate(cue.gameObject);}
+            battleMoveCues=null;
+        }
+        // 通常移動の消失・確定時刻は変えず、出発/到着の短い残像だけを重ねる。
+        private void RenderBattleMoveCues(bool moving,float progress,float fromX,float toX)
+        {
+            if(!moving||playerSprite==null||playerSprite.sprite==null||!(playerSprite.enabled||battleMoveHidden&&battleMoveRendererWasEnabled)){ClearBattleMoveCues();return;}
+            if(battleMoveCues==null){
+                battleMoveCues=new SpriteRenderer[2];
+                for(int n=0;n<2;n++){var go=new GameObject(n==0?"BattleMoveDeparture":"BattleMoveArrival");go.transform.SetParent(playerSprite.transform.parent,false);battleMoveCues[n]=go.AddComponent<SpriteRenderer>();}
+            }
+            float p=Mathf.Clamp01(progress);
+            for(int n=0;n<2;n++){
+                var cue=battleMoveCues[n];
+                float alpha=n==0?.32f*Mathf.Clamp01(1f-p/.65f):.36f*Mathf.Clamp01((p-.35f)/.4f)*Mathf.Clamp01((1f-p)/.2f);
+                cue.sprite=playerSprite.sprite;cue.sharedMaterial=playerSprite.sharedMaterial;cue.flipX=playerSprite.flipX;cue.flipY=playerSprite.flipY;cue.drawMode=playerSprite.drawMode;cue.size=playerSprite.size;cue.maskInteraction=playerSprite.maskInteraction;
+                cue.sortingLayerID=playerSprite.sortingLayerID;cue.sortingOrder=playerSprite.sortingOrder-1;
+                cue.transform.rotation=playerSprite.transform.rotation;cue.transform.localScale=playerSprite.transform.localScale;
+                float bodyX=playerTransform!=null?playerTransform.position.x:playerSprite.transform.position.x;
+                cue.transform.position=playerSprite.transform.position+new Vector3((n==0?fromX:toX)-bodyX,0,0);
+                cue.color=new Color(.78f,.9f,1f,alpha*playerSprite.color.a);cue.enabled=alpha>0f;
+            }
         }
 
 
@@ -745,9 +780,10 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
         }
 
-        private void OnDisable() { basicChargeVisual=default;basicKickVisual?.Bind(null);RestoreTrialBody();trialBasicKick?.Clear();worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); RestoreTrialBody(); }
+        private void OnDisable() { DisposeBattleMoveCues();basicChargeVisual=default;basicKickVisual?.Bind(null);RestoreTrialBody();trialBasicKick?.Clear();worldDamageNumberPool?.ClearAll(); guardVisual?.Clear(); paralysisVisual?.Clear(); defensiveField?.Clear(); trialKamuiVisual?.Clear(); actionPoseRenderer?.Clear(); if(contactPoseActive)SetContactPose(Olca.Presentation.Dungeon.ContactVisualPhase.None,0f); battleGridView?.BindTelegraphs(null); battleGridView?.ShowTelegraphs(System.Array.Empty<Olca.Core.Domain.Vector2Int>()); ClearTerrainVisuals(); ClearBombVisuals(); RestoreEnemyPerception(); ClearObstacleVisuals(); ClearVisitVisuals(); RestoreObstaclePose(); SetBattleMoveVisibility(true); UnbindPlayerDamage(); RestoreTrialBody(); }
         private void OnDestroy()
         {
+            DisposeBattleMoveCues();
             basicKickVisual?.Dispose();basicKickVisual=null;
             RestoreTrialBody();trialBasicKick?.Dispose();trialBasicKick=null;trialFireBody?.Dispose();trialFireBody=null;
             ReleasePresentation();
@@ -986,6 +1022,7 @@ namespace Olca.Presentation.Field
             actionPoseRenderer?.Clear();
             ClearBombVisuals();
             SetBattleMoveVisibility(true);
+            ClearBattleMoveCues();
             StopPlayerDamageFeedback(false);
             if (currentBattle != null)
             {
@@ -1068,6 +1105,10 @@ namespace Olca.Presentation.Field
             // ControllerとViewのLateUpdate順に依存せず、更新済みの論理状態で同じ描画を確定する。
             UpdateMovementAnimation();
             UpdatePlayerSprite();
+            if(currentBattle!=null&&battleGridView!=null&&playerTransform!=null){
+                var movement=currentBattle.PlayerMovement;
+                RenderBattleMoveCues(movement.IsNormalMoving&&!currentBattle.Player.IsDead,movement.NormalMoveProgress,battleGridView.GridIndexToWorldX(movement.NormalMoveFrom.X),battleGridView.GridIndexToWorldX(movement.NormalMoveTo.X));
+            }else ClearBattleMoveCues();
             RefreshDefensiveField();
             RefreshConditionVisuals();
         }

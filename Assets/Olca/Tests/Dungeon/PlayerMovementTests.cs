@@ -40,6 +40,29 @@ namespace Olca.Tests.Dungeon
             }finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(texture);}
         }
 
+        [TestCase(9,false)] [TestCase(9,true)] [TestCase(12,false)] [TestCase(12,true)]
+        public void 移動残像430は出発着地だけを表示し消失境界と本体を変更しない(int frames,bool left)
+        {
+            var root=new UnityEngine.GameObject("MoveCue430");root.SetActive(false);var body=new UnityEngine.GameObject("Body");body.transform.SetParent(root.transform,false);
+            var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var sr=body.AddComponent<UnityEngine.SpriteRenderer>();var tex=new UnityEngine.Texture2D(8,16);var sprite=UnityEngine.Sprite.Create(tex,new UnityEngine.Rect(0,0,8,16),UnityEngine.Vector2.zero);sr.sprite=sprite;sr.color=new UnityEngine.Color(.6f,.7f,.8f,.9f);body.transform.localScale=new UnityEngine.Vector3(left?-2:2,2,1);sr.flipX=left;sr.sortingOrder=8;
+            var type=typeof(Olca.Presentation.Field.GameFieldView);var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;type.GetField("playerSprite",flags).SetValue(view,sr);type.GetField("playerTransform",flags).SetValue(view,body.transform);var visible=type.GetMethod("SetBattleMoveVisibility",flags);var render=type.GetMethod("RenderBattleMoveCues",flags);float from=left?3:1,to=left?1:3;
+            try{
+                for(int f=1;f<=frames;f++){
+                    float progress=(float)f/frames;body.transform.position=new UnityEngine.Vector3(f<Olca.Core.Logic.Battle.NormalMoveTiming.Midpoint(frames)?from:to,2,0);bool expected=Olca.Presentation.Field.GameFieldView.IsBattleMoveVisible(true,progress);visible.Invoke(view,new object[]{expected});render.Invoke(view,new object[]{true,progress,from,to});
+                    Assert.AreEqual(expected,sr.enabled);Assert.AreSame(sprite,sr.sprite);Assert.AreEqual(new UnityEngine.Color(.6f,.7f,.8f,.9f),sr.color);Assert.AreEqual(new UnityEngine.Vector3(left?-2:2,2,1),body.transform.localScale);
+                    var cues=(UnityEngine.SpriteRenderer[])type.GetField("battleMoveCues",flags).GetValue(view);Assert.AreEqual(2,cues.Length);
+                    for(int n=0;n<2;n++){var cue=cues[n];Assert.AreSame(sprite,cue.sprite);Assert.AreSame(sr.sharedMaterial,cue.sharedMaterial);Assert.AreEqual(n==0?from:to,cue.transform.position.x,.0001f);Assert.AreEqual(2,cue.transform.position.y,.0001f);Assert.AreEqual(left,cue.flipX);Assert.AreEqual(body.transform.localScale,cue.transform.localScale);Assert.AreEqual(7,cue.sortingOrder);Assert.LessOrEqual(cue.color.a,.36f);var color=cue.color;render.Invoke(view,new object[]{true,progress,from,to});Assert.AreEqual(color,cue.color,"再描画で進めない");}
+                    if(f==Olca.Core.Logic.Battle.NormalMoveTiming.Midpoint(frames)){Assert.IsFalse(sr.enabled);Assert.IsTrue(cues[1].enabled,"本体消失中も到着側を追える");}
+                }
+                render.Invoke(view,new object[]{false,1f,from,to});var retained=(UnityEngine.SpriteRenderer[])type.GetField("battleMoveCues",flags).GetValue(view);foreach(var cue in retained){Assert.IsFalse(cue.enabled);Assert.IsNull(cue.sprite);}visible.Invoke(view,new object[]{true});render.Invoke(view,new object[]{true,.4f,to,from});Assert.AreSame(retained,type.GetField("battleMoveCues",flags).GetValue(view));Assert.AreEqual(to,retained[0].transform.position.x,.0001f);visible.Invoke(view,new object[]{false});render.Invoke(view,new object[]{true,.5f,to,from});var bodyPosition=body.transform.position;view.ReleasePresentation();foreach(var cue in retained){Assert.IsFalse(cue.enabled);Assert.IsNull(cue.sprite);}Assert.IsFalse(sr.enabled);Assert.AreEqual(bodyPosition,body.transform.position);render.Invoke(view,new object[]{true,.5f,to,from});type.GetMethod("OnDisable",flags).Invoke(view,null);foreach(var cue in retained)Assert.IsTrue(cue==null);Assert.IsNotNull(sprite);Assert.AreSame(sprite,sr.sprite);
+            }finally{type.GetMethod("DisposeBattleMoveCues",flags).Invoke(view,null);UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(tex);}
+        }
+        [Test] public void 移動残像430は元から非表示の本体を勝手に見せない()
+        {
+            var root=new UnityEngine.GameObject("HiddenMoveCue430");root.SetActive(false);var view=root.AddComponent<Olca.Presentation.Field.GameFieldView>();var sr=root.AddComponent<UnityEngine.SpriteRenderer>();var tex=new UnityEngine.Texture2D(8,16);var sprite=UnityEngine.Sprite.Create(tex,new UnityEngine.Rect(0,0,8,16),UnityEngine.Vector2.zero);sr.sprite=sprite;sr.enabled=false;var type=typeof(Olca.Presentation.Field.GameFieldView);var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            try{type.GetField("playerSprite",flags).SetValue(view,sr);type.GetMethod("SetBattleMoveVisibility",flags).Invoke(view,new object[]{false});type.GetMethod("RenderBattleMoveCues",flags).Invoke(view,new object[]{true,.5f,0f,1f});Assert.IsNull(type.GetField("battleMoveCues",flags).GetValue(view));Assert.IsFalse(sr.enabled);}finally{UnityEngine.Object.DestroyImmediate(root);UnityEngine.Object.DestroyImmediate(sprite);UnityEngine.Object.DestroyImmediate(tex);}
+        }
+
         [TestCase(false)][TestCase(true)]
         public void ノックバック姿勢は順番を守り終了時に元の表示状態を復元する(bool enabled)
         {
