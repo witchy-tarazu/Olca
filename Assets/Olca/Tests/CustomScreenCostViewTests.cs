@@ -14,6 +14,59 @@ using UnityEngine.UI;
 
 namespace Olca.Tests
 {
+    public sealed class BarrierImpact449Tests
+    {
+        private Olca.Unity.GeneratedSpriteAssets.Lease fixtureAssets;
+        [SetUp] public void SetUp()=>fixtureAssets=Olca.Unity.GeneratedSpriteAssets.Acquire();
+        [TearDown] public void TearDown()=>fixtureAssets?.Dispose();
+        private static BattleSystem Battle()=>new BattleSystem(new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(1,0)),new List<Enemy>{new Enemy("e","e",100,ElementType.None,new Olca.Core.Domain.Vector2Int(3,0))},new Deck());
+        private SpriteRenderer Body(GameObject go){var body=go.AddComponent<SpriteRenderer>();body.sprite=Resources.LoadAll<Sprite>("OlcaCharacterMotion/trial_bomb_throw").FirstOrDefault();if(body.sprite==null)body.sprite=Olca.Presentation.Effects.DefensiveFieldVisual.GetSprite(Olca.Presentation.Effects.DefensiveFieldKind.Barrier,fixtureAssets);return body;}
+        [TestCase(5,false,10)][TestCase(30,true,0)]
+        public void 防御449は吸収後の確定耐久で破壊を区別しHPを変えない(int damage,bool broken,int remaining)
+        {
+            var root=new GameObject("BarrierImpact");using(var visual=new Olca.Presentation.Effects.BattleBarrierImpactVisual())try{
+                var body=Body(root);var b=Battle();b.Player.SetBarrier(15);b.Player.OnCombatFeedback+=f=>{if(f.Kind==CombatFeedbackKind.BarrierDamage)visual.Notify(b);};b.Player.TakeDamage(damage);
+                visual.Render(body,b);Assert.IsTrue(visual.IsVisible);Assert.AreEqual(broken,visual.IsBroken);Assert.AreEqual(100,b.Player.CurrentHp);Assert.AreEqual(remaining,b.Player.BarrierHp);
+                var pieces=root.GetComponentsInChildren<SpriteRenderer>();Assert.AreEqual(1,pieces.Length,"外周は本体の変形や子階層を変更しない");Assert.AreEqual(Vector3.one,body.transform.localScale);
+                for(int n=0;n<18;n++)b.TickFrame(17);visual.Render(body,b);Assert.IsFalse(visual.IsVisible);Assert.AreEqual(100,b.Player.CurrentHp);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 防御449はカスタムとポーズで破片位置と寿命を保ち解除後に消える()
+        {
+            var root=new GameObject("BarrierPause");using(var v=new Olca.Presentation.Effects.BattleBarrierImpactVisual())try{
+                var body=Body(root);var b=Battle();b.Player.SetBarrier(15);b.Player.TakeDamage(30);v.Notify(b);v.Render(body,b);
+                b.CustomGauge.SetGauge(100);b.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open),new MockRandomProvider());Assert.IsTrue(b.CustomScreen.IsOpen);
+                for(int n=0;n<30;n++){b.TickFrame(17);v.Render(body,b);}Assert.AreEqual(0,b.LogicalFrame);Assert.IsTrue(v.IsVisible);
+                b.CustomScreen.Close();b.Pause(BattlePauseReason.User);for(int n=0;n<30;n++){b.TickFrame(17);v.Render(body,b);}Assert.AreEqual(0,b.LogicalFrame);Assert.IsTrue(v.IsVisible);b.Resume(BattlePauseReason.User);
+                for(int n=0;n<17;n++)b.TickFrame(17);v.Render(body,b);Assert.IsTrue(v.IsVisible);b.TickFrame(17);v.Render(body,b);Assert.IsFalse(v.IsVisible);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 防御449は移動中の瞬間非表示で破壊通知を失わず到着後の残り期間だけ表示する()
+        {
+            var root=new GameObject("BarrierMoving");using(var v=new Olca.Presentation.Effects.BattleBarrierImpactVisual())try{
+                var body=Body(root);var b=Battle();b.Player.SetBarrier(15);b.Player.TakeDamage(30);body.forceRenderingOff=true;v.Notify(b);v.Render(body,b);Assert.IsFalse(v.IsVisible);Assert.IsTrue(v.IsBroken);
+                for(int n=0;n<4;n++)b.TickFrame(17);body.forceRenderingOff=false;v.Render(body,b);Assert.IsTrue(v.IsVisible);Assert.IsTrue(v.IsBroken);Assert.AreEqual(100,b.Player.CurrentHp);
+                for(int n=0;n<14;n++)b.TickFrame(17);v.Render(body,b);Assert.IsFalse(v.IsVisible);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)]
+        public void 防御449は終了と別セッションと明示クリアへ残さない(int boundary)
+        {
+            var root=new GameObject("BarrierBoundary");using(var v=new Olca.Presentation.Effects.BattleBarrierImpactVisual())try{
+                var body=Body(root);var b=Battle();v.Notify(b);v.Render(body,b);Assert.IsTrue(v.IsVisible);
+                if(boundary==0)b.Player.TakeDamage(1000);else if(boundary==1)b=Battle();else v.Clear();v.Render(body,b);Assert.IsFalse(v.IsVisible);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 防御449は被弾と回復では生成せず実Viewの吸収通知だけで表示する()
+        {
+            var root=new GameObject("BarrierView");try{
+                var body=Body(root);var view=root.AddComponent<GameFieldView>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;var type=view.GetType();var b=Battle();type.GetField("playerSprite",flags).SetValue(view,body);type.GetField("currentBattle",flags).SetValue(view,b);type.GetMethod("BindPlayerDamage",flags).Invoke(view,new object[]{b.Player});
+                b.Player.TakeDamage(1);Assert.IsNull(type.GetField("barrierImpact",flags).GetValue(view));b.Player.SetBarrier(15);b.Player.TakeDamage(30);
+                var v=(Olca.Presentation.Effects.BattleBarrierImpactVisual)type.GetField("barrierImpact",flags).GetValue(view);Assert.IsNotNull(v);v.Render(body,b);Assert.IsTrue(v.IsVisible);Assert.IsTrue(v.IsBroken);Assert.AreEqual(99,b.Player.CurrentHp);
+                type.GetMethod("OnDisable",flags).Invoke(view,null);Assert.IsFalse(v.IsVisible);
+            }finally{Object.DestroyImmediate(root);}
+        }
+    }
     public sealed class DashContactCue448Tests
     {
         private const BindingFlags Flags=BindingFlags.Instance|BindingFlags.NonPublic;

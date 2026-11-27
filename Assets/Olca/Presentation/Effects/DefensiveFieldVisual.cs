@@ -106,3 +106,62 @@ namespace Olca.Presentation.Effects
         public void Dispose(){if(disposed)return;disposed=true;if(field==null)return;field.sprite=null;if(Application.isPlaying)Object.Destroy(field.gameObject);else Object.DestroyImmediate(field.gameObject);field=null;}
     }
 }
+
+namespace Olca.Presentation.Effects
+{
+    /// <summary>確定済みバリア吸収だけを示す外周の破片。判定・耐久・時計を所有しない。</summary>
+    public sealed class BattleBarrierImpactVisual : System.IDisposable
+    {
+        public const int DurationFrames = 18;
+        private Olca.Core.Logic.Battle.BattleSystem owner;
+        private long started;
+        private bool pending;
+        private SpriteRenderer[] pieces;
+        private GameObject container;
+        private Olca.Unity.GeneratedSpriteAssets.Lease assets;
+        public bool IsBroken { get; private set; }
+        public bool IsVisible => pieces != null && pieces[0] != null && pieces[0].enabled;
+        public void Notify(Olca.Core.Logic.Battle.BattleSystem battle)
+        {
+            if (battle == null || battle.IsGameOver) return;
+            owner = battle; started = battle.LogicalFrame; pending = true;
+        }
+        public void Render(SpriteRenderer body, Olca.Core.Logic.Battle.BattleSystem battle)
+        {
+            if (owner == null || owner != battle || battle.IsGameOver || battle.Player.IsDead || body == null || body.sprite == null || !body.gameObject.activeInHierarchy) { Clear(); return; }
+            // 通知時は同フレームの耐久集計中。描画時に確定した残耐久を読み取る。
+            if (pending) { IsBroken = !battle.Player.HasBarrier; pending = false; }
+            long age = battle.LogicalFrame - started;
+            if (age < 0 || age >= DurationFrames) { Clear(); return; }
+            // 移動の瞬間非表示は終了ではない。到着後に残る論理寿命だけ表示する。
+            if (!body.enabled || body.forceRenderingOff) { HidePieces(); return; }
+            if (pieces == null) {
+                assets = Olca.Unity.GeneratedSpriteAssets.Acquire();
+                var sprite = Olca.Unity.GeneratedSpriteAssets.Get<Sprite>("barrier-impact449", owned => {
+                    var texture = owned.CreateTexture(8, 16); var colors = new Color[128];
+                    for (int y=0; y<16; y++) for (int x=0; x<8; x++)
+                        if (Mathf.Abs(x-3.5f)/3.5f + Mathf.Abs(y-7.5f)/7.5f <= 1) colors[y*8+x] = Color.white;
+                    texture.SetPixels(colors); texture.Apply(); texture.filterMode=FilterMode.Bilinear;
+                    return owned.CreateSprite(texture,new Rect(0,0,8,16),new Vector2(.5f,.5f));
+                }, assets);
+                container = new GameObject("BarrierImpact449"); container.transform.SetParent(body.transform.parent,false);
+                assets.BindNativeOwner(container);
+                pieces = new SpriteRenderer[6];
+                for(int n=0;n<pieces.Length;n++) { var go=new GameObject("BarrierImpact449_"+n); go.transform.SetParent(container.transform,false); pieces[n]=go.AddComponent<SpriteRenderer>(); pieces[n].sprite=sprite; }
+            }
+            var bounds=DefensiveFieldVisual.GetBodyBounds(body); float t=age/(float)DurationFrames;
+            float radius=IsBroken ? .53f+t*.25f : .52f+Mathf.Sin(t*Mathf.PI)*.03f;
+            for(int n=0;n<pieces.Length;n++) {
+                float angle=(n*60+30)*Mathf.Deg2Rad; var piece=pieces[n];
+                piece.transform.position=bounds.center+new Vector3(Mathf.Cos(angle)*bounds.size.y*radius*.65f,Mathf.Sin(angle)*bounds.size.y*radius, -.03f);
+                piece.transform.rotation=Quaternion.Euler(0,0,n*60+30-90+(IsBroken?t*35:0));
+                piece.transform.localScale=Vector3.one; var scale=piece.transform.lossyScale;
+                piece.transform.localScale=new Vector3(bounds.size.y*.035f/piece.sprite.bounds.size.x/Mathf.Abs(scale.x),bounds.size.y*(IsBroken?.16f:.09f)/piece.sprite.bounds.size.y/Mathf.Abs(scale.y),1);
+                piece.color=new Color(.88f,.68f,1f,(1-t)*.9f); piece.sortingLayerID=body.sortingLayerID; piece.sortingOrder=body.sortingOrder+1; piece.enabled=true;
+            }
+        }
+        private void HidePieces() { if(pieces!=null)foreach(var piece in pieces)if(piece!=null)piece.enabled=false; }
+        public void Clear() { owner=null;pending=false;HidePieces(); }
+        public void Dispose() { Clear();if(pieces!=null)foreach(var piece in pieces)if(piece!=null){piece.sprite=null;if(Application.isPlaying)Object.Destroy(piece.gameObject);else Object.DestroyImmediate(piece.gameObject);}pieces=null;if(container!=null){if(Application.isPlaying)Object.Destroy(container);else Object.DestroyImmediate(container);}container=null;assets?.Dispose();assets=null; }
+    }
+}

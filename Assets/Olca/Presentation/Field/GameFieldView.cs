@@ -263,6 +263,7 @@ namespace Olca.Presentation.Field
         public Transform PlayerTransform => playerTransform;
         public SpriteRenderer PlayerSprite => playerSprite;
         private Olca.Presentation.Effects.DefensiveFieldVisual defensiveField;
+        private Olca.Presentation.Effects.BattleBarrierImpactVisual barrierImpact;
         private Olca.Presentation.Effects.TrialFireKamuiVisual trialKamuiVisual;
         private Olca.Presentation.Effects.TrialFireBodyMotion trialFireBody;
         private Olca.Presentation.Effects.TrialBasicKickBody trialBasicKick;
@@ -730,6 +731,8 @@ namespace Olca.Presentation.Field
             var bounds=playerSprite.bounds;
             var position=new Vector3(bounds.center.x,bounds.max.y+.2f,bounds.center.z-.5f);
             worldDamageNumberPool?.ShowFeedback(feedback,position,playerDamageCts.Token,damageTrackedPlayer);
+            if(feedback.Kind==CombatFeedbackKind.BarrierDamage && currentBattle!=null)
+                (barrierImpact??(barrierImpact=new Olca.Presentation.Effects.BattleBarrierImpactVisual())).Notify(currentBattle);
             if(feedback.Kind!=CombatFeedbackKind.Damage)return;
             // 数値は各ヒット、点滅/倍率は同じ基準から更新して多段で累積させない。
             playerHitElapsed=0f;UpdatePlayerHitEffect(0f);
@@ -756,6 +759,7 @@ namespace Olca.Presentation.Field
 
         private void StopPlayerDamageFeedback(bool cancelNumbers=true)
         {
+            barrierImpact?.Clear();
             if(cancelNumbers){playerDamageCts?.Cancel();playerDamageCts?.Dispose();playerDamageCts=null;}
             if (playerHitElapsed >= 0f && playerSprite != null)
             {
@@ -785,6 +789,7 @@ namespace Olca.Presentation.Field
         private void OnDestroy()
         {
             DisposeBattleMoveCues();
+            barrierImpact?.Dispose();barrierImpact=null;
             basicKickVisual?.Dispose();basicKickVisual=null;
             RestoreTrialBody();trialBasicKick?.Dispose();trialBasicKick=null;trialFireBody?.Dispose();trialFireBody=null;
             ReleasePresentation();
@@ -879,6 +884,7 @@ namespace Olca.Presentation.Field
             UpdatePlayerHitEffect(Olca.Unity.BattleVisualClock.DeltaTime);
             basicKickVisual?.Bind(currentBattle);basicKickVisual?.Tick(currentBattle?.IsGameOver==true?Olca.Unity.GameplayPause.DeltaTime:Olca.Unity.BattleVisualClock.DeltaTime,basicChargeVisual);
             RefreshDefensiveField();
+            barrierImpact?.Render(playerSprite,currentBattle);
             RefreshConditionVisuals();
         }
 
@@ -1072,6 +1078,7 @@ namespace Olca.Presentation.Field
             UpdateEnemyViews();
             RefreshVisitVisuals();
             RefreshDefensiveField();
+            barrierImpact?.Render(playerSprite,currentBattle);
             RefreshConditionVisuals();
         }
 
@@ -1111,6 +1118,7 @@ namespace Olca.Presentation.Field
                 RenderBattleMoveCues(movement.IsNormalMoving&&!currentBattle.Player.IsDead,movement.NormalMoveProgress,battleGridView.GridIndexToWorldX(movement.NormalMoveFrom.X),battleGridView.GridIndexToWorldX(movement.NormalMoveTo.X));
             }else ClearBattleMoveCues();
             RefreshDefensiveField();
+            barrierImpact?.Render(playerSprite,currentBattle);
             RefreshConditionVisuals();
         }
 
