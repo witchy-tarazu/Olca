@@ -252,6 +252,108 @@ namespace Olca.Tests
                 int hp=s.TrialTarget.CurrentHp;Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<8;n++)s.TickTraversal(0);Assert.Less(s.TrialTarget.CurrentHp,hp);Assert.AreEqual(100,s.Player.CurrentHp);
             }
         }
+        private static OutsideExplorationSession Slime432(bool contact=false)
+        {
+            if(!contact)return AnnexSword346(x:21);
+            var s=new OutsideExplorationSession(trialContactDamage:true);s.TryConfigureTraversal(OutsideTraversalProfile.ValidationWall(true));s.TryInitializePlayer(()=>new PlayerCharacter(100));s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);Goblin431Position(s,21*60000);return s;
+        }
+        private static void Slime432Flight(OutsideExplorationSession s,int age)
+        {
+            using(var l=s.AttachPresentation()){Assert.IsTrue(l.StartSlimeTrial());s.TickTraversal(0);for(int n=0;n<30+age;n++)s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Flight,l.SlimeTrial.Phase);Assert.AreEqual(age,l.SlimeTrial.Age);}
+        }
+        [Test] public void Slime432着地点を固定して同じ整数軌道で上昇下降し着地からだけ硬直に入る()
+        {
+            using(var s=Slime432())using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartSlimeTrial());s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Squash,l.SlimeTrial.Phase);Assert.AreEqual(21*60000,l.SlimeTrial.LandingX);Goblin431Position(s,23*60000);
+                for(int n=0;n<30;n++)s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Flight,l.SlimeTrial.Phase);Assert.AreEqual(0,l.FirstTargetHeight);Assert.AreEqual(1350000,l.FirstTargetX);
+                for(int n=0;n<18;n++)s.TickTraversal(0);Assert.AreEqual(OutsideSlimeTrialData.Peak,l.FirstTargetHeight);Assert.AreEqual(1305000,l.FirstTargetX);Assert.AreEqual(21*60000,l.SlimeTrial.LandingX);
+                for(int n=0;n<17;n++)s.TickTraversal(0);Assert.Greater(l.FirstTargetHeight,0);Assert.AreEqual(OutsideSlimePhase.Flight,l.SlimeTrial.Phase);s.TickTraversal(0);Assert.AreEqual(0,l.FirstTargetHeight);Assert.AreEqual(21*60000,l.FirstTargetX);Assert.AreEqual(OutsideSlimePhase.Recovery,l.SlimeTrial.Phase);Assert.AreEqual(100,s.Player.CurrentHp);
+                for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Recovery,l.SlimeTrial.Phase);s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Idle,l.SlimeTrial.Phase);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Slime432着地の一打は待機で受け高い足元なら回避し硬直中に連打しない(bool air)
+        {
+            using(var s=Slime432()){
+                Slime432Flight(s,35);using(var l=s.AttachPresentation()){
+                    Assert.AreEqual(100,s.Player.CurrentHp);if(air)Goblin431Position(s,s.Core.Position,180000);s.TickTraversal(0);Assert.AreEqual(air?100:90,s.Player.CurrentHp);Assert.AreEqual(OutsideSlimePhase.Recovery,l.SlimeTrial.Phase);if(air)Goblin431Position(s,s.Core.Position,0);int hp=s.Player.CurrentHp;for(int n=0;n<59;n++)s.TickTraversal(0);Assert.AreEqual(hp,s.Player.CurrentHp);
+                }
+            }
+        }
+        [Test] public void Slime432予定地点から退いて着地を待ち硬直へソード反撃できる()
+        {
+            using(var s=Slime432()){
+                Slime432Flight(s,0);using(var l=s.AttachPresentation()){
+                    Goblin431Position(s,19*60000);for(int n=0;n<36;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(OutsideSlimePhase.Recovery,l.SlimeTrial.Phase);
+                    Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<8;n++)s.TickTraversal(0);Assert.Less(s.TrialTarget.CurrentHp,120);Assert.AreEqual(100,s.Player.CurrentHp);
+                }
+            }
+        }
+        [Test] public void Slime432空中の実位置は接触にも使い頭より上なら床の接触を作らない()
+        {
+            using(var s=Slime432(true)){
+                Slime432Flight(s,18);using(var l=s.AttachPresentation()){
+                    Goblin431Position(s,l.FirstTargetX);s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);Goblin431Position(s,l.FirstTargetX,180000);s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);
+                }
+                var runtime=s.CaptureRuntime(null);Assert.AreEqual(s.Core.Frame+60,runtime.TrialContact.NextFrame);Assert.AreEqual(0,runtime.TrialContact.SecondNextFrame);
+            }
+        }
+        [Test] public void Slime432地上ソードは跳躍頂点近くの敵に床の判定を作らない()
+        {
+            using(var s=Slime432()){
+                Slime432Flight(s,18);using(var l=s.AttachPresentation()){
+                    Goblin431Position(s,l.FirstTargetX-2*60000);Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<8;n++)s.TickTraversal(0);Assert.Greater(l.FirstTargetHeight,90000);Assert.AreEqual(120,s.TrialTarget.CurrentHp);Assert.IsFalse(s.TrialStrike.Hit);
+                }
+            }
+        }
+        [TestCase(1)][TestCase(20)][TestCase(31)][TestCase(49)][TestCase(67)][TestCase(82)]
+        public void Slime432途中保存は整数軌道と一回限りの着地打撃を厳密復元する(int ticks)
+        {
+            using(var s=Slime432())using(var cold=new OutsideExplorationSession()){
+                var defs=Door239Definitions(s);using(var l=s.AttachPresentation()){Assert.IsTrue(l.StartSlimeTrial());for(int n=0;n<ticks;n++)s.TickTraversal(0);}
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;var round=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime));Assert.IsTrue(cold.RestoreSavedState(actor,round,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));
+                Assert.IsNotNull(runtime.ForRun(Guid.NewGuid().ToString("N")).SlimeTrial);
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<150;n++){
+                    Assert.AreEqual(a.FirstTargetX,b.FirstTargetX);Assert.AreEqual(a.FirstTargetHeight,b.FirstTargetHeight);Assert.AreEqual(a.SlimeTrial.Phase,b.SlimeTrial.Phase);Assert.AreEqual(a.SlimeTrial.Age,b.SlimeTrial.Age);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);s.TickTraversal(0);cold.TickTraversal(0);
+                }
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)][TestCase(5)][TestCase(6)][TestCase(7)]
+        public void Slime432不正な位相や別AIの同時保存を採用前に拒否する(int kind)
+        {
+            using(var s=Slime432())using(var cold=new OutsideExplorationSession()){
+                var defs=Door239Definitions(s);using(var l=s.AttachPresentation())Assert.IsTrue(l.StartSlimeTrial());var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                if(kind==0)runtime.SlimeTrial.Age=1;if(kind==1)runtime.SlimeTrial.LandingX=24*60000;if(kind==2)runtime.SlimeTrial.DefinitionId="unknown";if(kind==3)runtime.GoblinTrial=new OutsideGoblinTrialData{X=1350000};if(kind==4)runtime.TrialEnemyAttack=new OutsideTrialEnemyAttackData{NextFrame=s.Core.Frame+60};if(kind==5)runtime.SlimeTrial.DeadHeight=1;if(kind==6)runtime.SlimeTrial.LandingX=20*60000;if(kind==7){runtime.SlimeTrial.Phase=OutsideSlimePhase.Recovery;runtime.SlimeTrial.LandingX=20*60000;}
+                Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,runtime,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));Assert.IsNull(cold.Player);
+            }
+        }
+        [Test] public void Slime432空中撃破は死位置と高さを保ち着地攻撃を出さない()
+        {
+            using(var s=Slime432()){
+                Slime432Flight(s,18);long x,y;using(var l=s.AttachPresentation()){x=l.FirstTargetX;y=l.FirstTargetHeight;s.TrialTarget.TakeDamage(120,ElementType.None);s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Dead,l.SlimeTrial.Phase);Assert.AreEqual(x,l.FirstTargetX);Assert.AreEqual(y,l.FirstTargetHeight);for(int n=0;n<60;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);}
+                Assert.DoesNotThrow(()=>s.CaptureRuntime(Door239Definitions(s)));
+            }
+        }
+        [Test] public void Slime432着地と同Tickのソード撃破は着地打撃を取り消す()
+        {
+            using(var s=Slime432()){
+                int power=s.Cards.SelectedCard.GetFinalPower(s.Player.AttackPower);s.TrialTarget.TakeDamage(120-power,ElementType.None);Slime432Flight(s,28);
+                using(var l=s.AttachPresentation()){Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<7;n++)s.TickTraversal(0);Assert.IsFalse(s.TrialTarget.IsDead);s.TickTraversal(0);Assert.IsTrue(s.TrialTarget.IsDead);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(OutsideSlimePhase.Dead,l.SlimeTrial.Phase);}
+            }
+        }
+        [Test] public void Slime432壁を跨ぐ跳躍は始めず既存の枠と他AIを保つ()
+        {
+            using(var s=AnnexSword346(x:20,wallX:21*60000))using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartSlimeTrial());Assert.IsFalse(l.StartGoblinTrial());Assert.IsFalse(s.SetTrialEnemyAttack(true));for(int n=0;n<150;n++)s.TickTraversal(0);Assert.AreEqual(OutsideSlimePhase.Idle,l.SlimeTrial.Phase);Assert.AreEqual(1350000,l.FirstTargetX);Assert.AreEqual(1560000,l.SecondTargetX);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
+        [Test] public void Slime432実接触の初回を着地と重ねると既存二経路の合計20を受ける()
+        {
+            using(var s=Slime432(true)){
+                Slime432Flight(s,0);using(var l=s.AttachPresentation()){Goblin431Position(s,19*60000);for(int n=0;n<35;n++)s.TickTraversal(0);Assert.AreEqual(100,s.Player.CurrentHp);Goblin431Position(s,21*60000);s.TickTraversal(0);Assert.AreEqual(80,s.Player.CurrentHp);Assert.AreEqual(OutsideSlimePhase.Recovery,l.SlimeTrial.Phase);}
+                var runtime=s.CaptureRuntime(null);Assert.AreEqual(s.Core.Frame+60,runtime.TrialContact.NextFrame);Assert.AreEqual(0,runtime.TrialContact.SecondNextFrame);
+            }
+        }
         private static OutsideExplorationSession AnnexSword346(string id="sword",int x=20,int facing=1,bool air=false,long wallBottom=0,long wallTop=60000000,long wallX=24*60000,int stagger=0)
         {
             var s=new OutsideExplorationSession();var p=OutsideTraversalProfile.ValidationWall(true);
