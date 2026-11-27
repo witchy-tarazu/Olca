@@ -570,14 +570,14 @@ namespace Olca.Application.Dungeon
         private bool pairOpening445,pairPaused445;private long pairEpoch445;
         private bool PairRequestCurrent445(long epoch,object owner,Olca.Application.Management.OutsideExplorationPresentationBinding binding,Olca.Core.Logic.Integration.OutsideExplorationSession session)
             =>this!=null&&epoch==pairEpoch445&&ReferenceEquals(owner,gameSystemSession)&&ReferenceEquals(binding,pairBinding445)&&ReferenceEquals(session,pairSession445);
-        private async UniTask OpenPair445Async(bool retry=false,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<GameObject>> factory=null)
+        private async UniTask OpenPair445Async(bool retry=false,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<GameObject>> factory=null,int handVariant=0)
         {
             if(pairSession445!=null||pairOpening445||!CustomizationUiLive||!OutsideHubEligible||!retry&&outsideExploration?.View?.CanEnterPair445!=true)return;
             pairOpening445=true;var owner=gameSystemSession;long epoch=++pairEpoch445;
             Olca.Application.Management.OutsideExplorationPresentationBinding openingBinding=null;Olca.Core.Logic.Integration.OutsideExplorationSession openingSession=null;
             bool Current()=>PairRequestCurrent445(epoch,owner,openingBinding,openingSession);
             try{
-                openingSession=pairSession445=Olca.Core.Logic.Integration.OutsideExplorationSession.CreatePairTrial445(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions);
+                openingSession=pairSession445=Olca.Core.Logic.Integration.OutsideExplorationSession.CreatePairTrial445(gameSystem.OutsideExploration,memoryCheckpoints?.Definitions,handVariant);
                 pairRuntime445=new Olca.Application.Management.OutsideExplorationRuntime(pairSession445);pairPaused445=false;
                 var services=gameSystem;var font=panelFactory.GameplayFont;
                 openingBinding=pairBinding445=new Olca.Application.Management.OutsideExplorationPresentationBinding(services.Views,pairSession445,
@@ -587,7 +587,7 @@ namespace Olca.Application.Dungeon
                 var result=await openingBinding.OpenAsync();
                 if(!Current())return;
                 if(!result.Succeeded)throw new System.InvalidOperationException(result.Error??"連戦試用を開けませんでした");
-                pairBinding445.View.ConfigurePairControls445(()=>RestartPair445(),()=>pairPaused445=!pairPaused445,()=>PairStatus445());
+                pairBinding445.View.ConfigurePairControls445(()=>RestartPair445(),()=>pairPaused445=!pairPaused445,()=>PairStatus445(),()=>RestartPair445((pairSession445.PairHandVariant445+1)%3));
                 pairBinding445.View.ConfigureCombatFeedback(gameFieldView!=null?gameFieldView.FeedbackNumberStyle:null);pairBinding445.ResetInputForFocus(applicationFocused);
             }catch(System.Exception e)when(e is System.ArgumentException||e is System.InvalidOperationException||e is System.OperationCanceledException){
                 if(!Current())return;ReleasePair445();if(ReferenceEquals(owner,gameSystemSession)&&CustomizationUiLive){logger?.LogWarning("連戦試用: "+e.Message);ReturnPair445Async().Forget();}
@@ -597,14 +597,14 @@ namespace Olca.Application.Dungeon
         {
             var s=pairSession445;if(s==null)return "";
             string state=s.Player.IsDead?"HP0 / モウイチド":s.PairCompleted445?"2タイ ゲキハ / モウイチド・モドる":pairPaused445?"テイシチュウ":s.PairIntermissionRemaining445>0?"ゴブリン ゲキハ / ツギは スライム":s.PairStage445==1?"1/2 ゴブリン / カードを ツカうか ノコす":"2/2 スライム / チャクチを ヨム";
-            return state+"  |  ノコリ "+(s.Cards.Hand.Count+s.Cards.RemainingCount)+"マイ / ホゾン・ホウシュウなし";
+            return "テフダ "+(s.PairHandVariant445==0?"キホン":s.PairHandVariant445==1?"A":"B")+" / ベツテフダで ハジメカラ・モウイチドは キホン\n"+state+"  |  ノコリ "+(s.Cards.Hand.Count+s.Cards.RemainingCount)+"マイ / ホゾン・ホウシュウなし";
         }
         private void ReleasePair445()
         {
             pairEpoch445++;var binding=pairBinding445;var runtime=pairRuntime445;var session=pairSession445;pairBinding445=null;pairRuntime445=null;pairSession445=null;pairPaused445=false;pairOpening445=false;
             binding?.Dispose();runtime?.Dispose();session?.Dispose();
         }
-        private void RestartPair445(){if(pairOpening445||pairSession445==null)return;ReleasePair445();OpenPair445Async(true).Forget();}
+        private void RestartPair445(int handVariant=0){if(pairOpening445||pairSession445==null)return;ReleasePair445();OpenPair445Async(true,handVariant:handVariant).Forget();}
         private async UniTask ReturnPair445Async()
         {
             ReleasePair445();if(!CustomizationUiLive||!OutsideHubEligible||outsideExploration==null)return;

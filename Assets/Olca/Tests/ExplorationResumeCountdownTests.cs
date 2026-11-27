@@ -36,6 +36,45 @@ namespace Olca.Tests
                 Assert.AreEqual(originalCards,source.Cards.CaptureState(defs).Key());CollectionAssert.AreEqual(originalCore,PortableCheckpointJson.Serialize(source.Core.CaptureState()));var afterActor=OutsidePlayerSaveData.Capture(source.Player);afterActor.Id=originalActor.Id;Assert.AreEqual(originalActor.Key(),afterActor.Key(),"新しい捕捉操作のGUID以外の親個体データは不変");Assert.AreEqual(120,source.TrialTarget.MaxHp);
             }
         }
+        [TestCase(1,false)][TestCase(2,false)][TestCase(2,true)]
+        public void 連戦446は別初手でも予告を待つ通常攻撃とカードで二体を完走し親を保つ(int variant,bool spendFirst)
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6)){
+                var defs=Kick214Definitions(source);var originalCards=source.Cards.CaptureState(defs).Key();var originalCore=PortableCheckpointJson.Serialize(source.Core.CaptureState());var originalActor=OutsidePlayerSaveData.Capture(source.Player);
+                using(var trial=OutsideExplorationSession.CreatePairTrial445(source,defs,variant))using(var lease=trial.AttachPresentation()){
+                    Assert.AreEqual(1,trial.PairStage445);Assert.AreEqual(30,trial.TrialTarget.MaxHp);Assert.IsTrue(trial.SecondTrialTarget.IsDead);Assert.IsFalse(trial.IsDeckEditingLocation);Assert.AreNotSame(source.Player,trial.Player);Assert.AreNotSame(source.Cards,trial.Cards);
+                    int index=trial.Cards.Hand.ToList().FindIndex(c=>TrialInitialCardDefinitions.IsShot(c.Id));Assert.AreEqual(variant==2,index>=0);if(index>=0)trial.Cards.TrySelect(index);var held=index>=0?trial.Cards.SelectedCard:null;
+                    void Tick(float move=0){trial.TickTraversal(move);}
+                    void Fire(){Assert.IsTrue(trial.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);}
+                    if(spendFirst){Fire();for(int n=0;n<90&&trial.TrialTarget.CurrentHp==30;n++)Tick();Assert.AreEqual(20,trial.TrialTarget.CurrentHp);Assert.AreEqual(29,trial.Cards.Hand.Count+trial.Cards.RemainingCount);Assert.IsFalse(trial.Cards.Hand.Contains(held));}
+                    for(int n=0;n<600&&trial.PairStage445==1;n++){
+                        var before=lease.GoblinTrial;float move=before?.Phase==OutsideGoblinPhase.Windup?-1:before?.Phase==OutsideGoblinPhase.Recovery&&trial.FirstTrialTargetX-trial.Core.Position>162000?1:0;Tick(move);var g=lease.GoblinTrial;
+                        if(g!=null&&g.Phase==OutsideGoblinPhase.Recovery&&!trial.TrialTarget.IsDead&&Math.Abs(trial.Core.Position-trial.FirstTrialTargetX)<=OutsideKickTrialDefinition.Range&&trial.CanPerformAttack)trial.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out _);
+                    }
+                    Assert.AreEqual(2,trial.PairStage445);Assert.IsNotNull(lease.SlimeTrial);Assert.IsNull(lease.GoblinTrial);Assert.AreEqual(30,trial.TrialTarget.CurrentHp);Assert.Greater(trial.FirstTrialTargetX,24*60000);Assert.AreEqual(spendFirst?29:30,trial.Cards.Hand.Count+trial.Cards.RemainingCount);Assert.AreEqual(0,trial.InitialShots.Count);Assert.AreEqual(0,trial.Bombs.Count);
+                    if(held!=null&&!spendFirst){Assert.IsTrue(trial.Cards.Hand.Contains(held));for(int n=0;n<60&&trial.Core.Position<20*60000;n++)Tick(1);trial.Cards.TrySelect(trial.Cards.Hand.ToList().IndexOf(held));Fire();for(int n=0;n<90&&trial.TrialTarget.CurrentHp==30;n++)Tick();Assert.AreEqual(20,trial.TrialTarget.CurrentHp);}
+                    for(int n=0;n<1000&&!trial.PairCompleted445&&!trial.Player.IsDead;n++){
+                        Tick(trial.Core.Position<23*60000?1:0);var slime=lease.SlimeTrial;
+                        if(slime!=null&&slime.Phase==OutsideSlimePhase.Recovery&&trial.CanPerformAttack&&Math.Abs(trial.Core.Position-trial.FirstTrialTargetX)<=OutsideKickTrialDefinition.Range)trial.ProcessAttackInput(new LogicalInput{BasicAttackButtonDown=true},false,true,true,out _);
+                    }
+                    Assert.IsTrue(trial.PairCompleted445);Assert.AreEqual(100,trial.Player.CurrentHp,"振りを避け、着地の外から反撃する");Assert.IsFalse(trial.Player.IsDead);Assert.AreEqual(held==null?30:29,trial.Cards.Hand.Count+trial.Cards.RemainingCount);Assert.AreEqual(6000,trial.Core.CardGauge.CurrentUnits);
+                }
+                Assert.AreEqual(originalCards,source.Cards.CaptureState(defs).Key());CollectionAssert.AreEqual(originalCore,PortableCheckpointJson.Serialize(source.Core.CaptureState()));var afterActor=OutsidePlayerSaveData.Capture(source.Player);afterActor.Id=originalActor.Id;Assert.AreEqual(originalActor.Key(),afterActor.Key(),"新しい捕捉操作のGUID以外の親個体データは不変");Assert.AreEqual(120,source.TrialTarget.MaxHp);
+            }
+        }
+        [Test] public void 連戦446は明示した三手札だけを通常30枚シャッフルし既定と親RNGを維持する()
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6)){
+                var defs=Kick214Definitions(source);string original=source.Cards.CaptureState(defs).Key();
+                var hands=new[]{new[]{TrialInitialCardDefinitions.AirShot,"sword","heal"},new[]{TrialInitialCardDefinitions.Spear,"shield","sword"},new[]{TrialInitialCardDefinitions.Spear,TrialInitialCardDefinitions.Shot,"shield"}};
+                for(int variant=0;variant<3;variant++)using(var a=OutsideExplorationSession.CreatePairTrial445(source,defs,variant))using(var b=OutsideExplorationSession.CreatePairTrial445(source,defs,variant)){
+                    Assert.AreEqual(variant,a.PairHandVariant445);CollectionAssert.AreEqual(hands[variant],a.Cards.Hand.Select(c=>c.Id));Assert.AreEqual(30,a.Cards.TotalCount);Assert.AreEqual(a.Cards.CaptureState(defs).Key(),b.Cards.CaptureState(defs).Key());Assert.Throws<InvalidOperationException>(()=>a.CaptureRuntime(defs));
+                }
+                using(var a=OutsideExplorationSession.CreatePairTrial445(source,defs))CollectionAssert.AreEqual(hands[0],a.Cards.Hand.Select(c=>c.Id));
+                Assert.Throws<ArgumentOutOfRangeException>(()=>OutsideExplorationSession.CreatePairTrial445(source,defs,-1));Assert.Throws<ArgumentOutOfRangeException>(()=>OutsideExplorationSession.CreatePairTrial445(source,defs,3));Assert.AreEqual(original,source.Cards.CaptureState(defs).Key());
+            }
+        }
+
         [Test] public void 連戦445の撃破間隔は60論理frameでHPと手札を補充せずゲージを通常回復だけ進める()
         {
             using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var trial=OutsideExplorationSession.CreatePairTrial445(source,Kick214Definitions(source)))using(var lease=trial.AttachPresentation()){

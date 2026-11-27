@@ -1716,23 +1716,25 @@ namespace Olca.Core.Logic.Integration
     {
         public const string PairDefinition445="trial-pair-goblin-slime-v1";
         public int PairStage445 {get;private set;}
+        public int PairHandVariant445 {get;private set;}
         public bool PairCompleted445 {get;private set;}
         private long pairClearedAt445=-1;
         public long PairIntermissionRemaining445=>pairClearedAt445<0?0:Math.Max(0,60-(Core.Frame-pairClearedAt445));
         /// <summary>通常個体とRNGを変更しない、保存不可の連戦コピー。カードの使用/補充は既存Sessionに一任する。</summary>
-        public static OutsideExplorationSession CreatePairTrial445(OutsideExplorationSession source,CheckpointDefinitions definitions)
+        public static OutsideExplorationSession CreatePairTrial445(OutsideExplorationSession source,CheckpointDefinitions definitions,int handVariant=0)
         {
             if(source==null||source.IsEnded||source.Player==null||source.Player.IsDead||source.Cards==null||definitions==null)throw new ArgumentException("連戦には通常の生存個体と登録デッキが必要です");
+            if(handVariant<0||handVariant>2)throw new ArgumentOutOfRangeException(nameof(handVariant));
             var actor=OutsidePlayerSaveData.Capture(source.Player).Restore();
             var copy=OutsideExplorationCards.RestoreState(source.Cards.CaptureState(definitions),definitions);
             // 同じ30枚の構成を試用開始時だけ通常シャッフル。親の手札/RNGや使用済み履歴は変えない。
             var all=Enumerable.Range(0,copy.TotalCount).Select(copy.ActionCard).OrderBy(c=>c.Id,StringComparer.Ordinal).ThenBy(c=>c.ExceedLevel).ToArray();
             var owned=all.GroupBy(c=>(c.Id,c.ExceedLevel)).ToDictionary(g=>g.Key,g=>g.Count());
             if(!DepartureDeckRules.TryCreateForSize(all,owned,ExplorationDeckRules.RequiredCards,out var deck,out var failure))throw new ArgumentException(failure);
-            var random=new Olca.Core.Logic.Battle.SeededBattleRandom(446);deck.Shuffle(random);var cards=new OutsideExplorationCards(deck,random);
+            var random=new Olca.Core.Logic.Battle.SeededBattleRandom(handVariant==1?445u:handVariant==2?447u:446u);deck.Shuffle(random);var cards=new OutsideExplorationCards(deck,random);
             var trial=new OutsideExplorationSession(true);
             try{
-                trial.TryInitializePlayer(()=>actor);trial.Cards=cards;trial.PairStage445=1;
+                trial.TryInitializePlayer(()=>actor);trial.Cards=cards;trial.PairStage445=1;trial.PairHandVariant445=handVariant;
                 var original=source.Core.TraversalProfile??OutsideTraversalProfile.ValidationDash;
                 var flat=new OutsideTraversalProfile(PairDefinition445+"-geometry",original.DashSpeedPerSecond,original.DashFrames,original.DashCooldownFrames,original.DashResetFrames,original.DashJumpSpeedPerSecond,original.BodyHalfWidth,original.BodyHeight,original.WallSlidePerFrame,original.WallKickVelocity,original.WallKickSpeedPerSecond,original.WallKickPushFrames,original.WallKickMotionFrames,original.WallActionsUnlocked);
                 trial.TryConfigureTraversal(original.DoubleJumpUnlocked?flat.WithDoubleJump(flat.Id):flat);
