@@ -731,3 +731,58 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonMixed462Tests
+    {
+        private static FloorSequenceDefinitions Route(out SimpleCardFactory cards,out CheckpointDefinitions legacy)
+        {cards=new SimpleCardFactory();legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;return DungeonCoreFactory.CreateTrialMixed462(legacy,cards,new EnemyPoiseDefinition(30,18,180));}
+        private static BattleSystem Battle(out PlayerCharacter p,out Enemy rear,out Enemy front,int column=2)
+        {
+            p=new PlayerCharacter(1000,new Vector2Int(column,0));rear=new Enemy("boss",DungeonMixedPriority462.RearName,40,ElementType.None,new Vector2Int(4,0));front=new Enemy(DungeonMixedPriority462.FrontId,DungeonMixedPriority462.FrontName,50,ElementType.None,new Vector2Int(3,0),poiseDefinition:new EnemyPoiseDefinition(30,18,180));
+            return new BattleSystem(p,new System.Collections.Generic.List<Enemy>{rear,front},new Deck(),customGaugeSpeed:0,cardDatabase:new SimpleCardFactory(),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());
+        }
+        private static long Units462(BattleSystem b)=>(long)typeof(BattleSystem).GetProperty("ActionPresentationTimeUnits",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(b);
+        private static void Frames(BattleSystem b,int count){for(int n=0;n<count;n++)b.TickFrame(17);}
+        [Test] public void 混成462は独立した任意出撃で旧定義と保存を保ち通常接触で二体が参加する()
+        {
+            var route=Route(out var cards,out var legacy);var normal=new EnemyPoiseDefinition(30,18,180);string old=DungeonCoreFactory.CreateTrialPairRoute447(legacy,cards,normal).RouteHash;var map=route.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();Assert.AreEqual(DungeonCoreFactory.TrialMixedRoute462,route.RouteId);Assert.AreEqual(1,route.FloorCount);Assert.AreEqual(2,map.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonMixedPriority462.IsRear(map.MapCells[3].Enemy));Assert.IsTrue(DungeonMixedPriority462.IsFront(map.MapCells[4].Enemy));Assert.AreNotEqual(old,route.RouteHash);Assert.AreEqual(old,DungeonCoreFactory.CreateTrialPairRoute447(legacy,cards,normal).RouteHash);
+            var go=new UnityEngine.GameObject("Mixed462Entry");go.SetActive(false);try{var c=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();c.ConfigureDungeonSelection(new[]{DungeonCoreFactory.CreateTrialSequence456(legacy,cards,normal),route});Assert.IsTrue((bool)c.GetType().GetMethod("DungeonUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(c,new object[]{1}));}finally{UnityEngine.Object.DestroyImmediate(go);}
+            var provider=DungeonCoreFactory.CreateTrialCardEnemyAI();Assert.IsNull(provider.Create(new Enemy("boss",DungeonMixedPriority462.RearName,60,ElementType.None,new Vector2Int(4,0)),cards));Assert.IsNull(provider.Create(new Enemy("boss","ボス",40,ElementType.None,new Vector2Int(4,0)),cards));Assert.IsNull(provider.Create(new Enemy(DungeonMixedPriority462.FrontId,DungeonMixedPriority462.FrontName,51,ElementType.None,new Vector2Int(3,0)),cards));Assert.IsNull(provider.Create(new Enemy("boss",DungeonMixedPriority462.RearName,40,ElementType.None,new Vector2Int(4,0),isSummoned:true),cards));
+            var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(462),new UnityLogger(),()=>cards,enemies:provider);var core=factory.Create(new DungeonCoreFactory.Launch{Map=map,Player=new PlayerCharacter(100),Deck=cards.CreateStarterDeck(),Checkpoints=cp});Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsTrue(DungeonMixedPriority462.IsRear(restored.Map.MapCells[3].Enemy));
+            for(int n=0;n<1200&&core.CurrentBattle==null;n++)core.TickFrame(17);var battle=core.CurrentBattle;Assert.IsNotNull(battle);Assert.AreEqual(2,battle.Enemies.Count);Assert.AreEqual(1,battle.Player.GridPosition.X);Assert.AreEqual(3,battle.Enemies.Single(DungeonMixedPriority462.IsFront).GridPosition.X);Assert.AreEqual(4,battle.Enemies.Single(DungeonMixedPriority462.IsRear).GridPosition.X);
+        }
+        [TestCase(false,0)][TestCase(true,0)][TestCase(false,600)][TestCase(true,600)] public void 混成462は実登録の二つの固定予告を通常瞬間移動で避け反撃できる(bool dodge,int invincibilityMs)
+        {
+            var b=Battle(out var p,out var rear,out var front);b.ConfigureDefaultHitInvincibility(invincibilityMs);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out var tile,out _,out var total));Assert.AreEqual(24,total);Assert.IsTrue(b.TryGetEnemyAttackPreview(rear,out var other,out _,out total));Assert.AreEqual(30,total);Assert.AreEqual(tile,other);Assert.AreEqual(new Vector2Int(2,0),tile);
+            if(dodge)Assert.IsTrue(b.PlayerMovement.TryStartNormalMove(new Vector2Int(-1,0),b.Enemies.ToList()));Frames(b,30);Assert.AreEqual(dodge?1000:invincibilityMs==0?960:970,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);
+            if(dodge){Assert.IsTrue(b.PlayerMovement.TryStartNormalMove(new Vector2Int(1,0),b.Enemies.ToList()));Frames(b,9);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{new SimpleCardFactory().CreateById(SimpleCardFactory.Sword)});Assert.IsTrue(b.UseCurrentCard());Frames(b,2);Assert.AreEqual(20,front.CurrentHp);Assert.AreEqual(40,rear.CurrentHp);}
+        }
+        [Test] public void 混成462はソードで前衛をよろけさせても後衛の固定予告を消さない()
+        {
+            var b=Battle(out var p,out var rear,out var front);front.TakeDamage(1,ElementType.None,poiseDamage:15);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out _,out _,out _));b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{new SimpleCardFactory().CreateById(SimpleCardFactory.Sword)});Assert.IsTrue(b.UseCurrentCard());Frames(b,2);Assert.AreEqual(19,front.CurrentHp);Assert.IsTrue(front.IsStaggered);Assert.IsFalse(b.TryGetEnemyAttackPreview(front,out _,out _,out _));Assert.IsTrue(b.TryGetEnemyAttackPreview(rear,out var target,out _,out _));Assert.Contains(target,b.EnemyAttackTiles.ToList());
+        }
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)] public void 混成462はCustomと通常停止で両予告と全時計を停止する(BattlePauseReason reason)
+        {
+            var b=Battle(out var p,out var rear,out var front);b.TickFrame(17);Frames(b,9);Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out var target,out var age,out _));var frame=b.LogicalFrame;var units=Units462(b);b.Pause(reason);Frames(b,120);Assert.AreEqual(frame,b.LogicalFrame);Assert.AreEqual(units,Units462(b));Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out var same,out var elapsed,out _));Assert.AreEqual(target,same);Assert.AreEqual(age,elapsed);Assert.IsTrue(b.TryGetEnemyAttackPreview(rear,out same,out elapsed,out _));Assert.AreEqual(age,elapsed);Assert.AreEqual(1000,p.CurrentHp);b.Resume(reason);
+        }
+        [TestCase(false)][TestCase(true)] public void 混成462は重なる予告の片方を倒しても他方の印を消さない(bool rearFirst)
+        {
+            var b=Battle(out var p,out var rear,out var front);b.TickFrame(17);Assert.AreEqual(1,b.EnemyAttackTiles.Count);(rearFirst?rear:front).TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.Contains(new Vector2Int(2,0),b.EnemyAttackTiles.ToList());Assert.IsTrue(b.TryGetEnemyAttackPreview(rearFirst?front:rear,out _,out _,out _));(rearFirst?front:rear).TakeDamage(10000,ElementType.None);b.TickFrame(17);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+        [TestCase(false)][TestCase(true)] public void 混成462は既存ソードなら前衛だけボムなら後衛を先に撃破する(bool bomb)
+        {
+            var b=Battle(out var p,out var rear,out var front,bomb?1:2);var cards=new SimpleCardFactory();var card=cards.CreateById(bomb?SimpleCardFactory.Bomb:SimpleCardFactory.Sword);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{card});Assert.IsTrue(b.UseCurrentCard());for(int n=0;n<120&&front.CurrentHp==50;n++)b.TickFrame(17);Assert.AreEqual(bomb?10:20,front.CurrentHp);Assert.AreEqual(bomb?0:40,rear.CurrentHp);Assert.AreEqual(bomb?40:30,card.GetFinalPower(p.AttackPower));
+        }
+        [TestCase(false)][TestCase(true)] public void 混成462はどちらの撃破順でも全員撃破後だけクリアし保存を復元できる(bool rearFirst)
+        {
+            var route=Route(out var cards,out _);var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(462),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());var manager=factory.Create(new DungeonCoreFactory.Launch{Map=route.CreateInitialMap(0),Player=new PlayerCharacter(100),Deck=cards.CreateStarterDeck(),Checkpoints=cp});manager.OnCardRewardPresented+=_=>manager.SelectCardReward(null);for(int n=0;n<1200&&manager.CurrentBattle==null;n++)manager.TickFrame(17);var b=manager.CurrentBattle;Assert.IsNotNull(b);if(b.CustomScreen.IsOpen){b.CustomScreen.Confirm();b.CustomScreen.Close();b.Resume(BattlePauseReason.CustomScreen);}var rear=b.Enemies.Single(DungeonMixedPriority462.IsRear);var front=b.Enemies.Single(DungeonMixedPriority462.IsFront);(rearFirst?rear:front).TakeDamage(10000,ElementType.None);manager.TickFrame(17);Assert.IsFalse(b.IsGameOver);Assert.IsFalse(manager.Dungeon.IsDungeonCleared);(rearFirst?front:rear).TakeDamage(10000,ElementType.None);
+            for(int n=0;n<2000&&manager.CurrentPhase!=GamePhase.DungeonCleared;n++){manager.TickFrame(17);if(manager.IsBattleEndPresentationPending)manager.CompleteBattleEndPresentation();if(manager.Dungeon.PendingCurrencyReward>0)manager.SelectCurrencyReward(true);if(manager.Dungeon.PendingItemReward!=null)manager.SelectItemReward(false);if(manager.CurrentPhase==GamePhase.Dungeon&&!manager.Dungeon.IsInBattle)manager.ResumeAfterBattle();}Assert.AreEqual(GamePhase.DungeonCleared,manager.CurrentPhase);Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsNull(restored.Map.MapCells[3].Enemy);Assert.IsNull(restored.Map.MapCells[4].Enemy);
+        }
+        [Test] public void 混成462の後衛だけが既存の弓素材を使い前衛と旧ボス表示を変えない()
+        {
+            var go=new UnityEngine.GameObject("Mixed462Art");try{var image=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,image);view.Initialize(new Enemy("boss",DungeonMixedPriority462.RearName,40,ElementType.None,new Vector2Int(4,0)));Assert.IsTrue(view.IsTrialArcher&&view.IsStepArcher&&view.IsBossGauge);view.RenderTrialArcher(true,20,1000);Assert.AreEqual(6*256,image.sprite.rect.x);view.Initialize(new Enemy(DungeonMixedPriority462.FrontId,DungeonMixedPriority462.FrontName,50,ElementType.None,new Vector2Int(3,0)));Assert.IsFalse(view.IsTrialArcher||view.IsBossGauge);view.Initialize(new Enemy("boss","ボス",200,ElementType.None,new Vector2Int(4,0)));Assert.IsFalse(view.IsTrialArcher);Assert.IsTrue(view.IsBossGauge);}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+    }
+}

@@ -99,9 +99,22 @@ namespace Olca.Application.Management
             private readonly IEnemyAIProvider fallback;
             public PairEnemyProvider447(IEnemyAIProvider fallback){this.fallback=fallback;}
             public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
-                =>DungeonFlyingDive455.Matches(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonFlyingDive455()},EnemyPatternEndMode.Loop)},0):DungeonStepArcherAction.IsPairTrialBoss(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
+            {
+                if(enemy?.EnemyId==DungeonMixedPriority462.FrontId)return DungeonMixedPriority462.IsFront(enemy)?DungeonMixedPriority462.FrontPattern():null;
+                return DungeonFlyingDive455.Matches(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonFlyingDive455()},EnemyPatternEndMode.Loop)},0):(DungeonStepArcherAction.IsPairTrialBoss(enemy)||DungeonMixedPriority462.IsRear(enemy))?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
+            }
         }
         // 階層間のHP・攻略デッキは既存契約で引き継ぐ。旧単体試用の定義を上書きしない。
+        public const string TrialMixedRoute462="trial-dungeon-mixed-priority-route-v1";
+        public static FloorSequenceDefinitions CreateTrialMixed462(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();var cells=new List<MapCell>();
+            for(int i=0;i<8;i++){
+                var enemy=i==3?new Enemy("boss",DungeonMixedPriority462.RearName,DungeonMixedPriority462.RearHp,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):i==4?new Enemy(DungeonMixedPriority462.FrontId,DungeonMixedPriority462.FrontName,DungeonMixedPriority462.FrontHp,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):null;
+                cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+            }
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialMixedRoute462,"trial-dungeon-mixed-priority-v1",new[]{new DungeonConfig("trial-dungeon-mixed-priority-floor-v1","シヨウ ヨミアイ・ニタイ（カリ）",8,cells)},catalog);
+        }
         public const string TrialSequenceRoute456="trial-dungeon-pair-flying-route-v1";
         public static FloorSequenceDefinitions CreateTrialSequence456(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
         {

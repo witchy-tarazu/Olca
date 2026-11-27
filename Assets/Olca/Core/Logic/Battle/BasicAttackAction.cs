@@ -439,3 +439,16 @@ namespace Olca.Core.Logic.Battle
         public int GetCooldownMs()=>500;public float GetCooldown()=>.5f;
     }
 }
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>新IDの混成チェック専用。既存前衛/弓の定義を上書きしない。</summary>
+    public static class DungeonMixedPriority462
+    {
+        public const string FrontId="trial-dungeon-stance-front-v1",FrontName="カマエ スライム（カリ）",RearName="ヨミアイ ユミ（カリ）";
+        public const int FrontHp=50,RearHp=40,WindupFrames=24,StrikeDamage=30,RestMs=2000;
+        public static bool IsFront(Olca.Core.Domain.Enemy e)=>e!=null&&e.EnemyId==FrontId&&e.Name==FrontName&&e.MaxHp==FrontHp&&e.Element==Olca.Core.Domain.ElementType.None&&!e.IsSummoned;
+        public static bool IsRear(Olca.Core.Domain.Enemy e)=>e!=null&&e.EnemyId=="boss"&&e.Name==RearName&&e.MaxHp==RearHp&&e.Element==Olca.Core.Domain.ElementType.None&&!e.IsSummoned;
+        public static EnemyAIRegistration FrontPattern()=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new TelegraphedBasicAttackAction(WindupFrames,StrikeDamage,RestMs)},EnemyPatternEndMode.Loop)},0);
+    }
+}

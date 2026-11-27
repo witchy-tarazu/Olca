@@ -20,8 +20,8 @@ namespace Olca.Presentation.Battle
         private Olca.Unity.GeneratedSpriteAssets.Lease archerAssets;
         private bool archerWindup;
         private long archerReleaseAt=-1000,archerExpectedRelease;
-        public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId)||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy);
-        public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy);
+        public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId)||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy)||Olca.Core.Logic.Battle.DungeonMixedPriority462.IsRear(enemy);
+        public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy)||Olca.Core.Logic.Battle.DungeonMixedPriority462.IsRear(enemy);
         public bool IsTrialFlying455=>Olca.Core.Logic.Battle.DungeonFlyingDive455.Matches(enemy);
         private Vector3 flyOrigin455;private bool flyOriginKnown455;
         private Sprite FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454 phase,int age=0)
