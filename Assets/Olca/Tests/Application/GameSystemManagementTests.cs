@@ -857,6 +857,23 @@ namespace Olca.Tests.Application
             }
         }
 
+        [TestCase(1)][TestCase(-1)]
+        public async Task 壁接点461の実Viewは実接点から発射側へ短く描き時計と入力を変更しない(int facing)
+        {
+            var source=system.OutsideExploration;var defs=PairSource445(source);
+            using(var trial=Olca.Core.Logic.Integration.OutsideExplorationSession.CreateForestTrial460(source,defs)){
+                var state=trial.Core.CaptureState();state.Position=(facing==1?19:21)*60000;state.Facing=facing;typeof(Olca.Core.Logic.Integration.OutsideExplorationCore).GetMethod("RestoreState",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(trial.Core,new object[]{state});
+                Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+                using(var binding=new OutsideExplorationPresentationBinding(views,trial,factory,()=>true,()=>{},screenKey:"wall-contact461")){
+                    Assert.IsTrue((await binding.OpenAsync()).Succeeded);int index=trial.Cards.Hand.ToList().FindIndex(c=>Olca.Core.Domain.TrialInitialCardDefinitions.IsShot(c.Id));Assert.GreaterOrEqual(index,0);trial.Cards.TrySelect(index);Assert.IsTrue(trial.ProcessAttackInput(new Olca.Core.Logic.Integration.LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);
+                    for(int n=0;n<30&&trial.ShotWallContact461==null;n++)trial.TickTraversal(0);Assert.IsNotNull(trial.ShotWallContact461);binding.View.Render();var image=binding.View.transform.Find("OutsideShotWallContact461").GetComponent<Image>();Assert.IsTrue(image.enabled);Assert.IsFalse(image.raycastTarget);Assert.AreEqual(facing,image.rectTransform.localScale.x);Assert.AreEqual("trial_shot_wall_contact_461",image.sprite.name);var position=image.rectTransform.anchoredPosition;long frame=trial.Core.Frame;var core=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(trial.Core.CaptureState());
+                    for(int n=0;n<10;n++)binding.View.Render();Assert.AreEqual(frame,trial.Core.Frame);Assert.AreEqual(position,image.rectTransform.anchoredPosition);CollectionAssert.AreEqual(core,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(trial.Core.CaptureState()));
+                    for(int n=0;n<7;n++){trial.TickTraversal(0);binding.View.Render();Assert.IsTrue(image.enabled);}
+                    typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("ClearTrialSword",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(binding.View,null);Assert.IsFalse(image.enabled);Assert.IsNull(image.sprite);binding.View.Render();Assert.IsTrue(image.enabled);Assert.IsNotNull(image.sprite);Assert.AreEqual("trial_shot_wall_contact_461",image.sprite.name);
+                    Assert.IsTrue(binding.ReturnToHub());if(image!=null){Assert.IsFalse(image.enabled);Assert.IsNull(image.sprite);}Assert.IsTrue((await binding.OpenAsync()).Succeeded);binding.View.Render();image=binding.View.transform.Find("OutsideShotWallContact461").GetComponent<Image>();Assert.IsTrue(image.enabled);Assert.IsNotNull(image.sprite);trial.TickTraversal(0);binding.View.Render();Assert.IsFalse(image.enabled);
+                }
+            }
+        }
         [TestCase(1920,1080)][TestCase(1440,1080)]
         public async Task 森460の入口と別Viewは森を表示し施設と別試用を隠して親を保つ(int width,int height)
         {

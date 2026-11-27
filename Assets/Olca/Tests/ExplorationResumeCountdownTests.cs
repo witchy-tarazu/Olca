@@ -10,6 +10,18 @@ namespace Olca.Tests
 {
     public class ExplorationResumeCountdownTests
     {
+        [TestCase(1,false)][TestCase(-1,false)][TestCase(1,true)][TestCase(-1,true)]
+        public void 壁接点461は実際の遮蔽だけを記録し高さ外れと保存へ混ぜない(int facing,bool above)
+        {
+            using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var t=OutsideExplorationSession.CreateForestTrial460(source,Kick214Definitions(source)))using(var l=t.AttachPresentation()){
+                BombPosition289(t,(facing==1?19:21)*60000,facing,above?180000:0);int index=t.Cards.Hand.ToList().FindIndex(c=>TrialInitialCardDefinitions.IsShot(c.Id));Assert.GreaterOrEqual(index,0);t.Cards.TrySelect(index);
+                Assert.IsTrue(t.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<60;n++)t.TickTraversal(0);
+                Assert.AreEqual(29,t.Cards.Hand.Count+t.Cards.RemainingCount);Assert.AreEqual(30,t.TrialTarget.CurrentHp);
+                if(above)Assert.IsNull(l.ShotWallContact461);else{var hit=l.ShotWallContact461;Assert.IsNotNull(hit);Assert.AreEqual(20*60000,hit.X);Assert.AreEqual(72000,hit.Height);Assert.AreEqual(facing,hit.Facing);Assert.Greater(hit.Frame,0);Assert.Less(hit.Frame,t.Core.Frame);}
+                Assert.IsFalse(System.Text.Encoding.UTF8.GetString(PortableCheckpointJson.Serialize(t.Core.CaptureState())).Contains("ShotWallContact"));
+                t.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);Assert.IsNull(l.ShotWallContact461);
+            }
+        }
         [TestCase(false)][TestCase(true)] public void 森460は遮蔽で地上攻撃を止め空中射撃を通しジャンプで越せる(bool airborne)
         {
             using(var source=AnnexSword346(TrialInitialCardDefinitions.Shot,x:6))using(var t=OutsideExplorationSession.CreateForestTrial460(source,Kick214Definitions(source)))using(var l=t.AttachPresentation()){

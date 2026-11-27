@@ -946,7 +946,7 @@ namespace Olca.Presentation.Exploration
             }
         }
         private void ClearAuthoredHits(){foreach(var pulse in authoredHits){pulse.Enemy.OnCombatFeedback-=pulse.Handler;if(pulse.Image!=null){pulse.Image.enabled=false;if(Application.isPlaying)Destroy(pulse.Image.gameObject);else DestroyImmediate(pulse.Image.gameObject);}}authoredHits.Clear();}
-        private void ClearAuthoredVfx(){if(authoredSwordLight!=null){authoredSwordLight.enabled=false;authoredSwordLight.sprite=null;}authoredSwordLightClip?.ClearClip();ClearAuthoredHits();authoredVfxAssets?.Dispose();authoredVfxAssets=null;}
+        private void ClearAuthoredVfx(){if(shotWallContactImage461!=null){shotWallContactImage461.enabled=false;shotWallContactImage461.sprite=null;}if(authoredSwordLight!=null){authoredSwordLight.enabled=false;authoredSwordLight.sprite=null;}authoredSwordLightClip?.ClearClip();ClearAuthoredHits();authoredVfxAssets?.Dispose();authoredVfxAssets=null;}
         private void InitializeTrialSword(Font font,Olca.Presentation.Field.GameFieldView field){
             WarmAuthoredVfx();
             var body=new GameObject("OutsideTrialTarget",typeof(RectTransform),typeof(Image));body.transform.SetParent(transform,false);trialTargetImage=body.GetComponent<Image>();trialTargetImage.sprite=trialOriginalEnemy=field.AuthoredTrialEnemySprite;if(trialTargetImage.sprite==null)throw new InvalidOperationException("試用標的の既存素材がありません");trialTargetImage.raycastTarget=false;var rect=trialTargetImage.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(0,.21f);rect.pivot=trialTargetImage.sprite.pivot/trialTargetImage.sprite.rect.size;rect.sizeDelta=trialTargetImage.sprite.bounds.size*pixelsPerWorldUnit*.8f;rect.localScale=new Vector3(-1,1,1);
@@ -1049,9 +1049,20 @@ namespace Olca.Presentation.Exploration
             }else for(int i=-1;i<=1;i++)Part(Olca.Presentation.Field.SharedAttackPropCatalog.BlastImpact,blast.X/(float)OutsideMovementDefinition.UnitsPerWorldUnit+i,blast.Height/(float)OutsideMovementDefinition.UnitsPerWorldUnit+.38f,.9f,.35f,alpha,clip:clip);}
             for(int i=used;i<bombImages.Count;i++)if(bombImages[i]!=null)bombImages[i].enabled=false;
         }
+        private Image shotWallContactImage461;
+        /// <summary>壁の実接点だけへ8論理フレームの破片を描く。敵命中/高さ外れへ転用しない。</summary>
+        private void RenderShotWallContact461(float camera,float viewport,float verticalOffset)
+        {
+            var contact=presentation.ShotWallContact461;long age=contact==null?-1:presentation.Core.Frame-contact.Frame;
+            bool visible=age>=0&&age<8;
+            if(!visible){if(shotWallContactImage461!=null)shotWallContactImage461.enabled=false;return;}
+            if(shotWallContactImage461==null){var go=new GameObject("OutsideShotWallContact461",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);shotWallContactImage461=go.GetComponent<Image>();shotWallContactImage461.raycastTarget=false;shotWallContactImage461.rectTransform.anchorMin=shotWallContactImage461.rectTransform.anchorMax=new Vector2(0,.21f);}if(shotWallContactImage461.sprite==null){WarmAuthoredVfx();shotWallContactImage461.sprite=authoredVfxAssets.Get<Sprite>("ShotWallContact461",b=>{var t=b.CreateTexture(32,32);t.filterMode=FilterMode.Bilinear;var pixels=new Color32[1024];for(int y=0;y<32;y++)for(int x=0;x<32;x++){bool line=x>=5&&x<=24&&(Math.Abs(y-16-(24-x)/2)<=1||Math.Abs(y-16+(24-x)/2)<=1)||x>=12&&x<=24&&Math.Abs(y-16)<=1;if(line)pixels[y*32+x]=new Color32(222,195,155,255);}t.SetPixels32(pixels);t.Apply(false,true);var sprite=b.CreateSprite(t,new Rect(0,0,32,32),new Vector2(.75f,.5f),100);sprite.name="trial_shot_wall_contact_461";return sprite;});}
+            var image=shotWallContactImage461;image.enabled=true;image.color=new Color(1,1,1,1-age/8f);image.rectTransform.localScale=new Vector3(contact.Facing,1,1);image.rectTransform.sizeDelta=Vector2.one*(.45f+.15f*age/8f)*pixelsPerWorldUnit;image.rectTransform.anchoredPosition=new Vector2((contact.X/60000f-camera+viewport*.5f)*pixelsPerWorldUnit,(contact.Height/60000f-verticalOffset)*pixelsPerWorldUnit);
+        }
         private readonly List<Image> initialShotImages=new List<Image>();
         private TrialShotFlightMotion initialShotMotion;
         private void RenderInitialShots(float camera,float viewport,float verticalOffset){
+            RenderShotWallContact461(camera,viewport,verticalOffset);
             var shots=presentation.InitialShots;
             for(int i=0;i<shots.Count;i++){
                 if(i>=initialShotImages.Count){var go=new GameObject("TrialStraightShot",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var created=go.GetComponent<Image>();created.raycastTarget=false;created.color=new Color(.45f,.95f,1,.95f);created.rectTransform.anchorMin=created.rectTransform.anchorMax=new Vector2(0,.21f);initialShotImages.Add(created);}
