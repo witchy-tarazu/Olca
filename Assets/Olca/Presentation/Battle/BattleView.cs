@@ -40,6 +40,30 @@ namespace Olca.Presentation.Battle
         }
 
         private Text nextCardLabel, rangeGuideCaption;
+        private Text dashContactCue;
+        // 接敵の初撃だけを説明する。カードの命中・効果量や既存の時計は変更しない。
+        private void RefreshDashContactCue()
+        {
+            var start=battleSystem?.StartEffects;
+            bool visible=isActiveAndEnabled&&!customInspectionHidden&&battleSystem!=null&&!battleSystem.IsGameOver&&
+                start.Applied&&start.DashContact&&start.Effect==Olca.Core.Logic.Dungeon.ActionSystem.DashContactEffect.InitialDamage&&start.Value>0&&battleSystem.LogicalFrame<36;
+            if(!visible){ClearDashContactCue();return;}
+            if(dashContactCue==null){
+                var panel=new GameObject("DashContactCue448",typeof(RectTransform),typeof(Image));panel.transform.SetParent(transform,false);
+                var rect=(RectTransform)panel.transform;rect.anchorMin=rect.anchorMax=new Vector2(.75f,1);rect.pivot=new Vector2(.5f,1);rect.anchoredPosition=new Vector2(0,-220);rect.sizeDelta=new Vector2(360,90);
+                panel.GetComponent<Image>().raycastTarget=false;
+                dashContactCue=PresentationText("DashContactCueLabel",panel.transform,Vector2.zero,rect.sizeDelta,24);
+                dashContactCue.font=Resources.Load<Font>("OlcaUI/MenuText");dashContactCue.raycastTarget=false;dashContactCue.lineSpacing=1.2f;
+                var label=dashContactCue.rectTransform;label.anchorMin=Vector2.zero;label.anchorMax=Vector2.one;label.offsetMin=new Vector2(12,6);label.offsetMax=new Vector2(-12,-6);
+                dashContactCue.text="ダッシュ ショゲキ\n（カードとはベツ）";
+            }
+            // 初回カスタム・Pause・ヒットストップ中は同じ論理frameのまま。36frameで終了する。
+            float alpha=Mathf.Clamp01((36-battleSystem.LogicalFrame)/18f);
+            dashContactCue.transform.parent.gameObject.SetActive(true);
+            dashContactCue.transform.parent.GetComponent<Image>().color=new Color(.02f,.07f,.12f,.88f*alpha);
+            dashContactCue.color=new Color(1f,.87f,.72f,alpha);
+        }
+        private void ClearDashContactCue(){if(dashContactCue!=null)dashContactCue.transform.parent.gameObject.SetActive(false);}
         private Button rangeGuideButton;
         private bool rangeGuideRequested;
         private Olca.Presentation.Field.WorldBattleGridView rangeGuideGrid;
@@ -214,7 +238,7 @@ namespace Olca.Presentation.Battle
             RefreshCustomLayout();
         }
 
-        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();RefreshNextCard();}
+        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();RefreshNextCard();RefreshDashContactCue();}
 
         private void RefreshCustomLayout()
         {
@@ -259,6 +283,7 @@ namespace Olca.Presentation.Battle
             gaugeResetting = false;
             isCustomScreenOpen = false;
             this.battleSystem = battleSystem;
+            RefreshDashContactCue();
             EnsureGaugeVisual();
             EnsureCustomScreenBackdrop();
             customScreenBackdrop.gameObject.SetActive(false);
@@ -330,7 +355,7 @@ namespace Olca.Presentation.Battle
             if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
-        private void OnBattleEnded(BattleResult result) {ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnBattleEnded(BattleResult result) {ClearDashContactCue();ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         /// <summary>撤退等でセッションを破棄する。古い開閉処理が再表示しないよう所有権を先に外す。</summary>
         public void EndSessionPresentation() => EndSessionPresentationCore(true);
@@ -350,12 +375,12 @@ namespace Olca.Presentation.Battle
                 SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
             }
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
-            DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();RefreshNextCard();
+            DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();RefreshNextCard();ClearDashContactCue();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
             ResetGaugeVisual(); ResetTransformationVisual();
         }
 
-        private void OnDisable() {ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnDisable() {ClearDashContactCue();ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()
         {

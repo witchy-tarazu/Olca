@@ -14,6 +14,63 @@ using UnityEngine.UI;
 
 namespace Olca.Tests
 {
+    public sealed class DashContactCue448Tests
+    {
+        private const BindingFlags Flags=BindingFlags.Instance|BindingFlags.NonPublic;
+        private static BattleSystem Battle(bool dash,int effect,int value,bool apply=true)
+        {
+            var b=new BattleSystem(new PlayerCharacter(100,new Olca.Core.Domain.Vector2Int(1,0)),new List<Enemy>{
+                new Enemy("front","前衛",50,ElementType.None,new Olca.Core.Domain.Vector2Int(3,0)),
+                new Enemy("rear","後衛",60,ElementType.None,new Olca.Core.Domain.Vector2Int(4,0))},new Deck());
+            b.StartEffects.Configure(dash,effect<0?(int?)null:effect,effect<0?(int?)null:value);
+            if(apply)b.StartEffects.Complete();return b;
+        }
+        private static Olca.Presentation.Battle.BattleView Bind(GameObject root,BattleSystem b)
+        {
+            var view=root.GetComponent<Olca.Presentation.Battle.BattleView>()??root.AddComponent<Olca.Presentation.Battle.BattleView>();
+            view.GetType().GetField("battleSystem",Flags).SetValue(view,b);Refresh(view);return view;
+        }
+        private static void Refresh(Olca.Presentation.Battle.BattleView view)=>view.GetType().GetMethod("RefreshDashContactCue",Flags).Invoke(view,null);
+        [TestCase(false,-1,0)][TestCase(true,-1,0)][TestCase(true,0,0)]
+        [TestCase(true,1,18)][TestCase(true,2,0)][TestCase(true,3,7)]
+        public void 接敵448の初撃表示は通常と無効果と別効果には出ない(bool dash,int effect,int value)
+        {
+            var root=new GameObject("ContactCueNegative",typeof(RectTransform));try{
+                var b=Battle(dash,effect,value);int hp=b.Player.CurrentHp;var enemies=b.Enemies.Select(x=>x.CurrentHp).ToArray();Bind(root,b);
+                Assert.IsNull(root.transform.Find("DashContactCue448"));Assert.AreEqual(hp,b.Player.CurrentHp);CollectionAssert.AreEqual(enemies,b.Enemies.Select(x=>x.CurrentHp));Assert.AreEqual(0,b.LogicalFrame);
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [TestCase(1440f)][TestCase(1920f)]
+        public void 接敵448はカスタムとポーズで停止し初撃とカードを混ぜず36論理フレームで消える(float width)
+        {
+            var root=new GameObject("ContactCueViewport",typeof(RectTransform));((RectTransform)root.transform).sizeDelta=new Vector2(width,1080);
+            try{
+                var b=Battle(true,0,15);var view=Bind(root,b);var panel=root.transform.Find("DashContactCue448");var label=panel.GetComponentInChildren<Text>();
+                Assert.IsTrue(panel.gameObject.activeSelf);StringAssert.Contains("ダッシュ",label.text);StringAssert.Contains("カードとはベツ",label.text);
+                Assert.AreSame(Resources.Load<Font>("OlcaUI/MenuText"),label.font);Assert.IsFalse(label.raycastTarget);Assert.IsFalse(panel.GetComponent<Image>().raycastTarget);
+                Canvas.ForceUpdateCanvases();Assert.LessOrEqual(label.preferredWidth,label.rectTransform.rect.width);Assert.LessOrEqual(label.preferredHeight,label.rectTransform.rect.height);
+                var rect=(RectTransform)panel;Assert.LessOrEqual(rect.rect.width,width*.5f);var color=label.color;
+                b.CustomGauge.SetGauge(100);b.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open),new MockRandomProvider());Assert.IsTrue(b.CustomScreen.IsOpen);
+                for(int n=0;n<40;n++){b.TickFrame(17);Refresh(view);}Assert.AreEqual(0,b.LogicalFrame);Assert.AreEqual(color,label.color);Assert.IsTrue(panel.gameObject.activeSelf);
+                b.CustomScreen.Close();b.Pause(BattlePauseReason.User);for(int n=0;n<40;n++){b.TickFrame(17);Refresh(view);}Assert.AreEqual(0,b.LogicalFrame);Assert.AreEqual(color,label.color);b.Resume(BattlePauseReason.User);
+                for(int n=0;n<35;n++)b.TickFrame(17);Refresh(view);Assert.AreEqual(35,b.LogicalFrame);Assert.IsTrue(panel.gameObject.activeSelf);
+                b.TickFrame(17);Refresh(view);Assert.AreEqual(36,b.LogicalFrame);Assert.IsFalse(panel.gameObject.activeSelf);
+                Assert.AreEqual(100,b.Player.CurrentHp);CollectionAssert.AreEqual(new[]{35,45},b.Enemies.Select(x=>x.CurrentHp));Assert.IsFalse(b.StartEffects.Complete());
+            }finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 接敵448は初撃の適用前に表示しない()
+        {
+            var root=new GameObject("ContactBeforeApply",typeof(RectTransform));try{var b=Battle(true,0,15,false);var v=Bind(root,b);Assert.IsNull(root.transform.Find("DashContactCue448"));b.StartEffects.Complete();Refresh(v);Assert.IsTrue(root.transform.Find("DashContactCue448").gameObject.activeSelf);}finally{Object.DestroyImmediate(root);}
+        }
+        [Test] public void 接敵448は無効化とセッション終了で消え通常戦闘へ残らない()
+        {
+            var root=new GameObject("ContactCueLifetime",typeof(RectTransform));try{var dash=Battle(true,0,15);var view=Bind(root,dash);var panel=root.transform.Find("DashContactCue448");Assert.IsTrue(panel.gameObject.activeSelf);
+                // 裸のEditMode componentにはPlayのlifecycle通知がないため、実コールバックを明示して検査する。
+                root.SetActive(false);view.GetType().GetMethod("OnDisable",Flags).Invoke(view,null);Assert.IsFalse(panel.gameObject.activeSelf);Refresh(view);Assert.IsFalse(panel.gameObject.activeSelf);root.SetActive(true);Refresh(view);Assert.IsTrue(panel.gameObject.activeSelf);
+                view.ReleaseSessionPresentation();Assert.IsFalse(panel.gameObject.activeSelf);Bind(root,Battle(false,-1,0));Assert.IsFalse(panel.gameObject.activeSelf);Assert.AreEqual(0,dash.LogicalFrame);CollectionAssert.AreEqual(new[]{35,45},dash.Enemies.Select(x=>x.CurrentHp));
+            }finally{Object.DestroyImmediate(root);}
+        }
+    }
     public class CustomScreenCostViewTests
     {
         [TestCase(false)][TestCase(true)]
