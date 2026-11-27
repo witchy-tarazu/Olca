@@ -70,11 +70,30 @@ namespace Olca.Tests.Application
                 }
             }
         }
+        [Test] public void ChargeParticle458は最大保持だけに四片を残し元の粒と一度の輪と停止を保つ()
+        {
+            var clock=new Olca.Presentation.Effects.ChargeParticleClock();using(var vh=new VertexHelper()){
+                clock.Step(59,59,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);Assert.AreEqual(280,vh.currentVertCount);
+                clock.Step(60,60,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);Assert.AreEqual(664,vh.currentVertCount,"最大の初frameは従来の一回輪を保つ");
+                clock.Step(64,60,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);Assert.AreEqual(760,vh.currentVertCount);UIVertex vertex=default;
+                for(int n=280;n<376;n++){vh.PopulateUIVertex(ref vertex,n);float x=(vertex.position.x-100)/200,y=(vertex.position.y-100)/(200*.8f);Assert.That(Mathf.Sqrt(x*x+y*y),Is.InRange(.36599f,.39401f));Assert.AreEqual((Color32)(n<328?new Color(.025f,.075f,.10f,.85f):new Color(1,.96f,.78f,.65f)),vertex.color);}
+                clock.Step(72,60,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);Assert.AreEqual(376,vh.currentVertCount,"一回輪が終わっても最大の形を保持");clock.Step(200,60,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);Assert.AreEqual(376,vh.currentVertCount);
+                var first=new List<UIVertex>();vh.GetUIVertexStream(first);long age=clock.Age;Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);var same=new List<UIVertex>();vh.GetUIVertexStream(same);CollectionAssert.AreEqual(first,same);Assert.AreEqual(age,clock.Age);
+                clock.Reset();Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(0,0,200,200),clock);Assert.AreEqual(0,vh.currentVertCount);
+            }
+        }
+        [Test] public void ChargeParticle458の解除と再到達は古い最大形を残さず四frame補間を繰り返す()
+        {
+            var go=new GameObject("Charge458",typeof(RectTransform));go.transform.SetParent(host.transform,false);try{
+                var graphic=go.AddComponent<Olca.Presentation.Effects.ProvisionalCombatGraphic>();graphic.ShowChargeParticles(59,59,60);Assert.AreEqual(-1,graphic.ChargeParticleFullAge);graphic.ShowChargeParticles(60,60,60);Assert.AreEqual(0,graphic.ChargeParticleGold);graphic.ShowChargeParticles(64,60,60);Assert.AreEqual(1,graphic.ChargeParticleGold);long age=graphic.ChargeParticleAge;graphic.ShowChargeParticles(64,60,60);Assert.AreEqual(age,graphic.ChargeParticleAge);
+                graphic.ClearChargeParticles();Assert.IsFalse(graphic.enabled);Assert.IsFalse(graphic.IsChargeParticleMode);graphic.ShowChargeParticles(300,1,60);Assert.AreEqual(0,graphic.ChargeParticleAge);Assert.AreEqual(-1,graphic.ChargeParticleFullAge);Assert.AreEqual(0,graphic.ChargeParticleGold);graphic.ShowChargeParticles(359,60,60);Assert.AreEqual(0,graphic.ChargeParticleGold);for(int n=1;n<=4;n++){graphic.ShowChargeParticles(359+n,60,60);Assert.AreEqual(n/4f,graphic.ChargeParticleGold);}graphic.ClearChargeParticles();Assert.IsFalse(graphic.enabled);
+            }finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
         [Test] public void ChargeParticle415は最大前後で位相を保ち白金と一度だけの輪へ移る()
         {
             var clock=new Olca.Presentation.Effects.ChargeParticleClock();for(int f=1;f<60;f++)clock.Step(f,f,60);Assert.AreEqual(58,clock.Age);Assert.AreEqual(-1,clock.FullAge);Assert.AreEqual(0,clock.Gold);var prior=Olca.Presentation.Effects.ChargeParticlePattern.Sample(2,clock.Age,clock.Fraction,clock.Gold);
             clock.Step(60,60,60);Assert.AreEqual(59,clock.Age);Assert.AreEqual(0,clock.FullAge);Assert.AreEqual(0,clock.Gold);var next=Olca.Presentation.Effects.ChargeParticlePattern.Sample(2,clock.Age,clock.Fraction,clock.Gold);Assert.Less(Vector2.Distance(prior.Position,next.Position),.03f);Assert.Less(ColorDistance(prior.Color,next.Color),.03f);
-            using(var vh=new VertexHelper()){Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(-1,-1,2,2),clock);Assert.AreEqual(664,vh.currentVertCount);for(int f=61;f<=64;f++){clock.Step(f,60,60);Assert.That(clock.Gold,Is.EqualTo((f-60)/4f).Within(.00001f));}var blue=Olca.Presentation.Effects.ChargeParticlePattern.Sample(2,clock.Age,1,0);var gold=Olca.Presentation.Effects.ChargeParticlePattern.Sample(2,clock.Age,1,1);Assert.AreEqual(blue.Position,gold.Position);Assert.AreEqual(blue.Color.a,gold.Color.a);Assert.Greater(gold.Size.y/gold.Size.x,blue.Size.y/blue.Size.x);clock.Step(72,60,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(-1,-1,2,2),clock);Assert.AreEqual(280,vh.currentVertCount);clock.Step(200,60,60);Assert.AreEqual(199,clock.Age);Assert.AreEqual(140,clock.FullAge);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(-1,-1,2,2),clock);Assert.AreEqual(280,vh.currentVertCount);}
+            using(var vh=new VertexHelper()){Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(-1,-1,2,2),clock);Assert.AreEqual(664,vh.currentVertCount);for(int f=61;f<=64;f++){clock.Step(f,60,60);Assert.That(clock.Gold,Is.EqualTo((f-60)/4f).Within(.00001f));}var blue=Olca.Presentation.Effects.ChargeParticlePattern.Sample(2,clock.Age,1,0);var gold=Olca.Presentation.Effects.ChargeParticlePattern.Sample(2,clock.Age,1,1);Assert.AreEqual(blue.Position,gold.Position);Assert.AreEqual(blue.Color.a,gold.Color.a);Assert.Greater(gold.Size.y/gold.Size.x,blue.Size.y/blue.Size.x);clock.Step(72,60,60);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(-1,-1,2,2),clock);Assert.AreEqual(376,vh.currentVertCount);clock.Step(200,60,60);Assert.AreEqual(199,clock.Age);Assert.AreEqual(140,clock.FullAge);Olca.Presentation.Effects.ChargeParticlePattern.Populate(vh,new Rect(-1,-1,2,2),clock);Assert.AreEqual(376,vh.currentVertCount);}
         }
         private static float ColorDistance(Color a,Color b)=>Mathf.Abs(a.r-b.r)+Mathf.Abs(a.g-b.g)+Mathf.Abs(a.b-b.b)+Mathf.Abs(a.a-b.a);
         [Test] public void ChargeParticle415は描画を飛ばしても最大到達を遅らせず取消再開で初期化する()

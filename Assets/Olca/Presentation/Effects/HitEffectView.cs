@@ -412,6 +412,14 @@ namespace Olca.Presentation.Effects
             // 元の粒の位相・色・寸法はそのまま。周囲のごく小さい暗い縁だけを先に描く。
             for(int i=0;i<Count;i++)Disc(Sample(i,clock.Age,clock.Fraction,clock.Gold),true);
             for(int i=0;i<Count;i++)Disc(Sample(i,clock.Age,clock.Fraction,clock.Gold),false);
+            // 元の粒は消さず、最大保持だけを四片のまとまった輪郭で示す。色と同じ4fで滑らかに現す。
+            if(clock.FullAge>=0&&clock.Gold>0)for(int pass=0;pass<2;pass++)for(int corner=0;corner<4;corner++)for(int segment=0;segment<3;segment++){
+                float width=pass==0?.014f:.006f;var ink=pass==0?new Color(.025f,.075f,.10f,.85f*clock.Gold):new Color(1,.96f,.78f,.65f*clock.Gold);
+                int first=vh.currentVertCount;for(int side=0;side<2;side++)for(int end=0;end<2;end++){
+                    float angle=Mathf.PI*.25f+corner*Mathf.PI*.5f-.21f+(segment+end)*(.42f/3),markerRadius=.38f+(side==0?-width:width);
+                    vh.AddVert(At(area,Vector2.one*.5f+new Vector2(Mathf.Cos(angle)*markerRadius,Mathf.Sin(angle)*markerRadius*.8f)),ink,Vector2.zero);
+                }vh.AddTriangle(first,first+1,first+3);vh.AddTriangle(first,first+3,first+2);
+            }
             if(clock.FullAge<0||clock.FullAge>=RingFrames)return;float t=clock.FullAge/(float)RingFrames;float radius=.18f+.27f*t;
             // 一度だけの細い輪にも外縁を付け、黄色の敵予告のような面や点滅にはしない。
             for(int pass=0;pass<2;pass++)for(int n=0;n<48;n++){
