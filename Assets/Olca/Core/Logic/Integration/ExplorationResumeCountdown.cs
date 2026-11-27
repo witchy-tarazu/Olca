@@ -226,6 +226,8 @@ namespace Olca.Core.Logic.Integration
             public string CardUseMessage=>owner?.CardUseMessage; public long CardUseMessageFrame=>owner?.CardUseMessageFrame??-1;
             public int TrialBarrierHp=>owner?.Player?.BarrierHp??0;
             public bool TrialContactDamageEnabled=>IsCurrent&&owner.trialContactDamageEnabled;
+            public OutsideGoblinTrialData GoblinTrial=>IsCurrent?owner.goblinTrial?.Copy():null;
+            public bool StartGoblinTrial()=>IsCurrent&&owner.StartGoblinTrial();
             public bool TrialEnemyAttackEnabled=>IsCurrent&&owner.trialEnemyAttack!=null;
             public bool TrialEnemyHitInvincibilityEnabled=>IsCurrent&&owner.TrialEnemyHitInvincibilityEnabled;
             public bool ToggleTrialEnemyHitInvincibility()=>IsCurrent&&owner.SetTrialEnemyAttack(!owner.TrialEnemyHitInvincibilityEnabled,true,true);
@@ -256,7 +258,7 @@ namespace Olca.Core.Logic.Integration
         private long instantBombReleasedAt=-1;private int instantBombFacing=1;private bool instantBombAirborne;
         private void ClearBombReleaseVisual(){instantBombReleasedAt=-1;instantBombFacing=1;instantBombAirborne=false;}
         // 試用別マップの射撃確認用配置。正式敵配置ではなく、既存壁24worldの前後へ分離する。
-        public long FirstTrialTargetX=>Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1350000:TrialTargetX;
+        public long FirstTrialTargetX=>goblinTrial?.X??(Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1350000:TrialTargetX);
         public long SecondTrialTargetX=>Core.TrialMapId==OutsideTrialRoute.AnnexMapId?1560000:OutsideKickTrialDefinition.SecondTargetX;
         public const long TrialTargetX=18*OutsideMovementDefinition.UnitsPerWorldUnit,TrialSwordRange=90000;
         public const int TrialTargetMaximum=120;
@@ -290,7 +292,7 @@ namespace Olca.Core.Logic.Integration
         public bool SetTrialEnemyAttack(bool enabled,bool affectsPoise=false,bool hitInvincibilityTrial=false)
         {
             if(IsEnded||!IsPresented||Player==null||Player.IsDead||Core.Definition.Id!="validation-landing-32"||!OutsideTrialRoute.KnownMap(Core.TrialMapId)||enabled&&TrialTarget.IsDead)return false;
-            if(hitInvincibilityTrial&&!affectsPoise)return false;
+            if(goblinTrial!=null||hitInvincibilityTrial&&!affectsPoise)return false;
             // 既存のON/OFF契約は維持。V3への明示切替だけが既存ONを置換できる。
             if(enabled==(trialEnemyAttack!=null)&&(!enabled||!hitInvincibilityTrial||TrialEnemyHitInvincibilityEnabled))return false;
             trialEnemyAttack=enabled?new OutsideTrialEnemyAttackData{DefinitionId=hitInvincibilityTrial?OutsideTrialEnemyAttackData.V3DefinitionId:affectsPoise?"trial-shield-enemy-v2":"trial-shield-enemy-v1",NextFrame=checked(Core.Frame+TrialEnemyInitialDelay)}:null;return true;
@@ -298,6 +300,7 @@ namespace Olca.Core.Logic.Integration
         public bool TrialEnemyHitInvincibilityEnabled=>trialEnemyAttack?.DefinitionId==OutsideTrialEnemyAttackData.V3DefinitionId;
         private OutsideKnockbackStateData AdvanceTrialEnemyAttack()
         {
+            if(goblinTrial!=null){if(TrialTarget.IsDead){goblinTrial.Phase=OutsideGoblinPhase.Dead;goblinTrial.Age=0;pendingGoblinStrike=false;}return ResolveGoblinStrike();}
             if(trialEnemyAttack==null)return null;
             if(TrialTarget.IsDead||Player.IsDead||Core.HasFallenOut){trialEnemyAttack=null;return null;}
             if(Core.Frame<trialEnemyAttack.NextFrame)return null;
@@ -554,7 +557,7 @@ namespace Olca.Core.Logic.Integration
             if(Player!=null)return false;
             if(IsPresented)throw new System.InvalidOperationException("表示前に外界個体を初期化してください");
             var value=factory();if(value==null||value.IsDead)throw new System.ArgumentException("生存する外界個体が必要です");
-            ResetCardUseFeedback();trialEnemyAttack=null;knockback=null;Player=value;playerFrame=Core.Frame;ResetFall();return true;
+            ResetCardUseFeedback();trialEnemyAttack=null;goblinTrial=null;pendingGoblinStrike=false;knockback=null;Player=value;playerFrame=Core.Frame;ResetFall();return true;
         }
         public void RecoverOutside(string pointId,bool relocate=true)
         {
@@ -562,7 +565,7 @@ namespace Olca.Core.Logic.Integration
             if(Player==null)throw new System.InvalidOperationException("外界個体が未初期化です");
             long position=OutsideTrialRoute.ResolveRecovery(Core,pointId);Core.SetRecoveryMap(pointId);itemCooldowns.Clear();
             if(relocate){Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}Cards?.Reload();Core.CardGauge.RestoreFull();
-            initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();HitStopRemainingFrames=0;attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialEnemyAttack=null;knockback=null;trialContactNextFrame=secondTrialContactNextFrame=0;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.ClearInvincibility();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
+            initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();HitStopRemainingFrames=0;attackState=null;normalKick?.Reset();CancelAttackReservation();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetHits=0;trialTargetChanged=false;trialStrike=null;trialEnemyAttack=null;goblinTrial=null;pendingGoblinStrike=false;knockback=null;trialContactNextFrame=secondTrialContactNextFrame=0;Player.SetBarrier(0);Player.ClearPoisons();Player.ResetParalysis();Player.ResetConfusion();Player.ResetBlindness();Player.ClearStagger();Player.ResetPoiseAccumulation();Player.ClearInvincibility();Player.Heal(Player.MaxHp);playerFrame=Core.Frame;ResetFall();
         }
         private string savedPlayerId,savedPlayerKey;
         /// <summary>同じRoot/Actorの再表示では適用し直さない。coldは従来の復帰位置へ個体だけ復元する。</summary>
@@ -572,7 +575,7 @@ namespace Olca.Core.Logic.Integration
             string key=data.Key();if(savedPlayerId==data.Id){if(savedPlayerKey!=key)throw new System.ArgumentException("同じ外界保存IDの内容が変わりました");return false;}
             if(IsPresented)throw new System.InvalidOperationException("表示中の外界個体を置換できません");
             var candidate=data.Restore();long position=Player==null?OutsideTrialRoute.ResolveRecovery(Core,recoveryPoint):Core.Position;
-            if(Player==null){Core.SetRecoveryMap(recoveryPoint);Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=candidate;trialEnemyAttack=null;knockback=null;itemCooldowns.Clear();playerFrame=Core.Frame;ResetFall();savedPlayerId=data.Id;savedPlayerKey=key;PrepareMapEntry();return true;
+            if(Player==null){Core.SetRecoveryMap(recoveryPoint);Core.RestoreRecoveryPosition(position);deckLocationArmed=managedDeckLocations&&OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=managedDeckLocations&&OutsideTrialRoute.IsReloadZone(Core);}ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=candidate;trialEnemyAttack=null;goblinTrial=null;pendingGoblinStrike=false;knockback=null;itemCooldowns.Clear();playerFrame=Core.Frame;ResetFall();savedPlayerId=data.Id;savedPlayerKey=key;PrepareMapEntry();return true;
         }
         /// <summary>保存成功後に実行した回復だけを記録し、後の再表示で古い値を戻さない。</summary>
         public void AcknowledgeRecovery(Olca.Core.Domain.OutsidePlayerSaveData data)
@@ -616,7 +619,7 @@ namespace Olca.Core.Logic.Integration
             if(Core.IsGrounded==instantBombAirborne||Core.IsGrounded&&Core.IsMoving||Core.Facing!=instantBombFacing||value.IsActionPrevented)ClearBombReleaseVisual();
             value.BeginHpFrame();value.BeginParalysisFrame(true);value.BeginConfusionFrame(true);value.BeginBlindnessFrame(true);
             OutsideKnockbackStateData pendingKnockback=null;
-            try{AdvanceFall();AdvanceWater();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();pendingKnockback=AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
+            try{AdvanceFall();AdvanceWater();AdvanceGoblinTrial();bool bodyAllowed=BodyCanAttack;if(!bodyAllowed){ClearBombReleaseVisual();bodyPreventedFrame=Core.Frame;chargeInput.ClearAccumulation();}ObserveNormalKick(bodyAllowed);AdvanceAttack(bodyAllowed);AdvanceInitialShots();AdvanceBombs();AdvanceTrialKickHits();pendingKnockback=AdvanceTrialEnemyAttack();AdvanceTrialContactDamage();attackAllowed=bodyAllowed&&!IsAttacking;value.TickPoisons(0,true);value.TickProtection(0,true);value.TickInvincibleFrame();value.TickStagger(0,true);value.TickParalysis(0,true);value.TickConfusion(0,true);value.TickBlindness(0,true);value.TickPoiseRecovery(0,true);}
             finally{
                 value.CommitHpFrame();
                 // 共通被弾処理の確定結果だけを使い、HP通知からの退避にも開始済み移動を含める。
@@ -702,7 +705,7 @@ namespace Olca.Core.Logic.Integration
             if(mapEntryPending){mapNameStartedAt=Core.Frame;mapEntryPending=false;}
             recoveryVisitInside=false;CancelAttackReservation();return current=new PresentationLease(this);
         }
-        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=null;trialEnemyAttack=null;knockback=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
+        public void Dispose(){if(IsEnded)return;IsEnded=true;current?.Dispose();current=null;ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();trialTarget=null;secondTrialTarget=null;secondTrialHits=0;trialTargetChanged=false;trialTargetHits=0;Player=null;trialEnemyAttack=null;goblinTrial=null;pendingGoblinStrike=false;knockback=null;pendingLocationDeck=null;pendingLocationRandom=null;queuedDeckKey=null;}
     }
 }
 
@@ -973,13 +976,14 @@ namespace Olca.Core.Logic.Integration
         // 試用外界シールドだけ。旧0欄を出力せず旧Runtime keyを維持する。
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public int TrialBarrierHp;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideTrialEnemyAttackData TrialEnemyAttack;
+        [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideGoblinTrialData GoblinTrial;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideKnockbackStateData Knockback;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideTrialContactData TrialContact;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public int HitStopFrames;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideInitialShotData[] InitialShots;
         [System.Runtime.Serialization.DataMember(EmitDefaultValue=false)] public OutsideBombFlightData[] Bombs;
-        public OutsideRuntimeSaveData Copy()=>new OutsideRuntimeSaveData{Version=Version,Id=Id,Core=Core?.Copy(),FixedCameraCenter=FixedCameraCenter,Cards=Cards?.Copy(),Attack=Attack?.Copy(),TrialTarget=TrialTarget?.Copy(),SecondTrialTarget=SecondTrialTarget?.Copy(),NormalKick=NormalKick?.Copy(),ChargeKick=ChargeKick?.Copy(),Fall=Fall?.Copy(),Water=Water?.Copy(),TrialBarrierHp=TrialBarrierHp,TrialEnemyAttack=TrialEnemyAttack?.Copy(),Knockback=Knockback?.Copy(),TrialContact=TrialContact?.Copy(),InitialShots=InitialShots?.Select(v=>v?.Copy()).ToArray(),Bombs=Bombs?.Select(v=>v?.Copy()).ToArray(),HitStopFrames=HitStopFrames};
-        public void Validate(){ChargeKick?.Validate(NormalKick);if(Bombs!=null){if(Cards==null||Bombs.Length==0||Bombs.Length>60||Bombs.Any(v=>v==null)||Bombs.Select(v=>v.ActionStartedAt).Distinct().Count()!=Bombs.Length)throw new ArgumentException("ボム保存配列が不正です");foreach(var bomb in Bombs)bomb.Validate(Core?.Frame??-1);}if(InitialShots!=null){if(Cards==null||InitialShots.Length==0||InitialShots.Length>60||InitialShots.Any(v=>v==null)||InitialShots.Select(v=>v.StartedAt).Distinct().Count()!=InitialShots.Length)throw new ArgumentException("探索弾保存が不正です");foreach(var shot in InitialShots)shot.Validate(Core?.Frame??-1);}if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||Core==null||FixedCameraCenter<0||TrialBarrierHp<0||TrialBarrierHp>15||HitStopFrames<0||HitStopFrames>60)throw new ArgumentException("外界Runtime保存の版/識別が不正です");Core.Validate();if(!OutsideTrialRoute.KnownMap(Core.TrialMapId)&&TrialEnemyAttack!=null)throw new ArgumentException("試用別マップに戦闘状態は登録されていません");TrialEnemyAttack?.Validate(Core.Frame);Knockback?.Validate();TrialContact?.Validate(Core.Frame);Cards?.Validate();Attack?.Validate(Core.Frame,Cards);TrialTarget?.Validate();SecondTrialTarget?.Validate("trial-kick-target-v1");NormalKick?.Validate(Core.Frame,Core.SupportId!=null,Core.Facing);if(NormalKick!=null){if(Attack!=null||NormalKick.Kind!=OutsideKickKind.Dash&&Core.DashEndsAt>Core.Frame||NormalKick.Kind==OutsideKickKind.Dash&&(Core.DashJumping||Core.WallSliding||Core.WallKickAt>=0||Core.DashStartedAt<0||Core.DashStartedAt>NormalKick.StartedAt||Core.LastDashAt<NormalKick.StartedAt))throw new ArgumentException("蹴りと他行動を同時に復元できません");foreach(int id in NormalKick.HitTargets){var target=id==0?TrialTarget:SecondTrialTarget;if(target==null||target.Hits==0||target.Hp>OutsideExplorationSession.TrialTargetMaximum-OutsideKickTrialDefinition.Damage)throw new ArgumentException("蹴り命中済み状態と標的が不一致です");}}Fall?.Validate(Core);Water?.Validate(Core);}
+        public OutsideRuntimeSaveData Copy()=>new OutsideRuntimeSaveData{Version=Version,Id=Id,Core=Core?.Copy(),FixedCameraCenter=FixedCameraCenter,Cards=Cards?.Copy(),Attack=Attack?.Copy(),TrialTarget=TrialTarget?.Copy(),SecondTrialTarget=SecondTrialTarget?.Copy(),NormalKick=NormalKick?.Copy(),ChargeKick=ChargeKick?.Copy(),Fall=Fall?.Copy(),Water=Water?.Copy(),TrialBarrierHp=TrialBarrierHp,TrialEnemyAttack=TrialEnemyAttack?.Copy(),GoblinTrial=GoblinTrial?.Copy(),Knockback=Knockback?.Copy(),TrialContact=TrialContact?.Copy(),InitialShots=InitialShots?.Select(v=>v?.Copy()).ToArray(),Bombs=Bombs?.Select(v=>v?.Copy()).ToArray(),HitStopFrames=HitStopFrames};
+        public void Validate(){GoblinTrial?.Validate(Core,TrialEnemyAttack,TrialTarget);ChargeKick?.Validate(NormalKick);if(Bombs!=null){if(Cards==null||Bombs.Length==0||Bombs.Length>60||Bombs.Any(v=>v==null)||Bombs.Select(v=>v.ActionStartedAt).Distinct().Count()!=Bombs.Length)throw new ArgumentException("ボム保存配列が不正です");foreach(var bomb in Bombs)bomb.Validate(Core?.Frame??-1);}if(InitialShots!=null){if(Cards==null||InitialShots.Length==0||InitialShots.Length>60||InitialShots.Any(v=>v==null)||InitialShots.Select(v=>v.StartedAt).Distinct().Count()!=InitialShots.Length)throw new ArgumentException("探索弾保存が不正です");foreach(var shot in InitialShots)shot.Validate(Core?.Frame??-1);}if(Version!=1||!Guid.TryParseExact(Id,"N",out _)||Core==null||FixedCameraCenter<0||TrialBarrierHp<0||TrialBarrierHp>15||HitStopFrames<0||HitStopFrames>60)throw new ArgumentException("外界Runtime保存の版/識別が不正です");Core.Validate();if(!OutsideTrialRoute.KnownMap(Core.TrialMapId)&&TrialEnemyAttack!=null)throw new ArgumentException("試用別マップに戦闘状態は登録されていません");TrialEnemyAttack?.Validate(Core.Frame);Knockback?.Validate();TrialContact?.Validate(Core.Frame);Cards?.Validate();Attack?.Validate(Core.Frame,Cards);TrialTarget?.Validate();SecondTrialTarget?.Validate("trial-kick-target-v1");NormalKick?.Validate(Core.Frame,Core.SupportId!=null,Core.Facing);if(NormalKick!=null){if(Attack!=null||NormalKick.Kind!=OutsideKickKind.Dash&&Core.DashEndsAt>Core.Frame||NormalKick.Kind==OutsideKickKind.Dash&&(Core.DashJumping||Core.WallSliding||Core.WallKickAt>=0||Core.DashStartedAt<0||Core.DashStartedAt>NormalKick.StartedAt||Core.LastDashAt<NormalKick.StartedAt))throw new ArgumentException("蹴りと他行動を同時に復元できません");foreach(int id in NormalKick.HitTargets){var target=id==0?TrialTarget:SecondTrialTarget;if(target==null||target.Hits==0||target.Hp>OutsideExplorationSession.TrialTargetMaximum-OutsideKickTrialDefinition.Damage)throw new ArgumentException("蹴り命中済み状態と標的が不一致です");}}Fall?.Validate(Core);Water?.Validate(Core);}
         public string Key(){Validate();return PortableCheckpointJson.Hash(PortableCheckpointJson.Serialize(this));}
         public OutsideRuntimeSaveData ForRun(string run){Validate();var v=Copy();v.Id=run;v.TrialBarrierHp=0;v.TrialEnemyAttack=null;v.Knockback=null;v.TrialContact=null;v.HitStopFrames=0;v.Validate();return v;}
     }
@@ -1234,7 +1238,8 @@ namespace Olca.Core.Logic.Integration
         // 呼出元の退避可否判定は保ち、通常退避と即時保存の項目集合だけを共有する。
         private OutsideRuntimeSaveData BuildRuntimeSnapshot(CheckpointDefinitions definitions,OutsideKickStateData kick)
         {
-            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,ChargeKick=normalKick?.IsCharged==true?normalKick.ActiveChargePlan.Copy():null,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy(),Knockback=knockback?.Copy(),TrialContact=CaptureTrialContact(),InitialShots=CaptureInitialShots(),Bombs=CaptureBombs(),HitStopFrames=HitStopRemainingFrames};value.Validate();return value;
+            if(goblinTrial!=null&&(pendingGoblinStrike||Player.HasPendingHpFrame))throw new InvalidOperationException("接近ゴブリンの被害確定前には保存できません");
+            var value=new OutsideRuntimeSaveData{Id=Guid.NewGuid().ToString("N"),Core=Core.CaptureState(),FixedCameraCenter=Camera.FixedCenter,Cards=Cards?.CaptureState(definitions),Attack=attackState?.Copy(),TrialTarget=CaptureTrialTarget(),SecondTrialTarget=CaptureSecondTrialTarget(),NormalKick=kick,ChargeKick=normalKick?.IsCharged==true?normalKick.ActiveChargePlan.Copy():null,Fall=CaptureFall(),Water=CaptureWater(),TrialBarrierHp=CaptureTrialBarrier(),TrialEnemyAttack=trialEnemyAttack?.Copy(),GoblinTrial=goblinTrial?.Copy(),Knockback=knockback?.Copy(),TrialContact=CaptureTrialContact(),InitialShots=CaptureInitialShots(),Bombs=CaptureBombs(),HitStopFrames=HitStopRemainingFrames};value.Validate();return value;
         }
         private bool startupClassified,startupRecoveryPending;
         // 起動時の行き先を一度だけ記録する。host再生成や帰還後の再表示で分類し直さない。
@@ -1296,11 +1301,12 @@ namespace Olca.Core.Logic.Integration
             if(runtime.TrialContact!=null&&(!trialContactDamageEnabled||Core.Definition.Id!=OutsideKickTrialDefinition.MapId))throw new ArgumentException("このSessionの接触定義は未登録です");
             if(runtime.NormalKick?.Kind==OutsideKickKind.Dash&&!HasRegisteredDash(actor))throw new ArgumentException("この神依のダッシュ攻撃復元は未登録です");
             if(runtime.NormalKick!=null){if(Core.Definition.Id!=OutsideKickTrialDefinition.MapId)throw new ArgumentException("このマップの蹴り復元は未登録です");var candidateKick=new OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());candidateKick.Configure(OutsideKickTrialDefinition.Timings());candidateKick.ConfigureDash(OutsideKickTrialDefinition.DashTiming());candidateKick.RestoreState(runtime.NormalKick,candidateCore.Frame,candidateCore.IsGrounded,candidateCore.Facing);runtime.ChargeKick?.ValidateActor(actor);candidateKick.RestoreChargePlan(runtime.ChargeKick);if(actor.IsDead||actor.IsParalyzed||actor.IsStaggered||runtime.Fall?.LockedUntil>candidateCore.Frame)throw new ArgumentException("行動不能中の蹴り保存は復元できません");}
+            if(runtime.GoblinTrial!=null&&(candidateCore.Definition.Id!="validation-landing-32"||!GoblinSafePosition(candidateCore,runtime.GoblinTrial.X)||actor.IsDead))throw new ArgumentException("接近ゴブリンの復元地形/個体が未対応です");
             ValidateWater(runtime.Water,candidateCore);
             if(runtime.Fall!=null&&runtime.Fall.Peak>candidateCore.MaximumReachableHeight())throw new ArgumentException("落下頂点が外界地形の上限を超えています");
             if(Cards!=null&&runtime.Cards!=null){try{if(Cards.CaptureState(definitions).Key()==runtime.Cards.Key())cards=Cards;}catch(ArgumentException){}}
             // Runtimeに地点利用履歴はないため、復元時の旧横範囲推定は管理開始前も保持する。
-            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();initialShots.AddRange((runtime.InitialShots??Array.Empty<OutsideInitialShotData>()).Select(v=>v.Copy()));bombs.AddRange((runtime.Bombs??Array.Empty<OutsideBombFlightData>()).Select(v=>v.Copy()));attackState=runtime.Attack?.Copy();if(runtime.NormalKick!=null){NormalKick.Reset();NormalKick.Configure(OutsideKickTrialDefinition.Timings());NormalKick.ConfigureDash(OutsideKickTrialDefinition.DashTiming());NormalKick.RestoreState(runtime.NormalKick,Core.Frame,Core.IsGrounded,Core.Facing);NormalKick.RestoreChargePlan(runtime.ChargeKick);}trialTarget=target;secondTrialTarget=secondTarget;secondTrialHits=runtime.SecondTrialTarget?.Hits??0;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;trialEnemyAttack=runtime.TrialEnemyAttack?.Copy();knockback=runtime.Knockback?.Copy();trialContactNextFrame=runtime.TrialContact?.NextFrame??0;secondTrialContactNextFrame=runtime.TrialContact?.SecondNextFrame??0;Cards=cards;Camera=camera;playerFrame=Core.Frame;HitStopRemainingFrames=runtime.HitStopFrames;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
+            if(initializationProfile!=null)Core.ConfigureTraversal(initializationProfile);Core.RestoreState(runtime.Core);deckLocationArmed=OutsideTrialRoute.IsDeckEditingZone(Core);reloadGaugeOnExit=deckLocationArmed&&OutsideTrialRoute.IsReloadZone(Core);itemCooldowns.Clear();ResetCardUseFeedback();initialShots.Clear();bombs.Clear();ClearBombReleaseVisual();bombBlasts.Clear();initialShots.AddRange((runtime.InitialShots??Array.Empty<OutsideInitialShotData>()).Select(v=>v.Copy()));bombs.AddRange((runtime.Bombs??Array.Empty<OutsideBombFlightData>()).Select(v=>v.Copy()));attackState=runtime.Attack?.Copy();if(runtime.NormalKick!=null){NormalKick.Reset();NormalKick.Configure(OutsideKickTrialDefinition.Timings());NormalKick.ConfigureDash(OutsideKickTrialDefinition.DashTiming());NormalKick.RestoreState(runtime.NormalKick,Core.Frame,Core.IsGrounded,Core.Facing);NormalKick.RestoreChargePlan(runtime.ChargeKick);}trialTarget=target;secondTrialTarget=secondTarget;secondTrialHits=runtime.SecondTrialTarget?.Hits??0;trialTargetChanged=runtime.TrialTarget!=null;trialTargetHits=runtime.TrialTarget?.Hits??0;Player=actor;trialEnemyAttack=runtime.TrialEnemyAttack?.Copy();goblinTrial=runtime.GoblinTrial?.Copy();pendingGoblinStrike=false;knockback=runtime.Knockback?.Copy();trialContactNextFrame=runtime.TrialContact?.NextFrame??0;secondTrialContactNextFrame=runtime.TrialContact?.SecondNextFrame??0;Cards=cards;Camera=camera;playerFrame=Core.Frame;HitStopRemainingFrames=runtime.HitStopFrames;RestoreFall(runtime.Fall);RestoreWater(runtime.Water);savedPlayerId=player.Id;savedPlayerKey=playerKey;savedRuntimeId=runtime.Id;savedRuntimeKey=key;PrepareMapEntry();return true;
         }
     }
 }
@@ -1546,6 +1552,77 @@ namespace Olca.Core.Logic.Integration
                 }
                 Hit(0,FirstTrialTargetX,TrialTarget);Hit(1,SecondTrialTargetX,SecondTrialTarget);bombs.RemoveAt(i);bombBlasts.Add(new OutsideBombBlastData{SourceX=plan.X,X=target,Height=plan.ImpactHeight,Frame=Core.Frame,VisualFrames=plan.DefinitionId==OutsideBombLaunchData.FastTerrainDefinition?18:OutsideBombLaunchData.BlastFrames});
             }
+        }
+    }
+}
+
+namespace Olca.Core.Logic.Integration
+{
+    public enum OutsideGoblinPhase { Approach, Windup, Strike, Recovery, Dead }
+    /// <summary>Annex明示選択だけの試用。旧Runtimeでは欄を出さず、旧AIを自動昇格しない。</summary>
+    [System.Runtime.Serialization.DataContract]
+    public sealed class OutsideGoblinTrialData
+    {
+        public const string RegisteredDefinition="annex-approach-goblin-v1";
+        public const long MinX=20*60000,MaxX=23*60000,Speed=2000,StopRange=84000,Reach=90000,Height=90000;
+        public const int WindupFrames=24,StrikeFrames=6,RecoveryFrames=48;
+        [System.Runtime.Serialization.DataMember] public string DefinitionId=RegisteredDefinition;
+        [System.Runtime.Serialization.DataMember] public long X;
+        [System.Runtime.Serialization.DataMember] public int Facing=1,Age;
+        [System.Runtime.Serialization.DataMember] public OutsideGoblinPhase Phase;
+        public OutsideGoblinTrialData Copy()=>(OutsideGoblinTrialData)MemberwiseClone();
+        public void Validate(OutsideCoreStateData core,OutsideTrialEnemyAttackData legacy,OutsideTrialTargetData target)
+        {
+            int limit=Phase==OutsideGoblinPhase.Windup?WindupFrames:Phase==OutsideGoblinPhase.Strike?StrikeFrames:Phase==OutsideGoblinPhase.Recovery?RecoveryFrames:1;
+            if(DefinitionId!=RegisteredDefinition||core?.TrialMapId!=OutsideTrialRoute.AnnexMapId||legacy!=null||X<MinX||X>MaxX||Facing!=1&&Facing!=-1||!Enum.IsDefined(typeof(OutsideGoblinPhase),Phase)||Age<0||Age>=limit||(Phase==OutsideGoblinPhase.Dead)!=(target?.Hp==0))throw new ArgumentException("接近ゴブリンの保存定義/段階が不正です");
+        }
+    }
+    public sealed partial class OutsideExplorationSession
+    {
+        private OutsideGoblinTrialData goblinTrial;
+        private bool pendingGoblinStrike;
+        private static bool GoblinSafePosition(OutsideExplorationCore core,long x)
+        {
+            if(core?.Definition.Id!="validation-landing-32"||core.TrialMapId!=OutsideTrialRoute.AnnexMapId||core.TraversalProfile==null||x<OutsideGoblinTrialData.MinX||x>OutsideGoblinTrialData.MaxX)return false;
+            long left=x-TrialContactHalfWidth,right=x+TrialContactHalfWidth;
+            return !core.TraversalProfile.Walls.Any(w=>w.X>=left&&w.X<=right&&w.Bottom<=OutsideGoblinTrialData.Height&&w.Top>=0)
+                &&!core.TraversalProfile.FloorGaps.Any(g=>right>g.Left&&left<g.Right)
+                &&!core.TraversalProfile.Waters.Any(w=>right>=w.Left&&left<=w.Right&&w.Bottom<=0&&w.Top>=0);
+        }
+        public bool StartGoblinTrial()
+        {
+            if(IsEnded||!IsPresented||goblinTrial!=null||Player==null||Player.IsDead||TrialTarget.IsDead||!GoblinSafePosition(Core,FirstTrialTargetX))return false;
+            long x=FirstTrialTargetX;trialEnemyAttack=null;pendingGoblinStrike=false;
+            goblinTrial=new OutsideGoblinTrialData{X=x,Facing=Core.Position<x?-1:1};return true;
+        }
+        private void AdvanceGoblinTrial()
+        {
+            pendingGoblinStrike=false;var g=goblinTrial;if(g==null)return;
+            if(Player.IsDead||Core.HasFallenOut){goblinTrial=null;return;}
+            if(TrialTarget.IsDead){g.Phase=OutsideGoblinPhase.Dead;g.Age=0;return;}
+            // 移動と予告の時計は描画から独立。強靭ブレイク中は振りを解除して反撃時間へ。
+            if(TrialTarget.IsStaggered||TrialTarget.IsParalyzed){g.Phase=OutsideGoblinPhase.Recovery;g.Age=0;return;}
+            if(g.Phase==OutsideGoblinPhase.Approach){
+                long delta=Core.Position-g.X;g.Facing=delta==0?g.Facing:Math.Sign(delta);
+                if(Math.Abs(delta)<=OutsideGoblinTrialData.StopRange&&Core.Height>=0&&Core.Height<=OutsideGoblinTrialData.Height){g.Phase=OutsideGoblinPhase.Windup;g.Age=0;return;}
+                if(Math.Abs(delta)<=OutsideGoblinTrialData.StopRange||Math.Abs(delta)>6*60000)return;
+                long step=Math.Min(OutsideGoblinTrialData.Speed,Math.Abs(delta)-OutsideGoblinTrialData.StopRange)*g.Facing,next=g.X+step;
+                if(GoblinSafePosition(Core,next))g.X=next;
+                return;
+            }
+            g.Age++;
+            if(g.Phase==OutsideGoblinPhase.Windup&&g.Age>=OutsideGoblinTrialData.WindupFrames){g.Phase=OutsideGoblinPhase.Strike;g.Age=0;pendingGoblinStrike=true;}
+            else if(g.Phase==OutsideGoblinPhase.Strike&&g.Age>=OutsideGoblinTrialData.StrikeFrames){g.Phase=OutsideGoblinPhase.Recovery;g.Age=0;}
+            else if(g.Phase==OutsideGoblinPhase.Recovery&&g.Age>=OutsideGoblinTrialData.RecoveryFrames){g.Phase=OutsideGoblinPhase.Approach;g.Age=0;}
+        }
+        private OutsideKnockbackStateData ResolveGoblinStrike()
+        {
+            if(!pendingGoblinStrike)return null;pendingGoblinStrike=false;var g=goblinTrial;
+            if(g==null||TrialTarget.IsDead||Player.IsDead||Core.HasFallenOut||TrialTarget.IsStaggered||TrialTarget.IsParalyzed)return null;
+            long distance=(Core.Position-g.X)*g.Facing;
+            if(distance<0||distance>OutsideGoblinTrialData.Reach||Core.Height<0||Core.Height>OutsideGoblinTrialData.Height||FirstSwordBlockingWall(g.X,0,g.Facing,distance).HasValue)return null;
+            bool accepted=Player.TryTakeDamage(TrialEnemyDamage,attackElement:ElementType.None,affectsPoise:true,poiseDamage:TrialEnemyPoiseDamage);
+            return accepted?OutsideTrialEnemyAttackData.V2Knockback.Start(g.Facing):null;
         }
     }
 }

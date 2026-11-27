@@ -161,6 +161,97 @@ namespace Olca.Tests
                 using(var lease=s.AttachPresentation()){s.TrialTarget.TakeDamage(120,ElementType.None);for(int n=0;n<100;n++)s.TickTraversal(0);Assert.IsFalse(lease.TrialEnemyAttackEnabled);Assert.AreEqual(100,s.Player.CurrentHp);}
             }
         }
+        private static void Goblin431Position(OutsideExplorationSession s,long x,long height=0)
+        {
+            var state=s.Core.CaptureState();state.Position=x;state.Height=height;state.SupportId=height==0?state.SupportId:null;state.Velocity=0;state.Moving=false;
+            typeof(OutsideExplorationCore).GetMethod("RestoreState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(s.Core,new object[]{state});
+        }
+        [TestCase(20,-1)][TestCase(24,1)]
+        public void Goblin431接近は現在位置を共有し予告中の向きを固定する(int x,int facing)
+        {
+            using(var s=AnnexSword346(x:x))using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartGoblinTrial());long first=l.FirstTargetX;s.TickTraversal(0);Assert.AreEqual(first+facing*OutsideGoblinTrialData.Speed,l.FirstTargetX);
+                for(int n=0;n<100&&l.GoblinTrial.Phase==OutsideGoblinPhase.Approach;n++)s.TickTraversal(0);
+                Assert.AreEqual(OutsideGoblinPhase.Windup,l.GoblinTrial.Phase);Assert.AreEqual(facing,l.GoblinTrial.Facing);long locked=l.FirstTargetX;
+                Goblin431Position(s,locked-facing*72000);for(int n=0;n<24;n++)s.TickTraversal(0);
+                Assert.AreEqual(OutsideGoblinPhase.Strike,l.GoblinTrial.Phase);Assert.AreEqual(facing,l.GoblinTrial.Facing);Assert.AreEqual(locked,l.FirstTargetX);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public void Goblin431振り下ろしは一回だけで空中回避後は反撃時間を残す(bool air)
+        {
+            using(var s=AnnexSword346(x:21))using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartGoblinTrial());for(int n=0;n<100&&l.GoblinTrial.Phase==OutsideGoblinPhase.Approach;n++)s.TickTraversal(0);
+                for(int n=0;n<23;n++)s.TickTraversal(0);if(air)Goblin431Position(s,s.Core.Position,180000);s.TickTraversal(0);
+                Assert.AreEqual(air?100:90,s.Player.CurrentHp);Assert.AreEqual(OutsideGoblinPhase.Strike,l.GoblinTrial.Phase);if(air)Goblin431Position(s,s.Core.Position,0);
+                for(int n=0;n<6;n++)s.TickTraversal(0);Assert.AreEqual(OutsideGoblinPhase.Recovery,l.GoblinTrial.Phase);
+                int hp=s.Player.CurrentHp;for(int n=0;n<47;n++)s.TickTraversal(0);Assert.AreEqual(hp,s.Player.CurrentHp);Assert.AreEqual(OutsideGoblinPhase.Recovery,l.GoblinTrial.Phase);
+                s.TickTraversal(0);Assert.AreEqual(OutsideGoblinPhase.Approach,l.GoblinTrial.Phase);
+            }
+        }
+        [TestCase(1)][TestCase(15)][TestCase(25)][TestCase(31)]
+        public void Goblin431途中保存は位相位置と次の命中を厳密復元する(int ticks)
+        {
+            using(var s=AnnexSword346(x:21))using(var cold=new OutsideExplorationSession()){
+                var defs=Door239Definitions(s);using(var l=s.AttachPresentation()){Assert.IsTrue(l.StartGoblinTrial());for(int n=0;n<ticks;n++)s.TickTraversal(0);}
+                var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                var round=PortableCheckpointJson.Deserialize<OutsideRuntimeSaveData>(PortableCheckpointJson.Serialize(runtime));
+                Assert.IsTrue(cold.RestoreSavedState(actor,round,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));
+                using(var a=s.AttachPresentation())using(var b=cold.AttachPresentation())for(int n=0;n<80;n++){
+                    Assert.AreEqual(a.GoblinTrial.Phase,b.GoblinTrial.Phase);Assert.AreEqual(a.GoblinTrial.Age,b.GoblinTrial.Age);Assert.AreEqual(a.FirstTargetX,b.FirstTargetX);Assert.AreEqual(s.Player.CurrentHp,cold.Player.CurrentHp);s.TickTraversal(0);cold.TickTraversal(0);
+                }
+                Assert.AreEqual(runtime.GoblinTrial.X,runtime.ForRun(Guid.NewGuid().ToString("N")).GoblinTrial.X);Assert.IsNotNull(runtime.GoblinTrial);
+            }
+        }
+        [TestCase(0)][TestCase(1)][TestCase(2)][TestCase(3)][TestCase(4)]
+        public void Goblin431不正な定義と地形と旧AI併存を復元前に拒否する(int kind)
+        {
+            using(var s=AnnexSword346(x:21))using(var cold=new OutsideExplorationSession()){
+                var defs=Door239Definitions(s);using(var l=s.AttachPresentation())Assert.IsTrue(l.StartGoblinTrial());var runtime=s.CaptureRuntime(defs);var actor=OutsidePlayerSaveData.Capture(s.Player);actor.Id=runtime.Id;
+                if(kind==0)runtime.GoblinTrial.Facing=0;if(kind==1)runtime.GoblinTrial.X=24*60000;if(kind==2)runtime.GoblinTrial.DefinitionId="unknown";if(kind==3)runtime.GoblinTrial.Age=24;if(kind==4)runtime.TrialEnemyAttack=new OutsideTrialEnemyAttackData{NextFrame=s.Core.Frame+60};
+                Assert.Throws<ArgumentException>(()=>cold.RestoreSavedState(actor,runtime,OutsideTrialRoute.DoorAnnexPoint,defs,s.Core.TraversalProfile));Assert.IsNull(cold.Player);
+            }
+        }
+        [Test] public void Goblin431同じ攻撃フレームで撃破すると敵の振り下ろしは消え死位置を保存する()
+        {
+            using(var s=AnnexSword346(x:21)){
+                using(var l=s.AttachPresentation()){
+                    int power=s.Cards.SelectedCard.GetFinalPower(s.Player.AttackPower);s.TrialTarget.TakeDamage(120-power,ElementType.None);Assert.IsTrue(l.StartGoblinTrial());
+                    for(int n=0;n<100&&l.GoblinTrial.Phase==OutsideGoblinPhase.Approach;n++)s.TickTraversal(0);for(int n=0;n<16;n++)s.TickTraversal(0);long x=l.FirstTargetX;
+                    Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<7;n++){s.TickTraversal(0);Assert.IsFalse(s.TrialTarget.IsDead);}s.TickTraversal(0);
+                    Assert.IsTrue(s.TrialTarget.IsDead);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(OutsideGoblinPhase.Dead,l.GoblinTrial.Phase);Assert.AreEqual(x,l.FirstTargetX);
+                }
+                Assert.DoesNotThrow(()=>s.CaptureRuntime(Door239Definitions(s)));
+            }
+        }
+        [Test] public void Goblin431壁の手前で接近が止まり壁越しに攻撃しない()
+        {
+            using(var s=AnnexSword346(x:20,wallX:21*60000))using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartGoblinTrial());for(int n=0;n<200;n++)s.TickTraversal(0);Assert.Greater(l.FirstTargetX,21*60000+24000);Assert.AreEqual(100,s.Player.CurrentHp);Assert.AreEqual(OutsideGoblinPhase.Approach,l.GoblinTrial.Phase);
+            }
+        }
+        [Test] public void Goblin431旧AIは自動昇格せず新モード中の旧切替と非表示の時計を止める()
+        {
+            using(var s=AnnexSword346(x:21)){
+                using(var l=s.AttachPresentation()){Assert.IsNull(l.GoblinTrial);Assert.IsTrue(s.SetTrialEnemyAttack(true));Assert.IsNull(l.GoblinTrial);Assert.IsTrue(l.StartGoblinTrial());Assert.IsFalse(l.TrialEnemyAttackEnabled);Assert.IsFalse(s.SetTrialEnemyAttack(true));Assert.IsFalse(l.StartGoblinTrial());}
+                long frame=s.Core.Frame;Assert.Throws<InvalidOperationException>(()=>s.TickTraversal(0));Assert.AreEqual(frame,s.Core.Frame);
+                s.RecoverOutside(OutsideTrialRoute.DoorAnnexPoint);using(var l=s.AttachPresentation())Assert.IsNull(l.GoblinTrial);
+            }
+        }
+        [Test] public void Goblin431移動した敵への接触は古い初期位置を使わない()
+        {
+            using(var s=AnnexSword346(x:20))using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartGoblinTrial());for(int n=0;n<70;n++)s.TickTraversal(0);long x=l.FirstTargetX;
+                Goblin431Position(s,x-54000);s.TickTraversal(0);Assert.AreEqual(90,s.Player.CurrentHp);Assert.Less(x,1350000);Assert.AreEqual(120,s.TrialTarget.CurrentHp);
+            }
+        }
+        [Test] public void Goblin431接近は左端を越えず現在位置へのソードが当たる()
+        {
+            using(var s=AnnexSword346(x:18))using(var l=s.AttachPresentation()){
+                Assert.IsTrue(l.StartGoblinTrial());for(int n=0;n<150;n++)s.TickTraversal(0);Assert.AreEqual(OutsideGoblinTrialData.MinX,l.FirstTargetX);
+                int hp=s.TrialTarget.CurrentHp;Assert.IsTrue(s.ProcessAttackInput(new LogicalInput{CardUseButtonDown=true},false,true,true,out var error),error);for(int n=0;n<8;n++)s.TickTraversal(0);Assert.Less(s.TrialTarget.CurrentHp,hp);Assert.AreEqual(100,s.Player.CurrentHp);
+            }
+        }
         private static OutsideExplorationSession AnnexSword346(string id="sword",int x=20,int facing=1,bool air=false,long wallBottom=0,long wallTop=60000000,long wallX=24*60000,int stagger=0)
         {
             var s=new OutsideExplorationSession();var p=OutsideTraversalProfile.ValidationWall(true);
