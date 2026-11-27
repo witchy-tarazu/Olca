@@ -1696,6 +1696,7 @@ namespace Olca.Presentation.Exploration
         private Olca.Unity.GeneratedSpriteAssets.Lease assets;private Olca.Unity.MenuPadScope menu;
         private readonly TrialGroundComboMotion combo=new TrialGroundComboMotion();
         private UnityEngine.UI.Image playerImage,guardImage,floor,platform,platformEdge,gate,warning,warningTop,warningBottom,exit;
+        private OutsideGroundKickTrace442 kickTrace442;
         private UnityEngine.UI.Text heading,help,status,guardLabel,upperLabel,exitLabel,warningLabel;
         private UnityEngine.UI.Button close,retry,pause;private Olca.Presentation.Effects.ProvisionalCombatGraphic chargeFx,hitFx;
         public bool Live=>!disposed&&this!=null&&gameObject.activeInHierarchy&&owner!=null&&owner.IsOpen;
@@ -1718,6 +1719,7 @@ namespace Olca.Presentation.Exploration
             platform=Box("BranchUpperPlatform",new UnityEngine.Color(.25f,.45f,.51f,1));platformEdge=Box("BranchUpperEdge",new UnityEngine.Color(.8f,.96f,1,1));gate=Box("BranchGate",new UnityEngine.Color(.8f,.43f,.17f,1));
             warning=Box("BranchLowWarning",new UnityEngine.Color(.9f,.18f,.12f,.2f));warningTop=Box("BranchWarningTop",new UnityEngine.Color(1,.35f,.2f,1));warningBottom=Box("BranchWarningBottom",new UnityEngine.Color(1,.35f,.2f,1));exit=Box("BranchExit",new UnityEngine.Color(.25f,.7f,.48f,1));
             playerImage=Box("BranchPlayer",UnityEngine.Color.white);guardImage=Box("BranchGoblin",UnityEngine.Color.white);
+            var trace=new UnityEngine.GameObject("BranchGroundKickTrace442",typeof(UnityEngine.RectTransform),typeof(OutsideGroundKickTrace442));trace.transform.SetParent(transform,false);kickTrace442=trace.GetComponent<OutsideGroundKickTrace442>();kickTrace442.raycastTarget=false;kickTrace442.rectTransform.anchorMin=kickTrace442.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);kickTrace442.rectTransform.pivot=UnityEngine.Vector2.zero;kickTrace442.enabled=false;
             guardLabel=Label("BranchGuardLabel","",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(330,52),20);
             upperLabel=Label("BranchUpperLabel","ノレル ウワミチ",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(230,32),18);
             exitLabel=Label("BranchExitLabel","デグチ",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(140,40),22);
@@ -1758,6 +1760,8 @@ namespace Olca.Presentation.Exploration
             Place(playerImage,body,X(core.Position),Y(core.Height),s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,kick!=null);playerImage.color=s.Frame-s.LastHurtFrame<12?new UnityEngine.Color(1,.45f,.4f):UnityEngine.Color.white;
             int frame=s.Guard.IsDead?9:s.Frame-s.LastHitFrame<12?8:s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup?4+System.Math.Min(2,s.Age/8):s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike?7:(int)(s.Frame/10%4);var goblin=AnnexGoblinSprite.Resolve(assets,frame);
             Place(guardImage,goblin,X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX),Y(0),s.GuardFacing,true);guardImage.color=s.Guard.IsDead?new UnityEngine.Color(1,1,1,UnityEngine.Mathf.Clamp01(1-(s.Frame-s.DeathFrame)/18f)):UnityEngine.Color.white;
+            // 実際の足元と実射程から描画。有効3frameだけで、接触/HPの判断には使わない。
+            kickTrace442.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height));kickTrace442.rectTransform.sizeDelta=new UnityEngine.Vector2(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Range/60000f,.5f)*pixels;kickTrace442.rectTransform.localScale=new UnityEngine.Vector3(s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,1,1);kickTrace442.Project(s.Kick);
             guardLabel.text="モンバン（カリ） HP "+s.Guard.CurrentHp+" / 30";guardLabel.gameObject.SetActive(false);
             chargeFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height)+1.1f*pixels);chargeFx.rectTransform.sizeDelta=new UnityEngine.Vector2(3.2f,3.2f)*pixels;if(s.IsCharging)chargeFx.ShowChargeParticles(s.Frame,s.ChargeFrames,60);else chargeFx.ClearChargeParticles();
             long hitAge=s.Frame-s.LastHitFrame;hitFx.enabled=hitAge>=0&&hitAge<12;hitFx.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX),Y(0)+.8f*pixels);hitFx.rectTransform.sizeDelta=new UnityEngine.Vector2(150,150);if(hitFx.enabled)hitFx.Burst(hitAge/12f,new UnityEngine.Color(1,.7f,.3f));
@@ -1767,5 +1771,32 @@ namespace Olca.Presentation.Exploration
         public void Close(){if(closed)return;closed=true;DisposeTrial();gameObject.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(gameObject);else DestroyImmediate(gameObject);}
         private void DisposeTrial(){if(disposed)return;disposed=true;menu?.Dispose();menu=null;Runtime?.Dispose();combo.Dispose();if(playerImage!=null)playerImage.sprite=null;if(guardImage!=null)guardImage.sprite=null;assets?.Dispose();assets=null;if(owner!=null)owner.ReleaseBranch441(this);}
         private void OnDisable()=>Close();private void OnDestroy()=>DisposeTrial();
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>回廊の通常地上1段目だけ。有効frameの実射程を低い軌跡で投影し、命中は判断しない。</summary>
+    public sealed class OutsideGroundKickTrace442 : UnityEngine.UI.MaskableGraphic
+    {
+        public int SampleFrame {get;private set;}
+        public void Project(Olca.Core.Logic.Integration.OutsideNormalKickSequence kick)
+        {
+            bool visible=kick!=null&&kick.IsActive&&!kick.IsCharged&&kick.Kind==Olca.Core.Logic.Integration.OutsideKickKind.GroundFirst&&kick.IsHitWindow;
+            enabled=visible;if(!visible)return;SampleFrame=kick.ElapsedFrames-kick.ActiveTiming.StartupFrames;SetVerticesDirty();
+        }
+        protected override void OnPopulateMesh(UnityEngine.UI.VertexHelper vh)
+        {
+            vh.Clear();if(!enabled)return;var r=rectTransform.rect;float opacity=SampleFrame==1?1:.75f;
+            UnityEngine.Vector2 Point(float t)=>new UnityEngine.Vector2(UnityEngine.Mathf.Lerp(r.xMin,r.xMax,t),r.yMin+r.height*(.28f+.2f*UnityEngine.Mathf.Sin(t*UnityEngine.Mathf.PI)+SampleFrame*.025f));
+            void Stroke(float thickness,UnityEngine.Color tint){
+                for(int n=0;n<20;n++){
+                    float a=.12f+.88f*n/20,b=.12f+.88f*(n+1)/20;var p=Point(a);var q=Point(b);var d=(q-p).normalized;var normal=new UnityEngine.Vector2(-d.y,d.x)*r.height*thickness*(.35f+.65f*UnityEngine.Mathf.Sin((a+b)*.5f*UnityEngine.Mathf.PI));
+                    int k=vh.currentVertCount;UnityEngine.Vector2 Clamp(UnityEngine.Vector2 v)=>new UnityEngine.Vector2(UnityEngine.Mathf.Clamp(v.x,r.xMin,r.xMax),UnityEngine.Mathf.Clamp(v.y,r.yMin,r.yMax));
+                    vh.AddVert(Clamp(p-normal),tint,UnityEngine.Vector2.zero);vh.AddVert(Clamp(p+normal),tint,UnityEngine.Vector2.zero);vh.AddVert(Clamp(q+normal),tint,UnityEngine.Vector2.zero);vh.AddVert(Clamp(q-normal),tint,UnityEngine.Vector2.zero);vh.AddTriangle(k,k+1,k+2);vh.AddTriangle(k+2,k+3,k);
+                }
+            }
+            Stroke(.11f,new UnityEngine.Color(.015f,.14f,.22f,.9f*opacity));Stroke(.045f,new UnityEngine.Color(.65f,.96f,1,opacity));
+        }
     }
 }

@@ -729,6 +729,48 @@ namespace Olca.Tests.Application
             }
         }
 
+        [TestCase(1920,1080)][TestCase(1663,1247)]
+        public async Task 足元442は実射程と有効期間を投影し内外と逆向きと上道の判定を変えない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,factory,()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);binding.View.Render();binding.View.transform.Find("OutsideBranchEntry441").GetComponent<Button>().onClick.Invoke();var branch=binding.View.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();var trace=branch.transform.Find("BranchGroundKickTrace442").GetComponent<Olca.Presentation.Exploration.OutsideGroundKickTrace442>();
+                for(int mode=0;mode<4;mode++){
+                    branch.Runtime.Reset();var s=branch.Runtime.Session;Olca.Core.Logic.Integration.LogicalInput Input(float x=0,bool jump=false)=>new Olca.Core.Logic.Integration.LogicalInput{Horizontal=x,JumpButtonDown=jump,JumpButton=jump};
+                    void Walk(long x){for(int n=0;n<200&&s.Core.Position<x;n++)s.Tick(Input(1));Assert.GreaterOrEqual(s.Core.Position,x);}
+                    if(mode==3){Walk(210000);s.Tick(Input(1,true));for(int n=0;n<180&&!s.UsedUpper;n++)s.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=s.Core.Position<390000?1:0,JumpButton=true});Assert.IsTrue(s.UsedUpper);Walk(540000);}else Walk(mode==0?384000:396000);
+                    if(mode==2)s.Tick(Input(-1));Assert.IsTrue(s.Kick.TryRequest(s.Frame,s.Core.IsGrounded,s.Core.Facing));branch.Render();Assert.IsFalse(trace.enabled);
+                    for(int n=0;n<6;n++)s.Tick(Input());branch.Render();Assert.IsTrue(trace.enabled,"負例でも表示は出した上で命中しないこと");Assert.AreEqual(mode==1?20:30,s.Guard.CurrentHp);var actor=branch.transform.Find("BranchPlayer").GetComponent<RectTransform>();Assert.AreEqual(actor.anchoredPosition,trace.rectTransform.anchoredPosition);Assert.AreEqual(3f*trace.rectTransform.rect.height/.5f,trace.rectTransform.rect.width,.001f);Assert.AreEqual(mode==2?-1:1,trace.rectTransform.localScale.x);
+                    if(mode==3)Assert.Greater(trace.rectTransform.anchoredPosition.y,branch.transform.Find("BranchGoblin").GetComponent<RectTransform>().anchoredPosition.y);
+                    var state=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(s.Core.CaptureState());long frame=s.Frame;int hp=s.Guard.CurrentHp,sample=trace.SampleFrame;s.Paused=true;for(int n=0;n<30;n++){s.Tick(Input(1));branch.Render();}Assert.AreEqual(frame,s.Frame);Assert.AreEqual(sample,trace.SampleFrame);Assert.IsTrue(trace.enabled);Assert.AreEqual(hp,s.Guard.CurrentHp);CollectionAssert.AreEqual(state,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(s.Core.CaptureState()));s.Paused=false;
+                    for(int n=0;n<3;n++)s.Tick(Input());branch.Render();Assert.IsFalse(trace.enabled,"有効期間終了で即消える");
+                }
+                var ended=branch.Runtime.Session;branch.Close();Assert.IsTrue(ended.IsDisposed);
+            }
+        }
+        [Test] public void 足元442は通常一段目の3有効frameだけ描画し頂点を実射程外へ出さない()
+        {
+            var go=new GameObject("Trace442Test",typeof(RectTransform),typeof(Olca.Presentation.Exploration.OutsideGroundKickTrace442));go.transform.SetParent(host.transform,false);var trace=go.GetComponent<Olca.Presentation.Exploration.OutsideGroundKickTrace442>();trace.rectTransform.pivot=Vector2.zero;trace.rectTransform.sizeDelta=new Vector2(324,54);
+            Olca.Core.Logic.Integration.OutsideNormalKickSequence Sequence(){var k=new Olca.Core.Logic.Integration.OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());k.Configure(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Timings());return k;}
+            foreach(int facing in new[]{-1,1}){
+                var k=Sequence();Assert.IsTrue(k.TryRequest(0,true,facing));for(int frame=0;frame<=21;frame++){k.Observe(frame,true,facing);long start=k.StartedAt,end=k.EndsAt;trace.Project(k);Assert.AreEqual(frame>=6&&frame<9,trace.enabled);Assert.AreEqual(start,k.StartedAt);Assert.AreEqual(end,k.EndsAt);
+                    if(trace.enabled)using(var vh=new UnityEngine.UI.VertexHelper()){typeof(Olca.Presentation.Exploration.OutsideGroundKickTrace442).GetMethod("OnPopulateMesh",BindingFlags.Instance|BindingFlags.NonPublic,null,new[]{typeof(UnityEngine.UI.VertexHelper)},null).Invoke(trace,new object[]{vh});var vertices=new List<UIVertex>();vh.GetUIVertexStream(vertices);Assert.Greater(vertices.Count,0);Assert.IsTrue(vertices.All(v=>v.position.x>=0&&v.position.x<=324&&v.position.y>=0&&v.position.y<=54));Assert.AreEqual(324,vertices.Max(v=>v.position.x),.001f);}
+                }
+                var charged=Sequence();Assert.IsTrue(charged.TryStartCharge(0,true,facing,Olca.Core.Logic.Integration.OutsideChargeKickData.Create(new Olca.Core.Domain.PlayerCharacter(100),true),true));charged.Observe(6,true,facing);Assert.IsTrue(charged.IsHitWindow);trace.Project(charged);Assert.IsFalse(trace.enabled);
+                var second=Sequence();second.TryRequest(0,true,facing);second.TryRequest(15,true,facing);second.Observe(21,true,facing);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideKickKind.GroundSecond,second.Kind);Assert.IsTrue(second.IsHitWindow);trace.Project(second);Assert.IsFalse(trace.enabled);
+                var air=Sequence();air.TryRequest(0,false,facing);air.Observe(6,false,facing);Assert.IsTrue(air.IsHitWindow);trace.Project(air);Assert.IsFalse(trace.enabled);
+            }
+        }
+        [Test] public void 足元442の描画根拠となる既存判定は射程端の1単位内外と高さと逆向きを維持する()
+        {
+            long target=Olca.Core.Logic.Integration.OutsideBranchTrial441.GuardX,range=Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Range;
+            foreach(int facing in new[]{-1,1}){
+                bool Hit(long distance,long height=0,int? direction=null)=>Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Contains(Olca.Core.Logic.Integration.OutsideKickKind.GroundFirst,target-facing*distance,height,direction??facing,target);
+                Assert.IsTrue(Hit(range-1));Assert.IsTrue(Hit(range));Assert.IsFalse(Hit(range+1));Assert.IsFalse(Hit(range-1,0,-facing));Assert.IsFalse(Hit(range-1,120000));
+            }
+        }
+
         private GameObject host, events;
         private ResourceManager resources;
         private DialogManager dialogs;
