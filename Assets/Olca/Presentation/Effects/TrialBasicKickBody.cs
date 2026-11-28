@@ -71,15 +71,15 @@ namespace Olca.Presentation.Effects
     public sealed class BattleKickVisual : IDisposable
     {
         private readonly Transform parent;private readonly Func<SpriteRenderer> readBody;private readonly Func<Olca.Presentation.Field.WorldBattleGridView> readGrid;
-        private readonly PixelCombatWorld trail;private readonly SlashSpriteWorld slash;private readonly TrialSlashSprites sprites=new TrialSlashSprites();private BattleSystem owner;private Action<Enemy,int> hitHandler;private bool disposed;
+        private readonly BattleChargeParticleWorld chargeParticles;private readonly PixelCombatWorld trail;private readonly SlashSpriteWorld slash;private readonly TrialSlashSprites sprites=new TrialSlashSprites();private BattleSystem owner;private Action<Enemy,int> hitHandler;private bool disposed;
         private long hitSerial=long.MinValue;private int hitX,hitRange;private bool hitFire,hitCharged;private float remaining;
         private GameObject labelRoot;private TextMesh label,shadow;private Renderer labelRenderer,shadowRenderer;private string shown;
         public int ObservationErrors{get;private set;}
-        public int EmissionCount{get;private set;} public int ActivePixels=>trail.ActiveCount+(slash.IsVisible?1:0);
-        public BattleKickVisual(Transform parent,Func<SpriteRenderer> body,Func<Olca.Presentation.Field.WorldBattleGridView> grid){this.parent=parent;readBody=body;readGrid=grid;trail=new PixelCombatWorld(parent,"ProvisionalBattleKickTrail");slash=new SlashSpriteWorld(parent);}
+        public int EmissionCount{get;private set;} public int ActivePixels=>trail.ActiveCount+chargeParticles.ActiveCount+(slash.IsVisible?1:0);
+        public BattleKickVisual(Transform parent,Func<SpriteRenderer> body,Func<Olca.Presentation.Field.WorldBattleGridView> grid){this.parent=parent;readBody=body;readGrid=grid;chargeParticles=new BattleChargeParticleWorld(parent);trail=new PixelCombatWorld(parent,"ProvisionalBattleKickTrail");slash=new SlashSpriteWorld(parent);}
         public void Warmup()
         {
-            if(disposed||parent==null)return;trail.Warmup();slash.Warmup();if(labelRoot!=null)return;var font=Resources.Load<Font>("OlcaUI/MenuText");if(font==null)return;
+            if(disposed||parent==null)return;trail.Warmup();slash.Warmup();chargeParticles.Warmup();if(labelRoot!=null)return;var font=Resources.Load<Font>("OlcaUI/MenuText");if(font==null)return;
             labelRoot=new GameObject("ProvisionalBasicAttackCaption");labelRoot.transform.SetParent(parent,false);
             TextMesh Text(string name,Color ink,Vector3 offset){var go=new GameObject(name,typeof(TextMesh));go.transform.SetParent(labelRoot.transform,false);go.transform.localPosition=offset;var t=go.GetComponent<TextMesh>();t.font=font;t.fontSize=32;t.characterSize=.08f;t.anchor=TextAnchor.UpperCenter;t.alignment=TextAlignment.Center;t.color=ink;t.GetComponent<Renderer>().sharedMaterial=font.material;return t;}
             shadow=Text("Shadow",new Color(.01f,.025f,.04f,1),new Vector3(.02f,-.02f,.01f));label=Text("Text",Color.white,Vector3.zero);labelRenderer=label.GetComponent<Renderer>();shadowRenderer=shadow.GetComponent<Renderer>();labelRoot.SetActive(false);
@@ -109,7 +109,8 @@ namespace Olca.Presentation.Effects
             bool charging=charge.CanDisplayFor(owner);bool basic=owner.IsPlayerBasicAction;bool charged=basic?owner.IsPlayerChargedBasicAction:hitCharged;var phase=owner.PlayerActionPhase;bool contact=basic&&(phase==PlayerAttackPhase.Executing||phase==PlayerAttackPhase.Recovery&&owner.RecoveryElapsedFrames<TrialBasicKickBody.ContactPoseFrames);
             bool startup=basic&&phase==PlayerAttackPhase.Startup;float strength=contact?1:remaining>0?remaining/.18f*.55f:basic&&phase==PlayerAttackPhase.Recovery?.25f*Mathf.Clamp01(1-(owner.RecoveryElapsedFrames-3)/6f):0;
             int x=basic?owner.Player.GridPosition.X:hitX,range=basic?owner.BasicAttackRange:hitRange;bool fire=basic?owner.Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id:hitFire;
-            if(charging){slash.Clear();var bounds=body.bounds;float ratio=Mathf.Clamp01(charge.Frames/(float)charge.Required);trail.Arc(new Rect(bounds.min.x,bounds.min.y,bounds.size.x,bounds.size.y),2,ratio,.35f+.65f*ratio,ProvisionalPixelPattern.Tint(owner.Player.DepartureStyle.Id==DepartureStyleDefinition.TrialFire.Id),body);}
+            if(!charging)chargeParticles.Clear();
+            if(charging){slash.Clear();trail.Clear();var bounds=body.bounds;float width=Mathf.Max(bounds.size.x,bounds.size.y);chargeParticles.Show(new Rect(bounds.center.x-width*.5f,bounds.min.y,width,bounds.size.y),owner.LogicalFrame,charge.Frames,charge.Required,body);}
             else if(!startup&&strength>0){trail.Clear();
                 // 戦闘は各マスへの同時命中。三段の探索仕様を持ち込まず、共通の前方軌跡を重ねる。
                 int frame=basic?(phase==PlayerAttackPhase.Executing?0:owner.RecoveryElapsedFrames<3?1:owner.RecoveryElapsedFrames<6?2:3):3;
@@ -117,7 +118,7 @@ namespace Olca.Presentation.Effects
             }else{trail.Clear();slash.Clear();}
             bool showLabel=charging||basic||owner.IsGameOver&&remaining>0;if(labelRoot!=null){labelRoot.SetActive(showLabel);if(showLabel){string text=charging?(charge.Full?"タメ カンリョウ（カリ）":"タメチュウ（カリ）"):charged?(startup?"タメ（カリ） / ジュンビ":contact?"タメ（カリ） / ハツドウ":basic?"タメ（カリ） / フッキ":"タメ（カリ） / ヒット"):(startup?"キホン（カリ） / ジュンビ":contact?"キホン（カリ） / ハツドウ":basic?"キホン（カリ） / フッキ":"キホン（カリ） / ヒット");if(shown!=text){shown=text;label.text=shadow.text=text;}labelRoot.transform.position=new Vector3(body.bounds.center.x,body.bounds.min.y-.15f,body.transform.position.z-.1f);labelRenderer.sortingLayerID=shadowRenderer.sortingLayerID=body.sortingLayerID;labelRenderer.sortingOrder=body.sortingOrder+8;shadowRenderer.sortingOrder=body.sortingOrder+7;}}
         }
-        public void Clear(){trail.Clear();slash.Clear();if(labelRoot!=null)labelRoot.SetActive(false);shown=null;}
-        public void Dispose(){if(disposed)return;Bind(null);disposed=true;trail.Dispose();slash.Dispose();sprites.Dispose();if(labelRoot!=null){if(UnityEngine.Application.isPlaying)UnityEngine.Object.Destroy(labelRoot);else UnityEngine.Object.DestroyImmediate(labelRoot);}labelRoot=null;label=shadow=null;}
+        public void Clear(){chargeParticles.Clear();trail.Clear();slash.Clear();if(labelRoot!=null)labelRoot.SetActive(false);shown=null;}
+        public void Dispose(){if(disposed)return;Bind(null);disposed=true;chargeParticles.Dispose();trail.Dispose();slash.Dispose();sprites.Dispose();if(labelRoot!=null){if(UnityEngine.Application.isPlaying)UnityEngine.Object.Destroy(labelRoot);else UnityEngine.Object.DestroyImmediate(labelRoot);}labelRoot=null;label=shadow=null;}
     }
 }

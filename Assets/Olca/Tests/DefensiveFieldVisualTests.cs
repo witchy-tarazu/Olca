@@ -74,6 +74,53 @@ namespace Olca.Tests
                 effect.Bind(b);var charge=new BattleChargeVisualState(b,true,60,60);Assert.IsTrue(charge.CanDisplayFor(b));Assert.IsFalse(pose.Apply(b,charge));effect.Tick(0,charge);Assert.Greater(effect.ActivePixels,0);Assert.AreSame(original,body.sprite);Assert.IsTrue(animator.enabled);Assert.IsTrue(b.PlayerMovement.IsNormalMoving);Assert.IsFalse(b.HasPlayerAction);Assert.AreEqual(100,b.Player.CurrentHp);
             }}finally{Object.DestroyImmediate(gridHost);}
         }
+        [TestCase(false)][TestCase(true)]
+        public void 戦闘溜め476は同じ粒の年齢を保ち四frameで白金へ移り解放再開で初期化する(bool fire)
+        {
+            var gridHost=new GameObject("Charge476Grid");var grid=gridHost.AddComponent<WorldBattleGridView>();typeof(WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);var b=BodyBattle(fire);grid.Show(b.Field,0);var animator=host.AddComponent<Animator>();var original=body.sprite;
+            try{using(var effect=new BattleKickVisual(host.transform,()=>body,()=>grid))using(var pose=new TrialBasicKickBody(body,animator)){
+                effect.Bind(b);host.transform.localScale=new Vector3(.6f,1,1);
+                for(int f=1;f<=64;f++){
+                    b.TickFrame(17);effect.Tick(f%2==0?1000:0,new BattleChargeVisualState(b,true,System.Math.Min(f,60),60));
+                    var graphic=host.GetComponentInChildren<ProvisionalCombatGraphic>(true);Assert.AreEqual(f-1,graphic.ChargeParticleAge);Assert.AreEqual(f<60?-1:f-60,graphic.ChargeParticleFullAge);Assert.AreEqual(Mathf.Clamp01((f-60)/4f),graphic.ChargeParticleGold);
+                    Assert.That(Mathf.Abs(graphic.transform.lossyScale.x),Is.EqualTo(body.bounds.size.y).Within(.001f),"縦長の本体でも既存輪郭を身体の外へ置く表示幅");Assert.AreEqual(10,effect.ActivePixels);Assert.IsFalse(pose.Apply(b));Assert.IsTrue(animator.enabled);Assert.AreSame(original,body.sprite);
+                }
+                Assert.AreEqual(100,b.Player.CurrentHp);Assert.AreEqual(1000,b.Enemies[0].CurrentHp);Assert.AreEqual(0,effect.EmissionCount);Assert.IsFalse(b.HasPlayerAction);
+                effect.Tick(0);Assert.AreEqual(0,effect.ActivePixels);var fx=host.GetComponentInChildren<ProvisionalCombatGraphic>(true);Assert.IsFalse(fx.IsChargeParticleMode);
+                b.TickFrame(17);effect.Tick(0,new BattleChargeVisualState(b,true,1,60));Assert.AreEqual(0,fx.ChargeParticleAge);Assert.AreEqual(-1,fx.ChargeParticleFullAge);Assert.AreEqual(0,fx.ChargeParticleGold);
+                effect.Bind(BodyBattle(fire));effect.Tick(0,new BattleChargeVisualState(b,true,60,60));Assert.AreEqual(0,effect.ActivePixels);
+            }}finally{Object.DestroyImmediate(gridHost);}
+        }
+        [TestCase(Olca.Core.Logic.Battle.BattlePauseReason.User)][TestCase(Olca.Core.Logic.Battle.BattlePauseReason.CustomScreen)]
+        public void 戦闘溜め476は停止中に描画年齢と頂点を進めず再開後のみ進む(Olca.Core.Logic.Battle.BattlePauseReason reason)
+        {
+            var gridHost=new GameObject("Charge476PauseGrid");var grid=gridHost.AddComponent<WorldBattleGridView>();typeof(WorldBattleGridView).GetMethod("Awake",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(grid,null);var b=BodyBattle(false);grid.Show(b.Field,0);
+            try{using(var effect=new BattleKickVisual(host.transform,()=>body,()=>grid)){
+                effect.Bind(b);for(int f=1;f<=62;f++){b.TickFrame(17);effect.Tick(0,new BattleChargeVisualState(b,true,System.Math.Min(f,60),60));}
+                var fx=host.GetComponentInChildren<ProvisionalCombatGraphic>(true);var fill=typeof(ProvisionalCombatGraphic).GetMethod("OnPopulateMesh",BindingFlags.Instance|BindingFlags.NonPublic,null,new[]{typeof(UnityEngine.UI.VertexHelper)},null);var before=new System.Collections.Generic.List<UIVertex>();
+                using(var vh=new UnityEngine.UI.VertexHelper()){fill.Invoke(fx,new object[]{vh});vh.GetUIVertexStream(before);}
+                long age=fx.ChargeParticleAge,frame=b.LogicalFrame;b.Pause(reason);
+                for(int n=0;n<20;n++){b.TickFrame(17);effect.Tick(999,new BattleChargeVisualState(b,true,60,60));}
+                Assert.AreEqual(frame,b.LogicalFrame);Assert.AreEqual(age,fx.ChargeParticleAge);Assert.AreEqual(.5f,fx.ChargeParticleGold);
+                using(var vh=new UnityEngine.UI.VertexHelper()){fill.Invoke(fx,new object[]{vh});var after=new System.Collections.Generic.List<UIVertex>();vh.GetUIVertexStream(after);CollectionAssert.AreEqual(before,after);}
+                b.Resume(reason);b.TickFrame(17);effect.Tick(0,new BattleChargeVisualState(b,true,60,60));Assert.AreEqual(age+1,fx.ChargeParticleAge);Assert.AreEqual(.75f,fx.ChargeParticleGold);
+                effect.Bind(null);Assert.AreEqual(0,effect.ActivePixels);
+            }}finally{Object.DestroyImmediate(gridHost);}
+        }
+        [TestCase(-1f)][TestCase(1f)]
+        public void 戦闘溜め476のWorld表示は反転拡大と移動非表示で位相を保ち破棄時に資源を残さない(float facing)
+        {
+            host.transform.localScale=new Vector3(facing*2,3,1);var area=new Rect(2,4,3,2);var original=body.sprite;
+            using(var effect=new BattleChargeParticleWorld(host.transform)){
+                effect.Warmup();var all=host.GetComponentsInChildren<Transform>(true);var fx=host.GetComponentInChildren<ProvisionalCombatGraphic>(true);
+                effect.Show(area,59,59,60,body);Assert.AreEqual(58,fx.ChargeParticleAge);Assert.AreEqual(0,fx.ChargeParticleGold);Assert.IsFalse(fx.raycastTarget);Assert.IsNotNull(fx.GetComponent<CanvasRenderer>());
+                body.forceRenderingOff=true;effect.Show(area,60,60,60,body);Assert.AreEqual(0,effect.ActiveCount);Assert.AreEqual(59,fx.ChargeParticleAge);
+                body.forceRenderingOff=false;effect.Show(area,64,60,60,body);Assert.AreEqual(63,fx.ChargeParticleAge);Assert.AreEqual(1,fx.ChargeParticleGold);Assert.AreEqual(10,effect.ActiveCount);
+                Assert.That(fx.transform.position.x,Is.EqualTo(area.center.x).Within(.001));Assert.That(fx.transform.position.y,Is.EqualTo(area.center.y).Within(.001));Assert.That(Mathf.Abs(fx.transform.lossyScale.x),Is.EqualTo(area.width).Within(.001));Assert.That(Mathf.Abs(fx.transform.lossyScale.y),Is.EqualTo(area.height).Within(.001));Assert.AreSame(original,body.sprite);CollectionAssert.AreEqual(all,host.GetComponentsInChildren<Transform>(true));
+                effect.Clear();Assert.AreEqual(0,effect.ActiveCount);Assert.IsFalse(fx.IsChargeParticleMode);
+            }
+            Assert.IsEmpty(host.GetComponentsInChildren<ProvisionalCombatGraphic>(true));Assert.IsEmpty(host.GetComponentsInChildren<Canvas>(true));Assert.AreSame(original,body.sprite);
+        }
         [TestCase(-1f)][TestCase(1f)] public void World撃破メッシュは百回再利用し非入力で破棄後に資源を残さない(float facing)
         {
             host.transform.localScale=new Vector3(facing*2,3,1);var area=new Rect(2,4,3,2);

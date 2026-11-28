@@ -477,6 +477,30 @@ namespace Olca.Presentation.Effects
         public void Clear(){ActiveCount=0;if(quads!=null)foreach(var q in quads)if(q!=null)q.enabled=false;}
         public void Dispose(){if(disposed)return;disposed=true;Clear();if(root!=null){if(UnityEngine.Application.isPlaying)Object.Destroy(root);else Object.DestroyImmediate(root);}if(sprite!=null){if(UnityEngine.Application.isPlaying)Object.Destroy(sprite);else Object.DestroyImmediate(sprite);}root=null;sprite=null;quads=null;}
     }
+    /// <summary>戦闘の溜め用。探索の粒と時計を一つだけ借り、本体の姿勢や攻撃を所有しない。</summary>
+    public sealed class BattleChargeParticleWorld : System.IDisposable
+    {
+        private readonly Transform parent;private GameObject root;private Canvas canvas;private ProvisionalCombatGraphic graphic;private bool disposed;
+        public int ActiveCount{get;private set;}
+        public BattleChargeParticleWorld(Transform parent){this.parent=parent;}
+        public void Warmup()
+        {
+            if(disposed||parent==null||root!=null)return;
+            root=new GameObject("BattleChargeParticles",typeof(RectTransform),typeof(Canvas));root.transform.SetParent(parent,false);canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.WorldSpace;canvas.overrideSorting=true;
+            ((RectTransform)root.transform).sizeDelta=Vector2.one;
+            var mesh=new GameObject("ChargeFlow",typeof(RectTransform),typeof(ProvisionalCombatGraphic));mesh.transform.SetParent(root.transform,false);graphic=mesh.GetComponent<ProvisionalCombatGraphic>();graphic.raycastTarget=false;graphic.rectTransform.sizeDelta=Vector2.one;root.SetActive(false);
+        }
+        public void Show(Rect bounds,long frame,int frames,int required,SpriteRenderer reference)
+        {
+            if(disposed||parent==null||reference==null||bounds.width<=0||bounds.height<=0){Clear();return;}Warmup();
+            // 最大時も同じ論理年齢を渡す。移動中の短い本体非表示でも位相を初期化しない。
+            graphic.ShowChargeParticles(frame,frames,required);canvas.sortingLayerID=reference.sortingLayerID;canvas.sortingOrder=reference.sortingOrder+5;
+            root.transform.SetPositionAndRotation(new Vector3(bounds.center.x,bounds.center.y,reference.transform.position.z-.05f),Quaternion.identity);var scale=parent.lossyScale;root.transform.localScale=new Vector3(bounds.width/Mathf.Max(.0001f,Mathf.Abs(scale.x)),bounds.height/Mathf.Max(.0001f,Mathf.Abs(scale.y)),1);
+            bool visible=graphic.enabled&&!reference.forceRenderingOff;root.SetActive(visible);ActiveCount=visible?ChargeParticlePattern.Count:0;
+        }
+        public void Clear(){ActiveCount=0;if(graphic!=null)graphic.ClearChargeParticles();if(root!=null)root.SetActive(false);}
+        public void Dispose(){if(disposed)return;Clear();disposed=true;if(root!=null){if(UnityEngine.Application.isPlaying)Object.Destroy(root);else Object.DestroyImmediate(root);}root=null;canvas=null;graphic=null;}
+    }
     /// <summary>敵消滅用のWorldSpace UI。探索と同じメッシュを使い、SpriteやMaterialを生成しない。</summary>
     public sealed class PixelBurstWorld : System.IDisposable
     {
