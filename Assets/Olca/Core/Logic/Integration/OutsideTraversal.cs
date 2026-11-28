@@ -681,7 +681,11 @@ namespace Olca.Core.Logic.Integration
         public OutsideGoblinPhase Phase {get;private set;}=OutsideGoblinPhase.Approach;
         public int Age {get;private set;} public int GuardFacing {get;private set;}=-1;
         public bool GateOpen {get;private set;} public bool GatePassed {get;private set;}
-        public bool UsedUpper {get;private set;} public bool Completed {get;private set;} public bool Paused {get;set;}
+        private bool paused;private long landingJumpUntil465=-1;private int landingJumpHp465;
+        // 既存の独立地形試用だけで、着地直前の保持入力を最大3論理frame待つ。保存しない。
+        private bool HasLandingGrace465=>IsRuins||IsWaterway464;
+        public bool UsedUpper {get;private set;} public bool Completed {get;private set;}
+        public bool Paused {get=>paused;set{paused=value;if(value)landingJumpUntil465=-1;}}
         public bool IsDisposed {get;private set;} public long Frame=>Core.Frame;
         public long LastHitFrame {get;private set;}=-1000;public long LastHurtFrame {get;private set;}=-1000;public long DeathFrame {get;private set;}=-1000;
         private readonly OutsideTraversalProfile closed,open;
@@ -699,7 +703,7 @@ namespace Olca.Core.Logic.Integration
             Player=new Olca.Core.Domain.PlayerCharacter(100);Guard=new Olca.Core.Domain.Enemy(ruins?"trial-ruins-archer-v1":GuardId,ruins?"イセキ ユミ（カリ）":"モンバン ゴブリン（カリ）",GuardHp,Olca.Core.Domain.ElementType.None,new Olca.Core.Domain.Vector2Int(0,0));
             Kick=new OutsideNormalKickSequence(new Olca.Core.Logic.Battle.AttackInputReservation());Kick.Configure(OutsideKickTrialDefinition.Timings());
         }
-        public void CancelInput(){charge.Reset();Kick.Interrupt();}
+        public void CancelInput(){landingJumpUntil465=-1;charge.Reset();Kick.Interrupt();}
         public bool StrikeContainsPlayer()=>!Guard.IsDead&&(Core.Position-EnemyX)*GuardFacing>=0&&(Core.Position-EnemyX)*GuardFacing<=Reach&&Core.Height>=0&&Core.Height<=AttackHeight;
         private void RefreshGate()
         {
@@ -717,7 +721,12 @@ namespace Olca.Core.Logic.Integration
         {
             if(IsDisposed||Paused||Completed||Player.IsDead)return;input=input??new LogicalInput();bool allowed=!Player.IsActionPrevented;
             RefreshGate();Kick.Observe(Frame,Core.IsGrounded,Core.Facing,allowed);
-            Core.TickFrame(allowed?Kick.ResolveHorizontal(input.Horizontal):0,allowed&&!Kick.LocksGroundMotion&&input.JumpButtonDown,input.JumpButton,movementLocked:!allowed);
+            bool jumpAllowed=allowed&&!Kick.LocksGroundMotion;
+            if(!HasLandingGrace465||!jumpAllowed||!input.JumpButton||Frame+1>landingJumpUntil465||Player.CurrentHp!=landingJumpHp465)landingJumpUntil465=-1;
+            if(HasLandingGrace465&&jumpAllowed&&input.JumpButtonDown&&input.JumpButton&&!Core.IsGrounded&&Core.VerticalVelocity<0){landingJumpUntil465=Frame+4;landingJumpHp465=Player.CurrentHp;}
+            bool landingJump=landingJumpUntil465>=Frame+1&&Core.IsGrounded;
+            if(landingJump){landingJumpUntil465=-1;Core.TickAcceptedLandingJumpFrame(Kick.ResolveHorizontal(input.Horizontal),input.JumpButton);}
+            else Core.TickFrame(allowed?Kick.ResolveHorizontal(input.Horizontal):0,jumpAllowed&&input.JumpButtonDown,input.JumpButton,movementLocked:!allowed);
             Kick.Observe(Frame,Core.IsGrounded,Core.Facing,allowed);
             var release=charge.Advance(Frame,input.HasChargeHoldSample?input.ChargeHoldButton||input.BasicAttackButton:input.BasicAttackButton,input.BasicAttackButtonDown,allowed,allowed&&!Kick.IsActive,Kick.IsActive,OutsideChargeKickData.RequiredFor(Player),out bool reserve);
             if(reserve)Kick.TryRequest(Frame,Core.IsGrounded,Core.Facing,bodyAllowed:allowed,otherAttack:true);
@@ -728,7 +737,7 @@ namespace Olca.Core.Logic.Integration
                 Player.BeginHpFrame();try{
                     bool contact=!GateOpen&&WaterActiveNow464&&Core.Height<WaterJetHeight464&&System.Math.Abs(Core.Position-WaterJetX464)==closed.BodyHalfWidth&&System.Math.Sign(input.Horizontal)==System.Math.Sign(WaterJetX464-Core.Position);
                     long cycle=Frame/WaterCycle464;
-                    if(contact&&LastWaterContactCycle464!=cycle){LastWaterContactCycle464=cycle;if(Player.TryTakeDamage(10,affectsPoise:false))LastHurtFrame=Frame;}
+                    if(contact&&LastWaterContactCycle464!=cycle){LastWaterContactCycle464=cycle;if(Player.TryTakeDamage(10,affectsPoise:false)){LastHurtFrame=Frame;landingJumpUntil465=-1;}}
                 }finally{Player.CommitHpFrame();Player.PublishHpFrame();}
                 if(Core.SupportId=="waterway-upper")UsedUpper=true;
                 if(!Player.IsDead&&Core.Position>=GoalX&&Core.IsGrounded&&Core.Height==0){Completed=true;CancelInput();}return;
@@ -751,7 +760,7 @@ namespace Olca.Core.Logic.Integration
                     }
                 }
                 Player.TickStagger(0,true);Player.TickPoiseRecovery(0,true);
-            }finally{Player.CommitHpFrame();Player.PublishHpFrame();}
+            }finally{Player.CommitHpFrame();Player.PublishHpFrame();}if(LastHurtFrame==Frame)landingJumpUntil465=-1;
             if(Core.SupportId=="branch-upper"||Core.SupportId=="ruins-upper-first")UsedUpper=true;if(Core.SupportId=="ruins-upper-second")ReachedSecondPlatform=true;RefreshGate();
             if(!Player.IsDead&&Core.Position>=GoalX&&Core.IsGrounded&&Core.Height==0){Completed=true;CancelInput();}
         }

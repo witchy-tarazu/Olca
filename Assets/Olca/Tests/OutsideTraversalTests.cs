@@ -670,3 +670,33 @@ namespace Olca.Tests
         }
     }
 }
+
+namespace Olca.Tests
+{
+    public sealed class OutsideLandingGrace465Tests
+    {
+        private static Olca.Core.Logic.Integration.LogicalInput I(bool down=false,bool held=true)=>new Olca.Core.Logic.Integration.LogicalInput{JumpButtonDown=down,JumpButton=held};
+        private static Olca.Core.Logic.Integration.OutsideBranchTrial441 Ready(bool ruins,int earlier=0)
+        {
+            var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441(ruins,!ruins);s.Tick(I(true));while(s.Frame<24)s.Tick(I());while(s.Frame<60-earlier)s.Tick(I(held:false));NUnit.Framework.Assert.IsFalse(s.Core.IsGrounded);NUnit.Framework.Assert.Less(s.Core.VerticalVelocity,0);return s;
+        }
+        [NUnit.Framework.TestCase(false,0,true)][NUnit.Framework.TestCase(false,1,true)][NUnit.Framework.TestCase(false,2,true)][NUnit.Framework.TestCase(false,3,false)]
+        [NUnit.Framework.TestCase(true,0,true)][NUnit.Framework.TestCase(true,2,true)][NUnit.Framework.TestCase(true,3,false)]
+        public void 着地465は保持した押下だけを最大三frameで一度受ける(bool ruins,int earlier,bool launches)
+        {
+            using(var s=Ready(ruins,earlier)){s.Tick(I(true));while(s.Frame<62)s.Tick(I());NUnit.Framework.Assert.AreEqual(launches?12000:0,s.Core.Height);NUnit.Framework.Assert.AreEqual(launches?11600:0,s.Core.VerticalVelocity);while(s.Frame<150)s.Tick(I());NUnit.Framework.Assert.IsTrue(s.Core.IsGrounded);NUnit.Framework.Assert.AreEqual(0,s.Core.Height);}
+        }
+        [NUnit.Framework.TestCase(0)][NUnit.Framework.TestCase(1)][NUnit.Framework.TestCase(2)][NUnit.Framework.TestCase(3)]
+        public void 着地465は解放停止取消被弾で保留を破棄する(int cancel)
+        {
+            using(var s=Ready(false,1)){s.Tick(I(true));if(cancel==0)s.Tick(I(held:false));if(cancel==1){long frame=s.Frame;s.Paused=true;s.Tick(I());NUnit.Framework.Assert.AreEqual(frame,s.Frame);s.Paused=false;}if(cancel==2)s.CancelInput();if(cancel==3)s.Player.TryTakeDamage(1,affectsPoise:false);while(s.Frame<65)s.Tick(I(held:cancel!=0));NUnit.Framework.Assert.AreEqual(0,s.Core.Height);NUnit.Framework.Assert.IsTrue(s.Core.IsGrounded);}
+        }
+        [NUnit.Framework.Test] public void 着地465は上昇中の入力を保存せず通常軌道と旧回廊を変えない()
+        {
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441(false,true))using(var old=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){
+                s.Tick(I(true));old.Tick(I(true));for(int n=0;n<10;n++){s.Tick(I());old.Tick(I());NUnit.Framework.Assert.AreEqual(old.Core.Height,s.Core.Height);NUnit.Framework.Assert.AreEqual(old.Core.VerticalVelocity,s.Core.VerticalVelocity);}s.Tick(I(held:false));s.Tick(I(true));while(s.Frame<100)s.Tick(I());NUnit.Framework.Assert.AreEqual(0,s.Core.Height);
+            }
+            using(var s=new Olca.Core.Logic.Integration.OutsideBranchTrial441()){s.Tick(I(true));while(s.Frame<24)s.Tick(I());while(s.Frame<60)s.Tick(I(held:false));s.Tick(I(true));while(s.Frame<65)s.Tick(I());NUnit.Framework.Assert.AreEqual(0,s.Core.Height);}
+        }
+    }
+}

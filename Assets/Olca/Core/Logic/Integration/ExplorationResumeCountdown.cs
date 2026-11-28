@@ -804,6 +804,12 @@ namespace Olca.Core.Logic.Integration
             return id!=null;
         }
         public void TickFrame(float horizontal,bool jumpDown=false,bool jumpHeld=false,bool dashDown=false,bool dashHeld=false,bool movementLocked=false)=>TickTraversalFrame(horizontal,jumpDown,jumpHeld,dashDown,dashHeld,movementLocked,false,false);
+        // 接地を確認した試用Sessionの一度限りの再押下。共通の軌道と保持時間処理を使う。
+        internal void TickAcceptedLandingJumpFrame(float horizontal,bool jumpHeld)
+        {
+            if(!IsGrounded)throw new InvalidOperationException("着地済みの入力だけを再受付します");
+            jumpWasHeld=false;TickFrame(horizontal,true,jumpHeld);
+        }
         internal void TickDashAttackFrame(int facing,bool jumpHeld,bool locked){if(TraversalProfile==null||facing!=1&&facing!=-1)throw new InvalidOperationException("ダッシュ攻撃の移動定義がありません");TickTraversalFrame(facing,false,jumpHeld,false,false,locked,true,false);}
         internal void TickAfterDashAttackFrame(float horizontal,bool jumpDown,bool jumpHeld,bool dashDown,bool dashHeld,bool locked)=>TickTraversalFrame(horizontal,jumpDown,jumpHeld,dashDown,dashHeld,locked,false,true);
         internal void TickKnockbackFrame(long displacement,bool jumpHeld,bool dashHeld)
