@@ -452,3 +452,69 @@ namespace Olca.Core.Logic.Battle
         public static EnemyAIRegistration FrontPattern()=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new TelegraphedBasicAttackAction(WindupFrames,StrikeDamage,RestMs)},EnemyPatternEndMode.Loop)},0);
     }
 }
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>一射後に再照準する専用二連砲台。各予告は固定、二射後は90f排熱。数値は試用。</summary>
+    public sealed class DungeonReaimCannon473 : IContinuingEnemyAIAction, IEnemyAttackPreviewSource, IEnemyRecoveryPreviewSource
+    {
+        public const string DefinitionId="trial-dungeon-reaim-cannon-v1", BossName="ニレン サイショウジュン（カリ）";
+        public const int WarningFrames=30, BetweenShotsFrames=12, RecoveryFrames=90, Damage=10, MaximumHp=60;
+        public static bool Matches(Enemy e)=>e!=null&&e.EnemyId=="boss"&&e.Name==BossName&&e.MaxHp==MaximumHp&&e.Element==ElementType.None&&!e.IsSummoned;
+        private CancellationTokenSource cancellation;
+        private FrameTask task;
+        private AIContext active;
+        private long started, released=-1;
+        private int recoveryLength;
+        private bool warning;
+        private object owner;
+        private Vector2Int target;
+        private static bool Ready(AIContext c)=>c.Battle!=null&&c.Field!=null&&!c.Battle.IsGameOver&&c.Self!=null&&c.Player!=null&&!c.Self.IsDead&&!c.Player.IsDead&&!c.Self.IsStunned&&!c.Self.IsParalyzed&&!c.Self.IsStaggered&&!c.Self.IsInTemporaryMove&&c.HasVisiblePlayer;
+        public bool IsRunning {get{Observe();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        public bool CanExecute(AIContext c)=>Ready(c)&&!IsRunning&&c.Self.GridPosition.Y==c.Player.GridPosition.Y&&c.GetDistanceToPlayer()>=2&&c.GetDistanceToPlayer()<=4;
+        public void Execute(AIContext c)
+        {
+            if(!CanExecute(c))return;active=c;released=-1;recoveryLength=0;owner=new object();cancellation=new CancellationTokenSource();
+            task=Run(c,owner,cancellation.Token);Observe();
+        }
+        private async FrameTask Run(AIContext c,object ticket,CancellationToken token)
+        {
+            try{
+                for(int shot=0;shot<2;shot++){
+                    token.ThrowIfCancellationRequested();if(!Ready(c))return;
+                    // 二射目の開始時にだけ狙い直す。予告中は追尾しない。
+                    var delta=new Vector2Int(c.Player.GridPosition.X-c.Self.GridPosition.X,c.Player.GridPosition.Y-c.Self.GridPosition.Y);
+                    var aim=c.ResolveDirectionalInput(delta);target=new Vector2Int(c.Self.GridPosition.X+aim.X,c.Self.GridPosition.Y+aim.Y);
+                    if(!c.Field.IsInBounds(target))return;
+                    var locked=target;started=c.Battle.ActionPresentationTimeUnits;released=-1;warning=true;
+                    c.Battle.SetEnemyAttackTelegraph(ticket,new[]{locked});
+                    await c.Battle.WaitForActionFramesAsync(WarningFrames,token);token.ThrowIfCancellationRequested();if(!Ready(c))return;
+                    warning=false;c.Battle.ClearEnemyAttackTelegraph(ticket);
+                    if(c.Player.GridPosition.Equals(locked)&&c.Player.TryTakeDamage(Damage)&&!c.Player.IsDead)c.Player.SetInvincible(c.Battle.DefaultHitInvincibilityMs);
+                    released=c.Battle.ActionPresentationTimeUnits;recoveryLength=shot==0?BetweenShotsFrames:RecoveryFrames;
+                    await c.Battle.WaitForActionFramesAsync(recoveryLength,token);
+                }
+            }finally{warning=false;c.Battle.ClearEnemyAttackTelegraph(ticket);if(ReferenceEquals(owner,ticket))owner=null;}
+        }
+        private void Observe(){if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation.Dispose();cancellation=null;}
+        public void Tick(int milliseconds,AIContext context,bool logicalFrame)=>Observe();
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview)
+        {
+            preview=default;if(!warning||cancellation==null||cancellation.IsCancellationRequested||task.Status!=FrameTaskStatus.Pending)return false;
+            preview=new EnemyAttackPreview(target,(int)Math.Min(WarningFrames,Math.Max(0,(active.Battle.ActionPresentationTimeUnits-started)/50)),WarningFrames);return true;
+        }
+        public bool TryGetRecoveryPreview(out int elapsedFrames,out int totalFrames)
+        {
+            elapsedFrames=totalFrames=0;if(warning||cancellation==null||cancellation.IsCancellationRequested||task.Status!=FrameTaskStatus.Pending||released<0||!Ready(active))return false;
+            long age=(active.Battle.ActionPresentationTimeUnits-released)/50;if(age<0||age>=recoveryLength)return false;
+            elapsedFrames=(int)age;totalFrames=recoveryLength;return true;
+        }
+        public void Cancel(AIContext c)
+        {
+            var source=cancellation;var ticket=owner;cancellation=null;owner=null;released=-1;warning=false;if(source==null)return;
+            try{source.Cancel();}finally{source.Dispose();active.Battle?.ClearEnemyAttackTelegraph(ticket);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();
+        }
+        public int GetCooldownMs()=>500;
+        public float GetCooldown()=>.5f;
+    }
+}

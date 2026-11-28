@@ -878,7 +878,7 @@ namespace Olca.Presentation.Field
             RefreshObstacleVisuals(); RefreshVisitVisuals();
             RefreshEnemyPerception(); RefreshBombVisuals(); RefreshTerrainVisuals();
             battleGridView?.ShowTelegraphs(currentBattle!=null&&!currentBattle.IsGameOver?currentBattle.EnemyAttackTiles:System.Array.Empty<Olca.Core.Domain.Vector2Int>());
-            foreach(var view in enemyViews){if(view==null)continue;int elapsed=0,total=0;bool active=currentBattle!=null&&!currentBattle.IsGameOver&&currentBattle.TryGetEnemyAttackPreview(view.TrackedEnemy,out _,out elapsed,out total);int rest=0,length=0;bool recovering=currentBattle!=null&&currentBattle.TryGetEnemyRecoveryPreview(view.TrackedEnemy,out rest,out length);view.SetAttackWindup(active,elapsed,total,(currentBattle?.LogicalFrame??0)*50,recovering?rest:-1,length,currentBattle?.Player.GridPosition.X);}
+            foreach(var view in enemyViews){if(view==null)continue;int elapsed=0,total=0;Olca.Core.Domain.Vector2Int locked=default;bool active=currentBattle!=null&&!currentBattle.IsGameOver&&currentBattle.TryGetEnemyAttackPreview(view.TrackedEnemy,out locked,out elapsed,out total);int rest=0,length=0;bool recovering=currentBattle!=null&&currentBattle.TryGetEnemyRecoveryPreview(view.TrackedEnemy,out rest,out length);view.SetAttackWindup(active,elapsed,total,(currentBattle?.LogicalFrame??0)*50,recovering?rest:-1,length,currentBattle?.Player.GridPosition.X,active?(int?)locked.X:null);}
 
             // Controllerの論理状態から姿勢を選ぶ。描画だけのフレームでも移動姿勢を維持。
             UpdateMovementAnimation();

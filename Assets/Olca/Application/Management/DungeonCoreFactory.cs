@@ -100,6 +100,7 @@ namespace Olca.Application.Management
             public PairEnemyProvider447(IEnemyAIProvider fallback){this.fallback=fallback;}
             public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
             {
+                if(DungeonReaimCannon473.Matches(enemy))return new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonReaimCannon473()},EnemyPatternEndMode.Loop)},0);
                 if(enemy?.EnemyId==DungeonMixedPriority462.FrontId)return DungeonMixedPriority462.IsFront(enemy)?DungeonMixedPriority462.FrontPattern():null;
                 return DungeonFlyingDive455.Matches(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonFlyingDive455()},EnemyPatternEndMode.Loop)},0):(DungeonStepArcherAction.IsPairTrialBoss(enemy)||DungeonMixedPriority462.IsRear(enemy))?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
             }
@@ -114,6 +115,13 @@ namespace Olca.Application.Management
                 cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
             }
             return FloorSequenceDefinitions.WithSharedCardCatalog(TrialMixedRoute462,"trial-dungeon-mixed-priority-v1",new[]{new DungeonConfig("trial-dungeon-mixed-priority-floor-v1","シヨウ ヨミアイ・ニタイ（カリ）",8,cells)},catalog);
+        }
+        public const string TrialMortarRoute473="trial-dungeon-reaim-cannon-route-v1";
+        public static FloorSequenceDefinitions CreateTrialMortar473(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();var cells=new List<MapCell>();
+            for(int i=0;i<8;i++)cells.Add(i==3?new MapCell(i,new Enemy("boss",DungeonReaimCannon473.BossName,DungeonReaimCannon473.MaximumHp,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal)):new MapCell(i));
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialMortarRoute473,DungeonReaimCannon473.DefinitionId,new[]{new DungeonConfig("trial-dungeon-reaim-cannon-floor-v1","シヨウ ニレン・ホウダイ（カリ）",8,cells)},catalog);
         }
         public const string TrialSequenceRoute456="trial-dungeon-pair-flying-route-v1";
         public static FloorSequenceDefinitions CreateTrialSequence456(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)

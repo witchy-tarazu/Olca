@@ -786,3 +786,92 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonMortar473Tests
+    {
+        private static BattleSystem Battle(out PlayerCharacter p,out Enemy e,int enemyColumn=4,int playerColumn=1)
+        {
+            p=new PlayerCharacter(100,new Vector2Int(playerColumn,0));e=new Enemy("boss",DungeonReaimCannon473.BossName,60,ElementType.None,new Vector2Int(enemyColumn,0));
+            var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck(),customGaugeSpeed:0,randomProvider:new SeededBattleRandom(7),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.ConfigureDefaultHitInvincibility(600);return b;
+        }
+        private static void Frames(BattleSystem b,int count){for(int n=0;n<count;n++)b.TickFrame(17);}
+        [Test]
+        public void 砲台473は二射を各予告30fで撃ち既存36f無敵を越えた二射後に排熱する()
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var tile,out var age,out var total));Assert.AreEqual(new Vector2Int(1,0),tile);Assert.AreEqual(30,total);Assert.AreEqual(0,age);
+            Frames(b,29);Assert.AreEqual(100,p.CurrentHp);Frames(b,1);Assert.AreEqual(90,p.CurrentHp);Assert.IsEmpty(b.EnemyAttackTiles);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out age,out total));Assert.AreEqual(0,age);Assert.AreEqual(12,total);
+            Frames(b,11);Assert.IsEmpty(b.EnemyAttackTiles);Frames(b,1);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out tile,out age,out total));Assert.AreEqual(0,age);Assert.AreEqual(30,total);Frames(b,29);Assert.AreEqual(90,p.CurrentHp);Frames(b,1);Assert.AreEqual(80,p.CurrentHp);
+            Assert.IsEmpty(b.EnemyAttackTiles);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out age,out total));Assert.AreEqual(90,total);Assert.AreEqual(0,age);Frames(b,89);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out age,out _));Assert.AreEqual(89,age);Frames(b,1);Assert.IsFalse(b.TryGetEnemyRecoveryPreview(e,out _,out _));Assert.AreEqual(4,e.GridPosition.X);
+        }
+        [TestCase(false,90)][TestCase(true,100)]
+        public void 砲台473は一射目だけの回避では再照準に当たり二射目も動くと避けられる(bool secondDodge,int hp)
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);p.MoveTo(new Vector2Int(0,0));Frames(b,30);Assert.AreEqual(100,p.CurrentHp);Frames(b,12);CollectionAssert.AreEquivalent(new[]{new Vector2Int(0,0)},b.EnemyAttackTiles);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var tile,out _,out _));Assert.AreEqual(new Vector2Int(0,0),tile);
+            if(secondDodge)p.MoveTo(new Vector2Int(1,0));Frames(b,30);Assert.AreEqual(hp,p.CurrentHp);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out _,out var total));Assert.AreEqual(90,total);
+        }
+        [Test]
+        public void 砲台473は各射の予告中には追尾せず二射目開始時だけ方向を選び直す()
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);p.MoveTo(new Vector2Int(5,0));Frames(b,29);CollectionAssert.AreEquivalent(new[]{new Vector2Int(1,0)},b.EnemyAttackTiles);Frames(b,13);Assert.AreEqual(100,p.CurrentHp);CollectionAssert.AreEquivalent(new[]{new Vector2Int(5,0)},b.EnemyAttackTiles);
+            p.MoveTo(new Vector2Int(2,0));Frames(b,29);CollectionAssert.AreEquivalent(new[]{new Vector2Int(5,0)},b.EnemyAttackTiles);Frames(b,1);Assert.AreEqual(100,p.CurrentHp);Assert.AreEqual(4,e.GridPosition.X);
+        }
+        [Test]
+        public void 砲台473は右側と盤面端でも範囲外を警告せず二度の移動を判定する()
+        {
+            var b=Battle(out var p,out var e,1,4);b.TickFrame(17);p.MoveTo(new Vector2Int(5,0));Frames(b,42);CollectionAssert.AreEquivalent(new[]{new Vector2Int(5,0)},b.EnemyAttackTiles);p.MoveTo(new Vector2Int(4,0));Frames(b,30);Assert.AreEqual(100,p.CurrentHp);
+            var near=Battle(out p,out e,4,3);Frames(near,180);Assert.IsEmpty(near.EnemyAttackTiles);Assert.AreEqual(100,p.CurrentHp);var far=Battle(out p,out e,5,0);Frames(far,180);Assert.IsEmpty(far.EnemyAttackTiles);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [TestCase(BattlePauseReason.User,0)][TestCase(BattlePauseReason.User,1)][TestCase(BattlePauseReason.User,2)][TestCase(BattlePauseReason.User,3)]
+        [TestCase(BattlePauseReason.CustomScreen,0)][TestCase(BattlePauseReason.CustomScreen,1)][TestCase(BattlePauseReason.CustomScreen,2)][TestCase(BattlePauseReason.CustomScreen,3)]
+        public void 砲台473は一射目前後と二射目前後を一括停止し読取で時間を進めない(BattlePauseReason reason,int phase)
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Frames(b,phase==0?5:phase==1?30:phase==2?42:72);bool warning=phase==0||phase==2;int before;
+            if(warning){Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out _,out before,out _));}else Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out before,out _));
+            int hp=p.CurrentHp;b.Pause(reason);Frames(b,120);
+            for(int n=0;n<10;n++){
+                int stopped;if(warning)Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out _,out stopped,out _));else Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out stopped,out _));Assert.AreEqual(before,stopped);
+            }
+            Assert.AreEqual(hp,p.CurrentHp);
+        }
+        [Test]
+        public void 砲台473は死亡で自分の予告だけを消し同じマスの別個体を保持する()
+        {
+            var p=new PlayerCharacter(100,new Vector2Int(1,0));var e=new Enemy("boss",DungeonReaimCannon473.BossName,60,ElementType.None,new Vector2Int(4,0));var other=new Enemy("boss",DungeonReaimCannon473.BossName,60,ElementType.None,new Vector2Int(5,0));var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e,other},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.TickFrame(17);e.TakeDamage(1000,ElementType.None);Frames(b,1);CollectionAssert.AreEquivalent(new[]{new Vector2Int(1,0)},b.EnemyAttackTiles);other.TakeDamage(1000,ElementType.None);Frames(b,1);Assert.IsEmpty(b.EnemyAttackTiles);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [Test]
+        public void 砲台473は一射後の中断で二射目を残さない()
+        {
+            var b=Battle(out var p,out var e);b.TickFrame(17);Frames(b,30);Assert.AreEqual(90,p.CurrentHp);e.ApplyStun(10000);Frames(b,100);Assert.IsEmpty(b.EnemyAttackTiles);Assert.AreEqual(90,p.CurrentHp);Assert.IsFalse(b.TryGetEnemyAttackPreview(e,out _,out _,out _));
+        }
+        [Test]
+        public void 砲台473は二射後の隣接で既存通常攻撃による反撃を受ける()
+        {
+            var b=Battle(out var p,out var e);b.ConfigureBasicAttackTiming(CheckpointBattleFactory.ProductBasicTiming);b.TickFrame(17);p.MoveTo(new Vector2Int(0,0));Frames(b,42);p.MoveTo(new Vector2Int(1,0));Frames(b,30);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out _,out var total));Assert.AreEqual(90,total);p.MoveTo(new Vector2Int(3,0));Assert.IsTrue(b.TryStartPlayerBasicAttack(false));Frames(b,45);Assert.AreEqual(50,e.CurrentHp);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [Test]
+        public void 砲台473は独立routeだけに登録し旧定義を維持して保存復元する()
+        {
+            var cards=new SimpleCardFactory();var normal=new EnemyPoiseDefinition(30,18,180);var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;var old=DungeonCoreFactory.CreateTrialMixed462(legacy,cards,normal).RouteHash;var route=DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal);Assert.AreEqual(DungeonCoreFactory.TrialMortarRoute473,route.RouteId);var map=route.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();Assert.AreEqual(1,map.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonReaimCannon473.Matches(map.MapCells[3].Enemy));Assert.AreEqual(old,DungeonCoreFactory.CreateTrialMixed462(legacy,cards,normal).RouteHash);
+            Assert.IsFalse(DungeonReaimCannon473.Matches(new Enemy("boss","ボス",60,ElementType.None,new Vector2Int(4,0))));Assert.IsFalse(DungeonReaimCannon473.Matches(new Enemy("boss",DungeonReaimCannon473.BossName,61,ElementType.None,new Vector2Int(4,0))));
+            var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(7),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());factory.CreatePreview(map,new PlayerCharacter(100),cards.CreateStarterDeck(),cp);Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsTrue(DungeonReaimCannon473.Matches(restored.Map.MapCells[3].Enemy));
+            var root=new UnityEngine.GameObject("Mortar473Entry");root.SetActive(false);try{var controller=root.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();controller.ConfigureDungeonSelection(new[]{DungeonCoreFactory.CreateTrialMixed462(legacy,cards,normal),route});Assert.IsTrue((bool)typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("DungeonUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(controller,new object[]{1}));}finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+        [Test]
+        public void 砲台473の自作姿勢は透過256と足元を保持し固定方向と排熱を読み分ける()
+        {
+            var root=new UnityEngine.GameObject("Mortar473Art");try{
+                var renderer=root.AddComponent<UnityEngine.SpriteRenderer>();var view=root.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,renderer);var enemy=new Enemy("boss",DungeonReaimCannon473.BossName,60,ElementType.None,new Vector2Int(4,0));view.Initialize(enemy);Assert.IsTrue(view.IsTrialMortar473);Assert.IsFalse(view.IsTrialArcher);Assert.IsFalse(view.IsTrialFlying455);
+                view.RenderTrialMortar473(true,12,-1,0,-1);var body=view.BodyRenderer;var start=body.transform.localPosition;var scale=body.transform.localScale;var pivot=body.sprite.pivot;Assert.AreEqual("original_twin_mortar473_1",body.sprite.name);Assert.IsTrue(body.flipX);Assert.AreEqual(256,body.sprite.texture.width);Assert.AreEqual(256,body.sprite.texture.height);Assert.AreEqual(UnityEngine.FilterMode.Point,body.sprite.texture.filterMode);var resolve=typeof(Olca.Presentation.Battle.EnemyView).GetMethod("MortarSprite473",BindingFlags.Instance|BindingFlags.NonPublic);
+                for(int pose=0;pose<4;pose++){
+                    var image=(UnityEngine.Sprite)resolve.Invoke(view,new object[]{pose});var pixels=image.texture.GetPixels32();int minY=256;bool transparent=false;
+                    for(int y=0;y<256;y++)for(int x=0;x<256;x++){if(pixels[y*256+x].a==0)transparent=true;else{minY=System.Math.Min(minY,y);Assert.GreaterOrEqual(x,60);Assert.Less(y,192);}}
+                    Assert.IsTrue(transparent);Assert.AreEqual(24,minY);Assert.AreEqual(0,(minY-image.pivot.y)/image.pixelsPerUnit,0.001);
+                }
+                var calibrated=(UnityEngine.Bounds)typeof(Olca.Presentation.Battle.EnemyView).GetMethod("GaugeBodyBounds",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.AreEqual(0,calibrated.min.y,0.001);
+                view.RenderTrialMortar473(false,0,0,90,1);Assert.AreEqual("original_twin_mortar473_2",body.sprite.name);Assert.IsTrue(body.flipX,"発射後は固定済みの方向を保つ");view.RenderTrialMortar473(false,0,6,90,1);Assert.AreEqual("original_twin_mortar473_3",body.sprite.name);Assert.AreEqual(pivot,body.sprite.pivot);Assert.AreEqual(start,body.transform.localPosition);Assert.AreEqual(scale,body.transform.localScale);view.RenderTrialMortar473(true,1,-1,0,1);Assert.IsFalse(body.flipX);Assert.AreEqual(60,enemy.CurrentHp);Assert.AreEqual(4,enemy.GridPosition.X);
+            }finally{UnityEngine.Object.DestroyImmediate(root);}
+        }
+    }
+}

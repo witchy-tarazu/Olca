@@ -167,8 +167,17 @@ namespace Olca.Presentation.Field
             if(attackPoseBody!=null){attackPoseBody.transform.localPosition=attackPosePosition;attackPoseBody.transform.localScale=attackPoseScale;}
         }
         /// <summary>読取済みの論理前隙だけを描く。時計/Root/grid/HP文字は変更しない。既存絵の仮屈伸。</summary>
-        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0,int recoveryElapsed=-1,int recoveryTotal=0,int? playerColumn455=null)
+        public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0,int recoveryElapsed=-1,int recoveryTotal=0,int? playerColumn455=null,int? lockedTargetColumn473=null)
         {
+            if(enemyView?.IsTrialMortar473==true){
+                ResetAttackWindup();
+                if(!hitReactionRunning){
+                    bool live=isActiveAndEnabled&&!hiddenForBattle&&!hiddenByBlindness&&!deathStarted&&!enemy.IsDead;
+                    int? column=active?lockedTargetColumn473:playerColumn455;
+                    enemyView.RenderTrialMortar473(active&&live,elapsedFrames,live?recoveryElapsed:-1,recoveryTotal,column.HasValue?System.Math.Sign(column.Value-enemy.GridPosition.X):-1);
+                }
+                return;
+            }
             if(enemyView?.IsTrialFlying455==true){ResetAttackWindup();if(!positionAnimating)UpdatePosition();enemyView.RenderTrialFlying455(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits,isActiveAndEnabled&&!hiddenForBattle&&!hiddenByBlindness&&!deathStarted&&!hitReactionRunning?recoveryElapsed:-1,recoveryTotal,playerColumn455.HasValue?System.Math.Sign(playerColumn455.Value-enemy.GridPosition.X):-1);return;}
             if(enemyView?.IsTrialArcher==true){if(enemyView.IsStepArcher){archerUnits=logicalUnits;if(!positionAnimating)UpdatePosition();}ResetAttackWindup();enemyView.RenderTrialArcher(active&&isActiveAndEnabled&&!hiddenForBattle,elapsedFrames,logicalUnits,isActiveAndEnabled&&!hiddenForBattle&&!hiddenByBlindness&&!deathStarted&&!hitReactionRunning?recoveryElapsed:-1,recoveryTotal);return;}
             if(!active||totalFrames<=0||enemy==null||enemy.IsDead||deathStarted||hitReactionRunning||hiddenByBlindness||hiddenForBattle||!isActiveAndEnabled){ResetAttackWindup();return;}

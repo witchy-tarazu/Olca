@@ -22,6 +22,54 @@ namespace Olca.Presentation.Battle
         private long archerReleaseAt=-1000,archerExpectedRelease;
         public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId)||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy)||Olca.Core.Logic.Battle.DungeonMixedPriority462.IsRear(enemy);
         public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy)||Olca.Core.Logic.Battle.DungeonMixedPriority462.IsRear(enemy);
+        public bool IsTrialMortar473=>Olca.Core.Logic.Battle.DungeonReaimCannon473.Matches(enemy);
+        private int mortarFacing473=-1;
+        // 自作の石/真鍮砲台。右向き256キャンバス、足元24px、最近傍。既存キャラ絵は使用しない。
+        private Sprite MortarSprite473(int pose)
+        {
+            if(archerAssets==null)archerAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
+            float foot=gruntSprite!=null?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(gruntSprite).min.y:0;
+            string key="OriginalTwinMortar473_"+foot.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var frames=archerAssets.Get<Sprite[]>(key,b=>{
+                var result=new Sprite[4];
+                for(int f=0;f<4;f++){
+                    var texture=b.CreateTexture(256,256);texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;
+                    var pixels=new Color32[256*256];
+                    var ink=new Color32(37,31,31,255);var stone=new Color32(115,102,89,255);var light=new Color32(164,146,119,255);var brass=new Color32(171,119,64,255);var glow=new Color32(245,174,75,255);
+                    void Rect(int x,int y,int w,int h,Color32 color){for(int py=System.Math.Max(0,y);py<System.Math.Min(256,y+h);py++)for(int px=System.Math.Max(0,x);px<System.Math.Min(256,x+w);px++)pixels[py*256+px]=color;}
+                    Rect(60,24,140,20,ink);Rect(68,28,124,12,stone);Rect(72,44,116,36,ink);Rect(80,48,100,28,stone);
+                    Rect(84,72,100,92,ink);Rect(92,80,84,76,stone);Rect(100,156,68,16,ink);Rect(108,160,52,8,light);
+                    Rect(96,84,16,64,light);Rect(116,88,48,12,ink);Rect(120,92,40,4,brass);Rect(116,112,40,28,ink);Rect(124,120,24,12,f==1?glow:brass);
+                    Rect(80,36,16,32,ink);Rect(164,36,16,32,ink);Rect(84,40,8,24,light);Rect(168,40,8,24,light);
+                    int recoil=f==2?8:0,raise=f==0?8:0;
+                    foreach(int offset in new[]{0,28}){
+                        Rect(144-recoil,112+raise+offset,88,32,ink);Rect(152-recoil,120+raise+offset,72,20,brass);Rect(156-recoil,132+raise+offset,64,4,light);
+                        Rect(220-recoil,108+raise+offset,20,40,ink);Rect(224-recoil,116+raise+offset,8,24,stone);
+                    }
+                    Rect(120,148,40,8,ink);Rect(124,148,8,4,f==1?glow:brass);Rect(144,148,8,4,f==1?glow:brass);
+                    if(f==2){Rect(240-recoil,124,16,12,glow);Rect(244-recoil,120,8,20,glow);Rect(244-recoil,128,8,4,new Color32(255,240,195,255));}
+                    if(f==3){Rect(116,144,48,16,ink);Rect(124,148,8,8,glow);Rect(148,148,8,8,glow);Rect(124,176,8,8,stone);Rect(128,184,8,8,stone);Rect(152,180,8,8,stone);}
+                    texture.SetPixels32(pixels);texture.Apply(false,false);
+                    result[f]=b.CreateSprite(texture,new Rect(0,0,256,256),new Vector2(.5f,(24-foot*100)/256),100);
+                    result[f].name="original_twin_mortar473_"+f;
+                }
+                return result;
+            });return frames[Mathf.Clamp(pose,0,3)];
+        }
+        private static Bounds MortarLocalBounds473(Sprite sprite)
+        {
+            if(sprite==null)return new Bounds();
+            // 全4姿勢の共通描画領域。Textureの透明余白や姿勢ごとの排熱で校正を揺らさない。
+            float unit=sprite.pixelsPerUnit;
+            return new Bounds(new Vector3((158-sprite.pivot.x)/unit,(108-sprite.pivot.y)/unit,0),new Vector3(196/unit,168/unit,0));
+        }
+        public void RenderTrialMortar473(bool warning,int elapsed,int recoveryElapsed,int recoveryTotal,int facing)
+        {
+            if(!IsTrialMortar473)return;var body=EnsureAttackPoseBody();if(body==null)return;
+            if((warning||recoveryElapsed<0)&&facing!=0)mortarFacing473=System.Math.Sign(facing);
+            int pose=warning?1:recoveryElapsed>=0&&recoveryTotal>0?recoveryElapsed<6?2:3:0;
+            body.sprite=MortarSprite473(pose);body.flipX=mortarFacing473<0;
+        }
         public bool IsTrialFlying455=>Olca.Core.Logic.Battle.DungeonFlyingDive455.Matches(enemy);
         private Vector3 flyOrigin455;private bool flyOriginKnown455;
         private Sprite FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454 phase,int age=0)
@@ -312,6 +360,14 @@ namespace Olca.Presentation.Battle
         // 非表示の元Rendererは本体の基準boundsを保つ。予備動作でHP円・数字・名前を揺らさない。
         private Bounds GaugeBodyBounds()
         {
+            if(IsTrialMortar473&&enemyImage!=null&&enemyImage.sprite!=null){
+                // Sprite.boundsは透明キャンバスの矩形のまま。自作砲台だけ共通描画領域で校正する。
+                var bounds=MortarLocalBounds473(enemyImage.sprite);var center=bounds.center;
+                if(enemyImage.flipX)center.x=-center.x;if(enemyImage.flipY)center.y=-center.y;
+                var x=enemyImage.transform.TransformVector(new Vector3(bounds.size.x,0,0));var y=enemyImage.transform.TransformVector(new Vector3(0,bounds.size.y,0));
+                return new Bounds(enemyImage.transform.TransformPoint(center),new Vector3(Mathf.Abs(x.x)+Mathf.Abs(y.x),Mathf.Abs(x.y)+Mathf.Abs(y.y),Mathf.Abs(x.z)+Mathf.Abs(y.z)));
+            }
+
             if(unposedBodyRenderer==null)return Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(enemyImage);
             unposedBodyRenderer.sprite=enemyImage.sprite;unposedBodyRenderer.flipX=enemyImage.flipX;unposedBodyRenderer.flipY=enemyImage.flipY;
             return Olca.Presentation.Effects.DefensiveFieldVisual.GetBodyBounds(unposedBodyRenderer);
@@ -354,7 +410,7 @@ namespace Olca.Presentation.Battle
         /// <summary>既存の敵IDに対応する仮素材を表示する。戦闘データは変更しない。</summary>
         private void ApplyAppearance()
         {
-            var sprite = IsTrialFlying455 ? FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454.Hover) : IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
+            var sprite = IsTrialMortar473 ? MortarSprite473(0) : IsTrialFlying455 ? FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454.Hover) : IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
             if (enemyImage == null || sprite == null) return;
 
             enemyImage.sprite = sprite;
@@ -362,7 +418,7 @@ namespace Olca.Presentation.Battle
             enemyImage.flipX = true; // 右向きの原画を、左側のプレイヤーへ向ける
 
             // 元絵の透明余白でなく、既存の可視領域校正へ名前をつなぐ。絵とpivotは変更しない。
-            float top = IsTrialArcher?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(sprite).max.y:sprite.bounds.max.y;
+            float top = IsTrialMortar473?MortarLocalBounds473(sprite).max.y:IsTrialArcher?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(sprite).max.y:sprite.bounds.max.y;
             if (enemyNameText != null)
                 enemyNameText.transform.localPosition = new Vector3(0f, top + 1.05f, -0.1f);
             if (hpText != null)
