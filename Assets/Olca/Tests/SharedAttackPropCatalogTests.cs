@@ -193,3 +193,155 @@ namespace Olca.Tests
         [Test] public void 未登録キーは既存の別素材へ置換しない(){Assert.IsFalse(SharedAttackPropCatalog.TryGetSprite("missing",out var sprite));Assert.IsNull(sprite);Assert.IsFalse(SharedAttackPropCatalog.TryGetSprite(null,out sprite));}
     }
 }
+
+namespace Olca.Tests
+{
+    public class BattleSwordTrace475Tests
+    {
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        private sealed class Fixture : System.IDisposable
+        {
+            public readonly GameObject Root = new GameObject("sword475-fixture");
+            public readonly WorldBattleGridView Grid;
+            public readonly GameFieldView View;
+            public readonly BattleSystem Battle;
+            public readonly Enemy Enemy;
+            public Fixture(int enemyX = 2)
+            {
+                Grid = Root.AddComponent<WorldBattleGridView>();
+                if (typeof(WorldBattleGridView).GetField("panelRenderers", Flags).GetValue(Grid) == null)
+                    typeof(WorldBattleGridView).GetMethod("Awake", Flags).Invoke(Grid, null);
+                View = Root.AddComponent<GameFieldView>();
+                typeof(GameFieldView).GetField("battleGridView", Flags).SetValue(View, Grid);
+                Enemy = new Enemy("sword475-target", "対象", 100, ElementType.None, new Cell(enemyX, 0));
+                Battle = new BattleSystem(new PlayerCharacter(100, new Cell(1, 0)), new List<Enemy> { Enemy }, new Deck(), logger: new Olca.Tests.Mocks.MockLogger());
+                View.OnBattleStarted(Battle, 0);
+            }
+            public void Draw() => typeof(GameFieldView).GetMethod("RefreshSwordTrace475", Flags).Invoke(View, null);
+            public SpriteRenderer Trail => Root.GetComponentsInChildren<SpriteRenderer>(true).SingleOrDefault(x => x.name == "BattleSwordTrace475");
+            public bool Cast(string id)
+            {
+                Battle.CardUsage.EnqueueCards(new List<Card> { new Olca.Application.Battle.SimpleCardFactory().CreateById(id) });
+                return Battle.CardUsage.TryUseCurrentCard();
+            }
+            public void Frames(int count) { for (int n = 0; n < count; n++) Battle.TickFrame(n % 2 == 0 ? 1 : 1000); }
+            public void Dispose()
+            {
+                typeof(GameFieldView).GetMethod("OnDestroy", Flags).Invoke(View, null);
+                typeof(WorldBattleGridView).GetMethod("OnDestroy", Flags).Invoke(Grid, null);
+                Object.DestroyImmediate(Root); Olca.Unity.GeneratedSpriteAssets.Prune();
+            }
+        }
+
+        [TestCase(2, 70)] [TestCase(3, 100)]
+        public void 標準ソードは命中と空振りの両方で実際の前方一マスだけを描き再描画でHPを変えない(int enemyX, int expectedHp)
+        {
+            using (var f = new Fixture(enemyX)) {
+                Assert.IsTrue(f.Cast("sword")); f.Draw();
+                Assert.AreEqual(expectedHp, f.Enemy.CurrentHp); Assert.IsTrue(f.Trail.enabled);
+                Assert.AreEqual("authored_sword_1", f.Trail.sprite.name);
+                Assert.AreEqual(f.Grid.GridIndexToWorldX(2), f.Trail.transform.position.x, .0001f);
+                Assert.LessOrEqual(f.Trail.bounds.min.x, f.Grid.GridIndexToWorldX(2));
+                Assert.GreaterOrEqual(f.Trail.bounds.max.x, f.Grid.GridIndexToWorldX(2));
+                Assert.GreaterOrEqual(f.Trail.bounds.min.x, f.Grid.GridIndexToWorldX(2) - f.Grid.CellSize * .5f);
+                Assert.LessOrEqual(f.Trail.bounds.max.x, f.Grid.GridIndexToWorldX(2) + f.Grid.CellSize * .5f);
+                var before = f.Battle.LogicalFrame * 50; var sprite = f.Trail.sprite;
+                for (int n = 0; n < 30; n++) f.Draw();
+                Assert.AreSame(sprite, f.Trail.sprite); Assert.AreEqual(before, f.Battle.LogicalFrame * 50); Assert.AreEqual(expectedHp, f.Enemy.CurrentHp);
+                f.Frames(4); f.Draw(); Assert.AreEqual("authored_sword_2", f.Trail.sprite.name);
+                f.Frames(7); f.Draw(); Assert.IsTrue(f.Trail.enabled);
+                f.Frames(1); f.Draw(); Assert.IsFalse(f.Trail.enabled); Assert.IsNull(f.Trail.sprite);
+            }
+        }
+
+        [TestCase(BattlePauseReason.User)] [TestCase(BattlePauseReason.CustomScreen)]
+        public void ソードの斬撃は停止中の時計とコマを保持して解除後だけ消散する(BattlePauseReason reason)
+        {
+            using (var f = new Fixture()) {
+                f.Cast("sword"); f.Frames(4); f.Draw(); var sprite = f.Trail.sprite; var tint = f.Trail.color; var clock = f.Battle.LogicalFrame * 50;
+                f.Battle.Pause(reason); f.Frames(20); f.Draw();
+                Assert.AreEqual(clock, f.Battle.LogicalFrame * 50); Assert.AreSame(sprite, f.Trail.sprite); Assert.AreEqual(tint, f.Trail.color); Assert.AreEqual(70, f.Enemy.CurrentHp);
+                f.Battle.Resume(reason); f.Frames(8); f.Draw(); Assert.IsFalse(f.Trail.enabled);
+            }
+        }
+
+        [TestCase("fire_sword")] [TestCase("shield")] [TestCase("bomb")]
+        public void 別カードや通常攻撃を標準ソードの絵に読み替えない(string id)
+        {
+            using (var f = new Fixture()) {
+                Assert.IsTrue(f.Cast(id)); f.Draw(); Assert.IsNull(f.Trail);
+            }
+        }
+
+        [Test]
+        public void ソード表示を返却した後は旧戦闘の通知で再発生せず通常攻撃も別表示を保つ()
+        {
+            using (var f = new Fixture()) {
+                f.Battle.TryPlayerBasicAttackForward(); f.Draw(); Assert.IsNull(f.Trail);
+                f.Cast("sword"); f.Draw(); Assert.IsTrue(f.Trail.enabled);
+                f.View.ReleasePresentation(); f.Draw(); Assert.IsFalse(f.Trail.enabled);
+                f.Cast("sword"); f.Draw(); Assert.IsFalse(f.Trail.enabled);
+            }
+        }
+
+        [Test]
+        public void 解決通知は前隙の後かつ後隙の前に一度だけ発生し表示側例外でHPや使用完了を変えない()
+        {
+            using (var f = new Fixture()) {
+                int notices = 0; PlayerAttackPhase phase = PlayerAttackPhase.None;
+                f.Battle.CardUsage.OnDirectEffectResolved += c => throw new System.InvalidOperationException("fixture observer");
+                f.Battle.CardUsage.OnDirectEffectResolved += c => { notices++; phase = f.Battle.PlayerActionPhase; };
+                var card = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword").WithAttackTiming(new PlayerAttackTiming(3, 5));
+                f.Battle.CardUsage.EnqueueCards(new List<Card> { card }); var task = f.Battle.CardUsage.TryUseCurrentCardAsync();
+                Assert.AreEqual(0, notices); f.Frames(2); Assert.AreEqual(0, notices); Assert.AreEqual(100, f.Enemy.CurrentHp);
+                f.Frames(1); f.Draw(); Assert.AreEqual(1, notices); Assert.AreEqual(PlayerAttackPhase.Executing, phase); Assert.AreEqual(70, f.Enemy.CurrentHp); Assert.IsTrue(f.Trail.enabled);
+                f.Frames(5); Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.AreEqual(1, notices); Assert.AreEqual(70, f.Enemy.CurrentHp);
+            }
+        }
+
+        [Test]
+        public void 同じIDでも外部定義の別射程を前方一マスの絵へ読み替えない()
+        {
+            using (var f = new Fixture(4)) {
+                var card = new Card("sword", "外部定義", 1, CardRarity.Normal, CardCategory.Attack, ElementType.None, CardSeries.Sword, 30, "fixture", targetType: Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontThreeTiles);
+                f.Battle.CardUsage.EnqueueCards(new List<Card> { card }); Assert.IsTrue(f.Battle.CardUsage.TryUseCurrentCard()); f.Draw();
+                Assert.AreEqual(70, f.Enemy.CurrentHp); Assert.IsNull(f.Trail);
+            }
+        }
+
+        [Test]
+        public void 斬撃用Textureは戦闘開始で準備し初回使用の描画中に生成しない()
+        {
+            int[] Textures() => Resources.FindObjectsOfTypeAll<Texture2D>().Where(t => t.name == "SelfAuthoredSideVfx413_1").Select(t => t.GetInstanceID()).OrderBy(x => x).ToArray();
+            using (var f = new Fixture()) {
+                var prepared = Textures(); Assert.Greater(prepared.Length, 0); Assert.IsNull(f.Trail);
+                f.Cast("sword"); f.Draw(); CollectionAssert.AreEqual(prepared, Textures()); Assert.IsTrue(f.Trail.enabled);
+            }
+        }
+
+        [Test]
+        public void 最終敵の撃破でも斬撃を描き勝利の終了表示返却で確実に消す()
+        {
+            using (var f = new Fixture()) {
+                f.Enemy.TakeDamage(70, ElementType.None);
+                Assert.IsTrue(f.Cast("sword")); Assert.IsTrue(f.Battle.IsGameOver); Assert.AreEqual(BattleState.Victory, f.Battle.State);
+                f.Draw(); Assert.NotNull(f.Trail); Assert.IsTrue(f.Trail.enabled);
+                var sprite = f.Trail.sprite; var clock = f.Battle.LogicalFrame;
+                f.Frames(20); f.Draw(); Assert.AreEqual(clock, f.Battle.LogicalFrame); Assert.AreSame(sprite, f.Trail.sprite);
+                f.View.OnBattleEnded(); f.Draw(); Assert.IsFalse(f.Trail.enabled); Assert.IsNull(f.Trail.sprite);
+            }
+        }
+
+        [Test]
+        public void 発生前に中断したソードは通知も斬撃も出さず既存の消費を維持する()
+        {
+            using (var f = new Fixture()) {
+                int notices = 0; f.Battle.CardUsage.OnDirectEffectResolved += c => notices++;
+                var card = new Olca.Application.Battle.SimpleCardFactory().CreateById("sword").WithAttackTiming(new PlayerAttackTiming(3, 5));
+                f.Battle.CardUsage.EnqueueCards(new List<Card> { card }); var task = f.Battle.CardUsage.TryUseCurrentCardAsync();
+                f.Frames(1); f.Battle.CardUsage.InterruptCurrentCard(); f.Frames(10); f.Draw();
+                Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsTrue(f.Battle.CardUsage.IsEmpty); Assert.AreEqual(0, notices); Assert.IsNull(f.Trail); Assert.AreEqual(100, f.Enemy.CurrentHp);
+            }
+        }
+    }
+}

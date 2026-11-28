@@ -3,6 +3,80 @@ using UnityEngine;
 
 namespace Olca.Presentation.Field
 {
+    /// <summary>標準ソードの解決済み一マスだけを描く。モデル時計以外では進行しない。</summary>
+    public sealed class BattleSwordTrace475 : System.IDisposable
+    {
+        private readonly Transform parent;
+        private readonly System.Func<WorldBattleGridView> readGrid;
+        private readonly System.Func<SpriteRenderer> readBody;
+        private Olca.Core.Logic.Battle.BattleSystem owner;
+        private Olca.Unity.GeneratedSpriteAssets.Lease assets;
+        private GameObject root;
+        private SpriteRenderer trace;
+        private long began = -1;
+        private int column;
+        private bool disposed;
+        private static readonly float[] Opacity = { 1f, .9f, .85f, .7f, .5f, .25f };
+        public BattleSwordTrace475(Transform parent, System.Func<WorldBattleGridView> grid, System.Func<SpriteRenderer> body)
+        { this.parent = parent; readGrid = grid; readBody = body; }
+        public void Bind(Olca.Core.Logic.Battle.BattleSystem battle)
+        {
+            if (disposed || ReferenceEquals(owner, battle)) return;
+            if (owner != null) owner.CardUsage.OnDirectEffectResolved -= Record;
+            Clear(); owner = battle;
+            if (owner != null) {
+                // 初回の生成を戦闘開始時へ寄せ、攻撃の描画フレームには持ち込まない。
+                assets ??= Olca.Unity.GeneratedSpriteAssets.Acquire(parent);
+                Olca.Presentation.Effects.AuthoredAttackVfx.Resolve(assets, 1, 1);
+                owner.CardUsage.OnDirectEffectResolved += Record;
+            }
+        }
+        private void Record(Olca.Core.Domain.Card card)
+        {
+            // 他の剣・通常攻撃・変身の絵へ横展開しない。命中の有無は発生条件にしない。
+            if (owner == null || card?.Id != "sword" || card.ExceedLevel != Olca.Core.Domain.ExceedLevel.Normal ||
+                card.Series != Olca.Core.Domain.CardSeries.Sword ||
+                (card.TargetType != Olca.Core.Logic.CardEffects.Effects.DamageTargetType.Single && card.TargetType != Olca.Core.Logic.CardEffects.Effects.DamageTargetType.FrontTile) ||
+                card.Modifier.AdditionalEffects.Count != 0 || card.MoveMotionTime != 0 || card.AttackMotionTime != 0 ||
+                owner.Transformations.ActiveId != null || owner.Player.IsDead) return;
+            column = owner.Player.GridPosition.X + 1;
+            if (column < 0 || column >= Olca.Core.Logic.Battle.BattleField.GRID_WIDTH) return;
+            began = owner.LogicalFrame * 50;
+        }
+        public void Render()
+        {
+            var grid = readGrid();
+            if (disposed || owner == null || owner.IsGameOver && owner.State != Olca.Core.Logic.Battle.BattleState.Victory || owner.Player.IsDead || grid == null || began < 0) { Clear(); return; }
+            long age = owner.LogicalFrame * 50 - began;
+            if (age < 0 || age >= 600) { Clear(); return; } // 12論理フレーム、判定の追加なし。勝利で時計が止まる間は既存の終了表示返却まで保持。
+            if (root == null) {
+                root = new GameObject("BattleSwordTrace475"); root.transform.SetParent(parent, false);
+                trace = root.AddComponent<SpriteRenderer>();
+            }
+            assets ??= Olca.Unity.GeneratedSpriteAssets.Acquire(parent);
+            int frame = (int)(age / 100);
+            // 発生時は既存の面状コマを使い、薄い末尾へつなぐ。新しい白面を重ねない。
+            int pose = frame < 2 ? 1 : frame < 4 ? 2 : 3;
+            trace.sprite = Olca.Presentation.Effects.AuthoredAttackVfx.Resolve(assets, 1, pose);
+            trace.color = new Color(1, 1, 1, Opacity[frame]);
+            var body = readBody();
+            trace.sortingLayerID = body != null ? body.sortingLayerID : 0;
+            trace.sortingOrder = body != null ? body.sortingOrder + 3 : 5;
+            float cell = grid.CellSize;
+            root.transform.position = new Vector3(grid.GridIndexToWorldX(column), grid.GroundY - grid.CellHeight * .45f + cell * .6f, body != null ? body.transform.position.z - .02f : -.02f);
+            root.transform.localScale = new Vector3(cell * .92f / 2.56f, cell * 1.05f / 2.56f, 1);
+            trace.enabled = trace.sprite != null;
+        }
+        private void Clear() { began = -1; if (trace != null) { trace.enabled = false; trace.sprite = null; } }
+        public void Dispose()
+        {
+            if (disposed) return;
+            Bind(null); disposed = true; assets?.Dispose(); assets = null;
+            if (root != null) { if (Application.isPlaying) Object.Destroy(root); else Object.DestroyImmediate(root); }
+            root = null; trace = null;
+        }
+    }
+
     /// <summary>通常盤面のボム着弾だけの自作6コマ。時計・範囲・命中は所有しない。</summary>
     public static class BattleBombLayers451
     {

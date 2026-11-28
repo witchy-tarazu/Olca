@@ -148,6 +148,7 @@ namespace Olca.Core.Logic.Battle
             if (effect != null)
             {
                 effect.Execute(context);
+                NotifyDirectEffectResolved(card);
                 logger?.LogInfo($"カード効果実行: {card.Name}");
             }
             else
@@ -192,6 +193,7 @@ namespace Olca.Core.Logic.Battle
                 else if (effect is IAsyncCardEffect asyncEffect) await asyncEffect.ExecuteAsync(context, ct);
                 else effect?.Execute(context);
                 resolved = true;
+                if (effect != null) NotifyDirectEffectResolved(card);
                 if (!card.IsInstantEffect) {
                     if (card.ExtendRecoveryDuringDerivative) await context.WaitForDerivativesAsync(ct);
                     battleSystem.SetPlayerActionPhase(owner, PlayerAttackPhase.Recovery, timing != null ? timing.CancelAfterFrames : card.RecoveryCancelAfterFrames);
@@ -317,6 +319,18 @@ namespace Olca.Core.Logic.Battle
         /// カードが使用された時のイベント
         /// </summary>
         public event Action<Card> OnCardUsed;
+
+        /// <summary>単発効果の解決直後・後隙前の表示通知。動作列や派生弾の着弾通知ではない。</summary>
+        public event Action<Card> OnDirectEffectResolved;
+        private void NotifyDirectEffectResolved(Card card)
+        {
+            var observers = OnDirectEffectResolved;
+            if (observers == null) return;
+            foreach (Action<Card> observer in observers.GetInvocationList()) {
+                try { observer(card); }
+                catch (Exception ex) { logger?.LogError("カード表示通知に失敗: " + ex.Message); }
+            }
+        }
 
         /// <summary>
         /// カードがスキップされた時のイベント
