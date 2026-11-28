@@ -242,6 +242,7 @@ namespace Olca.Presentation.Exploration
         private Olca.Unity.ResourceManager traversalResources;
         private OutsideTraversalProfile renderedTraversal;
         private readonly List<Image> wallImages=new List<Image>();
+        private Sprite forestCover486;
         private readonly List<Image> gapImages=new List<Image>();
         private readonly Dictionary<Image,List<Image>> waterSurfaces=new Dictionary<Image,List<Image>>();private Button[] waterOccluders;private readonly Vector3[] waterCorners=new Vector3[4];private readonly List<Vector2> waterBlocked=new List<Vector2>();private readonly List<Vector2> waterVisible=new List<Vector2>();
         private readonly List<Image> waterImages=new List<Image>();private Image breathPanel,breathFill;private Text breathLabel;
@@ -308,6 +309,12 @@ namespace Olca.Presentation.Exploration
                 if(profile!=null)foreach(var wall in profile.Walls){
                     var go=new GameObject("OutsideValidationWall-"+wall.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.sprite=terrain.sprite;image.type=Image.Type.Tiled;image.color=new Color(.6f,.85f,.94f,.8f);image.raycastTarget=false;
                     image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=new Vector2(.5f,0);go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());wallImages.Add(image);
+                    if(presentation.IsForest460&&wall.Id=="forest-low-cover"){
+                        // 判定位置の細い幹と、床面だけの根。装飾の幅を衝突幅として扱わない。
+                        if(forestCover486==null)forestCover486=OutsideForestCover486.Create();
+                        var art=new GameObject("ForestRootCover486",typeof(RectTransform),typeof(Image));art.transform.SetParent(go.transform,false);var cover=art.GetComponent<Image>();cover.sprite=forestCover486;cover.raycastTarget=false;
+                        cover.rectTransform.anchorMin=cover.rectTransform.anchorMax=new Vector2(.5f,0);cover.rectTransform.pivot=new Vector2(.5f,0);image.color=Color.clear;
+                    }
                 }
                 if(profile!=null)foreach(var gap in profile.FloorGaps){
                     var go=new GameObject("OutsideTrialFloorGap-"+gap.Id,typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);var image=go.GetComponent<Image>();image.color=new Color(.015f,.035f,.055f,1);image.raycastTarget=false;image.rectTransform.anchorMin=image.rectTransform.anchorMax=new Vector2(0,.21f);image.rectTransform.pivot=new Vector2(0,1);go.transform.SetSiblingIndex(player.transform.GetSiblingIndex());gapImages.Add(image);
@@ -327,6 +334,8 @@ namespace Olca.Presentation.Exploration
                 // 見える区間だけを生成し、壁のタイル位相はworldへ固定する。
                 if(tile>0)bottom-=Mathf.Repeat((bottom-wall.Bottom/unit)*pixelsPerWorldUnit,tile)/pixelsPerWorldUnit;
                 image.rectTransform.anchoredPosition=new Vector2(Origin(wall.X),(bottom-verticalOffset)*pixelsPerWorldUnit);image.rectTransform.sizeDelta=new Vector2(18,Math.Max(0,top-bottom)*pixelsPerWorldUnit);
+                var forestArt=image.transform.Find("ForestRootCover486") as RectTransform;
+                if(forestArt!=null){forestArt.gameObject.SetActive(image.enabled);forestArt.anchoredPosition=new Vector2(0,(wall.Bottom/unit-bottom)*pixelsPerWorldUnit);forestArt.sizeDelta=new Vector2(OutsideForestCover486.WidthInWorld*pixelsPerWorldUnit,(wall.Top-wall.Bottom)/unit*pixelsPerWorldUnit);}
             }
             for(int i=0;i<gapImages.Count;i++){
                 var gap=profile.FloorGaps[i];var image=gapImages[i];image.gameObject.SetActive(true);image.rectTransform.anchoredPosition=new Vector2(Origin(gap.Left),-verticalOffset*pixelsPerWorldUnit);image.rectTransform.sizeDelta=new Vector2((gap.Right-gap.Left)/unit*pixelsPerWorldUnit,profile.VoidDepth/unit*pixelsPerWorldUnit+8);
@@ -353,7 +362,7 @@ namespace Olca.Presentation.Exploration
         }
         private void ClearTraversalDisplay()
         {foreach(var image in afterimageImages)if(image!=null){image.enabled=false;image.sprite=null;}foreach(var image in wallImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in gapImages)if(image!=null)image.gameObject.SetActive(false);foreach(var image in waterImages)if(image!=null)image.gameObject.SetActive(false);if(breathPanel!=null)breathPanel.gameObject.SetActive(false);}
-        private void ReleaseTraversalReferences(){trialWideSwordEffect?.Dispose();trialWideSwordEffect=null;trialSpearBody?.Dispose();trialSpearBody=null;trialShotBody?.Dispose();trialShotBody=null;initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
+        private void ReleaseTraversalReferences(){if(forestCover486!=null){var texture=forestCover486.texture;if(Application.isPlaying){Destroy(forestCover486);Destroy(texture);}else{DestroyImmediate(forestCover486);DestroyImmediate(texture);}forestCover486=null;}trialWideSwordEffect?.Dispose();trialWideSwordEffect=null;trialSpearBody?.Dispose();trialSpearBody=null;trialShotBody?.Dispose();trialShotBody=null;initialShotMotion?.Dispose();initialShotMotion=null;trialSwordMotion?.Dispose();trialSwordMotion=null;trialBombMotion?.Dispose();trialBombMotion=null;slashSprites?.Dispose();slashSprites=null;trialChargeMotion?.Dispose();trialChargeMotion=null;trialGroundCombo?.Dispose();trialGroundCombo=null;trialFireBody?.Dispose();trialFireBody=null;ClearTraversalDisplay();DestroyGapImages();DestroyWaterImages();if(breathPanel!=null){if(UnityEngine.Application.isPlaying)Destroy(breathPanel.gameObject);else DestroyImmediate(breathPanel.gameObject);}breathPanel=breathFill=null;breathLabel=null;wallSlideFrames=null;traversalDashSprite=null;trialKickPrepare=trialKickContact=trialAirForwardContact=trialDashKickContact=null;trialComboSprites=trialAirDownSprites=null;traversalResources=null;renderedTraversal=null;wallImages.Clear();}
     }
 }
 
@@ -2079,6 +2088,28 @@ namespace Olca.Presentation.Exploration
             }
             var texture=new UnityEngine.Texture2D(Width,Height,UnityEngine.TextureFormat.RGBA32,false){name=foreground?"WaterwayMasonry478_RGBA":"WaterwayFar478_Original",filterMode=UnityEngine.FilterMode.Point,wrapMode=UnityEngine.TextureWrapMode.Clamp};texture.SetPixels32(data);texture.Apply(false,false);
             var sprite=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,Width,Height),new UnityEngine.Vector2(.5f,.5f),1);sprite.name=texture.name;return sprite;
+        }
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>森の低い遮蔽だけの自作仮素材。幹12pxを従来の18表示単位へ、根は床面の装飾へ。</summary>
+    public static class OutsideForestCover486
+    {
+        public const float WidthInWorld=8f/9f;
+        public static Sprite Create()
+        {
+            const int w=64,h=100;var pixels=new Color32[w*h];
+            void Box(int x,int y,int width,int height,Color32 color){for(int yy=Math.Max(0,y);yy<Math.Min(h,y+height);yy++)for(int xx=Math.Max(0,x);xx<Math.Min(w,x+width);xx++)pixels[yy*w+xx]=color;}
+            var outline=new Color32(47,40,34,255);var bark=new Color32(91,66,44,255);var light=new Color32(133,99,61,255);var cut=new Color32(188,153,99,255);var moss=new Color32(95,108,69,255);
+            // 根は下8pxだけ。通れる床を塞ぐ面や新しい足場には見せない。
+            for(int y=0;y<8;y++){int spread=(8-y)*2;Box(26-spread,y,12+spread*2,1,outline);if(y<6)Box(28-spread,y+1,8+spread*2,1,bark);}
+            Box(26,5,12,95,outline);Box(28,7,8,90,bark);Box(28,9,2,86,light);Box(34,12,2,82,new Color32(65,50,37,255));
+            for(int y=13;y<90;y+=17){Box(30,y,2,7,outline);Box(33,y+5,2,5,light);}
+            Box(26,96,12,4,outline);Box(27,97,10,2,cut);Box(30,97,1,2,bark);Box(34,97,1,2,bark);
+            Box(25,91,3,4,moss);Box(36,84,3,5,moss);Box(21,3,5,3,moss);Box(38,2,6,2,moss);
+            var texture=new Texture2D(w,h,TextureFormat.RGBA32,false){name="OriginalForestRootCover486",filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Clamp};texture.SetPixels32(pixels);texture.Apply();var sprite=Sprite.Create(texture,new Rect(0,0,w,h),new Vector2(.5f,0),100);sprite.name=texture.name;return sprite;
         }
     }
 }

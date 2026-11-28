@@ -18,6 +18,29 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [Test]
+        public void 森486の切り株は透過の根と判定高の上端を持つ自作素材で再現できる()
+        {
+            var a=Olca.Presentation.Exploration.OutsideForestCover486.Create();var b=Olca.Presentation.Exploration.OutsideForestCover486.Create();
+            try{var t=a.texture;Assert.AreEqual(new Vector2(64,100),a.rect.size);Assert.AreEqual(new Vector2(32,0),a.pivot);Assert.AreEqual(TextureFormat.RGBA32,t.format);Assert.AreEqual(FilterMode.Point,t.filterMode);Assert.AreEqual(TextureWrapMode.Clamp,t.wrapMode);CollectionAssert.AreEqual(t.GetPixels32(),b.texture.GetPixels32());
+                for(int y=8;y<100;y++)for(int x=0;x<64;x++)if(x<25||x>38)Assert.AreEqual(0,t.GetPixel(x,y).a,"根を中空へ延ばさない");
+                for(int x=26;x<38;x++)Assert.AreEqual(1,t.GetPixel(x,99).a,"実際の上端を明示");Assert.AreEqual(0,t.GetPixel(0,0).a);Assert.AreEqual(0,t.GetPixel(63,99).a);Assert.AreEqual(1,t.GetPixel(12,0).a);Assert.That(Olca.Presentation.Exploration.OutsideForestCover486.WidthInWorld*108*12/64,Is.EqualTo(18).Within(.0001f));
+            }finally{UnityEngine.Object.DestroyImmediate(a.texture);UnityEngine.Object.DestroyImmediate(a);UnityEngine.Object.DestroyImmediate(b.texture);UnityEngine.Object.DestroyImmediate(b);}
+        }
+        [TestCase(1920,1080)][TestCase(1440,1080)]
+        public async Task 森486の実Viewは既存の遮蔽へだけ幹を置き地形と時計と親保存を維持する(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var source=system.OutsideExploration;var defs=PairSource445(source);var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(source.Core.CaptureState());var cards=source.Cards.CaptureState(defs).Key();
+            Func<CancellationToken,Task<GameObject>> factory=ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources));Sprite owned=null;Texture2D texture=null;
+            using(var trial=Olca.Core.Logic.Integration.OutsideExplorationSession.CreateForestTrial460(source,defs))using(var binding=new OutsideExplorationPresentationBinding(views,trial,factory,()=>true,()=>{},screenKey:Olca.Core.Logic.Integration.OutsideExplorationSession.ForestDefinition460)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();Canvas.ForceUpdateCanvases();var wall=view.transform.Find("OutsideValidationWall-forest-low-cover").GetComponent<Image>();var art=wall.transform.Find("ForestRootCover486").GetComponent<Image>();owned=art.sprite;texture=owned.texture;Assert.IsFalse(art.raycastTarget);Assert.AreEqual(Color.clear,wall.color);Assert.AreEqual(18,wall.rectTransform.sizeDelta.x);Assert.AreEqual(new Vector2(96,151.2f),art.rectTransform.sizeDelta);Assert.AreEqual(new Vector2(.5f,0),art.rectTransform.pivot);Assert.Less(wall.transform.GetSiblingIndex(),view.transform.Find("OutsideEntryPlayer").GetSiblingIndex());Assert.AreEqual(20*60000,trial.Core.TraversalProfile.Walls[0].X);Assert.AreEqual(84000,trial.Core.TraversalProfile.Walls[0].Top);
+                long frame=trial.Core.Frame;var position=art.rectTransform.anchoredPosition;for(int n=0;n<5;n++)view.Render();Assert.AreEqual(frame,trial.Core.Frame);Assert.AreEqual(position,art.rectTransform.anchoredPosition);Assert.AreSame(owned,art.sprite);view.Hide();Assert.IsFalse(art.gameObject.activeInHierarchy);
+                // EditModeでは既存の素材所有テストと同様、破棄callbackを明示して検査する。
+                typeof(Olca.Presentation.Exploration.OutsideExplorationView).GetMethod("OnDestroy",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(view,null);UnityEngine.Object.DestroyImmediate(view.gameObject);
+            }
+            Assert.IsTrue(owned==null&&texture==null,"Viewと同じ所有期間で破棄");CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(source.Core.CaptureState()));Assert.AreEqual(cards,source.Cards.CaptureState(defs).Key());
+            using(var normal=new OutsideExplorationPresentationBinding(views,source,factory,()=>true,()=>{})){Assert.IsTrue((await normal.OpenAsync()).Succeeded);Assert.IsFalse(normal.View.GetComponentsInChildren<Image>(true).Any(i=>i.name=="ForestRootCover486"));}
+        }
         [TestCase(0,10)][TestCase(7,10)][TestCase(8,11)][TestCase(113,11)]
         public void 遺跡482の下ろした弓は実回復中だけで被弾撃破と他の姿勢を維持する(int age,int expected)
         {
