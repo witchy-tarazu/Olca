@@ -1797,7 +1797,7 @@ namespace Olca.Presentation.Exploration
             var body=idle;if(!core.IsGrounded)body=System.Math.Abs(core.VerticalVelocity)<=Olca.Core.Logic.Integration.OutsideExplorationCore.ValidationGravity?apex:core.VerticalVelocity>0?rise:fall;else{var clip=core.IsMoving?moveClip:idleClip;if(clip!=null){clip.SampleAnimation(sample.gameObject,(float)(((core.IsMoving?core.MovementFrame:core.IdleFrame)/60d)%clip.length));body=sample.sprite??idle;}}
             UnityEngine.Sprite kick=null;if(s.Kick.IsActive)kick=combo.Resolve(s.Kick.Kind,s.Kick.ElapsedFrames,s.Kick.ActiveTiming,false);if(kick!=null)body=kick;
             Place(playerImage,body,X(core.Position),Y(core.Height),s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,kick!=null);playerImage.color=s.Frame-s.LastHurtFrame<12?new UnityEngine.Color(1,.45f,.4f):UnityEngine.Color.white;
-            int frame=s.Guard.IsDead?9:s.Frame-s.LastHitFrame<12?8:s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup?4+System.Math.Min(2,s.Age/8):s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike?7:(int)(s.Frame/10%4);var goblin=waterway464?null:ruins?RuinsArcherSprite(frame):AnnexGoblinSprite.Resolve(assets,frame);
+            int frame=s.Guard.IsDead?9:s.Frame-s.LastHitFrame<12?8:s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup?4+System.Math.Min(2,s.Age/8):s.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike?7:(int)(s.Frame/10%4);var goblin=waterway464?null:ruins?RuinsArcherSprite(OutsideRuinsArcherPose482.Frame(s.Phase,s.Age,frame)):AnnexGoblinSprite.Resolve(assets,frame);
             Place(guardImage,waterway464?null:goblin,X(s.EnemyX),Y(0),s.GuardFacing,true);guardImage.color=s.Guard.IsDead?new UnityEngine.Color(1,1,1,UnityEngine.Mathf.Clamp01(1-(s.Frame-s.DeathFrame)/18f)):UnityEngine.Color.white;
             // 実際の足元と実射程から描画。有効3frameだけで、接触/HPの判断には使わない。
             kickTrace442.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(core.Position),Y(core.Height));kickTrace442.rectTransform.sizeDelta=new UnityEngine.Vector2(Olca.Core.Logic.Integration.OutsideKickTrialDefinition.Range/60000f,.5f)*pixels;kickTrace442.rectTransform.localScale=new UnityEngine.Vector3(s.Kick.IsActive?s.Kick.AttackFacing:core.Facing,1,1);kickTrace442.Project(s.Kick);
@@ -1809,7 +1809,8 @@ namespace Olca.Presentation.Exploration
         }
         private UnityEngine.Sprite RuinsArcherSprite(int frame)
         {
-            var frames=assets.Get<UnityEngine.Sprite[]>("RuinsArcher450",owned=>{var bytes=UnityEngine.Resources.Load<UnityEngine.TextAsset>("OlcaPickups/trial_archer_v1");if(bytes==null)return null;var texture=owned.CreateTexture(2,2);if(!texture.LoadImage(bytes.bytes,true)||texture.width!=2560||texture.height!=256)return null;texture.filterMode=UnityEngine.FilterMode.Point;var sprites=new UnityEngine.Sprite[10];for(int n=0;n<10;n++)sprites[n]=owned.CreateSprite(texture,new UnityEngine.Rect(n*256,0,256,256),new UnityEngine.Vector2(.5f,20f/256),100);return sprites;});return frames==null?null:frames[UnityEngine.Mathf.Clamp(frame,0,9)];
+            var frames=assets.Get<UnityEngine.Sprite[]>("RuinsArcher450",owned=>{var bytes=UnityEngine.Resources.Load<UnityEngine.TextAsset>("OlcaPickups/trial_archer_v1");if(bytes==null)return null;var texture=owned.CreateTexture(2,2);if(!texture.LoadImage(bytes.bytes,false)||texture.width!=2560||texture.height!=256)return null;texture.filterMode=UnityEngine.FilterMode.Point;var sprites=new UnityEngine.Sprite[12];for(int n=0;n<10;n++)sprites[n]=owned.CreateSprite(texture,new UnityEngine.Rect(n*256,0,256,256),new UnityEngine.Vector2(.5f,20f/256),100);
+                for(int n=0;n<2;n++){var pose=owned.CreateTexture(256,256);pose.name="OriginalRuinsArcherRecovery482_"+n;pose.filterMode=UnityEngine.FilterMode.Point;pose.wrapMode=UnityEngine.TextureWrapMode.Clamp;pose.SetPixels32(OutsideRuinsArcherPose482.Pixels(texture.GetPixels32(),texture.width,n!=0));pose.Apply(false,false);sprites[10+n]=owned.CreateSprite(pose,new UnityEngine.Rect(0,0,256,256),new UnityEngine.Vector2(.5f,20f/256),100);sprites[10+n].name="ruins_archer_recovery_482_"+n;}texture.Apply(false,true);return sprites;});return frames==null?null:frames[UnityEngine.Mathf.Clamp(frame,0,11)];
         }
         public void Close(){if(closed)return;closed=true;DisposeTrial();gameObject.SetActive(false);if(UnityEngine.Application.isPlaying)Destroy(gameObject);else DestroyImmediate(gameObject);}
         private void DisposeTrial(){if(disposed)return;disposed=true;menu?.Dispose();menu=null;Runtime?.Dispose();combo.Dispose();foreach(var sprite in ruinSprites){if(sprite==null)continue;var texture=sprite.texture;if(UnityEngine.Application.isPlaying){Destroy(sprite);Destroy(texture);}else{DestroyImmediate(sprite);DestroyImmediate(texture);}}ruinSprites.Clear();if(playerImage!=null)playerImage.sprite=null;if(guardImage!=null)guardImage.sprite=null;assets?.Dispose();assets=null;if(owner!=null)owner.ReleaseBranch441(this);}
@@ -1978,6 +1979,28 @@ namespace Olca.Presentation.Exploration
 namespace Olca.Presentation.Exploration
 {
     /// <summary>遺跡の実床だけを補う自作の石組み。柱の遠景と衝突面は既存のまま。</summary>
+    /// <summary>遺跡の弓だけ。実際の発射後の待ちを、足元固定の下ろした弓と肩で示す仮姿勢。</summary>
+    public static class OutsideRuinsArcherPose482
+    {
+        public static int Frame(Olca.Core.Logic.Integration.OutsideGoblinPhase phase,int age,int original)
+            =>original==8||original==9?original:phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery?(age<8?10:11):original;
+        public static UnityEngine.Color32[] Pixels(UnityEngine.Color32[] source,int width,bool settled)
+        {
+            var data=new UnityEngine.Color32[256*256];int drop=settled?8:4;
+            // 既存試用絵の頭と靴を保持。胴/腕/弓は同じ4pxグリッドで手描きする。
+            for(int y=0;y<256;y++)for(int x=0;x<256;x++){var c=source[y*width+x];if(y<44)data[y*256+x]=c;else if(y>=88&&y-drop>=0&&x+4<256)data[(y-drop)*256+x+4]=c;}
+            var edge=new UnityEngine.Color32(29,24,40,255);var coat=new UnityEngine.Color32(94,62,39,255);var light=new UnityEngine.Color32(133,88,48,255);var stringColor=new UnityEngine.Color32(179,170,150,255);
+            void Box(int x0,int y0,int x1,int y1,UnityEngine.Color32 c){for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++)data[y*256+x]=c;}
+            void Line(int x0,int y0,int x1,int y1,int radius,UnityEngine.Color32 c){int dx=System.Math.Abs(x1-x0),dy=-System.Math.Abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,error=dx+dy;while(true){Box(x0-radius,y0-radius,x0+radius+1,y0+radius+1,c);if(x0==x1&&y0==y1)break;int twice=error*2;if(twice>=dy){error+=dy;x0+=sx;}if(twice<=dx){error+=dx;y0+=sy;}}}
+            Box(112,44,148,88-drop,edge);Box(120,44,144,84-drop,coat);Box(120,72-drop,144,80-drop,light);
+            Line(140,76-drop,156,60-drop,5,edge);Line(140,76-drop,156,60-drop,2,light);
+            // 弓を下前方へ寝かせる。危険線・矢・新しい攻撃範囲は追加しない。
+            Line(148,92-drop,172,80-drop,4,edge);Line(172,80-drop,180,64-drop,4,edge);Line(180,64-drop,168,56-drop,4,edge);
+            Line(148,92-drop,172,80-drop,1,light);Line(172,80-drop,180,64-drop,1,light);Line(180,64-drop,168,56-drop,1,light);Line(148,92-drop,168,56-drop,0,stringColor);
+            return data;
+        }
+    }
+
     public static class OutsideRuinsMasonry481
     {
         public const int Width=3072,Height=768,FloorPixel=192;

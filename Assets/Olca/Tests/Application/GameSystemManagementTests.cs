@@ -18,6 +18,33 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase(0,10)][TestCase(7,10)][TestCase(8,11)][TestCase(113,11)]
+        public void 遺跡482の下ろした弓は実回復中だけで被弾撃破と他の姿勢を維持する(int age,int expected)
+        {
+            var phase=Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery;Assert.AreEqual(expected,Olca.Presentation.Exploration.OutsideRuinsArcherPose482.Frame(phase,age,0));
+            foreach(var p in new[]{Olca.Core.Logic.Integration.OutsideGoblinPhase.Approach,Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup,Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike})for(int f=0;f<8;f++)Assert.AreEqual(f,Olca.Presentation.Exploration.OutsideRuinsArcherPose482.Frame(p,age,f));
+            Assert.AreEqual(8,Olca.Presentation.Exploration.OutsideRuinsArcherPose482.Frame(phase,age,8));Assert.AreEqual(9,Olca.Presentation.Exploration.OutsideRuinsArcherPose482.Frame(phase,age,9));
+        }
+        [TestCase(false)][TestCase(true)]
+        public void 遺跡482の仮姿勢は同じ靴と透過キャンバスを保持して原絵を書き換えない(bool settled)
+        {
+            var texture=new Texture2D(2,2);Assert.IsTrue(texture.LoadImage(Resources.Load<TextAsset>("OlcaPickups/trial_archer_v1").bytes,false));var source=texture.GetPixels32();var saved=source.ToArray();
+            try{var pixels=Olca.Presentation.Exploration.OutsideRuinsArcherPose482.Pixels(source,2560,settled);Assert.AreEqual(65536,pixels.Length);CollectionAssert.AreEqual(saved,source);Assert.IsTrue(pixels.SequenceEqual(Olca.Presentation.Exploration.OutsideRuinsArcherPose482.Pixels(source,2560,settled)));for(int y=0;y<44;y++)for(int x=0;x<256;x++)Assert.AreEqual(source[y*2560+x],pixels[y*256+x]);Assert.AreEqual(0,pixels[0].a);Assert.AreEqual(0,pixels[255*256+255].a);Assert.IsTrue(pixels.Any(c=>c.a==255));}
+            finally{UnityEngine.Object.DestroyImmediate(texture);}
+        }
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
+        public async Task 遺跡482の実ビューは予告発射回復を同じ時計で読み停止再試行と退出で表示を残さない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());var beforeCache=Olca.Unity.GeneratedSpriteAssets.Inspect();int borrowers=(int)beforeCache.GetType().GetProperty("borrowers").GetValue(beforeCache);view.transform.Find("OutsideRuinsCrossing450").GetComponent<Button>().onClick.Invoke();var child=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();var session=child.Runtime.Session;var body=child.transform.Find("BranchGoblin").GetComponent<Image>();
+                for(int n=0;n<300&&session.Phase==Olca.Core.Logic.Integration.OutsideGoblinPhase.Approach;n++)session.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Windup,session.Phase);child.Render();var windup=body.sprite;
+                for(int n=0;n<30;n++)session.Tick(default);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Strike,session.Phase);child.Render();var release=body.sprite;Assert.AreNotSame(windup,release);
+                for(int n=0;n<6;n++)session.Tick(default);Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Recovery,session.Phase);Assert.AreEqual(0,session.Age);child.Render();var recovery=body.sprite;var texture=recovery.texture;Assert.AreEqual("ruins_archer_recovery_482_0",recovery.name);Assert.AreNotSame(release,recovery);Assert.AreEqual(new Vector2(128,20),recovery.pivot);Assert.AreEqual(256,recovery.rect.width);Assert.AreEqual(FilterMode.Point,texture.filterMode);Assert.IsFalse(body.raycastTarget);var position=body.rectTransform.anchoredPosition;
+                for(int n=0;n<8;n++)session.Tick(default);child.Render();var settled=body.sprite;Assert.AreEqual("ruins_archer_recovery_482_1",settled.name);Assert.AreEqual(position,body.rectTransform.anchoredPosition);long frame=session.Frame;child.transform.Find("BranchPause").GetComponent<Button>().onClick.Invoke();for(int n=0;n<60;n++)session.Tick(default);child.Render();Assert.AreEqual(frame,session.Frame);Assert.AreSame(settled,body.sprite);child.transform.Find("BranchPause").GetComponent<Button>().onClick.Invoke();
+                for(int n=8;n<114;n++)session.Tick(default);child.Render();Assert.AreEqual(Olca.Core.Logic.Integration.OutsideGoblinPhase.Approach,session.Phase);Assert.IsFalse(body.sprite.name.StartsWith("ruins_archer_recovery_482_"));child.transform.Find("BranchRetry").GetComponent<Button>().onClick.Invoke();Assert.IsFalse(body.sprite.name.StartsWith("ruins_archer_recovery_482_"));child.Close();Assert.IsTrue(body==null,"退出した描画先を残さない");var afterCache=Olca.Unity.GeneratedSpriteAssets.Inspect();Assert.AreEqual(borrowers,(int)afterCache.GetType().GetProperty("borrowers").GetValue(afterCache),"親も借りる生成素材を強制破棄せず子の借用を返す");CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+            }
+        }
         [Test]
         public void 遺跡481の石組みは自作RGBAで床面より上と二足場の切れ目が透過になる()
         {
