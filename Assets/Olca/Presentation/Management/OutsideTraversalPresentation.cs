@@ -107,6 +107,8 @@ namespace Olca.Presentation.Exploration
         private void RenderMapName()
         {
             double opacity=presentation?.MapNameOpacity??0;
+            // 単独飛行試用は上部に名称がある。初回の浮遊敵と重なる中央の重複名だけを抑える。
+            if(presentation?.FlyingTrial454!=null&&!presentation.IsForest460)opacity=0;
             if(opacity>0&&mapNameLabel==null){
                 var go=new GameObject("OutsideMapName",typeof(RectTransform),typeof(Text),typeof(Shadow));go.transform.SetParent(transform,false);mapNameLabel=go.GetComponent<Text>();mapNameLabel.font=gaugeLabel.font;mapNameLabel.fontSize=44;mapNameLabel.alignment=TextAnchor.MiddleCenter;mapNameLabel.raycastTarget=false;mapNameLabel.horizontalOverflow=HorizontalWrapMode.Wrap;mapNameLabel.verticalOverflow=VerticalWrapMode.Overflow;
                 var rect=mapNameLabel.rectTransform;rect.anchorMin=rect.anchorMax=new Vector2(.5f,.5f);rect.pivot=new Vector2(.5f,.5f);rect.anchoredPosition=new Vector2(0,90);rect.sizeDelta=new Vector2(1000,90);var shadow=go.GetComponent<Shadow>();shadow.effectColor=new Color(.005f,.025f,.04f,.95f);shadow.effectDistance=new Vector2(2,-2);
