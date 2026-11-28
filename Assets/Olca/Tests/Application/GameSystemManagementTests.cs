@@ -18,6 +18,35 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [Test]
+        public void 遺跡481の石組みは自作RGBAで床面より上と二足場の切れ目が透過になる()
+        {
+            var first=Olca.Presentation.Exploration.OutsideRuinsMasonry481.Create();var second=Olca.Presentation.Exploration.OutsideRuinsMasonry481.Create();
+            try{var t=first.texture;Assert.AreEqual(3072,t.width);Assert.AreEqual(768,t.height);Assert.AreEqual(TextureFormat.RGBA32,t.format);Assert.AreEqual(FilterMode.Point,t.filterMode);Assert.AreEqual(TextureWrapMode.Clamp,t.wrapMode);CollectionAssert.AreEqual(t.GetPixels32(),second.texture.GetPixels32());Assert.AreEqual(1,t.GetPixel(100,191).a);Assert.AreEqual(0,t.GetPixel(100,192).a);Assert.AreEqual(1,t.GetPixel(700,400).a);Assert.AreEqual(0,t.GetPixel(1250,400).a,"world9–11の切れ目を絵で埋めない");Assert.AreEqual(1,t.GetPixel(1500,400).a);Assert.AreEqual(0,t.GetPixel(1500,408).a);Assert.AreEqual(0,t.GetPixel(1500,700).a);}
+            finally{UnityEngine.Object.DestroyImmediate(first.texture);UnityEngine.Object.DestroyImmediate(first);UnityEngine.Object.DestroyImmediate(second.texture);UnityEngine.Object.DestroyImmediate(second);}
+        }
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
+        public async Task 遺跡481の石縁は既存床と二足場へ追従し矢と足元を覆わず停止退出と親保存を保つ(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.Render();var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.transform.Find("OutsideRuinsCrossing450").GetComponent<Button>().onClick.Invoke();var child=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();var near=child.transform.Find("RuinsMasonry481").GetComponent<Image>();Assert.IsFalse(near.raycastTarget);Assert.Less(near.transform.GetSiblingIndex(),child.transform.Find("BranchPlayer").GetSiblingIndex());Assert.Less(near.transform.GetSiblingIndex(),child.transform.Find("RuinsLowArrow450").GetSiblingIndex());var sprite=near.sprite;var texture=sprite.texture;
+                for(int step=0;step<2;step++){
+                    child.Render();Canvas.ForceUpdateCanvases();var nr=near.rectTransform;Vector3 Painted(float x,float y)=>nr.TransformPoint(new Vector3(nr.rect.xMin+nr.rect.width*x/3072,nr.rect.yMin+nr.rect.height*y/768,0));var floor=child.transform.Find("BranchFloor").GetComponent<RectTransform>();Assert.That(Painted(100,192).y,Is.EqualTo(floor.TransformPoint(new Vector3(0,floor.rect.yMax,0)).y).Within(.02f));
+                    foreach(var pair in new[]{new{Edge="BranchUpperEdge",X=648f},new{Edge="RuinsSecondEdge",X=1404f}}){var edge=child.transform.Find(pair.Edge).GetComponent<RectTransform>();Assert.That(Painted(pair.X,405).x,Is.EqualTo(edge.TransformPoint(new Vector3(edge.rect.xMin,0,0)).x).Within(.02f));Assert.Less(Painted(pair.X,405).y,edge.TransformPoint(new Vector3(0,edge.rect.yMin,0)).y);}
+                    for(int n=0;n<110;n++)child.Runtime.Session.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});
+                }
+                Assert.AreSame(sprite,near.sprite);child.transform.Find("BranchRetry").GetComponent<Button>().onClick.Invoke();Assert.AreSame(texture,near.sprite.texture);long frame=child.Runtime.Session.Frame;child.transform.Find("BranchPause").GetComponent<Button>().onClick.Invoke();for(int n=0;n<60;n++)child.Runtime.Session.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1});child.Render();Assert.AreEqual(frame,child.Runtime.Session.Frame);child.Close();Assert.IsTrue(sprite==null&&texture==null);CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public async Task 遺跡481の石組みは既存回廊と水路に追加されない(bool waterway)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);binding.View.Render();binding.View.transform.Find(waterway?"OutsideWaterway464":"OutsideBranchEntry441").GetComponent<Button>().onClick.Invoke();var child=binding.View.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.IsNull(child.transform.Find("RuinsMasonry481"));Assert.NotNull(child.transform.Find(waterway?"WaterwayMasonry478":"BranchBackdropColumn0"));child.Close();
+            }
+        }
         [TestCase(false)][TestCase(true)]
         public void 水路478の自作FHD絵は最近傍RGBAで再現でき前景の空中に不透明な下地を持たない(bool front)
         {
