@@ -875,3 +875,47 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonCrossfire477Tests
+    {
+        private static FloorSequenceDefinitions Route(out SimpleCardFactory cards,out CheckpointDefinitions legacy)
+        {cards=new SimpleCardFactory();legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;return DungeonCoreFactory.CreateTrialCrossfire477(legacy,cards,new EnemyPoiseDefinition(30,18,180));}
+        private static BattleSystem Battle(out PlayerCharacter player,out Enemy cannon,out Enemy front)
+        {
+            player=new PlayerCharacter(100,new Vector2Int(1,0));cannon=new Enemy("boss",DungeonReaimCannon473.BossName,60,ElementType.None,new Vector2Int(4,0),poiseDefinition:new EnemyPoiseDefinition(30,18,180));front=new Enemy(DungeonMixedPriority462.FrontId,DungeonMixedPriority462.FrontName,50,ElementType.None,new Vector2Int(3,0),poiseDefinition:new EnemyPoiseDefinition(30,18,180));
+            var b=new BattleSystem(player,new System.Collections.Generic.List<Enemy>{cannon,front},new Deck(),customGaugeSpeed:0,cardDatabase:new SimpleCardFactory(),enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.ConfigureDefaultHitInvincibility(600);return b;
+        }
+        private static void Frames(BattleSystem b,int n){for(int i=0;i<n;i++)b.TickFrame(17);}
+        private static void Move(BattleSystem b,int direction,int frames){Assert.IsTrue(b.PlayerMovement.TryStartNormalMove(new Vector2Int(direction,0),b.Enemies.ToList()));Frames(b,frames);}
+        [Test] public void 混成477は独立任意IDで単体砲台と旧混成の定義を変えず通常接触と保存を使う()
+        {
+            var route=Route(out var cards,out var legacy);var normal=new EnemyPoiseDefinition(30,18,180);string solo=DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal).RouteHash,old=DungeonCoreFactory.CreateTrialMixed462(legacy,cards,normal).RouteHash;var map=route.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();Assert.AreEqual(DungeonCoreFactory.TrialCrossfireRoute477,route.RouteId);Assert.AreEqual(2,map.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonReaimCannon473.Matches(map.MapCells[3].Enemy));Assert.IsTrue(DungeonMixedPriority462.IsFront(map.MapCells[4].Enemy));Assert.AreEqual(solo,DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal).RouteHash);Assert.AreEqual(old,DungeonCoreFactory.CreateTrialMixed462(legacy,cards,normal).RouteHash);
+            var cp=route.CreateDepartureSession();var core=new DungeonCoreFactory(new SeededBattleRandom(477),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI()).Create(new DungeonCoreFactory.Launch{Map=map,Player=new PlayerCharacter(100),Deck=cards.CreateStarterDeck(),Checkpoints=cp});Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsTrue(DungeonReaimCannon473.Matches(restored.Map.MapCells[3].Enemy));
+            for(int n=0;n<1200&&core.CurrentBattle==null;n++)core.TickFrame(17);Assert.IsNotNull(core.CurrentBattle);Assert.AreEqual(2,core.CurrentBattle.Enemies.Count);Assert.AreEqual(1,core.CurrentBattle.Player.GridPosition.X);Assert.AreEqual(3,core.CurrentBattle.Enemies.Single(DungeonMixedPriority462.IsFront).GridPosition.X);Assert.AreEqual(4,core.CurrentBattle.Enemies.Single(DungeonReaimCannon473.Matches).GridPosition.X);
+            var go=new UnityEngine.GameObject("Crossfire477Entry");go.SetActive(false);try{var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();controller.ConfigureDungeonSelection(new[]{DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal),route});Assert.IsTrue((bool)controller.GetType().GetMethod("DungeonUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(controller,new object[]{1}));}finally{UnityEngine.Object.DestroyImmediate(go);}
+        }
+        [TestCase(false,60)][TestCase(true,100)]
+        public void 混成477は前衛を誘って一射後に位置を選び直し二体存命のままソードを返せる(bool dodge,int hp)
+        {
+            var b=Battle(out var p,out var cannon,out var front);b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(cannon,out var first,out _,out _));Assert.AreEqual(new Vector2Int(1,0),first);
+            Move(b,1,9);Assert.AreEqual(2,p.GridPosition.X);Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out var melee,out _,out var length));Assert.AreEqual(24,length);Assert.AreEqual(new Vector2Int(2,0),melee);CollectionAssert.AreEquivalent(new[]{first,melee},b.EnemyAttackTiles);
+            // 前衛の予告は2、一射目は1。0へ抜ける時間があり、二射目はそこで再照準する。
+            if(dodge){Move(b,-1,9);Move(b,-1,12);}else Frames(b,21);
+            Frames(b,12);Assert.IsTrue(b.TryGetEnemyAttackPreview(cannon,out var second,out _,out _));Assert.AreEqual(new Vector2Int(dodge?0:2,0),second);Assert.AreNotEqual(first,second);
+            if(dodge)Move(b,1,30);else Frames(b,30);Assert.AreEqual(hp,p.CurrentHp);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(cannon,out _,out var rest));Assert.AreEqual(90,rest);Assert.AreEqual(50,front.CurrentHp);Assert.AreEqual(60,cannon.CurrentHp);
+            if(dodge){Move(b,1,9);b.CardUsage.EnqueueCards(new System.Collections.Generic.List<Card>{new SimpleCardFactory().CreateById(SimpleCardFactory.Sword)});Assert.IsTrue(b.UseCurrentCard());Frames(b,2);Assert.AreEqual(20,front.CurrentHp);Assert.AreEqual(60,cannon.CurrentHp);Assert.IsFalse(front.IsDead||cannon.IsDead);Assert.AreEqual(100,p.CurrentHp);}
+        }
+        [TestCase(BattlePauseReason.User)][TestCase(BattlePauseReason.CustomScreen)]
+        public void 混成477は違う二つの予告と両時計を完全停止する(BattlePauseReason reason)
+        {
+            var b=Battle(out var p,out var cannon,out var front);b.TickFrame(17);Move(b,1,9);Assert.IsTrue(b.TryGetEnemyAttackPreview(cannon,out var target,out var age,out _));Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out var near,out var nearAge,out _));var frame=b.LogicalFrame;b.Pause(reason);Frames(b,120);Assert.AreEqual(frame,b.LogicalFrame);Assert.IsTrue(b.TryGetEnemyAttackPreview(cannon,out var same,out var elapsed,out _));Assert.AreEqual(target,same);Assert.AreEqual(age,elapsed);Assert.IsTrue(b.TryGetEnemyAttackPreview(front,out same,out elapsed,out _));Assert.AreEqual(near,same);Assert.AreEqual(nearAge,elapsed);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [TestCase(true)][TestCase(false)]
+        public void 混成477は一体を倒しても他方の予告を消さず二体撃破後だけ終了する(bool cannonFirst)
+        {
+            var b=Battle(out var p,out var cannon,out var front);b.TickFrame(17);Move(b,1,9);var survivor=cannonFirst?front:cannon;Assert.IsTrue(b.TryGetEnemyAttackPreview(survivor,out var target,out _,out _));(cannonFirst?cannon:front).TakeDamage(1000,ElementType.None);Frames(b,1);Assert.IsFalse(b.IsGameOver);Assert.Contains(target,b.EnemyAttackTiles.ToList());survivor.TakeDamage(1000,ElementType.None);Frames(b,1);Assert.AreEqual(BattleState.Victory,b.State);Assert.IsEmpty(b.EnemyAttackTiles);
+        }
+    }
+}

@@ -116,6 +116,17 @@ namespace Olca.Application.Management
             }
             return FloorSequenceDefinitions.WithSharedCardCatalog(TrialMixedRoute462,"trial-dungeon-mixed-priority-v1",new[]{new DungeonConfig("trial-dungeon-mixed-priority-floor-v1","シヨウ ヨミアイ・ニタイ（カリ）",8,cells)},catalog);
         }
+        // 二射の狙い直しと前衛の固定予告を同時に読む、新IDの任意チェック。単体AIと数値は借用のみ。
+        public const string TrialCrossfireRoute477="trial-dungeon-cannon-front-choice-route-v1";
+        public static FloorSequenceDefinitions CreateTrialCrossfire477(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();var cells=new List<MapCell>();
+            for(int i=0;i<8;i++){
+                var enemy=i==3?new Enemy("boss",DungeonReaimCannon473.BossName,DungeonReaimCannon473.MaximumHp,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):i==4?new Enemy(DungeonMixedPriority462.FrontId,DungeonMixedPriority462.FrontName,DungeonMixedPriority462.FrontHp,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal):null;
+                cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
+            }
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialCrossfireRoute477,"trial-dungeon-cannon-front-choice-v1",new[]{new DungeonConfig("trial-dungeon-cannon-front-choice-floor-v1","シヨウ ニレン・ゼンエイ（カリ）",8,cells)},catalog);
+        }
         public const string TrialMortarRoute473="trial-dungeon-reaim-cannon-route-v1";
         public static FloorSequenceDefinitions CreateTrialMortar473(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
         {
