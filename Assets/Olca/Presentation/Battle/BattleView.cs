@@ -35,6 +35,7 @@ namespace Olca.Presentation.Battle
         public void SetCustomInspectionHidden(bool hidden)
         {
             customInspectionHidden=hidden;
+            RefreshFloorContext();
             if(customScreenBackdrop!=null)customScreenBackdrop.gameObject.SetActive(isCustomScreenOpen&&!hidden);
             if(customGaugeContainer!=null)customGaugeContainer.gameObject.SetActive(!hidden);
         }
@@ -238,7 +239,36 @@ namespace Olca.Presentation.Battle
             RefreshCustomLayout();
         }
 
-        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();RefreshNextCard();RefreshDashContactCue();}
+        private Text floorContext;
+        private int contextFloor, contextFloorCount;
+        /// <summary>複数階の既存ルートだけ、探索HUDと同じ上中央で戦闘中も現在階を示す。保存や進行は参照しない。</summary>
+        public void ConfigureFloorContext(int floorNumber, int floorCount)
+        {
+            contextFloor = floorNumber; contextFloorCount = floorCount;
+            RefreshFloorContext();
+        }
+        private void RefreshFloorContext()
+        {
+            bool visible = isActiveAndEnabled && !customInspectionHidden && battleSystem != null && !battleSystem.IsGameOver &&
+                contextFloorCount > 1 && contextFloor > 0 && contextFloor <= contextFloorCount;
+            if (!visible) { if (floorContext != null) floorContext.gameObject.SetActive(false); return; }
+            if (floorContext == null)
+            {
+                floorContext = PresentationText("BattleFloorContext472", transform, Vector2.zero, new Vector2(400,48), 28);
+                floorContext.raycastTarget = false;
+                floorContext.color = Color.white;
+                var rect = floorContext.rectTransform;
+                rect.anchorMin = rect.anchorMax = new Vector2(.5f,1);
+                rect.pivot = new Vector2(.5f,1);
+                rect.anchoredPosition = new Vector2(0,-24);
+                var outline = floorContext.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0,0,0,.85f);
+                outline.effectDistance = new Vector2(1,-1);
+            }
+            floorContext.text = contextFloor + "カイ / " + contextFloorCount;
+            floorContext.gameObject.SetActive(true);
+        }
+        private void LateUpdate(){RefreshCustomLayout();RefreshStatusIcons();RefreshNextCard();RefreshDashContactCue();RefreshFloorContext();}
 
         private void RefreshCustomLayout()
         {
@@ -276,6 +306,7 @@ namespace Olca.Presentation.Battle
         public void Initialize(BattleSystem battleSystem)
         {
             DetachBattleEvents();
+            ConfigureFloorContext(0,0);
             Olca.Presentation.Dungeon.UiLook.Label(playerHpText);
             if(playerHpText!=null)playerHpText.color=Color.white;
             if(customGaugeLabel!=null){var label=customGaugeLabel.GetComponent<Text>();if(label!=null){Olca.Presentation.Dungeon.UiLook.Label(label);label.fontSize=26;label.text="CUSTOM";}}
@@ -355,7 +386,7 @@ namespace Olca.Presentation.Battle
             if(gaugeFill!=null&&gaugeSprites!=null)gaugeFill.sprite=gaugeSprites.Fill;
         }
 
-        private void OnBattleEnded(BattleResult result) {ClearDashContactCue();ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnBattleEnded(BattleResult result) {ConfigureFloorContext(0,0);ClearDashContactCue();ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         /// <summary>撤退等でセッションを破棄する。古い開閉処理が再表示しないよう所有権を先に外す。</summary>
         public void EndSessionPresentation() => EndSessionPresentationCore(true);
@@ -375,12 +406,12 @@ namespace Olca.Presentation.Battle
                 SetCustomSlide(CUSTOM_SCREEN_HIDDEN_X);
             }
             if (customGaugeLabel != null) customGaugeLabel.SetActive(false);
-            DetachBattleEvents(); battleSystem = null;statusIcons?.Clear();RefreshNextCard();ClearDashContactCue();
+            DetachBattleEvents(); battleSystem = null;ConfigureFloorContext(0,0);statusIcons?.Clear();RefreshNextCard();ClearDashContactCue();
             Olca.Unity.BattleVisualClock.SetPaused(this,false);
             ResetGaugeVisual(); ResetTransformationVisual();
         }
 
-        private void OnDisable() {ClearDashContactCue();ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
+        private void OnDisable() {if(floorContext!=null)floorContext.gameObject.SetActive(false);ClearDashContactCue();ResetRangeGuide();if(nextCardLabel!=null)nextCardLabel.transform.parent.gameObject.SetActive(false);statusIcons?.Clear();Olca.Unity.BattleVisualClock.SetPaused(this,false);ResetGaugeVisual();ResetTransformationVisual();}
 
         private void DetachBattleEvents()
         {

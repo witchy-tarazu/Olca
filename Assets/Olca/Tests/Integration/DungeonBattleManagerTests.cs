@@ -2663,6 +2663,23 @@ namespace Olca.Tests.Integration
             var hud = host.AddComponent<Olca.Presentation.Dungeon.DungeonHudView>(); Set(controller, "dungeonHudView", hud);
             Call(controller, "Start"); return controller;
         }
+        [Test]
+        public void 接敵遷移のView再初期化後も複数階の現在階が残る()
+        {
+            var map = DungeonConfig.CreateTestDungeon(5,30,3);
+            Olca.Presentation.Battle.BattleView view=null;
+            var c=Start(new[]{map,DungeonConfig.CreateTestDungeon(6,30,3)},configure:host=>{
+                var root=new UnityEngine.GameObject("FloorContextController472",typeof(UnityEngine.RectTransform));
+                objects.Add(root);view=root.AddComponent<Olca.Presentation.Battle.BattleView>();
+                Set(host,"battleView",view);Set(host,"hudFadeDuration",0f);
+            });
+            ToBattle(c);
+            Assert.AreEqual(1,Get(view,"contextFloor"));Assert.AreEqual(2,Get(view,"contextFloorCount"));
+            var label=view.transform.Find("BattleFloorContext472").GetComponent<UnityEngine.UI.Text>();
+            Assert.AreEqual("1カイ / 2",label.text);Assert.IsTrue(label.gameObject.activeSelf);
+            Assert.IsTrue(Model(c).CurrentBattle.CustomScreen.IsOpen);
+        }
+
         [TestCase(false)][TestCase(true)]
         public void 再出撃437は帰還済みの通常探索だけ行き先確定を出撃へ連続させる(bool outside)
         {

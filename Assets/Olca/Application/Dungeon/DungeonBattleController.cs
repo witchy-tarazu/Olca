@@ -2983,6 +2983,7 @@ namespace Olca.Application.Dungeon
 
                 battleView?.gameObject.SetActive(true);
                 battleView?.Initialize(battle);
+                battleView?.ConfigureFloorContext(CurrentFloorIndex + 1, floorDefinitions?.FloorCount ?? 1);
                 customScreenView?.Initialize(battle.CustomScreen);
 
                 // バトルセッション開始（購読・ゲージ管理をBattleSessionControllerに委譲）

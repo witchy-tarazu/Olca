@@ -18,6 +18,65 @@ namespace Olca.Tests.Application
     [TestFixture]
     public class BattleSessionControllerTests
     {
+        [Test]
+        public void 複数階の戦闘表示は現在階を示し初期化と単階層で前の階を残さない()
+        {
+            var root = new UnityEngine.GameObject("FloorContext472", typeof(UnityEngine.RectTransform));
+            root.SetActive(false);
+            var view = root.AddComponent<Olca.Presentation.Battle.BattleView>();
+            var battle = CreateBattleSystem();
+            try
+            {
+                root.SetActive(true); view.Initialize(battle);
+                view.ConfigureFloorContext(1,2);
+                var text = root.transform.Find("BattleFloorContext472").GetComponent<UnityEngine.UI.Text>();
+                Assert.AreEqual("1カイ / 2",text.text); Assert.IsTrue(text.gameObject.activeSelf);
+                Assert.IsFalse(text.raycastTarget);Assert.AreEqual(UnityEngine.Color.white,text.color);
+                view.ConfigureFloorContext(2,2);
+                Assert.AreEqual("2カイ / 2",text.text);
+                Assert.AreEqual(new UnityEngine.Vector2(.5f,1),text.rectTransform.anchorMin);
+                Assert.AreEqual(new UnityEngine.Vector2(0,-24),text.rectTransform.anchoredPosition);
+                Assert.Less(text.preferredWidth,text.rectTransform.rect.width);
+                view.ConfigureFloorContext(1,1); Assert.IsFalse(text.gameObject.activeSelf);
+                view.ConfigureFloorContext(3,2); Assert.IsFalse(text.gameObject.activeSelf);
+                view.ConfigureFloorContext(2,2); Assert.IsTrue(text.gameObject.activeSelf);
+                view.Initialize(CreateBattleSystem()); Assert.IsFalse(text.gameObject.activeSelf);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void 戦闘の階表示はカスタム停止とHPを変えず終了と非表示で消える()
+        {
+            var root = new UnityEngine.GameObject("FloorContextLifetime472",typeof(UnityEngine.RectTransform));
+            root.SetActive(false);var view = root.AddComponent<Olca.Presentation.Battle.BattleView>();
+            var battle = CreateBattleSystem();
+            try
+            {
+                root.SetActive(true);view.Initialize(battle);
+                battle.CustomGauge.SetGauge(CustomGaugeSystem.MAX_GAUGE);
+                battle.CustomScreen.Commands.Execute(new CustomScreenCommand(CustomCommandKind.Open),new MockRandomProvider());
+                int hp=battle.Player.CurrentHp;long frame=battle.LogicalFrame;
+                view.ConfigureFloorContext(2,2);
+                var text=root.transform.Find("BattleFloorContext472").gameObject;
+                Assert.IsTrue(text.activeSelf);Assert.IsTrue(battle.CustomScreen.IsOpen);
+                Assert.AreEqual(hp,battle.Player.CurrentHp);Assert.AreEqual(frame,battle.LogicalFrame);
+                view.SetCustomInspectionHidden(true);Assert.IsFalse(text.activeSelf);
+                view.SetCustomInspectionHidden(false);Assert.IsTrue(text.activeSelf);
+                root.SetActive(false);
+                var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                typeof(Olca.Presentation.Battle.BattleView).GetMethod("OnDisable",flags).Invoke(view,null);Assert.IsFalse(text.activeSelf);
+                root.SetActive(true);view.ConfigureFloorContext(2,2);Assert.IsTrue(text.activeSelf);
+                view.ReleaseSessionPresentation();Assert.IsFalse(text.activeSelf);
+                view.Initialize(battle);view.ConfigureFloorContext(2,2);Assert.IsTrue(text.activeSelf);
+                view.EndSessionPresentation();Assert.IsFalse(text.activeSelf);
+                view.Initialize(battle);view.ConfigureFloorContext(2,2);
+                typeof(Olca.Presentation.Battle.BattleView).GetMethod("OnBattleEnded",flags).Invoke(view,new object[]{BattleResult.Victory});
+                Assert.IsFalse(text.activeSelf);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
         // ==================== モック ====================
 
         /// <summary>IBattleView のテスト用モック</summary>
