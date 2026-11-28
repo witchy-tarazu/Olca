@@ -22,6 +22,30 @@ namespace Olca.Presentation.Battle
         private long archerReleaseAt=-1000,archerExpectedRelease;
         public bool IsTrialArcher=>Olca.Core.Logic.Battle.DungeonTrialArrowAction.IsArcherEnemyId(enemy?.EnemyId)||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy)||Olca.Core.Logic.Battle.DungeonMixedPriority462.IsRear(enemy);
         public bool IsStepArcher=>enemy?.EnemyId==Olca.Core.Logic.Battle.DungeonStepArcherAction.EnemyId||Olca.Core.Logic.Battle.DungeonStepArcherAction.IsPairTrialBoss(enemy)||Olca.Core.Logic.Battle.DungeonMixedPriority462.IsRear(enemy);
+        public bool IsTrialGuard488=>Olca.Core.Logic.Battle.DungeonGuard488.Matches(enemy);
+        // 自作の石の盾兵。256透過、最近傍。盾の高さと刃の姿勢で防御/振りかぶり/隙を分ける。
+        private Sprite GuardSprite488(int pose)
+        {
+            if(archerAssets==null)archerAssets=Olca.Unity.GeneratedSpriteAssets.Acquire(this);
+            float foot=gruntSprite!=null?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(gruntSprite).min.y:0;
+            var frames=archerAssets.Get<Sprite[]>("OriginalGuard488_"+foot.ToString(System.Globalization.CultureInfo.InvariantCulture),b=>{
+                var result=new Sprite[4];for(int f=0;f<4;f++){
+                    var texture=b.CreateTexture(256,256);texture.filterMode=FilterMode.Point;texture.wrapMode=TextureWrapMode.Clamp;var pixels=new Color32[256*256];
+                    var ink=new Color32(38,34,33,255);var stone=new Color32(115,109,99,255);var edge=new Color32(196,179,146,255);var metal=new Color32(153,128,88,255);
+                    void Rect(int x,int y,int w,int h,Color32 c){for(int py=System.Math.Max(0,y);py<System.Math.Min(256,y+h);py++)for(int px=System.Math.Max(0,x);px<System.Math.Min(256,x+w);px++)pixels[py*256+px]=c;}
+                    Rect(76,24,44,24,ink);Rect(132,24,44,24,ink);Rect(84,28,28,12,stone);Rect(140,28,28,12,stone);Rect(88,44,72,80,ink);Rect(96,48,56,68,stone);Rect(104,112,48,52,ink);Rect(112,120,32,36,stone);Rect(112,132,36,8,ink);Rect(120,136,20,4,edge);Rect(96,92,56,8,metal);
+                    int shieldY=f==0?48:f==1?32:24,shieldH=f==0?100:60;Rect(140,shieldY,56,shieldH,ink);Rect(148,shieldY+8,40,shieldH-16,metal);Rect(152,shieldY+12,8,shieldH-24,edge);Rect(168,shieldY+shieldH/2,12,12,ink);
+                    if(f==1){Rect(164,116,16,76,ink);Rect(168,124,8,60,edge);Rect(152,116,40,8,metal);}else if(f==2){Rect(180,76,60,16,ink);Rect(184,80,52,8,edge);}else{Rect(76,56,12,56,ink);Rect(80,64,4,44,edge);}
+                    texture.SetPixels32(pixels);texture.Apply(false,false);result[f]=b.CreateSprite(texture,new Rect(0,0,256,256),new Vector2(.5f,(24-foot*100)/256),100);result[f].name="original_guard488_"+f;
+                }return result;
+            });return frames[Mathf.Clamp(pose,0,3)];
+        }
+        private int guardFacing488=-1;
+        private static Bounds GuardLocalBounds488(Sprite s)=>new Bounds(new Vector3((158-s.pivot.x)/s.pixelsPerUnit,(108-s.pivot.y)/s.pixelsPerUnit,0),new Vector3(164/s.pixelsPerUnit,168/s.pixelsPerUnit,0));
+        public void RenderTrialGuard488(bool warning,int recovery,int facing)
+        {
+            if(!IsTrialGuard488)return;var body=EnsureAttackPoseBody();if(body==null)return;body.sprite=GuardSprite488(enemy.Guard.IsActive?0:warning?1:recovery>=0&&recovery<6?2:3);if((warning||recovery<0)&&facing!=0)guardFacing488=System.Math.Sign(facing);body.flipX=guardFacing488<0;
+        }
         public bool IsTrialMortar473=>Olca.Core.Logic.Battle.DungeonReaimCannon473.Matches(enemy);
         private int mortarFacing473=-1;
         // 自作の石/真鍮砲台。右向き256キャンバス、足元24px、最近傍。既存キャラ絵は使用しない。
@@ -360,9 +384,9 @@ namespace Olca.Presentation.Battle
         // 非表示の元Rendererは本体の基準boundsを保つ。予備動作でHP円・数字・名前を揺らさない。
         private Bounds GaugeBodyBounds()
         {
-            if(IsTrialMortar473&&enemyImage!=null&&enemyImage.sprite!=null){
+            if((IsTrialGuard488||IsTrialMortar473)&&enemyImage!=null&&enemyImage.sprite!=null){
                 // Sprite.boundsは透明キャンバスの矩形のまま。自作砲台だけ共通描画領域で校正する。
-                var bounds=MortarLocalBounds473(enemyImage.sprite);var center=bounds.center;
+                var bounds=IsTrialGuard488?GuardLocalBounds488(enemyImage.sprite):MortarLocalBounds473(enemyImage.sprite);var center=bounds.center;
                 if(enemyImage.flipX)center.x=-center.x;if(enemyImage.flipY)center.y=-center.y;
                 var x=enemyImage.transform.TransformVector(new Vector3(bounds.size.x,0,0));var y=enemyImage.transform.TransformVector(new Vector3(0,bounds.size.y,0));
                 return new Bounds(enemyImage.transform.TransformPoint(center),new Vector3(Mathf.Abs(x.x)+Mathf.Abs(y.x),Mathf.Abs(x.y)+Mathf.Abs(y.y),Mathf.Abs(x.z)+Mathf.Abs(y.z)));
@@ -410,7 +434,7 @@ namespace Olca.Presentation.Battle
         /// <summary>既存の敵IDに対応する仮素材を表示する。戦闘データは変更しない。</summary>
         private void ApplyAppearance()
         {
-            var sprite = IsTrialMortar473 ? MortarSprite473(0) : IsTrialFlying455 ? FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454.Hover) : IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
+            var sprite = IsTrialGuard488 ? GuardSprite488(0) : IsTrialMortar473 ? MortarSprite473(0) : IsTrialFlying455 ? FlyingSprite455(Olca.Core.Logic.Integration.OutsideFlyingPhase454.Hover) : IsTrialArcher ? ArcherSprite(0) : enemy.EnemyId == "boss" ? bossSprite : gruntSprite;
             if (enemyImage == null || sprite == null) return;
 
             enemyImage.sprite = sprite;
@@ -418,7 +442,7 @@ namespace Olca.Presentation.Battle
             enemyImage.flipX = true; // 右向きの原画を、左側のプレイヤーへ向ける
 
             // 元絵の透明余白でなく、既存の可視領域校正へ名前をつなぐ。絵とpivotは変更しない。
-            float top = IsTrialMortar473?MortarLocalBounds473(sprite).max.y:IsTrialArcher?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(sprite).max.y:sprite.bounds.max.y;
+            float top = IsTrialGuard488?GuardLocalBounds488(sprite).max.y:IsTrialMortar473?MortarLocalBounds473(sprite).max.y:IsTrialArcher?Olca.Presentation.Effects.DefensiveFieldVisual.GetLocalBodyBounds(sprite).max.y:sprite.bounds.max.y;
             if (enemyNameText != null)
                 enemyNameText.transform.localPosition = new Vector3(0f, top + 1.05f, -0.1f);
             if (hpText != null)

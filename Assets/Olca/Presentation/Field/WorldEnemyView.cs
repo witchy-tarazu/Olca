@@ -169,6 +169,7 @@ namespace Olca.Presentation.Field
         /// <summary>読取済みの論理前隙だけを描く。時計/Root/grid/HP文字は変更しない。既存絵の仮屈伸。</summary>
         public void SetAttackWindup(bool active,int elapsedFrames=0,int totalFrames=0,long logicalUnits=0,int recoveryElapsed=-1,int recoveryTotal=0,int? playerColumn455=null,int? lockedTargetColumn473=null)
         {
+            if(enemyView?.IsTrialGuard488==true){ResetAttackWindup();int? column=active?lockedTargetColumn473:playerColumn455;if(!hitReactionRunning)enemyView.RenderTrialGuard488(active,isActiveAndEnabled&&!hiddenForBattle&&!hiddenByBlindness&&!deathStarted?recoveryElapsed:-1,column.HasValue?System.Math.Sign(column.Value-enemy.GridPosition.X):-1);return;}
             if(enemyView?.IsTrialMortar473==true){
                 ResetAttackWindup();
                 if(!hitReactionRunning){

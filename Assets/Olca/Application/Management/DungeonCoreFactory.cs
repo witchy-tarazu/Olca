@@ -100,6 +100,7 @@ namespace Olca.Application.Management
             public PairEnemyProvider447(IEnemyAIProvider fallback){this.fallback=fallback;}
             public EnemyAIRegistration Create(Enemy enemy,Olca.Core.Logic.CardEffects.ICardDatabase cards)
             {
+                if(DungeonGuard488.Matches(enemy))return DungeonGuard488.Pattern();
                 if(DungeonReaimCannon473.Matches(enemy))return new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonReaimCannon473()},EnemyPatternEndMode.Loop)},0);
                 if(enemy?.EnemyId==DungeonMixedPriority462.FrontId)return DungeonMixedPriority462.IsFront(enemy)?DungeonMixedPriority462.FrontPattern():null;
                 return DungeonFlyingDive455.Matches(enemy)?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonFlyingDive455()},EnemyPatternEndMode.Loop)},0):(DungeonStepArcherAction.IsPairTrialBoss(enemy)||DungeonMixedPriority462.IsRear(enemy))?new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new DungeonStepArcherAction()},EnemyPatternEndMode.Loop)},0):fallback.Create(enemy,cards);
@@ -126,6 +127,14 @@ namespace Olca.Application.Management
                 cells.Add(enemy==null?new MapCell(i):new MapCell(i,enemy));
             }
             return FloorSequenceDefinitions.WithSharedCardCatalog(TrialCrossfireRoute477,"trial-dungeon-cannon-front-choice-v1",new[]{new DungeonConfig("trial-dungeon-cannon-front-choice-floor-v1","シヨウ ニレン・ゼンエイ（カリ）",8,cells)},catalog);
+        }
+        // 既存出撃一覧の任意一枠。旧map/route/報酬/保存定義を置換しない。
+        public const string TrialGuardRoute488="trial-dungeon-guard-opening-route-v1";
+        public static FloorSequenceDefinitions CreateTrialGuard488(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)
+        {
+            if(catalog==null||cards==null)throw new ArgumentNullException();var cells=new List<MapCell>();
+            for(int i=0;i<8;i++)cells.Add(i==3?new MapCell(i,new Enemy("boss",DungeonGuard488.BossName,DungeonGuard488.MaximumHp,ElementType.None,new Vector2Int(i,0),poiseDefinition:normal)):new MapCell(i));
+            return FloorSequenceDefinitions.WithSharedCardCatalog(TrialGuardRoute488,DungeonGuard488.DefinitionId,new[]{new DungeonConfig("trial-dungeon-guard-opening-floor-v1","シヨウ タテ・スキ（カリ）",8,cells)},catalog);
         }
         public const string TrialMortarRoute473="trial-dungeon-reaim-cannon-route-v1";
         public static FloorSequenceDefinitions CreateTrialMortar473(CheckpointDefinitions catalog,SimpleCardFactory cards,EnemyPoiseDefinition normal)

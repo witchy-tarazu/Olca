@@ -919,3 +919,55 @@ namespace Olca.Tests.Application
         }
     }
 }
+
+namespace Olca.Tests.Application
+{
+    public sealed class DungeonGuard488Tests
+    {
+        private static BattleSystem Battle(out PlayerCharacter p,out Enemy e,int column=3)
+        {
+            p=new PlayerCharacter(100,new Vector2Int(1,0));e=new Enemy("boss",DungeonGuard488.BossName,60,ElementType.None,new Vector2Int(column,0));return new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());
+        }
+        private static void Frames(BattleSystem b,int n){for(int i=0;i<n;i++)b.TickFrame(17);}
+        [Test]
+        public void 盾488は一歩接近して防御90f後に盾を下ろし固定一マスへ30f後に攻撃する()
+        {
+            var b=Battle(out var p,out var e);Frames(b,1);Assert.AreEqual(2,e.GridPosition.X);Frames(b,1);Assert.IsTrue(e.Guard.IsActive);e.TakeDamage(10,ElementType.None);Assert.AreEqual(60,e.CurrentHp);
+            Frames(b,89);Assert.IsTrue(e.Guard.IsActive);Assert.IsEmpty(b.EnemyAttackTiles);Frames(b,1);Assert.IsFalse(e.Guard.IsActive);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var tile,out var age,out var total));Assert.AreEqual(new Vector2Int(1,0),tile);Assert.AreEqual(0,age);Assert.AreEqual(30,total);
+            Frames(b,29);Assert.AreEqual(100,p.CurrentHp);Frames(b,1);Assert.AreEqual(90,p.CurrentHp);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out age,out total));Assert.AreEqual(0,age);Assert.AreEqual(60,total);Assert.IsFalse(e.Guard.IsActive);
+        }
+        [Test]
+        public void 盾488は予告を外して詰め直すとガードを張り直す前に通常攻撃が通る()
+        {
+            var b=Battle(out var p,out var e);b.ConfigureBasicAttackTiming(CheckpointBattleFactory.ProductBasicTiming);Frames(b,92);p.MoveTo(new Vector2Int(0,0));Frames(b,30);Assert.AreEqual(100,p.CurrentHp);Assert.IsTrue(b.TryGetEnemyRecoveryPreview(e,out _,out _));p.MoveTo(new Vector2Int(1,0));Assert.IsTrue(b.TryStartPlayerBasicAttack(false));Frames(b,30);Assert.AreEqual(50,e.CurrentHp);Assert.AreEqual(100,p.CurrentHp);
+        }
+        [TestCase(BattlePauseReason.CustomScreen,2)][TestCase(BattlePauseReason.User,92)][TestCase(BattlePauseReason.CustomScreen,122)]
+        public void 盾488は防御と予告と後隙で停止中のフレームを消費しない(BattlePauseReason reason,int phase)
+        {
+            var b=Battle(out var p,out var e);Frames(b,phase);bool guard=e.Guard.IsActive;bool warning=b.TryGetEnemyAttackPreview(e,out var tile,out var age,out var total);bool recovery=b.TryGetEnemyRecoveryPreview(e,out var elapsed,out var length);int hp=p.CurrentHp;b.Pause(reason);Frames(b,180);Assert.AreEqual(guard,e.Guard.IsActive);Assert.AreEqual(hp,p.CurrentHp);Assert.AreEqual(warning,b.TryGetEnemyAttackPreview(e,out var t,out var a,out var n));Assert.AreEqual(recovery,b.TryGetEnemyRecoveryPreview(e,out var x,out var y));if(warning){Assert.AreEqual(tile,t);Assert.AreEqual(age,a);Assert.AreEqual(total,n);}if(recovery){Assert.AreEqual(elapsed,x);Assert.AreEqual(length,y);}
+        }
+        [Test]
+        public void 盾488は中断と死亡でガードと自身予告を解放する()
+        {
+            var b=Battle(out var p,out var e);Frames(b,2);Assert.IsTrue(e.Guard.IsActive);e.ApplyStun(10000);Frames(b,1);Assert.IsFalse(e.Guard.IsActive);Assert.IsEmpty(b.EnemyAttackTiles);
+            p=new PlayerCharacter(100,new Vector2Int(1,0));e=new Enemy("boss",DungeonGuard488.BossName,60,ElementType.None,new Vector2Int(3,0));var survivor=new Enemy("guard488-other","other",60,ElementType.None,new Vector2Int(5,0));b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e,survivor},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());Frames(b,92);var other=new object();typeof(BattleSystem).GetMethod("SetEnemyAttackTelegraph",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(b,new object[]{other,new[]{new Vector2Int(1,0)}});e.TakeDamage(1000,ElementType.None);Frames(b,1);Assert.IsFalse(e.Guard.IsActive);CollectionAssert.AreEquivalent(new[]{new Vector2Int(1,0)},b.EnemyAttackTiles);
+        }
+        [Test]
+        public void 盾488は独立routeであり旧砲台と弓の定義を置換しない()
+        {
+            var cards=new SimpleCardFactory();var normal=new EnemyPoiseDefinition(10,30,120);var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;var old=DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal).RouteHash;var route=DungeonCoreFactory.CreateTrialGuard488(legacy,cards,normal);var map=route.CreateInitialMap(0);map.ValidateFinalFloorForDeparture();Assert.AreEqual(1,map.MapCells.Count(c=>c.Enemy!=null));Assert.IsTrue(DungeonGuard488.Matches(map.MapCells[3].Enemy));Assert.AreEqual(old,DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal).RouteHash);Assert.IsFalse(DungeonGuard488.Matches(new Enemy("boss",DungeonReaimCannon473.BossName,60,ElementType.None,new Vector2Int(3,0))));var cp=route.CreateDepartureSession();var factory=new DungeonCoreFactory(new SeededBattleRandom(7),new UnityLogger(),()=>cards,enemies:DungeonCoreFactory.CreateTrialCardEnemyAI());factory.CreatePreview(map,new PlayerCharacter(100),cards.CreateStarterDeck(),cp);Assert.IsTrue(CheckpointCodec.TryRestore(cp.Store.Read(),cp.Definitions,out var restored,out var error),error);Assert.IsTrue(DungeonGuard488.Matches(restored.Map.MapCells[3].Enemy));Assert.IsFalse(restored.Map.MapCells[3].Enemy.Guard.IsActive);
+        }
+    }
+}
+
+namespace Olca.Tests.Application { public sealed class DungeonGuard488BoundaryTests {
+    [Test] public void 盾488は防御中に離れても隣接一マスだけを予告する(){var p=new PlayerCharacter(100,new Vector2Int(1,0));var e=new Enemy("boss",DungeonGuard488.BossName,60,ElementType.None,new Vector2Int(3,0));var b=new BattleSystem(p,new System.Collections.Generic.List<Enemy>{e},new Deck(),customGaugeSpeed:0,enemyAIProvider:DungeonCoreFactory.CreateTrialCardEnemyAI());b.TickFrame(17);b.TickFrame(17);p.MoveTo(new Vector2Int(5,0));for(int i=0;i<90;i++)b.TickFrame(17);Assert.IsTrue(b.TryGetEnemyAttackPreview(e,out var tile,out _,out _));Assert.AreEqual(new Vector2Int(3,0),tile);for(int i=0;i<30;i++)b.TickFrame(17);Assert.AreEqual(100,p.CurrentHp);}
+    [Test] public void 盾488の任意出撃は前の編成のクリアを要求しない(){var cards=new SimpleCardFactory();var normal=new EnemyPoiseDefinition(30,18,180);var legacy=DungeonCheckpointSession.CreateDefault(DungeonConfig.CreateTestDungeon(20,30,19),cards.CreateStarterDeck()).Definitions;var go=new UnityEngine.GameObject("Guard488Entry");go.SetActive(false);try{var controller=go.AddComponent<Olca.Application.Dungeon.DungeonBattleController>();controller.ConfigureDungeonSelection(new[]{DungeonCoreFactory.CreateTrialMortar473(legacy,cards,normal),DungeonCoreFactory.CreateTrialGuard488(legacy,cards,normal)});Assert.IsTrue((bool)typeof(Olca.Application.Dungeon.DungeonBattleController).GetMethod("DungeonUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(controller,new object[]{1}));}finally{UnityEngine.Object.DestroyImmediate(go);}}
+} }
+
+namespace Olca.Tests.Application { public sealed class DungeonGuard488ArtTests {
+ [Test] public void 盾488は透過256と足元校正を保ち防御と振りかぶりと回復姿勢を分ける(){var go=new UnityEngine.GameObject("Guard488Art");try{var renderer=go.AddComponent<UnityEngine.SpriteRenderer>();var view=go.AddComponent<Olca.Presentation.Battle.EnemyView>();typeof(Olca.Presentation.Battle.EnemyView).GetField("enemyImage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(view,renderer);var enemy=new Enemy("boss",DungeonGuard488.BossName,60,ElementType.None,new Vector2Int(2,0));view.Initialize(enemy);Assert.IsTrue(view.IsTrialGuard488);enemy.Guard.Set(true,true);view.RenderTrialGuard488(false,-1,-1);var body=view.BodyRenderer;Assert.AreEqual("original_guard488_0",body.sprite.name);var pivot=body.sprite.pivot;var position=body.transform.localPosition;var resolve=typeof(Olca.Presentation.Battle.EnemyView).GetMethod("GuardSprite488",BindingFlags.Instance|BindingFlags.NonPublic);
+ for(int i=0;i<4;i++){var sprite=(UnityEngine.Sprite)resolve.Invoke(view,new object[]{i});Assert.AreEqual(256,sprite.texture.width);Assert.AreEqual(256,sprite.texture.height);Assert.AreEqual(UnityEngine.FilterMode.Point,sprite.texture.filterMode);var pixels=sprite.texture.GetPixels32();Assert.AreEqual(0,pixels[0].a);int minY=256;for(int y=0;y<256;y++)for(int x=0;x<256;x++)if(pixels[y*256+x].a>0)minY=Math.Min(minY,y);Assert.AreEqual(24,minY);Assert.AreEqual(0,(minY-sprite.pivot.y)/sprite.pixelsPerUnit,.001);}
+ enemy.Guard.Clear();view.RenderTrialGuard488(true,-1,-1);Assert.AreEqual("original_guard488_1",body.sprite.name);view.RenderTrialGuard488(false,0,1);Assert.AreEqual("original_guard488_2",body.sprite.name);Assert.IsTrue(body.flipX);view.RenderTrialGuard488(false,10,1);Assert.AreEqual("original_guard488_3",body.sprite.name);Assert.IsTrue(body.flipX);Assert.AreEqual(pivot,body.sprite.pivot);Assert.AreEqual(position,body.transform.localPosition);var bounds=(UnityEngine.Bounds)typeof(Olca.Presentation.Battle.EnemyView).GetMethod("GaugeBodyBounds",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(view,null);Assert.AreEqual(0,bounds.min.y,.001);
+ }finally{UnityEngine.Object.DestroyImmediate(go);}}
+} }

@@ -518,3 +518,39 @@ namespace Olca.Core.Logic.Battle
         public float GetCooldown()=>.5f;
     }
 }
+
+namespace Olca.Core.Logic.Battle
+{
+    /// <summary>任意試用だけの盾持ち。ガードの所有・固定予告・解除を一行動で閉じる。期間は調整可能な仮値。</summary>
+    public sealed class DungeonGuard488 : IContinuingEnemyAIAction,IEnemyAttackPreviewSource,IEnemyRecoveryPreviewSource
+    {
+        public const string DefinitionId="trial-dungeon-guard-opening-v1",BossName="タテ ゴーレム（カリ）";
+        public const int GuardFrames=90,WarningFrames=30,RecoveryFrames=60,MaximumHp=60,Damage=10;
+        public static bool Matches(Enemy e)=>e!=null&&e.EnemyId=="boss"&&e.Name==BossName&&e.MaxHp==MaximumHp&&e.Element==ElementType.None&&!e.IsSummoned;
+        private CancellationTokenSource cancellation;private FrameTask task;private AIContext active;private object owner;private bool warning;private long started,released=-1;private Vector2Int target;
+        private static bool Ready(AIContext c)=>c.Battle!=null&&c.Field!=null&&!c.Battle.IsGameOver&&c.Self!=null&&c.Player!=null&&!c.Self.IsDead&&!c.Player.IsDead&&!c.Self.IsStunned&&!c.Self.IsParalyzed&&!c.Self.IsStaggered&&!c.Self.IsInTemporaryMove&&c.HasVisiblePlayer;
+        public bool IsRunning {get{Observe();return cancellation!=null&&task.Status==FrameTaskStatus.Pending;}}
+        public bool CanExecute(AIContext c)=>Ready(c)&&!IsRunning;
+        public void Execute(AIContext c){if(!CanExecute(c))return;active=c;owner=new object();released=-1;warning=false;cancellation=new CancellationTokenSource();task=Run(c,owner,cancellation.Token);Observe();}
+        private async FrameTask Run(AIContext c,object ticket,CancellationToken token)
+        {
+            try{
+                c.Self.Guard.Set(true,true);await c.Battle.WaitForActionFramesAsync(GuardFrames,token);token.ThrowIfCancellationRequested();c.Self.Guard.Clear();if(!Ready(c))return;
+                var aim=c.ResolveDirectionalInput(new Vector2Int(Math.Sign(c.Player.GridPosition.X-c.Self.GridPosition.X),0));target=new Vector2Int(c.Self.GridPosition.X+aim.X,c.Self.GridPosition.Y);
+                if(!c.Field.IsInBounds(target))return;
+                warning=true;started=c.Battle.ActionPresentationTimeUnits;c.Battle.SetEnemyAttackTelegraph(ticket,new[]{target});
+                await c.Battle.WaitForActionFramesAsync(WarningFrames,token);token.ThrowIfCancellationRequested();if(!Ready(c))return;
+                warning=false;c.Battle.ClearEnemyAttackTelegraph(ticket);
+                if(c.Player.GridPosition.Equals(target)&&c.Player.TryTakeDamage(Damage)&&!c.Player.IsDead)c.Player.SetInvincible(c.Battle.DefaultHitInvincibilityMs);
+                released=c.Battle.ActionPresentationTimeUnits;await c.Battle.WaitForActionFramesAsync(RecoveryFrames,token);
+            }finally{c.Self.Guard.Clear();warning=false;c.Battle.ClearEnemyAttackTelegraph(ticket);if(ReferenceEquals(owner,ticket))owner=null;}
+        }
+        private void Observe(){if(cancellation==null||task.Status==FrameTaskStatus.Pending)return;if(task.Status!=FrameTaskStatus.Canceled)task.GetAwaiter().GetResult();cancellation.Dispose();cancellation=null;}
+        public void Tick(int milliseconds,AIContext context,bool logicalFrame)=>Observe();
+        public bool TryGetAttackPreview(out EnemyAttackPreview preview){preview=default;if(!warning||cancellation==null||cancellation.IsCancellationRequested||task.Status!=FrameTaskStatus.Pending)return false;preview=new EnemyAttackPreview(target,(int)Math.Min(WarningFrames,Math.Max(0,(active.Battle.ActionPresentationTimeUnits-started)/50)),WarningFrames);return true;}
+        public bool TryGetRecoveryPreview(out int elapsedFrames,out int totalFrames){elapsedFrames=totalFrames=0;if(released<0||cancellation==null||cancellation.IsCancellationRequested||task.Status!=FrameTaskStatus.Pending||!Ready(active))return false;long age=(active.Battle.ActionPresentationTimeUnits-released)/50;if(age<0||age>=RecoveryFrames)return false;elapsedFrames=(int)age;totalFrames=RecoveryFrames;return true;}
+        public void Cancel(AIContext c){var source=cancellation;var ticket=owner;cancellation=null;owner=null;released=-1;warning=false;active.Self?.Guard.Clear();if(source==null)return;try{source.Cancel();}finally{source.Dispose();active.Battle?.ClearEnemyAttackTelegraph(ticket);}if(task.Status==FrameTaskStatus.Faulted)task.GetAwaiter().GetResult();}
+        public int GetCooldownMs()=>0;public float GetCooldown()=>0;
+        public static EnemyAIRegistration Pattern()=>new EnemyAIRegistration(new[]{new EnemyActionPattern(0,new IEnemyAIAction[]{new EnemyMovementAction(EnemyMovementKind.Approach,0),new DungeonGuard488()},EnemyPatternEndMode.Loop)},0);
+    }
+}
