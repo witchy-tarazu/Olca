@@ -1712,7 +1712,7 @@ namespace Olca.Presentation.Exploration
     public sealed class OutsideBranchView441 : UnityEngine.MonoBehaviour
     {
         public Olca.Unity.OutsideBranchRuntime441 Runtime {get;private set;}
-        private OutsideExplorationView owner;private bool disposed,closed,paused,focused=true,ruins,waterway464;private OutsideWaterPulseGraphic464 waterJet464;private UnityEngine.UI.Image waterLine464;private readonly List<UnityEngine.Sprite> ruinSprites=new List<UnityEngine.Sprite>();private UnityEngine.UI.Image secondPlatform,secondEdge;private OutsideRuinsArrow450 arrow;private float pixels;
+        private OutsideExplorationView owner;private bool disposed,closed,paused,focused=true,ruins,waterway464;private OutsideWaterPulseGraphic464 waterJet464;private UnityEngine.UI.Image waterLine464,waterMasonry478;private readonly List<UnityEngine.Sprite> ruinSprites=new List<UnityEngine.Sprite>();private UnityEngine.UI.Image secondPlatform,secondEdge;private OutsideRuinsArrow450 arrow;private float pixels;
         private UnityEngine.Sprite idle,rise,apex,fall;private UnityEngine.AnimationClip idleClip,moveClip;private UnityEngine.SpriteRenderer sample;
         private Olca.Unity.GeneratedSpriteAssets.Lease assets;private Olca.Unity.MenuPadScope menu;
         private readonly TrialGroundComboMotion combo=new TrialGroundComboMotion();
@@ -1738,12 +1738,15 @@ namespace Olca.Presentation.Exploration
             if(ruins){
                 for(int i=0;i<3;i++){var background=Box("RuinsCrossingBackground"+i,UnityEngine.Color.white);var sprite=OutsideExplorationView.CreateRuinsLayer(i);ruinSprites.Add(sprite);background.sprite=sprite;background.rectTransform.anchorMin=UnityEngine.Vector2.zero;background.rectTransform.anchorMax=UnityEngine.Vector2.one;background.rectTransform.offsetMin=background.rectTransform.offsetMax=UnityEngine.Vector2.zero;var fit=background.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();fit.aspectRatio=16f/9;fit.aspectMode=UnityEngine.UI.AspectRatioFitter.AspectMode.EnvelopeParent;}
                 var shade=Box("RuinsGuideBacking",new UnityEngine.Color(.05f,.12f,.17f,.78f));shade.rectTransform.anchorMin=new UnityEngine.Vector2(0,1);shade.rectTransform.anchorMax=UnityEngine.Vector2.one;shade.rectTransform.pivot=new UnityEngine.Vector2(.5f,1);shade.rectTransform.anchoredPosition=UnityEngine.Vector2.zero;shade.rectTransform.sizeDelta=new UnityEngine.Vector2(0,150);
+            }else if(waterway464){
+                // 遠景はカメラ/衝突と独立した自作水路。上段や噴出口の手前絵は後で実座標へ置く。
+                var far=Box("WaterwayFar478",UnityEngine.Color.white);var art=OutsideWaterwayArtwork478.Create(false);ruinSprites.Add(art);far.sprite=art;far.rectTransform.anchorMin=UnityEngine.Vector2.zero;far.rectTransform.anchorMax=UnityEngine.Vector2.one;far.rectTransform.offsetMin=far.rectTransform.offsetMax=UnityEngine.Vector2.zero;var fit=far.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();fit.aspectMode=UnityEngine.UI.AspectRatioFitter.AspectMode.EnvelopeParent;fit.aspectRatio=16f/9;
             }else{            for(int i=0;i<5;i++){var column=Box("BranchBackdropColumn"+i,new UnityEngine.Color(.13f,.16f,.18f,.5f));column.rectTransform.anchorMin=column.rectTransform.anchorMax=new UnityEngine.Vector2((i+.5f)/5,.21f);column.rectTransform.pivot=new UnityEngine.Vector2(.5f,0);column.rectTransform.sizeDelta=new UnityEngine.Vector2(90,650);}}
             floor=Box("BranchFloor",new UnityEngine.Color(.25f,.31f,.34f,1));floor.rectTransform.pivot=new UnityEngine.Vector2(0,1);
             platform=Box("BranchUpperPlatform",new UnityEngine.Color(.25f,.45f,.51f,1));platformEdge=Box("BranchUpperEdge",new UnityEngine.Color(.8f,.96f,1,1));gate=Box("BranchGate",new UnityEngine.Color(.8f,.43f,.17f,1));
             warning=Box("BranchLowWarning",new UnityEngine.Color(.9f,.18f,.12f,.2f));warningTop=Box("BranchWarningTop",new UnityEngine.Color(1,.35f,.2f,1));warningBottom=Box("BranchWarningBottom",new UnityEngine.Color(1,.35f,.2f,1));exit=Box("BranchExit",new UnityEngine.Color(.25f,.7f,.48f,1));
             if(ruins){floor.color=new UnityEngine.Color(.25f,.28f,.29f,1);platform.color=new UnityEngine.Color(.3f,.39f,.43f,1);secondPlatform=Box("RuinsSecondPlatform",platform.color);secondEdge=Box("RuinsSecondEdge",new UnityEngine.Color(.8f,.96f,1,1));var ar=new UnityEngine.GameObject("RuinsLowArrow450",typeof(UnityEngine.RectTransform),typeof(OutsideRuinsArrow450));ar.transform.SetParent(transform,false);arrow=ar.GetComponent<OutsideRuinsArrow450>();arrow.raycastTarget=false;arrow.rectTransform.anchorMin=arrow.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);}
-            if(waterway464){waterLine464=Box("WaterwayChannel",new UnityEngine.Color(.1f,.46f,.55f,1));var jet=new UnityEngine.GameObject("WaterwayPulse464",typeof(UnityEngine.RectTransform),typeof(OutsideWaterPulseGraphic464));jet.transform.SetParent(transform,false);waterJet464=jet.GetComponent<OutsideWaterPulseGraphic464>();waterJet464.raycastTarget=false;waterJet464.rectTransform.anchorMin=waterJet464.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);waterJet464.rectTransform.pivot=new UnityEngine.Vector2(.5f,0);floor.color=new UnityEngine.Color(.36f,.42f,.43f,1);}
+            if(waterway464){waterLine464=Box("WaterwayChannel",new UnityEngine.Color(.1f,.46f,.55f,1));waterMasonry478=Box("WaterwayMasonry478",UnityEngine.Color.white);var stone=OutsideWaterwayArtwork478.Create(true);ruinSprites.Add(stone);waterMasonry478.sprite=stone;waterMasonry478.rectTransform.anchorMin=waterMasonry478.rectTransform.anchorMax=new UnityEngine.Vector2(.5f,.21f);waterMasonry478.rectTransform.pivot=new UnityEngine.Vector2(.5f,0);var jet=new UnityEngine.GameObject("WaterwayPulse464",typeof(UnityEngine.RectTransform),typeof(OutsideWaterPulseGraphic464));jet.transform.SetParent(transform,false);waterJet464=jet.GetComponent<OutsideWaterPulseGraphic464>();waterJet464.raycastTarget=false;waterJet464.rectTransform.anchorMin=waterJet464.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);waterJet464.rectTransform.pivot=new UnityEngine.Vector2(.5f,0);floor.color=new UnityEngine.Color(.36f,.42f,.43f,1);}
             playerImage=Box("BranchPlayer",UnityEngine.Color.white);guardImage=Box("BranchGoblin",UnityEngine.Color.white);
             var trace=new UnityEngine.GameObject("BranchGroundKickTrace442",typeof(UnityEngine.RectTransform),typeof(OutsideGroundKickTrace442));trace.transform.SetParent(transform,false);kickTrace442=trace.GetComponent<OutsideGroundKickTrace442>();kickTrace442.raycastTarget=false;kickTrace442.rectTransform.anchorMin=kickTrace442.rectTransform.anchorMax=new UnityEngine.Vector2(0,.21f);kickTrace442.rectTransform.pivot=UnityEngine.Vector2.zero;kickTrace442.enabled=false;
             guardLabel=Label("BranchGuardLabel","",new UnityEngine.Vector2(0,.21f),UnityEngine.Vector2.zero,new UnityEngine.Vector2(330,52),20);
@@ -1780,7 +1783,10 @@ namespace Olca.Presentation.Exploration
             float X(long x)=>(x/60000f-center+viewport*.5f)*pixels;float Y(long y)=>(y/60000f-vertical)*pixels;
             void Rect(UnityEngine.UI.Image im,float x,float y,float w,float h){im.rectTransform.anchoredPosition=new UnityEngine.Vector2(x,y);im.rectTransform.sizeDelta=new UnityEngine.Vector2(w,h);}
             Rect(floor,0,Y(0),width,height*.21f);Rect(platform,X(9*60000),Y(2*60000)-9,10*pixels,18);Rect(platformEdge,X(9*60000),Y(2*60000),10*pixels,3);
-            if(waterway464){Rect(platform,X(360000),Y(84000)-9,6*pixels,18);Rect(platformEdge,X(360000),Y(84000),6*pixels,3);Rect(waterLine464,X(360000),Y(0)-.16f*pixels,2*pixels,.15f*pixels);waterJet464.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(360000),Y(0));waterJet464.rectTransform.sizeDelta=new UnityEngine.Vector2(.8f,1f)*pixels;waterJet464.Project(s.WaterActiveNow464&&!s.GateOpen?2:s.WaterWarningNow464||s.WaterActiveNow464?1:0,s.WaterAge464);}
+            if(waterway464){Rect(platform,X(360000),Y(84000)-9,6*pixels,18);Rect(platformEdge,X(360000),Y(84000),6*pixels,3);Rect(waterLine464,X(360000),Y(0)-.16f*pixels,2*pixels,.15f*pixels);waterJet464.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(360000),Y(0));waterJet464.rectTransform.sizeDelta=new UnityEngine.Vector2(.8f,1f)*pixels;waterJet464.Project(s.WaterActiveNow464&&!s.GateOpen?2:s.WaterWarningNow464||s.WaterActiveNow464?1:0,s.WaterAge464);
+                // 透過絵の基準線を既存地上面に一致。縁は衝突面より下、キャラより前には出さない。
+                float artScale=pixels/108f;waterMasonry478.rectTransform.sizeDelta=new UnityEngine.Vector2(1920,1080)*artScale;waterMasonry478.rectTransform.anchoredPosition=new UnityEngine.Vector2(0,Y(0)-OutsideWaterwayArtwork478.FloorRow*3*artScale);
+            }
             if(ruins){Rect(platform,X(390000),Y(120000)-9,5*pixels,18);Rect(platformEdge,X(390000),Y(120000),5*pixels,3);Rect(secondPlatform,X(840000),Y(120000)-9,6*pixels,18);Rect(secondEdge,X(840000),Y(120000),6*pixels,3);}
             Rect(gate,X(Olca.Core.Logic.Integration.OutsideBranchTrial441.GateX),Y(45000),12,1.5f*pixels);gate.enabled=!ruins&&!waterway464&&!s.GateOpen;
             Rect(exit,X(s.GoalX),Y(0)+.7f*pixels,.12f*pixels,1.4f*pixels);exitLabel.rectTransform.anchoredPosition=new UnityEngine.Vector2(X(s.GoalX),Y(0)+1.8f*pixels);exitLabel.gameObject.SetActive(System.Math.Abs(core.Position-s.GoalX)>72000);
@@ -1965,6 +1971,58 @@ namespace Olca.Presentation.Exploration
             if(phase==2){Box(.35f,.08f,.3f,.86f,new UnityEngine.Color(.15f,.62f,.75f,.9f));Box(.46f,.08f,.1f,.92f,new UnityEngine.Color(.65f,.95f,1,.9f));}
             if(phase<=0)return;
             for(int i=0;i<5;i++){float t=((age*3+i*13)%45)/45f;float y=phase==2?.12f+t*.8f:.09f+t*.14f;float x=.2f+(i%3)*.23f;float size=phase==2?.07f:.09f;Box(x,y,size,size,new UnityEngine.Color(.8f,.97f,1,1-t*.5f));}
+        }
+    }
+}
+
+namespace Olca.Presentation.Exploration
+{
+    /// <summary>水路だけのオリジナル仮絵。FHDの3pxグリッドで描き、前景の空白はRGBAの0。</summary>
+    public static class OutsideWaterwayArtwork478
+    {
+        public const int Width=1920,Height=1080,FloorRow=67;
+        private const int GridWidth=640,GridHeight=360;
+        public static UnityEngine.Sprite Create(bool foreground)
+        {
+            var data=new UnityEngine.Color32[Width*Height];
+            UnityEngine.Color32 C(byte r,byte g,byte b,byte alpha=255)=>new UnityEngine.Color32(r,g,b,alpha);
+            void Box(int x,int y,int w,int h,UnityEngine.Color32 color){for(int j=System.Math.Max(0,y)*3;j<System.Math.Min(GridHeight,y+h)*3;j++)for(int i=System.Math.Max(0,x)*3;i<System.Math.Min(GridWidth,x+w)*3;i++)data[j*Width+i]=color;}
+            void Line(int x0,int y0,int x1,int y1,UnityEngine.Color32 color){int dx=System.Math.Abs(x1-x0),dy=-System.Math.Abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,error=dx+dy;while(true){Box(x0,y0,1,1,color);if(x0==x1&&y0==y1)break;int twice=2*error;if(twice>=dy){error+=dy;x0+=sx;}if(twice<=dx){error+=dx;y0+=sy;}}}
+            if(!foreground){
+                // 光の入る遠景と後方の水面。動ける足場とは異なる、淡いアーチの層。
+                for(int y=0;y<GridHeight;y++){float t=y/(float)GridHeight;Box(0,y,GridWidth,1,C((byte)(112+56*t),(byte)(151+37*t),(byte)(161+36*t)));}
+                Box(0,280,640,2,C(177,198,197));Box(55,288,115,3,C(187,206,203));Box(443,267,120,2,C(175,199,198));
+                for(int x=-68;x<Width;x+=174){
+                    Box(x+14,83,20,82,C(131,153,151));Box(x+138,83,20,82,C(133,155,151));
+                    Box(x+14,83,4,82,C(118,142,144));Box(x+138,83,4,82,C(120,144,144));
+                    for(int y=92;y<165;y+=18){Box(x+14,y,20,1,C(112,137,139));Box(x+138,y,20,1,C(114,140,140));}
+                    for(int y=164;y<=235;y++)for(int xx=x+14;xx<x+159;xx++){int dx=xx-(x+86),dy=y-164,d=dx*dx+dy*dy;if(d>=54*54&&d<=72*72)Box(xx,y,1,1,C(142,162,156));}
+                    for(int n=0;n<=12;n++){double angle=n*System.Math.PI/12;Line(x+86+(int)(55*System.Math.Cos(angle)),164+(int)(55*System.Math.Sin(angle)),x+86+(int)(71*System.Math.Cos(angle)),164+(int)(71*System.Math.Sin(angle)),C(126,149,147));}
+                    Box(x+8,235,156,5,C(153,171,162));Box(x+8,240,156,2,C(166,180,168));
+                }
+                Box(0,67,640,25,C(81,130,139));Box(0,91,640,2,C(112,153,152));
+                for(int n=0;n<26;n++){int x=(n*89+17)%640,y=70+(n*7%19);Box(x,y,12+n%9,1,C(103,153,157));}
+                // 背面の圧力管は低コントラスト。危険そのものは既存の泡/噴流が上から描く。
+                Box(316,67,8,56,C(78,111,117));Box(317,67,2,56,C(108,139,138));Box(316,121,29,5,C(85,117,121));
+                Box(313,79,14,3,C(113,140,136));Box(313,105,14,3,C(113,140,136));
+                // 白い既存案内の後ろだけを暗くし、明るい水路全体を暗転させない。
+                Box(0,310,640,50,C(29,52,63));Box(0,309,640,1,C(69,95,103));
+            }else{
+                // 乾いた歩行面の断面。水は床の下に見え、空中は一切塗らない。
+                Box(0,0,640,FloorRow,C(43,64,70));Box(0,20,640,37,C(59,83,88));
+                for(int row=0;row<3;row++)for(int x=-25;x<640;x+=49){int at=x+(row%2)*24;Box(at,row*15+21,46,13,C((byte)(78+row*5),(byte)(99+row*5),(byte)(100+row*3)));Box(at,row*15+21,46,1,C(55,78,83));Box(at+2,row*15+32,40,1,C(105,123,119));}
+                Box(0,FloorRow-4,640,4,C(108,129,127));Box(0,FloorRow-1,640,1,C(180,195,184));
+                for(int x=7;x<640;x+=37)Box(x,FloorRow-4,1,3,C(64,91,95));
+                // 同じ地上面に埋め込まれた排水格子。明るい外枠と開口の幅を分ける。
+                Box(302,FloorRow-10,36,9,C(77,83,74));Box(300,FloorRow-5,40,3,C(158,150,116));Box(304,FloorRow-3,32,3,C(41,66,72));
+                for(int x=307;x<336;x+=5)Box(x,FloorRow-3,2,3,C(149,160,145));Box(300,FloorRow-2,3,2,C(202,204,170));Box(337,FloorRow-2,3,2,C(202,204,170));
+                // 上段の絵は既存の6world幅・1.4world高さの縁より下へ収める。
+                Box(212,111,216,5,C(85,110,112));Box(212,115,216,1,C(165,184,176));
+                for(int x=212;x<428;x+=12){Box(x,111,1,4,C(50,79,87));Box(x+2,112,8,1,C(115,140,137));}
+                Box(212,107,6,4,C(66,95,102));Box(422,107,6,4,C(66,95,102));
+            }
+            var texture=new UnityEngine.Texture2D(Width,Height,UnityEngine.TextureFormat.RGBA32,false){name=foreground?"WaterwayMasonry478_RGBA":"WaterwayFar478_Original",filterMode=UnityEngine.FilterMode.Point,wrapMode=UnityEngine.TextureWrapMode.Clamp};texture.SetPixels32(data);texture.Apply(false,false);
+            var sprite=UnityEngine.Sprite.Create(texture,new UnityEngine.Rect(0,0,Width,Height),new UnityEngine.Vector2(.5f,.5f),1);sprite.name=texture.name;return sprite;
         }
     }
 }

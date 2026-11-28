@@ -18,6 +18,35 @@ namespace Olca.Tests.Application
 {
     public class GameSystemManagementTests
     {
+        [TestCase(false)][TestCase(true)]
+        public void 水路478の自作FHD絵は最近傍RGBAで再現でき前景の空中に不透明な下地を持たない(bool front)
+        {
+            var first=Olca.Presentation.Exploration.OutsideWaterwayArtwork478.Create(front);var second=Olca.Presentation.Exploration.OutsideWaterwayArtwork478.Create(front);
+            try{var texture=first.texture;Assert.AreEqual(1920,texture.width);Assert.AreEqual(1080,texture.height);Assert.AreEqual(TextureFormat.RGBA32,texture.format);Assert.AreEqual(FilterMode.Point,texture.filterMode);Assert.AreEqual(TextureWrapMode.Clamp,texture.wrapMode);Assert.IsTrue(texture.GetPixels32().SequenceEqual(second.texture.GetPixels32()));
+                if(front){Assert.AreEqual(0,texture.GetPixel(960,240).a);Assert.AreEqual(0,texture.GetPixel(180,900).a);Assert.AreEqual(0,texture.GetPixel(180,201).a);Assert.AreEqual(1,texture.GetPixel(180,200).a);Assert.AreEqual(1,texture.GetPixel(960,340).a);}else Assert.IsTrue(texture.GetPixels32().All(c=>c.a==255));
+            }finally{UnityEngine.Object.DestroyImmediate(first.texture);UnityEngine.Object.DestroyImmediate(first);UnityEngine.Object.DestroyImmediate(second.texture);UnityEngine.Object.DestroyImmediate(second);}
+        }
+        [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
+        public async Task 水路478の遠景と透過足場は実床面に一致し噴流とキャラを覆わず停止退出で親保存を変えない(int width,int height)
+        {
+            ((RectTransform)host.transform).sizeDelta=new Vector2(width,height);var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigurePairEntry445(()=>{});view.Render();var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.transform.Find("OutsideWaterway464").GetComponent<Button>().onClick.Invoke();var child=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.NotNull(child);child.Render();Canvas.ForceUpdateCanvases();
+                var far=child.transform.Find("WaterwayFar478").GetComponent<Image>();var near=child.transform.Find("WaterwayMasonry478").GetComponent<Image>();Assert.IsFalse(far.raycastTarget||near.raycastTarget);Assert.IsNull(child.transform.Find("BranchBackdropColumn0"));Assert.AreEqual(AspectRatioFitter.AspectMode.EnvelopeParent,far.GetComponent<AspectRatioFitter>().aspectMode);Assert.AreEqual(16f/9,far.GetComponent<AspectRatioFitter>().aspectRatio);
+                Assert.Less(near.transform.GetSiblingIndex(),child.transform.Find("BranchPlayer").GetSiblingIndex());Assert.Less(near.transform.GetSiblingIndex(),child.transform.Find("WaterwayPulse464").GetSiblingIndex());var floor=child.transform.Find("BranchFloor").GetComponent<RectTransform>();var edge=child.transform.Find("BranchUpperEdge").GetComponent<RectTransform>();var nr=near.rectTransform;float row=Olca.Presentation.Exploration.OutsideWaterwayArtwork478.FloorRow*3;
+                float paintedFloor=nr.TransformPoint(new Vector3(nr.rect.center.x,nr.rect.yMin+nr.rect.height*row/1080,0)).y;float realFloor=floor.TransformPoint(new Vector3(floor.rect.xMin,floor.rect.yMax,0)).y;Assert.That(paintedFloor,Is.EqualTo(realFloor).Within(.02f));float paintedBridge=nr.TransformPoint(new Vector3(nr.rect.center.x,nr.rect.yMin+nr.rect.height*348/1080,0)).y;Assert.Less(paintedBridge,edge.TransformPoint(new Vector3(edge.rect.xMin,edge.rect.yMin,0)).y);
+                var sprite=near.sprite;var texture=sprite.texture;var farSprite=far.sprite;var farTexture=farSprite.texture;long frame=child.Runtime.Session.Frame;child.Render();Assert.AreSame(sprite,near.sprite);Assert.AreEqual(frame,child.Runtime.Session.Frame);child.transform.Find("BranchPause").GetComponent<Button>().onClick.Invoke();for(int n=0;n<120;n++)child.Runtime.Session.Tick(new Olca.Core.Logic.Integration.LogicalInput{Horizontal=1,JumpButton=true});child.Render();Assert.AreEqual(frame,child.Runtime.Session.Frame);child.Close();Assert.IsTrue(sprite==null&&texture==null&&farSprite==null&&farTexture==null);CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+            }
+        }
+        [TestCase(false)][TestCase(true)]
+        public async Task 水路478の絵は既存回廊と遺跡へ漏れず各背景と親状態を保つ(bool ruins)
+        {
+            var model=system.OutsideExploration;model.TryInitializePlayer(()=>new Olca.Core.Domain.PlayerCharacter(100));model.RecoverOutside(Olca.Core.Logic.Integration.OutsideTrialRoute.DoorAnnexPoint);
+            using(var binding=new OutsideExplorationPresentationBinding(views,model,ct=>Task.FromResult(Olca.Presentation.Exploration.OutsideExplorationView.Create(host.transform,resources.GetShared<Font>("OlcaUI/MenuText"),resources)),()=>true,()=>{},trialRoute:()=>true)){
+                Assert.IsTrue((await binding.OpenAsync()).Succeeded);var view=binding.View;view.ConfigurePairEntry445(()=>{});view.Render();var saved=Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState());view.transform.Find(ruins?"OutsideRuinsCrossing450":"OutsideBranchEntry441").GetComponent<Button>().onClick.Invoke();var child=view.GetComponentInChildren<Olca.Presentation.Exploration.OutsideBranchView441>();Assert.NotNull(child);Assert.IsFalse(child.Runtime.Session.IsWaterway464);Assert.IsNull(child.transform.Find("WaterwayFar478"));Assert.IsNull(child.transform.Find("WaterwayMasonry478"));Assert.NotNull(child.transform.Find(ruins?"RuinsCrossingBackground0":"BranchBackdropColumn0"));child.Close();CollectionAssert.AreEqual(saved,Olca.Core.Logic.Dungeon.PortableCheckpointJson.Serialize(model.Core.CaptureState()));
+            }
+        }
+
         [TestCase(1920,1080)][TestCase(1440,1080)][TestCase(1663,1247)]
         public async Task 水路464は入口を既存UIから離し独立区画の停止再試行と親保存を保つ(int width,int height)
         {
